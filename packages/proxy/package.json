@@ -1,0 +1,17 @@
+{
+  "name": "@freeboard/proxy",
+  "version": "0.1.0",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  },
+  "private": true,
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "nodemon": "^3.1.7"
+  }
+}

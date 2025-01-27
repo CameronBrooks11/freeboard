@@ -1,0 +1,32 @@
+{
+  "name": "freeboard",
+  "title": "freeboard",
+  "version": "1.2.0-dev",
+  "scripts": {
+    "dev": " concurrently --kill-others \"docker compose -f docker-compose.mongo.yml up --build\"  \"npm run dev --workspace=packages/ui\" \"npm run dev --workspace=packages/api\"  \"npm run dev --workspace=packages/proxy\" \"npm run dev --workspace=packages/oauth\"",
+    "lint:fix": "eslint --fix"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.15.0",
+    "globals": "^15.12.0"
+  },
+  "overrides": {
+    "os": {
+      "linux": {
+        "dependencies": {
+          "vite": {
+            "rollup": "npm:@rollup/wasm-node@^4.28.1"
+          }
+        }
+      }
+    }
+  },
+  "workspaces": [
+    "packages/ui",
+    "packages/api",
+    "packages/proxy",
+    "packages/oauth"
+  ]
+}

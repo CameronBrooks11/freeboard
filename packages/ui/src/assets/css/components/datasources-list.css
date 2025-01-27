@@ -1,0 +1,43 @@
+.datasources-list .datasources-list__table {
+  max-width: 100%;
+  background-color: transparent;
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.datasources-list .datasources-list__table__head__row__cell,
+.datasources-list .datasources-list__table__body__row__cell {
+  padding: 8px;
+  line-height: 20px;
+  text-align: left;
+  border-bottom: solid 1px var(--color-shade-4);
+}
+
+.datasources-list .datasources-list__table__head__row__cell {
+  font-weight: bold;
+  color: var(--color-shade-6);
+}
+
+.datasources-list .datasources-list__table__body__row__cell__board-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.datasources-list .datasources-list__table__body__row__cell__board-toolbar__item__icon {
+  cursor: pointer;
+  color: var(--color-shade-6);
+}
+
+.datasources-list .datasources-list__table__body__row__cell__board-toolbar__item__icon:hover {
+  color: var(--color-primary);
+}
+
+.datasources-list .datasources-list__operations {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

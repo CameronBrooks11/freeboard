@@ -1,0 +1,14 @@
+[Unit]
+Description=Freeboard
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/pi/freeboard
+ExecStart=/usr/bin/bash player.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

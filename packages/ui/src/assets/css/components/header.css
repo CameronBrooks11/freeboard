@@ -1,0 +1,52 @@
+.header {
+  width: 100%;
+  position: relative;
+  z-index: 50;
+}
+
+.header .header__admin-bar {
+  width: 100%;
+  background-color: var(--color-shade-2);
+  box-shadow: 0 0 5px var(--color-shadow);
+}
+
+.header .header__admin-bar__admin-menu {
+  display: flex;
+  flex-direction: column;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 15px 20px;
+  box-sizing: border-box;
+}
+
+.header .header__admin-bar__admin-menu__board-logo {
+  font-family: "Helvetica-Neue", "Helvetica", "Arial", sans-serif;
+  vertical-align: baseline;
+  font-style: normal;
+  color: var(--color-shade-8);
+  font-size: 1.7rem;
+  font-weight: 800;
+  margin-bottom: 20px;
+  text-decoration: none;
+  transition: color 250ms;
+}
+
+.header .header__admin-bar__admin-menu__board-logo:hover {
+  color: var(--color-primary);
+}
+
+.header .header__admin-bar__admin-menu__board-tools {
+  width: 100%;
+}
+
+.header .header__admin-bar__admin-menu__board-tools__board-actions {
+  display: flex;
+  width: 100%;
+}
+
+@media screen and (max-width: 640px) {
+  .header .header__admin-bar__admin-menu__board-tools__board-actions {
+    flex-direction: column;
+  }
+}

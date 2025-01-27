@@ -1,0 +1,39 @@
+.widget {
+  background-color: var(--color-shade-3);
+  height: 100%;
+}
+
+.widget .widget__sub-section {
+  background-color: var(--color-shade-3);
+  position: relative;
+  min-height: 30px;
+}
+
+.widget .widget__sub-section__widget-output {
+  padding: 5px 10px 5px 10px;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--color-foreground);
+}
+
+.widget .widget__sub-section__board-toolbar {
+  display: flex;
+  gap: 5px;
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  color: var(--color-shade-8);
+}
+
+.widget .widget__sub-section__board-toolbar__item {
+  cursor: pointer;
+}
+
+.widget .widget__sub-section__board-toolbar__item__icon {
+  color: var(--color-shade-8);
+}
+
+.widget .widget__sub-section__board-toolbar__item__icon:hover {
+  color: var(--color-primary);
+}

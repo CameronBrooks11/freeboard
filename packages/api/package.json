@@ -1,0 +1,29 @@
+{
+  "name": "@freeboard/api",
+  "version": "0.1.0",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  },
+  "private": true,
+  "dependencies": {
+    "@graphql-tools/merge": "^9.0.12",
+    "@graphql-tools/schema": "^10.0.9",
+    "@graphql-tools/utils": "^10.6.0",
+    "@graphql-yoga/plugin-graphql-sse": "^3.10.6",
+    "bcryptjs": "^2.4.3",
+    "concurrently": "^9.1.0",
+    "dotenv": "^16.4.5",
+    "form-data": "^4.0.1",
+    "graphql-subscriptions": "^3.0.0",
+    "graphql-yoga": "^5.10.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.11.0",
+    "mongoose": "^8.8.3",
+    "nodemon": "^3.1.7",
+    "shortid": "^2.2.16",
+    "uuid": "^11.0.3"
+  }
+}

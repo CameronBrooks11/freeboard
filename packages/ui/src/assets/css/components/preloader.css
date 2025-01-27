@@ -1,0 +1,98 @@
+.preloader {
+  position: absolute;
+  height: 200px;
+  width: 200px;
+  top: 50%;
+  margin-top: -100px;
+  left: 50%;
+  margin-left: -100px;
+  z-index: 2000;
+}
+
+.preloader .preloader__loading {
+  position: absolute;
+  border-radius: 150px;
+}
+
+.preloader .preloader__loading--up {
+  height: 200px;
+  width: 200px;
+  border: 3px solid var(--color-shade-10);
+  border-top-color: var(--color-shade-10);
+  border-left-color: var(--color-shade-6);
+  border-right-color: var(--color-shade-6);
+  border-bottom-color: var(--color-shade-10);
+
+  animation: rotation 3s linear infinite;
+}
+
+.preloader .preloader__loading--down {
+  height: 100px;
+  width: 100px;
+  top: 50%;
+  margin-top: -50px;
+  left: 50%;
+  margin-left: -50px;
+  border: 3px solid var(--color-shade-10);
+  border-left-color: var(--color-shade-10);
+  border-top-color: var(--color-shade-6);
+  border-bottom-color: var(--color-shade-6);
+  border-right-color: var(--color-shade-10);
+  animation: rotation 1s linear infinite;
+}
+
+@-webkit-keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  50% {
+    transform: rotate(180deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@-moz-keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  50% {
+    transform: rotate(180deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@-o-keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  50% {
+    transform: rotate(180deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  50% {
+    transform: rotate(180deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
