@@ -29,8 +29,6 @@ const { hideLabels, skipTranslate, ...props } = defineProps({
   skipTranslate: Boolean,
 });
 
-const p = reactive({ ...props });
-
 const onUpdate = () => {
   emit("change", getValue());
 };
@@ -106,7 +104,7 @@ const resolveFieldOptions = async (field) => {
 }
 
 const translateField = (field) => {
-  if (skipTranslate) {
+  if (skipTranslate || field.translated) {
     return field;
   }
   if (field.label) {
@@ -132,6 +130,8 @@ const translateField = (field) => {
   if (Array.isArray(field.options)) {
     field.options.forEach(translateField);
   }
+
+  field.translated = true;
 
   return field;
 };
@@ -201,12 +201,13 @@ const emit = defineEmits(["change"]);
 const fields = ref(null);
 
 const f = toRef(props, "fields");
+const s = toRef(props, "settings");
 
-watch(f, async () => {
+watch([f, s], async () => {
   fields.value = await Promise.all(f.value.map(fieldToFormElement).map(translateField).map(resolveFieldOptions))
   fields.value.forEach((field) => {
-    const value = field.model?.value || p.settings[field.name] || field.default;
-    const r = ref(value)
+    const value = field.model?.value || s.value[field.name] || field.default;
+    const r = ref(value);
     field.model = r;
     watch(r, onUpdate)
   })

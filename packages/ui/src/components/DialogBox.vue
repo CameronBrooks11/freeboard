@@ -60,7 +60,7 @@ defineExpose({
           </form>
         </section>
         <footer class="dialog-box__modal__footer">
-          <TextButton :disabled="okDisabled" v-if="ok" type="submit" form="form" >
+          <TextButton :disabled="okDisabled" v-if="ok" type="submit" form="form" @click="onOk">
             {{ ok }}
           </TextButton>
           <TextButton v-if="cancel" @click="onCancel">

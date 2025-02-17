@@ -93,7 +93,7 @@ export class Dashboard {
     this.columns = object.columns;
     this.image = object.image;
     this.width = object.width;
-    this.published = object.published;
+    this.published = !!object.published;
     this.settings = object.settings || {};
     this.isOwner = !object.user;
 
@@ -196,7 +196,7 @@ export class Dashboard {
     });
   }
 
-  getAuthProviderByName(name) {
-    return this.authProviders.find((a) => a.name === name).authProviderInstance;
+  getAuthProviderByName(title) {
+    return this.authProviders.find((a) => a.title === title)?.authProviderInstance;
   }
 }

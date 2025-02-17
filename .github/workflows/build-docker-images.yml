@@ -13,8 +13,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - context: ./packages/oauth
-            image: ghcr.io/artificialhoney/freeboard-oauth
           - context: ./packages/api
             image: ghcr.io/artificialhoney/freeboard-api
           - context: ./packages/proxy

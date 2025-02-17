@@ -95,8 +95,8 @@ export class JSONDatasource {
           placeholder: "form.placeholderAuthProvider",
           options: dashboard.authProviders.map((a) => {
             return {
-              value: a.name,
-              label: a.name,
+              value: a.title,
+              label: a.title,
             };
           }),
         },
@@ -112,8 +112,6 @@ export class JSONDatasource {
   currentSettings;
   updateCallback;
   errorStage = 0; // 0 = try standard request
-  // 1 = try JSONP
-  // 2 = try Proxy
   lockErrorStage = false;
 
   constructor(settings, updateCallback) {

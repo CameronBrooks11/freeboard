@@ -9,6 +9,7 @@ export default (dashboard) => {
       settings: {
         title: dashboard.title,
         columns: dashboard.columns,
+        published: dashboard.published
       },
       fields: [
         {

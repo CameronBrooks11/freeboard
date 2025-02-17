@@ -22,7 +22,7 @@ const form = ref(null);
 watch(
   dashboard,
   (d) => {
-    settings.value = d;
+    settings.value = d
   },
   {
     immediate: true,

@@ -13,17 +13,6 @@ const onChange = (value) => {
   emit("update:modelValue", value);
 };
 
-watch(
-  () => props.modelValue,
-  (v) => {
-    if (!v) {
-      return;
-    }
-
-    input.value.checked = true;
-  },
-);
-
 defineExpose({
   errors,
 });
@@ -35,6 +24,7 @@ defineExpose({
       ref="input"
       type="checkbox"
       name="switch"
+      :checked="props.modelValue"
       class="switch-form-element__checkbox"
       :disabled="props.disabled"
       @change="onChange($event.target.checked)"

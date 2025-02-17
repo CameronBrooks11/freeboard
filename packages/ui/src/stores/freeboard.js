@@ -1,10 +1,8 @@
 import { defineStore, storeToRefs } from "pinia";
 import renderComponent from "../render";
 import { Dashboard } from "../models/Dashboard";
-import { useI18n } from "vue-i18n";
+import router from "../router";
 import { usePreferredColorScheme } from "@vueuse/core";
-import { useMutation } from "@vue/apollo-composable";
-import { DASHBOARD_CREATE_MUTATION, DASHBOARD_UPDATE_MUTATION } from "../gql";
 
 export const useFreeboardStore = defineStore("freeboard", {
   state: () => ({

@@ -3,13 +3,10 @@ import { storeToRefs } from "pinia";
 import { useFreeboardStore } from "../stores/freeboard";
 import { useMutation } from "@vue/apollo-composable";
 import { DASHBOARD_CREATE_MUTATION, DASHBOARD_UPDATE_MUTATION } from "../gql";
-import { useRouter } from "vue-router";
-import { watch } from "vue";
 
 const freeboardStore = useFreeboardStore();
 const { dashboard, isSaved } = storeToRefs(freeboardStore);
 
-const router = useRouter();
 
 const { mutate: createDashboard } = useMutation(
         DASHBOARD_CREATE_MUTATION
@@ -26,7 +23,6 @@ const saveDashboard = async () => {
   await freeboardStore.saveDashboard(id, d, createDashboard, updateDashboard);
 };
 
-const iStatic = __FREEBOARD_STATIC__;
 </script>
 <template>
   <div class="freeboard-control">

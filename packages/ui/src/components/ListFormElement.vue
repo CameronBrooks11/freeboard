@@ -47,7 +47,7 @@ const label = asyncComputed(async () => {
 })
 
 watch(show, () => {
-  emit("update:modelValue", value);
+  emit("update:modelValue", value.value);
 })
 </script>
 

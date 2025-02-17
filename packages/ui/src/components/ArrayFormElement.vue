@@ -32,6 +32,7 @@ const onSettingRemove = (index) => {
 
 const onSettingAdd = () => {
   const val = {};
+
   props.options.forEach((o) => {
     val[o.name] = "";
   });

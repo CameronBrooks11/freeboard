@@ -84,13 +84,7 @@ export class BaseWidget {
   ];
 
   static template({style, script, html, resources}) {
-    const res = resources?.map((r) => {
-      if (r.type === "style") {
-        return `<link rel="stylesheet" type="text/css href="${r.url}"></link>`;
-      } else {
-        return `<script src="${r.url}"></script>`;
-      }
-    }) || [];
+    const res = resources?.map((r) => `<script src="${r.asset}"></script>`) || [];
     return `
 <!DOCTYPE html>
 <html lang="en">

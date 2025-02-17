@@ -6,6 +6,7 @@ import {
   HttpLink,
   InMemoryCache,
 } from "@apollo/client/core";
+import { onError } from "apollo-link-error";
 import App from "./App.vue";
 import monaco from "./monaco";
 import { install as VueMonacoEditorPlugin } from "@guolao/vue-monaco-editor";
@@ -35,7 +36,7 @@ import {
   HiBeaker,
   HiBriefcase,
   HiPlay,
-  HiPause
+  HiPause,
 } from "oh-vue-icons/icons";
 
 import { createPinia, storeToRefs } from "pinia";
@@ -99,6 +100,14 @@ const getHeaders = () => {
   return headers;
 };
 
+const errorLink = onError(({ graphQLErrors, networkError }) => {
+  if (graphQLErrors) {
+    const store = useFreeboardStore();
+    store.logout();
+    router.push('/login')
+  }
+});
+
 const httpLink = new HttpLink({
   uri: `/graphql`,
   fetch: (uri, options) => {
@@ -114,11 +123,14 @@ const sseLink = new SSELink({
 
 const apolloClient = new ApolloClient({
   cache,
-  link: ApolloLink.split(
-    (operation) => operation.getContext().apiName === "stream",
-    sseLink,
-    httpLink,
-  ),
+  link: ApolloLink.from([
+    errorLink,
+    ApolloLink.split(
+      (operation) => operation.getContext().apiName === "stream",
+      sseLink,
+      httpLink
+    ),
+  ]),
 });
 
 const app = createApp({

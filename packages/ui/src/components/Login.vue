@@ -24,14 +24,14 @@ watch(
     fields.value = [
       {
         name: "email",
-        label: t("form.labelEmail"),
+        label: "form.labelEmail",
         type: "text",
         required: true,
         disabled: l,
       },
       {
         name: "password",
-        label: t("form.labelPassword"),
+        label: "form.labelPassword",
         type: "password",
         required: true,
         disabled: l,

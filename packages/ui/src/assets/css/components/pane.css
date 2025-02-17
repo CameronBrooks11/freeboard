@@ -2,6 +2,7 @@
   background: var(--color-shade-3);
   height: 100%;
   cursor: auto !important;
+  overflow: hidden;
 }
 
 .pane .pane__header {

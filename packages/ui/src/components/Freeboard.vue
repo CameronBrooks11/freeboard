@@ -3,15 +3,15 @@ import { reactive, ref, watch } from "vue";
 import Header from "./Header.vue";
 import Board from "./Board.vue";
 import { useFreeboardStore } from "../stores/freeboard";
-import { useRouter } from "vue-router";
 import { useQuery, useSubscription } from "@vue/apollo-composable";
 import { DASHBOARD_READ_QUERY, DASHBOARD_UPDATE_SUBSCRIPTION } from "../gql";
+import router from "../router";
 import { storeToRefs } from "pinia";
 import Preloader from "./Preloader.vue";
 import { ClockDatasource } from "../datasources/ClockDatasource";
 import { JSONDatasource } from "../datasources/JSONDatasource";
 import { HeaderAuthProvider } from "../auth/HeaderAuthProvider";
-import { OAuth2Provider } from "../auth/OAuth2Provider";
+import { OAuth2PasswordGrantProvider } from "../auth/OAuth2PasswordGrantProvider";
 import { usePreferredColorScheme } from "@vueuse/core";
 import { BaseWidget } from "../widgets/BaseWidget";
 
@@ -35,8 +35,6 @@ const idRef = ref(id);
 
 const { showLoadingIndicator, isEditing, isSaved, dashboard } =
   storeToRefs(freeboardStore);
-
-const router = useRouter();
 
 const { onResult } = useSubscription(
   DASHBOARD_UPDATE_SUBSCRIPTION,
@@ -95,7 +93,7 @@ freeboardStore.loadSettingsFromLocalStorage(!idRef.value);
 freeboardStore.loadDashboardAssets();
 freeboardStore.loadDashboardTheme();
 freeboardStore.loadAuthPlugin(HeaderAuthProvider);
-freeboardStore.loadAuthPlugin(OAuth2Provider);
+freeboardStore.loadAuthPlugin(OAuth2PasswordGrantProvider);
 freeboardStore.loadDatasourcePlugin(JSONDatasource);
 freeboardStore.loadDatasourcePlugin(ClockDatasource);
 freeboardStore.loadWidgetPlugin(BaseWidget);

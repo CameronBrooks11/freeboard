@@ -13,24 +13,24 @@ const { t } = useI18n();
 const freeboardStore = useFreeboardStore();
 const { dashboard } = storeToRefs(freeboardStore);
 
-const openAuthProviderEditDialogBox = (authprovider) => {
+const openAuthProviderEditDialogBox = (authProvider) => {
   freeboardStore.createComponent(AuthProviderDialogBox, instance.appContext, {
     header: t("authProvidersList.titleEdit"),
-    authprovider,
+    authProvider,
     onOk: (newSettings) => {
-      authprovider.title = newSettings.title;
-      authprovider.enabled = newSettings.enabled;
-      authprovider.settings = newSettings.settings;
-      authprovider.type = newSettings.type;
+      authProvider.title = newSettings.title;
+      authProvider.enabled = newSettings.enabled;
+      authProvider.settings = newSettings.settings;
+      authProvider.type = newSettings.type;
     },
   });
 };
 
-const openAuthProviderDeleteDialogBox = (authprovider) => {
+const openAuthProviderDeleteDialogBox = (authProvider) => {
   freeboardStore.createComponent(ConfirmDialogBox, instance.appContext, {
     title: t("authProvidersList.titleDelete"),
     onOk: () => {
-      dashboard.value.deleteAuthProvider(authprovider);
+      dashboard.value.deleteAuthProvider(authProvider);
     },
   });
 };
