@@ -1,6 +1,5 @@
 .widget {
   background-color: var(--color-shade-3);
-  height: 100%;
 }
 
 .widget .widget__sub-section {
