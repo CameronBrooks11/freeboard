@@ -20,6 +20,7 @@ flags=(
    --overscroll-history-navigation=0
    --disable-features=TranslateUI
    --autoplay-policy=no-user-gesture-required
+   --use-fake-ui-for-media-stream
 )
 
 export DISPLAY=:0.0
