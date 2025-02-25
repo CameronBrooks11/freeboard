@@ -27,6 +27,8 @@ export const useFreeboardStore = defineStore("freeboard", {
       if (settings.token) {
         this.token = settings.token;
       }
+      // TODO: Sync with local limited, use indexdb
+      /*
       if (dashboard && settings.dashboard) {
         this.dashboard = new Dashboard();
         this.dashboard.deserialize(settings.dashboard);
@@ -35,15 +37,19 @@ export const useFreeboardStore = defineStore("freeboard", {
         d.deserialize(settings.dashboard);
         this.dashboard.settings = d.settings;
       }
+        */
     },
     saveSettingsToLocalStorage() {
       const settings = {};
       if (this.token) {
         settings.token = this.token;
       }
+      // TODO Sync - s.a.
+      /*
       if (this.dashboard) {
         settings.dashboard = this.dashboard.serialize();
       }
+      */
       localStorage.setItem("freeboard", JSON.stringify(settings));
     },
     login(token) {
