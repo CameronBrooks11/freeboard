@@ -42,8 +42,8 @@ export class AuthProvider {
   }
 
   deserialize(object) {
-    this.type = object.type;
     this.settings = object.settings;
+    this.type = object.type;
     this.enabled = object.enabled;
     this.title = object.title;
     this.updateAuthProviderInstance();

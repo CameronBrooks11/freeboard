@@ -50,7 +50,9 @@ const onDialogBoxOk = async () => {
     const value = form.value.getValue();
     const result = await authUser(value);
     freeboardStore.login(result.data.authUser.token);
-    router.push("/");
+    const lastPath = router.options.history.state.back;
+    lastPath ? lastPath : '/';
+    router.push(lastPath);
   }
 };
 </script>

@@ -28,8 +28,6 @@ export class Datasource {
     const freeboardStore = useFreeboardStore();
     const { datasourcePlugins } = storeToRefs(freeboardStore);
 
-    this.disposeDatasourceInstance();
-
     if (
       newValue in datasourcePlugins.value &&
       typeof datasourcePlugins.value[newValue].newInstance === "function"
@@ -80,10 +78,10 @@ export class Datasource {
   }
 
   deserialize(object) {
-    this.type = object.type;
-    this.settings = object.settings;
     this.title = object.title;
     this.enabled = object.enabled;
+    this.settings = object.settings;
+    this.type = object.type;
   }
 
   getDataRepresentation(dataPath) {

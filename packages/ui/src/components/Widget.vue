@@ -49,6 +49,7 @@ const render = () => {
 };
 
 onMounted(render);
+watch(dashboard, render);
 
 const instance = getCurrentInstance();
 </script>

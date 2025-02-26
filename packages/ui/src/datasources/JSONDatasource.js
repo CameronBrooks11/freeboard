@@ -115,10 +115,8 @@ export class JSONDatasource {
   lockErrorStage = false;
 
   constructor(settings, updateCallback) {
-    this.currentSettings = settings;
     this.updateCallback = updateCallback;
-
-    this.updateRefresh(this.currentSettings.refresh * 1000);
+    this.onSettingsChanged(settings);
   }
 
   updateRefresh(refreshTime) {
@@ -186,8 +184,9 @@ export class JSONDatasource {
   }
 
   onDispose() {
-    clearInterval(this.updateTimer);
-    this.updateTimer = null;
+    if (this.updateTimer) {
+      clearInterval(this.updateTimer);
+    }
   }
 
   onSettingsChanged(newSettings) {

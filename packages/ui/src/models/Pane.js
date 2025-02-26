@@ -61,7 +61,7 @@ export class Pane {
   }
 
   dispose() {
-    this.widgets.forEach(function (widget) {
+    this.widgets.forEach((widget) => {
       widget.dispose();
     });
   }

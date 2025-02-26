@@ -71,7 +71,9 @@ export class Widget {
     }
   }
 
-  dispose() {}
+  dispose() {
+    this.disposeWidgetInstance();
+  }
 
   serialize() {
     return {
@@ -87,6 +89,7 @@ export class Widget {
     this.type = object.type;
     this.settings = object.settings;
     this.enabled = object.enabled;
+    this.shouldRender = true;
   }
 
 

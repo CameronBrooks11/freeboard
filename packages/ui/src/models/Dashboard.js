@@ -103,16 +103,16 @@ export class Dashboard {
       this.addAuthProvider(authProvider);
     });
 
-    object.datasources?.forEach((datasourceConfig) => {
-      const datasource = new Datasource();
-      datasource.deserialize(datasourceConfig);
-      this.addDatasource(datasource);
-    });
-
     object.panes?.forEach((paneConfig) => {
       const pane = new Pane();
       pane.deserialize(paneConfig);
       this.addPane(pane);
+    });
+
+    object.datasources?.forEach((datasourceConfig) => {
+      const datasource = new Datasource();
+      datasource.deserialize(datasourceConfig);
+      this.addDatasource(datasource);
     });
   }
 

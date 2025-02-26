@@ -185,6 +185,10 @@ export const useFreeboardStore = defineStore("freeboard", {
     },
     loadDashboard(dashboardData) {
       this.showLoadingIndicator = true;
+      if (this.dashboard) {
+        this.dashboard.clearDashboard();
+        this.dashboard = null;
+      }
       this.dashboard = new Dashboard();
       this.dashboard.deserialize(dashboardData);
       this.loadDashboardAssets();
