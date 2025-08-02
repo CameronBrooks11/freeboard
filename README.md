@@ -11,14 +11,14 @@ This Freeboard is a fork of [Jim Heisings damn-sexy dashboard app](https://githu
 - **Commit-Hooks** with `pre-commit`
 - **CSS-Variables** for all colors
   
-> [Try Out](https://artificialhoney.github.io/freeboard)
+> [Try Out](https://CameronBrooks11.github.io/freeboard)
 
 <img src="freeboard.png">
 
 ## Installation
 
 ```bash
-git clone git@github.com:artificialhoney/freeboard.git
+git clone git@github.com:CameronBrooks11/freeboard.git
 cd freeboard
 git checkout dev
 npm install

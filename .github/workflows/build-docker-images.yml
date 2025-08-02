@@ -1,7 +1,8 @@
 name: Build & publish docker images
 on:
   workflow_dispatch:
-  push: { branches: ["dev"] }
+  push:
+    branches: ["dev"]
 
 env:
   REGISTRY: ghcr.io
@@ -33,14 +34,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Important for comparing commits
+          fetch-depth: 0
 
       - name: Determine if package has changed
         id: changes
         run: |
           echo "Checking for changes in ${{ matrix.context }}"
           git fetch origin dev
-          CHANGED=$(git diff --name-only origin/dev HEAD -- "${{ matrix.context }}")
+          CHANGED=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- "${{ matrix.context }}")
           if [ -z "$CHANGED" ]; then
             echo "No changes in ${{ matrix.context }}"
             echo "changed=false" >> $GITHUB_OUTPUT
@@ -49,13 +50,8 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Exit if no changes
-        if: steps.changes.outputs.changed == 'false'
-        run: |
-          echo "No changes to ${{ matrix.name }}, skipping build."
-          exit 0
-
       - name: Set up Docker
+        if: steps.changes.outputs.changed == 'true'
         uses: docker/setup-docker-action@v4
         with:
           daemon-config: |
@@ -67,6 +63,7 @@ jobs:
             }
 
       - name: Log in to the Container registry
+        if: steps.changes.outputs.changed == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -74,15 +71,18 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up QEMU
+        if: steps.changes.outputs.changed == 'true'
         uses: docker/setup-qemu-action@v3
 
       - name: Extract metadata (tags, labels) for Docker
+        if: steps.changes.outputs.changed == 'true'
         id: meta
         uses: docker/metadata-action@v4
         with:
           images: ${{ matrix.image }}
 
       - name: Build and push Docker image
+        if: steps.changes.outputs.changed == 'true'
         uses: docker/build-push-action@v6
         with:
           platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
@@ -91,3 +91,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Skipping build (no changes)
+        if: steps.changes.outputs.changed == 'false'
+        run: echo "No changes detected in ${{ matrix.name }} — skipping build."
