@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
-import * as shortid from "shortid";
+import { nanoid } from "nanoid";
 
 const Schema = mongoose.Schema;
 
@@ -13,7 +13,7 @@ const UserSchema = new Schema(
   {
     _id: {
       type: String,
-      default: shortid.generate,
+      default: () => nanoid(),
     },
     email: {
       type: String,

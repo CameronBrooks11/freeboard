@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { ObjectId } from "mongodb";
-import * as shortid from "shortid";
+import { nanoid } from "nanoid";
 
 const Schema = mongoose.Schema;
 
@@ -12,7 +12,7 @@ const DashboardSchema = new Schema(
   {
     _id: {
       type: String,
-      default: shortid.generate,
+      default: () => nanoid(),
     },
     user: {
       type: String,
@@ -63,7 +63,7 @@ const DashboardSchema = new Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default mongoose.model("Dashboard", DashboardSchema);
