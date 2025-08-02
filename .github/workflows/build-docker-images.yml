@@ -14,11 +14,11 @@ jobs:
       matrix:
         include:
           - context: ./packages/api
-            image: ghcr.io/artificialhoney/freeboard-api
+            image: ghcr.io/CameronBrooks11/freeboard-api
           - context: ./packages/proxy
-            image: ghcr.io/artificialhoney/freeboard-proxy
+            image: ghcr.io/CameronBrooks11/freeboard-proxy
           - context: ./packages/ui
-            image: ghcr.io/artificialhoney/freeboard-ui
+            image: ghcr.io/CameronBrooks11/freeboard-ui
     permissions:
       contents: read
       packages: write
