@@ -46,7 +46,7 @@
 
     - name: Set architecture
       ansible.builtin.set_fact:
-        architecture: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'armhf' }}"
+        architecture: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}" # changed from 'armhf' to 'arm64' for Raspberry Pi
       tags:
         - docker
 
