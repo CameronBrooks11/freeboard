@@ -112,6 +112,31 @@
       tags:
         - docker
 
+    #added
+    - name: Ensure MongoDB Docker image is downloaded
+      ansible.builtin.get_url:
+        url: https://github.com/themattman/mongodb-raspberrypi-docker/releases/download/r7.0.4-mongodb-raspberrypi-docker-unofficial/mongodb.ce.pi4.r7.0.4-mongodb-raspberrypi-docker-unofficial.tar.gz
+        dest: /tmp/mongodb.ce.pi4.r7.0.4.tar.gz
+        mode: "0644"
+      tags:
+        - mongo
+
+    - name: Load the MongoDB Docker image
+      ansible.builtin.command:
+        cmd: docker load --input /tmp/mongodb.ce.pi4.r7.0.4.tar.gz
+      register: docker_load_output
+      changed_when: "'Loaded image' in docker_load_output.stdout"
+      tags:
+        - mongo
+
+    - name: Remove the MongoDB tarball after loading
+      ansible.builtin.file:
+        path: /tmp/mongodb.ce.pi4.r7.0.4.tar.gz
+        state: absent
+      tags:
+        - mongo
+    #added
+
     - name: Installs splashscreen dependencies
       ansible.builtin.apt:
         name:
