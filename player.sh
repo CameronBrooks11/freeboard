@@ -2,7 +2,7 @@
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-until curl --output /dev/null --silent --head --fail "$SUPERBOARD_PLAYER_URL"; do
+until curl --output /dev/null --silent --head --fail "$FREEBOARD_PLAYER_URL"; do
     printf '.'
     sleep 5
 done
@@ -30,4 +30,4 @@ flags=(
     --no-sandbox
 )
 
-sudo --preserve-env=SUPERBOARD_USER -u "${SUPERBOARD_USER}" startx /usr/bin/chromium-browser "${flags[@]}" --app="$SUPERBOARD_PLAYER_URL" # -- -nocursor
+sudo --preserve-env=FREEBOARD_USER -u "${FREEBOARD_USER}" startx /usr/bin/chromium-browser "${flags[@]}" --app="$FREEBOARD_PLAYER_URL" # -- -nocursor
