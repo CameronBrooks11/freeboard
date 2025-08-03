@@ -361,8 +361,8 @@
       tags: player
 
     - name: Create Unit file
-      ansible.builtin.copy:
-        src: freeboard.service
+      ansible.builtin.template:
+        src: freeboard.service.j2
         dest: /lib/systemd/system/freeboard.service
         mode: "0644"
         owner: root

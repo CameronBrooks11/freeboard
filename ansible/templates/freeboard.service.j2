@@ -7,7 +7,9 @@ After=docker.service
 Type=simple
 User=root
 WorkingDirectory=/home/pi/freeboard
-ExecStart=/usr/bin/bash player.sh
+Environment=FREEBOARD_PLAYER_URL={{ freeboard_player_url }}
+Environment=FREEBOARD_USER=root
+ExecStart=/usr/bin/bash ansible/player.sh
 Restart=always
 
 [Install]
