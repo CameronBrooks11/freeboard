@@ -3,7 +3,12 @@
   "title": "freeboard",
   "version": "1.2.0-dev",
   "scripts": {
-    "dev": " concurrently --kill-others \"docker compose -f docker-compose.mongo.yml up --build\"  \"npm run dev --workspace=packages/ui\" \"npm run dev --workspace=packages/api\"  \"npm run dev --workspace=packages/proxy\"",
+    "dev": "concurrently --kill-others \"npm run dev:mongo\" \"npm run dev:ui\" \"npm run dev:api\" \"npm run dev:proxy\" \"npm run dev:oauth\"",
+    "dev:mongo": "docker compose -f docker-compose.mongo.yml up --build",
+    "dev:ui": "npm run dev --workspace=packages/ui",
+    "dev:api": "npm run dev --workspace=packages/api",
+    "dev:proxy": "npm run dev --workspace=packages/proxy",
+    "dev:oauth": "npm run dev --workspace=packages/oauth",
     "lint:fix": "eslint --fix"
   },
   "devDependencies": {
@@ -26,6 +31,7 @@
   "workspaces": [
     "packages/ui",
     "packages/api",
-    "packages/proxy"
+    "packages/proxy",
+    "packages/oauth"
   ]
 }

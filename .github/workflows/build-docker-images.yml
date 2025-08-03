@@ -17,6 +17,9 @@ jobs:
           - context: ./packages/api
             image: ghcr.io/CameronBrooks11/freeboard-api
             name: api
+          - context: ./packages/oauth
+            image: ghcr.io/CameronBrooks11/freeboard-oauth
+            name: oauth
           - context: ./packages/proxy
             image: ghcr.io/CameronBrooks11/freeboard-proxy
             name: proxy

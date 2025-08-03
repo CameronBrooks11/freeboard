@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         "/graphql": "http://localhost:4001",
         "/proxy": "http://localhost:8001",
+        "/connect": "http://localhost:9001",
       },
     },
   };
