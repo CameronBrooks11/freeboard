@@ -15,7 +15,7 @@ HEIGHT=$(echo "$RES" | cut -d'x' -f2)
 
 flags=(
     --kiosk
-    --start-fullscreen
+    --window-size=${WIDTH},${HEIGHT}
     --window-position=0,0
     --touch-events=enabled
     --disable-pinch
