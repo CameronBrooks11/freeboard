@@ -31,7 +31,7 @@ npm install
 ### Docker-Compose
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
 ```
 
 ### Development

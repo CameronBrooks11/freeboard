@@ -1,6 +1,6 @@
 services:
   freeboard-ui:
-    image: ghcr.io/CameronBrooks11/freeboard-ui:dev
+    image: ghcr.io/cameronbrooks11/freeboard-ui:dev
     restart: unless-stopped
     container_name: freeboard-ui
     ports:
@@ -10,25 +10,19 @@ services:
     depends_on:
       - freeboard-api
       - freeboard-proxy
-      - freeboard-oauth
-  freeboard-oauth:
-    restart: unless-stopped
-    container_name: freeboard-oauth
-    image: ghcr.io/CameronBrooks11/freeboard-oauth:dev
-    networks:
-      - freeboard
+
   freeboard-api:
     restart: unless-stopped
     container_name: freeboard-api
-    image: ghcr.io/CameronBrooks11/freeboard-api:dev
+    image: ghcr.io/cameronbrooks11/freeboard-api:dev
     environment:
-      - MONGO_URL=${FREEBOARD_MONGO_URL:-mongodb://root:unsecure@localhost:27017}
+      - MONGO_URL=${FREEBOARD_MONGO_URL:-mongodb://freeboard:unsecure@freeboard-mongo:27017/freeboard}
     networks:
       - freeboard
   freeboard-proxy:
     restart: unless-stopped
     container_name: freeboard-proxy
-    image: ghcr.io/CameronBrooks11/freeboard-proxy:dev
+    image: ghcr.io/cameronbrooks11/freeboard-proxy:dev
     networks:
       - freeboard
 networks:
