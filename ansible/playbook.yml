@@ -1,6 +1,8 @@
 ---
 - name: Freeboard
   hosts: all, localhost
+  vars_files:
+    - vars.yml
   vars:
     config_path: /boot/firmware/config.txt
     cmdline_path: /boot/firmware/cmdline.txt
