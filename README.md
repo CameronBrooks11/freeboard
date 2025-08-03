@@ -10,7 +10,7 @@ This Freeboard is a fork of [Jim Heisings damn-sexy dashboard app](https://githu
 - **Monorepo** through `npm` workspaces
 - **Commit-Hooks** with `pre-commit`
 - **CSS-Variables** for all colors
-  
+
 > [Try Out](https://CameronBrooks11.github.io/freeboard)
 
 <img src="freeboard.png">
