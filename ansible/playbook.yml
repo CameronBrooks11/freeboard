@@ -1,6 +1,6 @@
 ---
 - name: Freeboard
-  hosts: all
+  hosts: all, localhost
   vars:
     config_path: /boot/firmware/config.txt
     cmdline_path: /boot/firmware/cmdline.txt
@@ -327,32 +327,38 @@
       tags:
         - player
 
-    - name: Backup Xwrapper.config
+    - name: Stat optional X11 config files
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /etc/X11/Xwrapper.config
+        - /etc/X11/xorg.conf
+      register: x11_config_files
+      tags: player
+
+    - name: Backup X11 config files if present
       ansible.builtin.copy:
-        src: "{{ item }}"
-        dest: "{{ item }}.orig"
+        src: "{{ item.stat.path }}"
+        dest: "{{ item.stat.path }}.orig"
+        remote_src: true
         owner: root
         group: root
         mode: "0755"
         force: true
-      with_items:
-        - /etc/X11/Xwrapper.config
-        - /etc/X11/xorg.conf
-      tags:
-        - player
+      loop: "{{ x11_config_files.results }}"
+      when: item.stat.exists
+      tags: player
 
-    - name: Copy Xwrapper.config
+    - name: Copy default X11 config files from repo
       ansible.builtin.copy:
-        src: "{{ item | basename }}"
-        dest: "{{ item }}"
+        src: "{{ item.stat.path | basename }}"
+        dest: "{{ item.stat.path }}"
         mode: "0644"
         owner: root
         group: root
-      with_items:
-        - /etc/X11/Xwrapper.config
-        - /etc/X11/xorg.conf
-      tags:
-        - player
+      loop: "{{ x11_config_files.results }}"
+      when: item.stat.exists
+      tags: player
 
     - name: Create Unit file
       ansible.builtin.copy:

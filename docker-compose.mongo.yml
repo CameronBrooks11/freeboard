@@ -1,6 +1,6 @@
 services:
   mongo:
-    image: ${FREEBOARD_MONGO_IMAGE:-mongo:7}
+    image: ${FREEBOARD_MONGO_IMAGE:-mongo}
     restart: unless-stopped
     container_name: freeboard-mongo
     ports:
