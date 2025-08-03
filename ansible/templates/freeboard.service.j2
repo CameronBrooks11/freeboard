@@ -9,7 +9,7 @@ User=root
 WorkingDirectory=/home/pi/freeboard
 Environment=FREEBOARD_PLAYER_URL={{ freeboard_player_url }}
 Environment=FREEBOARD_USER=root
-ExecStart=/usr/bin/bash ansible/player.sh
+ExecStart=/usr/bin/bash player.sh
 Restart=always
 
 [Install]
