@@ -55,12 +55,20 @@ export default defineConfig(({ mode }) => {
    */
   const isStatic = JSON.stringify(process.env.FREEBOARD_STATIC);
 
+  /**
+   * Public base path for built assets.
+   * Allows overriding the default with FREEBOARD_BASE_PATH (e.g., /freeboard/demo/).
+   */
+  const STATIC_BASE =
+    env.FREEBOARD_BASE_PATH ||
+    (process.env.FREEBOARD_STATIC ? "/freeboard/" : "/");
+
   return {
     // Enable Vue 3 single-file component support
     plugins: [vue()],
 
-    // Base public path; use '/freeboard/' when static flag is set
-    base: isStatic ? "/freeboard/" : "/",
+    // Base public path; configurable via FREEBOARD_BASE_PATH, falls back to /freeboard/ in static mode
+    base: STATIC_BASE,
 
     resolve: {
       alias: {
@@ -73,9 +81,10 @@ export default defineConfig(({ mode }) => {
     },
 
     define: {
-      // Inject package version and static flag into the client
+      // Inject package version and static flags into the client
       __FREEBOARD_VERSION__: JSON.stringify(process.env.npm_package_version),
       __FREEBOARD_STATIC__: isStatic,
+      __FREEBOARD_BASE_PATH__: JSON.stringify(STATIC_BASE),
     },
 
     server: {

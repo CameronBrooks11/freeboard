@@ -13,6 +13,9 @@
     "docs:generate:vue": "vue-docgen -c docgen.config.js",
     "docs:generate": "npm run docs:generate:api && npm run docs:generate:graphql && npm run docs:generate:vue",
     "docs:serve": "npx http-server docs/auto/api -p 8081",
+    "site:stage": "node scripts/site-stage.mjs",
+    "site:build:local": "cross-env SITE_BASE=/ vitepress build docs",
+    "site:preview": "vitepress preview docs --port 8080",
     "lint:fix": "eslint --fix"
   },
   "devDependencies": {
@@ -21,11 +24,14 @@
     "@graphql-codegen/schema-ast": "^4.0.0",
     "clean-jsdoc-theme": "^4.3.0",
     "concurrently": "^9.1.0",
+    "cross-env": "^10.0.0",
     "eslint": "^9.15.0",
     "globals": "^15.12.0",
     "http-server": "^14.1.1",
     "jsdoc": "^4.0.3",
     "jsdoc-type-pratt-parser": "^4.1.0",
+    "rimraf": "^6.0.1",
+    "vitepress": "^1.6.4",
     "vue-docgen-cli": "^4.79.0"
   },
   "overrides": {

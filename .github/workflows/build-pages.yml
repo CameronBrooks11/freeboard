@@ -5,58 +5,62 @@ on:
     branches: [dev]
   workflow_dispatch:
 
-
 jobs:
   build:
-    name: Build UI App
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: "npm"
 
-      - name: Clean up lockfile and node_modules (cross-platform fix)
-        run: |
-          rm -rf package-lock.json node_modules
+      - name: Clean lock/modules (monorepo fix)
+        run: rm -rf package-lock.json node_modules
 
-      - name: Install dependencies
-        run: npm install
-        working-directory: packages/ui
+      - name: Install deps (root)
+        run: npm ci
 
+      # 1) Generate auto docs (JSDoc, GraphQL, Vue)
+      - name: Generate docs
+        run: npm run docs:generate
+
+      # 2) Stage auto docs into VitePress site
+      - name: Stage docs into site
+        run: npm run site:stage
+
+      # 3) Build UI demo for /freeboard/demo/
       - name: Build UI app
-        run: FREEBOARD_STATIC=true npm run build
+        run: FREEBOARD_STATIC=true FREEBOARD_BASE_PATH=/freeboard/demo/ npm run build
         working-directory: packages/ui
 
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
+      # 4) Build VitePress site for /freeboard/
+      - name: Build site
+        run: SITE_BASE=/freeboard/ npm run site:build:pages
+
+      # 5) Add demo under /demo/ inside the built site
+      - name: Add demo to site
+        run: |
+          mkdir -p docs/.vitepress/dist/demo
+          cp -r packages/ui/dist/* docs/.vitepress/dist/demo/
+
+      - uses: actions/configure-pages@v5
         id: pages
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v3
         with:
-          path: packages/ui/dist
+          path: docs/.vitepress/dist
 
   deploy:
-    name: Deploy to GitHub Pages
     needs: build
-
+    runs-on: ubuntu-latest
     permissions:
       pages: write
       id-token: write
-
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-
     steps:
-      - name: Deploy
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4

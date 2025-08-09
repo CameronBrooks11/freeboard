@@ -29,11 +29,12 @@ node_modules/.vite/
 packages/*/dist/
 packages/*/coverage/
 packages/*/.vite/
+*.log
 
 # Auto-generated documentation
-docs/auto/api/
-docs/auto/graphql/
-docs/auto/components/
+docs/auto/
+docs/dev/
+docs/public/
 
 # VitePress site output & cache
 docs/.vitepress/dist/
@@ -47,7 +48,7 @@ docs/.vitepress/cache/
 !.env.example
 !.env.pi
 
-# Docker / local data 
+# Docker / local data
 db/
 data/
 mongo-data/
