@@ -16,7 +16,7 @@ jobs:
           node-version: 18
           cache: "npm"
 
-      - name: Clean lock/modules (monorepo fix)
+      - name: Clean modules
         run: rm -rf node_modules
 
       - name: Install deps (root)
