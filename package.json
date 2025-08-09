@@ -35,14 +35,9 @@
     "vue-docgen-cli": "^4.79.0"
   },
   "overrides": {
-    "os": {
-      "linux": {
-        "dependencies": {
-          "vite": {
-            "rollup": "npm:@rollup/wasm-node@^4.28.1"
-          }
-        }
-      }
+    "rollup": "npm:@rollup/wasm-node@^4.28.1",
+    "vite": {
+      "rollup": "npm:@rollup/wasm-node@^4.28.1"
     }
   },
   "workspaces": [
