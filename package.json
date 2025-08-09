@@ -34,11 +34,8 @@
     "vitepress": "^1.6.4",
     "vue-docgen-cli": "^4.79.0"
   },
-  "overrides": {
-    "rollup": "npm:@rollup/wasm-node@^4.28.1",
-    "vite": {
-      "rollup": "npm:@rollup/wasm-node@^4.28.1"
-    }
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.28.1"
   },
   "workspaces": [
     "packages/ui",
