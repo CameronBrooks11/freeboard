@@ -10,7 +10,7 @@ import User from "./models/User.js";
 
 mongoose
   .connect(config.mongoUrl, {})
-  .then(() => console.log("MongoDB connected"))
+  .then(() => console.log(`MongoDB connected on ${config.mongoUrl}`))
   .catch((err) => console.log(err));
 
 if (config.createAdmin) {
