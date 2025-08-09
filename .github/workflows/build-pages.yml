@@ -17,7 +17,7 @@ jobs:
           cache: "npm"
 
       - name: Clean lock/modules (monorepo fix)
-        run: rm -rf package-lock.json node_modules
+        run: rm -rf node_modules
 
       - name: Install deps (root)
         run: npm ci
