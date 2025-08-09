@@ -3,7 +3,12 @@ import * as https from "https";
 import express from "express";
 import bodyParser from "body-parser";
 
-const PORT = process.env.PORT || 8001;
+import dns from "dns";
+
+dns.setDefaultResultOrder?.("ipv4first");
+
+const PORT = Number(process.env.PORT || 8001);
+const HOST = process.env.HOST || "0.0.0.0";
 
 const app = express();
 
@@ -56,6 +61,7 @@ const handler = (clientReq, clientRes) => {
 app.post("/proxy", handler);
 app.get("/proxy", handler);
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Proxy listening on port ${PORT}`);
+app.listen(PORT, HOST, () => {
+  const printableHost = (HOST === "0.0.0.0" || HOST === "::") ? "127.0.0.1" : HOST;
+  console.log(`Proxy listening on http://${printableHost}:${PORT}`);
 });

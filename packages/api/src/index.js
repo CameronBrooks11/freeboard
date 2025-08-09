@@ -8,6 +8,10 @@ import { setContext } from "./context.js";
 import { config } from "./config.js";
 import User from "./models/User.js";
 
+import dns from "dns";
+
+dns.setDefaultResultOrder?.("ipv4first");
+
 mongoose
   .connect(config.mongoUrl, {})
   .then(() => console.log(`MongoDB connected on ${config.mongoUrl}`))
@@ -45,6 +49,8 @@ const server = createServer(
   })
 );
 
-server.listen(config.port, "0.0.0.0", () => {
-  console.info(`Server is running on http://localhost:${config.port}/graphql`);
+server.listen(config.port, config.host, () => {
+  const printableHost =
+    (config.host === "0.0.0.0" || config.host === "::") ? "127.0.0.1" : config.host;
+  console.info(`Server is running on http://${printableHost}:${config.port}/graphql`);
 });
