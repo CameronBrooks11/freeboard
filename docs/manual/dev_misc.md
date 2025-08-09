@@ -26,49 +26,42 @@ npm uninstall -g cloc
 
 ### Run `cloc` Ignoring `.gitignore` Entries
 
-Count lines of code for all tracked files, respecting `.gitignore`:
+Count lines of code for all files tracked by Git (automatically ignores anything in `.gitignore`):
 
 ```bash
-git ls-files | cloc --stdin-name=all
+cloc --vcs=git
 ```
 
-Alternatively, have `cloc` read patterns from `.gitignore` (basic matching only, no negations):
+Alternatively, for non-Git projects, create a `cloc.exclude` file with one directory or file pattern per line and run:
 
 ```bash
-cloc . --exclude-list-file=.gitignore
+cloc . --exclude-list-file=cloc.exclude
 ```
 
-### Examples
-
-Count everything except `node_modules` and `db` directories:
-
-```bash
-cloc . --exclude-dir=node_modules,db
-```
-
-### Last Run: 2025-08-09 17:30
+### Last Run: 2025-08-09 19:26EST
 
 ```shell
-142 text files.
-133 unique files.
-12 files ignored.
+162 text files.
+152 unique files.
+11 files ignored.
 
-github.com/AlDanial/cloc v 2.06  T=1.35 s (98.4 files/s, 9689.5 lines/s)
+github.com/AlDanial/cloc v 2.06  T=1.05 s (144.9 files/s, 22019.7 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                             5              0              0           5622
-JavaScript                      43            290             37           2622
-Vuejs Component                 34            277              0           2109
+JSON                             6              0              0          12347
+JavaScript                      47            442           1593           2735
+Vuejs Component                 34            313            510           1893
 CSS                             32            160             23           1210
-YAML                             6             57              2            518
-Markdown                         4             18              0             49
-Bourne Shell                     2             10              3             31
-Dockerfile                       3              0              0             22
+Markdown                        15            277              0            762
+YAML                             8             71              7            582
+Bourne Shell                     2             11              3             35
+Dockerfile                       3             24             27             22
 INI                              2              2              0             17
-HTML                             1              0              0             13
+Jinja Template                   1              2              0             14
+HTML                             1              0              3             13
 Text                             1              0              0              2
 -------------------------------------------------------------------------------
-SUM:                           133            814             65          12215
+SUM:                           152           1302           2166          19632
 -------------------------------------------------------------------------------
 ```
