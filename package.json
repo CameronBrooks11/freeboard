@@ -15,6 +15,7 @@
     "docs:serve": "npx http-server docs/auto/api -p 8081",
     "site:stage": "node scripts/site-stage.mjs",
     "site:build:local": "cross-env SITE_BASE=/ vitepress build docs",
+    "site:build:pages": "vitepress build docs",
     "site:preview": "vitepress preview docs --port 8080",
     "lint:fix": "eslint --fix"
   },
