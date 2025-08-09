@@ -1,3 +1,13 @@
+/**
+ * @module index
+ * @description Entry point for the Freeboard API server.
+ *  - Establishes MongoDB connection
+ *  - Ensures default admin user creation
+ *  - Sets DNS result order to IPv4 first to avoid IPv6 localhost issues
+ *  - Sets up GraphQL Yoga server with SSE support
+ *  - Starts HTTP server on configured host and port
+ */
+
 import { createServer } from "http";
 import { createYoga } from "graphql-yoga";
 import mongoose from "mongoose";
@@ -12,11 +22,13 @@ import dns from "dns";
 
 dns.setDefaultResultOrder?.("ipv4first");
 
+// Connect to MongoDB
 mongoose
   .connect(config.mongoUrl, {})
   .then(() => console.log(`MongoDB connected on ${config.mongoUrl}`))
   .catch((err) => console.log(err));
 
+// Create default admin user on startup if enabled
 if (config.createAdmin) {
   console.log("Admin creation is enabled. Checking for existing admin...");
 
@@ -40,6 +52,15 @@ if (config.createAdmin) {
   }
 }
 
+/**
+ * A Node.js HTTP server instance.
+ * @typedef {Object} HTTPServer
+ */
+
+/**
+ * HTTP server wrapping GraphQL Yoga instance.
+ * @type {HTTPServer}
+ */
 const server = createServer(
   createYoga({
     landingPage: false,
@@ -49,6 +70,7 @@ const server = createServer(
   })
 );
 
+// Start HTTP server on configured host and port
 server.listen(config.port, config.host, () => {
   const printableHost =
     (config.host === "0.0.0.0" || config.host === "::") ? "127.0.0.1" : config.host;

@@ -1,4 +1,10 @@
 <script setup lang="js">
+/**
+ * @component AuthProvidersList
+ * @description Displays and manages the list of authentication providers, allowing add, edit, and delete operations.
+ */
+defineOptions({ name: 'AuthProvidersList' });
+
 import { storeToRefs } from "pinia";
 import { useFreeboardStore } from "../stores/freeboard";
 import AuthProviderDialogBox from "./AuthProviderDialogBox.vue";
@@ -13,40 +19,55 @@ const { t } = useI18n();
 const freeboardStore = useFreeboardStore();
 const { dashboard } = storeToRefs(freeboardStore);
 
+// Helper to open the edit dialog for an existing auth provider
 const openAuthProviderEditDialogBox = (authProvider) => {
-  freeboardStore.createComponent(AuthProviderDialogBox, instance.appContext, {
-    header: t("authProvidersList.titleEdit"),
-    authProvider,
-    onOk: (newSettings) => {
-      authProvider.title = newSettings.title;
-      authProvider.enabled = newSettings.enabled;
-      authProvider.settings = newSettings.settings;
-      authProvider.type = newSettings.type;
-    },
-  });
+  freeboardStore.createComponent(
+    AuthProviderDialogBox,
+    instance.appContext,
+    {
+      header: t("authProvidersList.titleEdit"),
+      authProvider,
+      onOk: (newSettings) => {
+        authProvider.title = newSettings.title;
+        authProvider.enabled = newSettings.enabled;
+        authProvider.settings = newSettings.settings;
+        authProvider.type = newSettings.type;
+      },
+    }
+  );
 };
 
+// Helper to open the confirm dialog before deleting an auth provider
 const openAuthProviderDeleteDialogBox = (authProvider) => {
-  freeboardStore.createComponent(ConfirmDialogBox, instance.appContext, {
-    title: t("authProvidersList.titleDelete"),
-    onOk: () => {
-      dashboard.value.deleteAuthProvider(authProvider);
-    },
-  });
+  freeboardStore.createComponent(
+    ConfirmDialogBox,
+    instance.appContext,
+    {
+      title: t("authProvidersList.titleDelete"),
+      onOk: () => {
+        dashboard.value.deleteAuthProvider(authProvider);
+      },
+    }
+  );
 };
 
+// Helper to open the add dialog for creating a new auth provider
 const openAuthProviderAddDialogBox = () => {
-  freeboardStore.createComponent(AuthProviderDialogBox, instance.appContext, {
-    header: t("authProvidersList.titleAdd"),
-    onOk: (newSettings) => {
-      const newViewModel = new AuthProvider();
-      newViewModel.title = newSettings.title;
-      newViewModel.enabled = newSettings.enabled;
-      newViewModel.settings = newSettings.settings;
-      newViewModel.type = newSettings.type;
-      dashboard.value.addAuthProvider(newViewModel);
-    },
-  });
+  freeboardStore.createComponent(
+    AuthProviderDialogBox,
+    instance.appContext,
+    {
+      header: t("authProvidersList.titleAdd"),
+      onOk: (newSettings) => {
+        const newViewModel = new AuthProvider();
+        newViewModel.title = newSettings.title;
+        newViewModel.enabled = newSettings.enabled;
+        newViewModel.settings = newSettings.settings;
+        newViewModel.type = newSettings.type;
+        dashboard.value.addAuthProvider(newViewModel);
+      },
+    }
+  );
 };
 
 const instance = getCurrentInstance();
@@ -54,10 +75,7 @@ const instance = getCurrentInstance();
 
 <template>
   <div class="auth-providers-list">
-    <table
-      class="auth-providers-list__table"
-      v-if="dashboard.authProviders.length"
-    >
+    <table v-if="dashboard.authProviders.length" class="auth-providers-list__table">
       <thead class="auth-providers-list__table__head">
         <tr class="auth-providers-list__table__head__row">
           <th class="auth-providers-list__table__head__row__cell">
@@ -68,25 +86,17 @@ const instance = getCurrentInstance();
         </tr>
       </thead>
       <tbody class="auth-providers-list__table__body">
-        <tr
-          v-for="authProvider in dashboard.authProviders"
-          class="auth-providers-list__table__body__row"
-        >
+        <tr v-for="authProvider in dashboard.authProviders" class="auth-providers-list__table__body__row">
           <td class="auth-providers-list__table__body__row__cell" colspan="2">
-            <TextButton
-              @click="() => openAuthProviderEditDialogBox(authProvider)"
-              >{{ authProvider.title }}</TextButton
-            >
+            <TextButton @click="() => openAuthProviderEditDialogBox(authProvider)">
+              {{ authProvider.title }}
+            </TextButton>
           </td>
           <td class="auth-providers-list__table__body__row__cell">
             <ul class="auth-providers-list__table__body__row__cell__board-toolbar">
-              <li
-                @click="() => openAuthProviderDeleteDialogBox(authProvider)"
-                class="auth-providers-list__table__body__row__cell__board-toolbar__item"
-              >
-                <i
-                  class="auth-providers-list__table__body__row__cell__board-toolbar__item__icon"
-                >
+              <li @click="() => openAuthProviderDeleteDialogBox(authProvider)"
+                class="auth-providers-list__table__body__row__cell__board-toolbar__item">
+                <i class="auth-providers-list__table__body__row__cell__board-toolbar__item__icon">
                   <v-icon name="hi-trash"></v-icon>
                 </i>
               </li>
@@ -96,9 +106,9 @@ const instance = getCurrentInstance();
       </tbody>
     </table>
     <div class="auth-providers-list__operations">
-      <ActionButton @click="() => openAuthProviderAddDialogBox()">{{
-        $t("authProvidersList.buttonAdd")
-      }}</ActionButton>
+      <ActionButton @click="() => openAuthProviderAddDialogBox()">
+        {{ $t("authProvidersList.buttonAdd") }}
+      </ActionButton>
     </div>
   </div>
 </template>

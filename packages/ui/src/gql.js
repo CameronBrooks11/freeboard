@@ -1,5 +1,14 @@
+/**
+ * @module gql
+ * @description GraphQL operation definitions for dashboards and user authentication used by the Freeboard UI.
+ */
+
 import gql from "graphql-tag";
 
+/**
+ * GraphQL mutation to create a new dashboard.
+ * @constant {import('graphql').DocumentNode} DASHBOARD_CREATE_MUTATION
+ */
 export const DASHBOARD_CREATE_MUTATION = gql`
   mutation DashboardCreate($dashboard: CreateDashboardInput!) {
     createDashboard(dashboard: $dashboard) {
@@ -17,6 +26,10 @@ export const DASHBOARD_CREATE_MUTATION = gql`
   }
 `;
 
+/**
+ * GraphQL mutation to update an existing dashboard.
+ * @constant {import('graphql').DocumentNode} DASHBOARD_UPDATE_MUTATION
+ */
 export const DASHBOARD_UPDATE_MUTATION = gql`
   mutation DashboardUpdate($id: ID!, $dashboard: UpdateDashboardInput!) {
     updateDashboard(_id: $id, dashboard: $dashboard) {
@@ -34,6 +47,10 @@ export const DASHBOARD_UPDATE_MUTATION = gql`
   }
 `;
 
+/**
+ * GraphQL query to fetch a dashboard by its ID.
+ * @constant {import('graphql').DocumentNode} DASHBOARD_READ_QUERY
+ */
 export const DASHBOARD_READ_QUERY = gql`
   query DashboardRead($id: ID!) {
     dashboard(_id: $id) {
@@ -52,6 +69,10 @@ export const DASHBOARD_READ_QUERY = gql`
   }
 `;
 
+/**
+ * GraphQL subscription for live updates to a dashboard.
+ * @constant {import('graphql').DocumentNode} DASHBOARD_UPDATE_SUBSCRIPTION
+ */
 export const DASHBOARD_UPDATE_SUBSCRIPTION = gql`
   subscription onDashboardUpdated($id: ID!) {
     dashboard(_id: $id) {
@@ -70,6 +91,10 @@ export const DASHBOARD_UPDATE_SUBSCRIPTION = gql`
   }
 `;
 
+/**
+ * GraphQL mutation to authenticate a user and obtain a JWT token.
+ * @constant {import('graphql').DocumentNode} USER_AUTH_MUTATION
+ */
 export const USER_AUTH_MUTATION = gql`
   mutation UserAuth($email: String!, $password: String!) {
     authUser(email: $email, password: $password) {

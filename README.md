@@ -1,8 +1,8 @@
 # freeboard
 
-This Freeboard is a fork of [Jim Heisings damn-sexy dashboard app](https://github.com/Freeboard/freeboard) with super-powers:
+This Freeboard is a fork of [Jim Heising's damn-sexy dashboard app](https://github.com/Freeboard/freeboard) with super-powers:
 
-- Persistant storage of dashboards in a **MongoDB**
+- Persistent storage of dashboards in a **MongoDB**
 - **GraphQL** API backend
 - Distributable through **docker compose**
 - Modern **Vue.js** v3 frontend
@@ -13,7 +13,16 @@ This Freeboard is a fork of [Jim Heisings damn-sexy dashboard app](https://githu
 
 > [Try Out](https://CameronBrooks11.github.io/freeboard)
 
-<img src="freeboard.png">
+![Freeboard dashboard screenshot](freeboard.png)
+
+## Requirements
+
+- Node.js: v18.x (LTS)
+- npm: v8+
+- Docker Engine: ≥ 20.10
+- Docker Compose: v2 (`docker compose` CLI)
+- Python: 3.8+ (for Raspberry Pi Ansible playbook)
+- Ansible: latest `via pip install ansible`
 
 ## Installation
 
@@ -42,7 +51,7 @@ npm run dev
 
 ## RaspberryPi
 
-```
+```bash
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/ansible-playbook ansible/playbook.yml --become
@@ -55,10 +64,10 @@ python -m venv .venv
 
 ## Copyright
 
-Copyright © 2013 Jim Heising (https://github.com/jheising)
-<br>
-Copyright © 2013 Bug Labs, Inc. (https://buglabs.net)
-<br>
-Copyright © 2024 Sebastian Krüger (https://sk.honeymachine.io)
-<br>
-Licensed under the [**MIT** license](/LICENSE).
+Copyright © 2013 Jim Heising ([github.com/jheising](https://github.com/jheising))
+
+Copyright © 2013 Bug Labs, Inc. ([buglabs.net](https://buglabs.net))
+
+Copyright © 2024 Sebastian Krüger ([sk.honeymachine.io](https://sk.honeymachine.io))
+
+Licensed under the [MIT License](/LICENSE)

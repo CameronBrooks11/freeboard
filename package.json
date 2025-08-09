@@ -5,16 +5,28 @@
   "scripts": {
     "dev": "concurrently --kill-others \"npm run dev:mongo\" \"npm run dev:ui\" \"npm run dev:api\" \"npm run dev:proxy\"",
     "dev:mongo": "docker compose -f docker-compose.mongo.yml up --build",
-    "dev:ui": "npm run dev --workspace=packages/ui",
     "dev:api": "npm run dev --workspace=packages/api",
     "dev:proxy": "npm run dev --workspace=packages/proxy",
+    "dev:ui": "npm run dev --workspace=packages/ui",
+    "docs:generate:api": "jsdoc -c jsdoc.json",
+    "docs:generate:graphql": "graphql-codegen --config codegen.yml",
+    "docs:generate:vue": "vue-docgen -c docgen.config.js",
+    "docs:generate": "npm run docs:generate:api && npm run docs:generate:graphql && npm run docs:generate:vue",
+    "docs:serve": "npx http-server docs/auto/api -p 8081",
     "lint:fix": "eslint --fix"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
+    "@graphql-codegen/cli": "^5.0.0",
+    "@graphql-codegen/schema-ast": "^4.0.0",
+    "clean-jsdoc-theme": "^4.3.0",
     "concurrently": "^9.1.0",
     "eslint": "^9.15.0",
-    "globals": "^15.12.0"
+    "globals": "^15.12.0",
+    "http-server": "^14.1.1",
+    "jsdoc": "^4.0.3",
+    "jsdoc-type-pratt-parser": "^4.1.0",
+    "vue-docgen-cli": "^4.79.0"
   },
   "overrides": {
     "os": {

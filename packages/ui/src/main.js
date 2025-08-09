@@ -1,3 +1,8 @@
+/**
+ * @module main
+ * @description Entry point for Freeboard UI: configures Vue app, Apollo client, routing, state, i18n, and mounts the App component.
+ */
+
 import { createApp, provide, h } from "vue";
 import { DefaultApolloClient } from "@vue/apollo-composable";
 import {
@@ -47,6 +52,7 @@ import { createHead } from "@unhead/vue";
 import { createI18n } from "vue-i18n";
 import { en } from "./i18n/en";
 
+// Register icon set for use throughout the app
 addIcons(
   HiDatabase,
   HiEye,
@@ -75,6 +81,7 @@ addIcons(
   HiPause
 );
 
+// Initialize internationalization
 const i18n = createI18n({
   locale: "en",
   fallbackLocale: "en",
@@ -83,12 +90,20 @@ const i18n = createI18n({
   },
 });
 
+// Initialize head manager for meta tags
 const head = createHead();
 
+// Initialize Pinia store
 const pinia = createPinia();
 
+// Apollo cache instance
 const cache = new InMemoryCache();
 
+/**
+ * Retrieve HTTP headers for GraphQL requests, including Authorization if token present.
+ *
+ * @returns {Object<string, string>} HTTP headers object.
+ */
 const getHeaders = () => {
   const headers = {};
   const freeboardStore = useFreeboardStore();
@@ -100,14 +115,22 @@ const getHeaders = () => {
   return headers;
 };
 
+/**
+ * Apollo Link to handle GraphQL errors: logs out user and redirects to login page.
+ */
 const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (graphQLErrors) {
     const store = useFreeboardStore();
     store.logout();
-    router.push('/login')
+    router.push("/login");
   }
 });
 
+/**
+ * HTTP link for Apollo to send queries and mutations, injecting auth headers.
+ *
+ * @type {HttpLink}
+ */
 const httpLink = new HttpLink({
   uri: `/graphql`,
   fetch: (uri, options) => {
@@ -116,11 +139,21 @@ const httpLink = new HttpLink({
   },
 });
 
+/**
+ * SSE link for Apollo to handle GraphQL subscriptions over Server-Sent Events.
+ *
+ * @type {SSELink}
+ */
 const sseLink = new SSELink({
   url: `/graphql`,
   headers: getHeaders,
 });
 
+/**
+ * Apollo Client instance configured with HTTP and SSE links.
+ *
+ * @type {ApolloClient}
+ */
 const apolloClient = new ApolloClient({
   cache,
   link: ApolloLink.from([
@@ -133,11 +166,16 @@ const apolloClient = new ApolloClient({
   ]),
 });
 
+/**
+ * Initialize and mount the Vue application with all plugins and global components.
+ *
+ * @type {import('vue').App}
+ */
 const app = createApp({
   setup() {
     provide(DefaultApolloClient, apolloClient);
   },
-
+  
   render: () => h(App),
 })
   .use(pinia)

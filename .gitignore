@@ -1,8 +1,56 @@
-.idea
-node_modules
-dist
+# OS / Editors
 .DS_Store
-db
-.vscode
-.venv
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Node / Package managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.eslintcache
+
+# Builds / Caches (root + workspaces)
+dist/
+build/
+.tmp/
+.temp/
+tmp/
+.cache/
+.parcel-cache/
+coverage/
+.vite/
+node_modules/.vite/
+packages/*/dist/
+packages/*/coverage/
+packages/*/.vite/
+
+# Auto-generated documentation
+docs/auto/api/
+docs/auto/graphql/
+docs/auto/components/
+
+# VitePress site output & cache
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+
+# Environment & secrets
 .env
+.env.*
+.venv/
+.envrc
+!.env.example
+!.env.pi
+
+# Docker / local data 
+db/
+data/
+mongo-data/
+docker-data/
+*.pid
+*.seed

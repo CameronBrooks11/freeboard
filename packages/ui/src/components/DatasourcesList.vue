@@ -1,4 +1,10 @@
 <script setup lang="js">
+/**
+ * @component DatasourcesList
+ * @description Displays and manages the list of datasources, allowing add, edit, delete, and manual refresh operations.
+ */
+defineOptions({ name: 'DatasourcesList' });
+
 import { storeToRefs } from "pinia";
 import { useFreeboardStore } from "../stores/freeboard";
 import DatasourceDialogBox from "./DatasourceDialogBox.vue";
@@ -14,6 +20,7 @@ const { t } = useI18n();
 const freeboardStore = useFreeboardStore();
 const { dashboard } = storeToRefs(freeboardStore);
 
+// Open dialog to edit an existing datasource
 const openDatasourceEditDialogBox = (datasource) => {
   freeboardStore.createComponent(DatasourceDialogBox, instance.appContext, {
     header: t("datasourcesList.titleEdit"),
@@ -27,6 +34,7 @@ const openDatasourceEditDialogBox = (datasource) => {
   });
 };
 
+// Open confirmation dialog before deleting a datasource
 const openDatasourceDeleteDialogBox = (datasource) => {
   freeboardStore.createComponent(ConfirmDialogBox, instance.appContext, {
     title: t("datasourcesList.titleDelete"),
@@ -36,6 +44,7 @@ const openDatasourceDeleteDialogBox = (datasource) => {
   });
 };
 
+// Open dialog to add a new datasource
 const openDatasourceAddDialogBox = () => {
   freeboardStore.createComponent(DatasourceDialogBox, instance.appContext, {
     header: t("datasourcesList.titleAdd"),
@@ -69,38 +78,24 @@ const instance = getCurrentInstance();
         </tr>
       </thead>
       <tbody class="datasources-list__table__body">
-        <tr
-          v-for="datasource in dashboard.datasources"
-          class="datasources-list__table__body__row"
-        >
+        <tr v-for="datasource in dashboard.datasources" class="datasources-list__table__body__row">
           <td class="datasources-list__table__body__row__cell">
-            <TextButton
-              @click="() => openDatasourceEditDialogBox(datasource)"
-              >{{ datasource.title }}</TextButton
-            >
+            <TextButton @click="() => openDatasourceEditDialogBox(datasource)">{{ datasource.title }}</TextButton>
           </td>
           <td class="datasources-list__table__body__row__cell">
             {{ datasource.lastUpdated }}
           </td>
           <td class="datasources-list__table__body__row__cell">
             <ul class="datasources-list__table__body__row__cell__board-toolbar">
-              <li
-                @click="() => datasource.updateNow()"
-                class="datasources-list__table__body__row__cell__board-toolbar__item"
-              >
-                <i
-                  class="datasources-list__table__body__row__cell__board-toolbar__item__icon"
-                  ><v-icon name="hi-refresh"></v-icon
-                ></i>
+              <li @click="() => datasource.updateNow()"
+                class="datasources-list__table__body__row__cell__board-toolbar__item">
+                <i class="datasources-list__table__body__row__cell__board-toolbar__item__icon"><v-icon
+                    name="hi-refresh"></v-icon></i>
               </li>
-              <li
-                @click="() => openDatasourceDeleteDialogBox(datasource)"
-                class="datasources-list__table__body__row__cell__board-toolbar__item"
-              >
-                <i
-                  class="datasources-list__table__body__row__cell__board-toolbar__item__icon"
-                  ><v-icon name="hi-trash"></v-icon
-                ></i>
+              <li @click="() => openDatasourceDeleteDialogBox(datasource)"
+                class="datasources-list__table__body__row__cell__board-toolbar__item">
+                <i class="datasources-list__table__body__row__cell__board-toolbar__item__icon"><v-icon
+                    name="hi-trash"></v-icon></i>
               </li>
             </ul>
           </td>

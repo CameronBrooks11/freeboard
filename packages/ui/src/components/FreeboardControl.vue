@@ -1,4 +1,10 @@
 <script setup lang="js">
+/**
+ * @component FreeboardControl
+ * @description Toolbar for saving, importing, and exporting the Freeboard.
+ */
+defineOptions({ name: 'FreeboardControl' });
+
 import { storeToRefs } from "pinia";
 import { useFreeboardStore } from "../stores/freeboard";
 import { useMutation } from "@vue/apollo-composable";
@@ -7,58 +13,53 @@ import { DASHBOARD_CREATE_MUTATION, DASHBOARD_UPDATE_MUTATION } from "../gql";
 const freeboardStore = useFreeboardStore();
 const { dashboard, isSaved } = storeToRefs(freeboardStore);
 
+// GraphQL mutations for creating or updating a dashboard
+const { mutate: createDashboard } = useMutation(DASHBOARD_CREATE_MUTATION);
+const { mutate: updateDashboard } = useMutation(DASHBOARD_UPDATE_MUTATION);
 
-const { mutate: createDashboard } = useMutation(
-        DASHBOARD_CREATE_MUTATION
-      );
-      const { mutate: updateDashboard } = useMutation(
-        DASHBOARD_UPDATE_MUTATION,
-      );
-
+/**
+ * Serialize current dashboard and invoke save or update mutation via store action.
+ */
 const saveDashboard = async () => {
   const d = dashboard.value.serialize();
   const id = d._id;
+  // Remove _id so create mutation can generate a new one when needed
   delete d._id;
 
   await freeboardStore.saveDashboard(id, d, createDashboard, updateDashboard);
 };
 
 </script>
+
 <template>
   <div class="freeboard-control">
-    <ul
-      class="freeboard-control__board-toolbar freeboard-control__board-toolbar"
-    >
-      <li
-        @click="() => saveDashboard()"
-        class="freeboard-control__board-toolbar__item"
-      >
-        <i class="freeboard-control__board-toolbar__item__icon"
-          ><v-icon name="hi-cloud-upload" /></i
-        ><label class="freeboard-control__board-toolbar__item__label">{{
-          $t(`freeboardControl.label${isSaved ? "Update" : "Save"}`)
-        }}</label>
+    <ul class="freeboard-control__board-toolbar freeboard-control__board-toolbar">
+      <!-- Save or Update button -->
+      <li @click="saveDashboard" class="freeboard-control__board-toolbar__item">
+        <i class="freeboard-control__board-toolbar__item__icon">
+          <v-icon name="hi-cloud-upload" />
+        </i>
+        <label class="freeboard-control__board-toolbar__item__label">
+          {{ $t(`freeboardControl.label${isSaved ? "Update" : "Save"}`) }}
+        </label>
       </li>
-      <li
-        @click="() => freeboardStore.loadDashboardFromLocalFile()"
-        class="freeboard-control__board-toolbar__item"
-      >
-        <i class="freeboard-control__board-toolbar__item__icon"
-          ><v-icon name="hi-download" /></i
-        ><label class="freeboard-control__board-toolbar__item__label">{{
-          $t("freeboardControl.labelImport")
-        }}</label>
+      <!-- Import from local file -->
+      <li @click="freeboardStore.loadDashboardFromLocalFile()" class="freeboard-control__board-toolbar__item">
+        <i class="freeboard-control__board-toolbar__item__icon">
+          <v-icon name="hi-download" />
+        </i>
+        <label class="freeboard-control__board-toolbar__item__label">
+          {{ $t("freeboardControl.labelImport") }}
+        </label>
       </li>
-      <li
-        @click="() => freeboardStore.exportDashboard()"
-        class="freeboard-control__board-toolbar__item"
-      >
-        <i class="freeboard-control__board-toolbar__item__icon"
-          ><v-icon name="hi-upload"
-        /></i>
-        <label class="freeboard-control__board-toolbar__item__label">{{
-          $t("freeboardControl.labelExport")
-        }}</label>
+      <!-- Export to local file -->
+      <li @click="freeboardStore.exportDashboard()" class="freeboard-control__board-toolbar__item">
+        <i class="freeboard-control__board-toolbar__item__icon">
+          <v-icon name="hi-upload" />
+        </i>
+        <label class="freeboard-control__board-toolbar__item__label">
+          {{ $t("freeboardControl.labelExport") }}
+        </label>
       </li>
     </ul>
   </div>

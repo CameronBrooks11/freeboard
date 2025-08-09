@@ -1,3 +1,4 @@
+/* global db */
 db.createUser({
   user: "freeboard",
   pwd: "unsecure",

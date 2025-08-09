@@ -1,35 +1,78 @@
+/**
+ * @module models/Dashboard
+ * @description Client-side model for Freeboard Dashboard, managing panes, datasources, auth providers, and serialization.
+ */
+
 import { AuthProvider } from "./AuthProvider";
 import { Datasource } from "./Datasource";
 import { Pane } from "./Pane";
 
+/**
+ * Minimum number of columns allowed for dashboard layout.
+ * @constant {number}
+ */
 export const MIN_COLUMNS = 3;
+
+/**
+ * Maximum number of columns allowed for dashboard layout.
+ * @constant {number}
+ */
 export const MAX_COLUMNS = 12;
 
+/**
+ * Represents a Freeboard dashboard with layout, content, and settings.
+ *
+ * @class Dashboard
+ */
 export class Dashboard {
+  /** @type {string|null} Unique dashboard identifier. */
   _id = null;
+  /** @type {string} Dashboard title. */
   title = "Dashboard";
+  /** @type {boolean} Publication status. */
   published = true;
+  /** @type {string|null} Optional image URL. */
   image = null;
+  /** @type {number} Number of columns in layout. */
   columns = MIN_COLUMNS;
+  /** @type {string} Layout width specifier. */
   width = "md";
+  /** @type {Array} Collection of datasource instances. */
   datasources = [];
+  /** @type {Array} Collection of pane instances. */
   panes = [];
+  /** @type {Array} Collection of auth provider instances. */
   authProviders = [];
+  /** @type {Object} Dashboard settings (theme, style, etc.). */
   settings = {
     theme: "auto",
   };
+  /** @type {boolean} Whether the current user is the owner. */
   isOwner = true;
 
+  /**
+   * Get the layout array mapped from pane layouts.
+   *
+   * @returns {Array<Object>} Layout configurations for each pane.
+   */
   get layout() {
     return this.panes.map((pane) => pane.layout);
   }
 
+  /**
+   * Set the layout configurations for each pane.
+   *
+   * @param {Array<Object>} l - Array of layout objects matching pane order.
+   */
   set layout(l) {
     l.forEach((layout, index) => {
       this.panes[index].layout = layout;
     });
   }
 
+  /**
+   * Decrease the dashboard's maximum width setting.
+   */
   decreaseMaxWidth() {
     if (this.width === "md") {
       return;
@@ -41,6 +84,9 @@ export class Dashboard {
     }
   }
 
+  /**
+   * Increase the dashboard's maximum width setting.
+   */
   increaseMaxWidth() {
     if (this.width === "xl") {
       return;
@@ -52,6 +98,11 @@ export class Dashboard {
     }
   }
 
+  /**
+   * Serialize the dashboard into a plain object for storage or export.
+   *
+   * @returns {Object} Serialized dashboard data.
+   */
   serialize() {
     const panes = [];
 
@@ -86,6 +137,11 @@ export class Dashboard {
     };
   }
 
+  /**
+   * Populate the dashboard from a serialized object.
+   *
+   * @param {Object} object - Serialized dashboard data.
+   */
   deserialize(object) {
     this.version = object.version;
     this._id = object._id;
@@ -116,20 +172,40 @@ export class Dashboard {
     });
   }
 
+  /**
+   * Add an authentication provider to the dashboard.
+   *
+   * @param {AuthProvider} authProvider - Provider instance to add.
+   */
   addAuthProvider(authProvider) {
     this.authProviders = [...this.authProviders, authProvider];
   }
 
+  /**
+   * Remove an authentication provider from the dashboard.
+   *
+   * @param {AuthProvider} authProvider - Provider instance to remove.
+   */
   deleteAuthProvider(authProvider) {
     this.authProviders = this.authProviders.filter((item) => {
       return item !== authProvider;
     });
   }
 
+  /**
+   * Add a datasource to the dashboard.
+   *
+   * @param {Datasource} datasource - Datasource instance to add.
+   */
   addDatasource(datasource) {
     this.datasources = [...this.datasources, datasource];
   }
 
+  /**
+   * Remove a datasource and dispose it.
+   *
+   * @param {Datasource} datasource - Datasource instance to remove.
+   */
   deleteDatasource(datasource) {
     datasource.dispose();
     this.datasources = this.datasources.filter((item) => {
@@ -137,10 +213,20 @@ export class Dashboard {
     });
   }
 
+  /**
+   * Add a pane to the dashboard.
+   *
+   * @param {Pane} pane - Pane instance to add.
+   */
   addPane(pane) {
     this.panes = [...this.panes, pane];
   }
 
+  /**
+   * Remove a pane and dispose it.
+   *
+   * @param {Pane} pane - Pane instance to remove.
+   */
   deletePane(pane) {
     pane.dispose();
     this.panes = this.panes.filter((item) => {
@@ -148,6 +234,9 @@ export class Dashboard {
     });
   }
 
+  /**
+   * Create and add a new pane with default layout.
+   */
   createPane() {
     const newPane = new Pane();
     newPane.title = "Pane";
@@ -162,12 +251,24 @@ export class Dashboard {
     this.addPane(newPane);
   }
 
+  /**
+   * Add a widget to a pane and update panes array.
+   *
+   * @param {Pane} pane - Pane to add the widget into.
+   * @param {Widget} widget - Widget instance to add.
+   */
   addWidget(pane, widget) {
     pane.widgets.push(widget);
     widget.pane = pane;
     this.panes = [...this.panes];
   }
 
+  /**
+   * Remove a widget from a pane.
+   *
+   * @param {Pane} pane - Pane containing the widget.
+   * @param {Widget} widget - Widget instance to remove.
+   */
   deleteWidget(pane, widget) {
     pane.widgets = pane.widgets.filter((item) => {
       return item !== widget;
@@ -175,6 +276,9 @@ export class Dashboard {
     this.panes = [...this.panes];
   }
 
+  /**
+   * Clear all datasources and panes, disposing each.
+   */
   clearDashboard() {
     this.datasources.forEach((datasource) => {
       datasource.dispose();
@@ -188,6 +292,11 @@ export class Dashboard {
     this.panes = [];
   }
 
+  /**
+   * Propagate datasource updates to all widgets.
+   *
+   * @param {Datasource} datasource - Datasource that has new data.
+   */
   processDatasourceUpdate(datasource) {
     this.panes?.forEach((pane) => {
       pane.widgets?.forEach((widget) => {
@@ -196,7 +305,14 @@ export class Dashboard {
     });
   }
 
+  /**
+   * Retrieve an auth provider instance by its title.
+   *
+   * @param {string} title - Title of the auth provider.
+   * @returns {any} The auth provider instance or undefined.
+   */
   getAuthProviderByName(title) {
-    return this.authProviders.find((a) => a.title === title)?.authProviderInstance;
+    return this.authProviders.find((a) => a.title === title)
+      ?.authProviderInstance;
   }
 }

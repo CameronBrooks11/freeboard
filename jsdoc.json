@@ -1,0 +1,22 @@
+{
+    "tags": {
+        "allowUnknownTags": true,
+        "allowUnknownTypes": true
+    },
+    "source": {
+        "include": [
+            "packages/api/src",
+            "packages/proxy/src"
+        ],
+        "includePattern": "\\.js$",
+        "excludePattern": "(node_modules/|docs/)"
+    },
+    "plugins": [
+        "jsdoc-type-pratt-parser"
+    ],
+    "opts": {
+        "destination": "docs/auto/api",
+        "recurse": true,
+        "template": "node_modules/clean-jsdoc-theme"
+    }
+}

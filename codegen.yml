@@ -1,0 +1,6 @@
+schema:
+  - "packages/api/src/gql.js"
+generates:
+  docs/auto/graphql/schema.graphql:
+    plugins:
+      - schema-ast

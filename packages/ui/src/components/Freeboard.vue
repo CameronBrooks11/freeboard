@@ -1,4 +1,12 @@
-<script setup>
+<script setup lang="js">
+/**
+ * @component Freeboard
+ * @description Root component that initializes plugins, fetches and subscribes to dashboard data, and renders header and board.
+ *
+ * @prop {string} id - Optional dashboard ID to load.
+ */
+defineOptions({ name: 'Freeboard' });
+
 import { reactive, ref, watch } from "vue";
 import Header from "./Header.vue";
 import Board from "./Board.vue";
@@ -17,6 +25,7 @@ import { BaseWidget } from "../widgets/BaseWidget";
 
 const freeboardStore = useFreeboardStore();
 
+// React to system color scheme changes
 const cssClass = usePreferredColorScheme();
 
 watch(
@@ -24,71 +33,69 @@ watch(
   () => {
     freeboardStore.loadDashboardTheme();
   },
-  { immediate: true },
+  { immediate: true }
 );
 
-const { id } = defineProps({
-  id: String,
-});
+// Dashboard ID prop
+const { id } = defineProps({ id: String });
 
 const idRef = ref(id);
 
 const { showLoadingIndicator, isEditing, isSaved, dashboard } =
   storeToRefs(freeboardStore);
 
+// Subscribe to live dashboard updates via SSE
 const { onResult } = useSubscription(
   DASHBOARD_UPDATE_SUBSCRIPTION,
-  () => ({
-    id: idRef.value,
-  }),
-  {
-    context: {
-      apiName: "stream",
-    },
-    enabled: !!idRef.value,
-  },
+  () => ({ id: idRef.value }),
+  { context: { apiName: "stream" }, enabled: !!idRef.value }
 );
 
+// Query initial dashboard data
 const { result, loading, error } = useQuery(
   DASHBOARD_READ_QUERY,
-  {
-    id: idRef.value,
-  },
-  {
-    enabled: !!idRef.value,
-  },
+  { id: idRef.value },
+  { enabled: !!idRef.value }
 );
 
-watch(error, (e) => {
+// Redirect to home on error
+watch(error, () => {
   router.push("/");
 });
 
+// Show loader while query is in flight
 watch(loading, (l) => {
   showLoadingIndicator.value = l;
 });
 
+/**
+ * Handle incoming dashboard data (initial or subscription).
+ */
 const handleResult = (newResult) => {
   showLoadingIndicator.value = false;
-  const dashboard = newResult.dashboard;
-  if (!dashboard && idRef.value) {
+  const dash = newResult.dashboard;
+  if (!dash && idRef.value) {
+    // Dashboard not found, go to create new
     isEditing.value = true;
     router.push("/");
-  } else if (dashboard) {
-    idRef.value = dashboard._id;
-    freeboardStore.loadDashboard(dashboard);
+  } else if (dash) {
+    idRef.value = dash._id;
+    freeboardStore.loadDashboard(dash);
     isSaved.value = true;
   }
 };
 
 watch(result, handleResult);
-onResult((result) => handleResult(result.data));
+onResult((res) => handleResult(res.data));
 
+// Persist settings when dashboard reactive object changes
 const d = reactive(dashboard.value);
 
 watch(d, () => {
   freeboardStore.saveSettingsToLocalStorage();
-})
+});
 
+// Initial plugin registration and load
 freeboardStore.loadSettingsFromLocalStorage(!idRef.value);
 freeboardStore.loadDashboardAssets();
 freeboardStore.loadDashboardTheme();
@@ -98,16 +105,20 @@ freeboardStore.loadDatasourcePlugin(JSONDatasource);
 freeboardStore.loadDatasourcePlugin(ClockDatasource);
 freeboardStore.loadWidgetPlugin(BaseWidget);
 
+// Determine edit mode based on static build or login
 freeboardStore.allowEdit = __FREEBOARD_STATIC__ || freeboardStore.isLoggedIn();
 freeboardStore.isEditing = __FREEBOARD_STATIC__ || freeboardStore.isLoggedIn();
 
+// Hide loader after setup
 showLoadingIndicator.value = false;
 </script>
 
 <template>
   <Transition>
     <div class="freeboard">
+      <!-- Loading indicator -->
       <Preloader v-if="showLoadingIndicator" />
+      <!-- Main UI when loaded -->
       <Header v-if="!showLoadingIndicator" />
       <Board v-if="!showLoadingIndicator" />
     </div>

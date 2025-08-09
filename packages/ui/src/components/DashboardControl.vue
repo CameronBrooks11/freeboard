@@ -1,8 +1,14 @@
 <script setup lang="ts">
+/**
+ * @component DashboardControl
+ * @description Renders dashboard action toolbar and inline settings form for title, columns, and publish flag.
+ */
+defineOptions({ name: 'DashboardControl' });
+
 import { storeToRefs } from "pinia";
 import { useFreeboardStore } from "../stores/freeboard";
 import Form from "./Form.vue";
-import { getCurrentInstance, onMounted, ref, watch } from "vue";
+import { getCurrentInstance, ref, watch } from "vue";
 import DatasourcesDialogBox from "./DatasourcesDialogBox.vue";
 import AuthProvidersDialogBox from "./AuthProvidersDialogBox.vue";
 import SettingsDialogBox from "./SettingsDialogBox.vue";
@@ -14,21 +20,25 @@ const { t } = useI18n();
 const freeboardStore = useFreeboardStore();
 const { dashboard } = storeToRefs(freeboardStore);
 
+// Inline settings schema and current values
 const fields = ref(createSettings(dashboard.value)[0].fields);
 const settings = ref({});
 
+// Reference to the form component for potential validation
 const form = ref(null);
 
+// Sync settings when the dashboard object changes
 watch(
   dashboard,
   (d) => {
-    settings.value = d
+    settings.value = d;
   },
   {
     immediate: true,
-  },
+  }
 );
 
+/** Open the settings dialog and apply changes on OK */
 const openSettingsDialogBox = () => {
   freeboardStore.createComponent(SettingsDialogBox, instance.appContext, {
     onOk: (newSettings) => {
@@ -46,14 +56,21 @@ const openSettingsDialogBox = () => {
   });
 };
 
+/** Open the datasources management dialog */
 const openDatasourcesDialogBox = () => {
   freeboardStore.createComponent(DatasourcesDialogBox, instance.appContext);
 };
 
+/** Open the auth providers management dialog */
 const openAuthProvidersDialogBox = () => {
   freeboardStore.createComponent(AuthProvidersDialogBox, instance.appContext);
 };
 
+/**
+ * Apply inline form changes to the dashboard model.
+ *
+ * @param {{ title: string; columns: string; published: boolean }} s
+ */
 const onChange = (s) => {
   dashboard.value.columns = parseInt(s.columns);
   dashboard.value.title = s.title;
@@ -65,57 +82,34 @@ const instance = getCurrentInstance();
 
 <template>
   <div class="dashboard-control">
-    <ul
-      class="dashboard-control__board-toolbar dashboard-control__board-toolbar"
-    >
-      <li
-        @click="() => openSettingsDialogBox()"
-        class="dashboard-control__board-toolbar__item"
-      >
-        <i class="dashboard-control__board-toolbar__item__icon"
-          ><v-icon name="hi-solid-cog" /></i
-        ><label class="dashboard-control__board-toolbar__item__label">{{
-          $t("dashboardControl.labelSettings")
-        }}</label>
+    <ul class="dashboard-control__board-toolbar dashboard-control__board-toolbar">
+      <li @click="() => openSettingsDialogBox()" class="dashboard-control__board-toolbar__item">
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-solid-cog" /></i><label
+          class="dashboard-control__board-toolbar__item__label">{{
+            $t("dashboardControl.labelSettings")
+          }}</label>
       </li>
-      <li
-        @click="() => openDatasourcesDialogBox()"
-        class="dashboard-control__board-toolbar__item"
-      >
-        <i class="dashboard-control__board-toolbar__item__icon"
-          ><v-icon name="hi-database" /></i
-        ><label class="dashboard-control__board-toolbar__item__label">{{
-          $t("dashboardControl.labelDatasources")
-        }}</label>
+      <li @click="() => openDatasourcesDialogBox()" class="dashboard-control__board-toolbar__item">
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-database" /></i><label
+          class="dashboard-control__board-toolbar__item__label">{{
+            $t("dashboardControl.labelDatasources")
+          }}</label>
       </li>
-      <li
-        @click="() => openAuthProvidersDialogBox()"
-        class="dashboard-control__board-toolbar__item"
-      >
-        <i class="dashboard-control__board-toolbar__item__icon"
-          ><v-icon name="hi-eye" /></i
-        ><label class="dashboard-control__board-toolbar__item__label">{{
-          $t("dashboardControl.labelAuth")
-        }}</label>
+      <li @click="() => openAuthProvidersDialogBox()" class="dashboard-control__board-toolbar__item">
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-eye" /></i><label
+          class="dashboard-control__board-toolbar__item__label">{{
+            $t("dashboardControl.labelAuth")
+          }}</label>
       </li>
-      <li
-        @click="() => dashboard.createPane()"
-        class="dashboard-control__board-toolbar__item"
-      >
-        <i class="dashboard-control__board-toolbar__item__icon"
-          ><v-icon name="hi-plus-circle" /></i
-        ><label class="dashboard-control__board-toolbar__item__label">{{
-          $t("dashboardControl.labelAddPane")
-        }}</label>
+      <li @click="() => dashboard.createPane()" class="dashboard-control__board-toolbar__item">
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-plus-circle" /></i><label
+          class="dashboard-control__board-toolbar__item__label">{{
+            $t("dashboardControl.labelAddPane")
+          }}</label>
       </li>
     </ul>
     <div class="dashboard-control__form">
-      <Form
-        ref="form"
-        :settings="settings"
-        :fields="fields"
-        @change="onChange"
-      />
+      <Form ref="form" :settings="settings" :fields="fields" @change="onChange" />
     </div>
   </div>
 </template>

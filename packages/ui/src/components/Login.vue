@@ -1,4 +1,9 @@
 <script setup lang="js">
+/**
+ * @component Login
+ * @description Modal dialog with email/password form for user authentication using GraphQL.
+ * Handles error display, disables form during loading, and redirects after successful login.
+ */
 import { ref, watch } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
@@ -11,17 +16,20 @@ import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const freeboardStore = useFreeboardStore();
 
+// Reference to the Form component for validation and value retrieval
 const form = ref(null);
+
+// Reference to the DialogBox for controlling modal visibility
 const dialog = ref(null);
 
-// mutation + loading state
+// Apollo mutation for user authentication with loading state
 const { mutate: authUser, loading } = useMutation(USER_AUTH_MUTATION);
 
-// hold any login error message
+// Holds any login error message for display
 const loginError = ref("");
 
-// Use a reactive fields that updates based on loading state
-// This ensures fields are properly disabled during loading
+// Dynamic form field definitions based on loading state
+// This ensures fields are properly disabled during mutation
 const fields = ref(null);
 
 watch(
@@ -47,16 +55,20 @@ watch(
   { immediate: true }
 );
 
+/**
+ * Handle OK button: validate form, perform auth mutation, store token, and navigate.
+ * Displays error messages if authentication fails.
+ */
 const onDialogBoxOk = async () => {
-  // clear previous error
+  // Clear previous error
   loginError.value = "";
 
-  // form validation
+  // Prevent submission if validation errors exist
   if (form.value.hasErrors()) {
     return;
   }
 
-  // grab inputs
+  // Retrieve form values and execute authentication mutation
   const creds = form.value.getValue();
 
   try {
@@ -64,10 +76,10 @@ const onDialogBoxOk = async () => {
     const token = result.data?.authUser?.token;
 
     if (token) {
-      // 1) log in the store
+      // Store JWT token in the store
       freeboardStore.login(token);
 
-      // 2) navigate with proper fallback handling
+      // Navigate to last visited path or home page
       const lastPath = router.options.history?.state?.back;
       const targetPath = lastPath && lastPath !== "/login" ? lastPath : "/";
       await router.push(targetPath);
@@ -75,11 +87,11 @@ const onDialogBoxOk = async () => {
       loginError.value = "Invalid login response.";
     }
   } catch (err) {
-    // show the actual GraphQL error or a generic fallback
+    // Show GraphQL error message or fallback
     loginError.value =
       err?.graphQLErrors?.[0]?.message || err.message || "Login failed.";
 
-    // make sure fields aren’t locked
+    // Ensure fields are re-enabled for retry
     fields.value = fields.value.map((f) => ({
       ...f,
       disabled: false,
@@ -94,8 +106,9 @@ const onDialogBoxOk = async () => {
   <div class="login">
     <DialogBox class="login__dialog-box" ref="dialog" header="Login" :ok="$t('login.buttonOk')" @ok="onDialogBoxOk"
       :ok-disabled="loading">
+      <!-- Render login form inside dialog -->
       <Form ref="form" :fields="fields" :settings="{}" />
-      <!-- error feedback -->
+      <!-- Error feedback -->
       <p v-if="loginError" style="color: red; margin-top: 0.5rem">
         {{ loginError }}
       </p>

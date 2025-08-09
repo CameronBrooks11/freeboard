@@ -1,3 +1,12 @@
+/**
+ * @module types/User
+ * @description GraphQL SDL type definitions for the User entity, including queries, mutations, and Token type.
+ */
+
+/**
+ * GraphQL schema definition string for User, Query, Mutation, and Token types.
+ * @type {string}
+ */
 export default `
 	type User {
     _id: ID!

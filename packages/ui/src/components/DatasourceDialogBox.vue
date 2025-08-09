@@ -1,4 +1,14 @@
 <script setup lang="js">
+/**
+ * @component DatasourceDialogBox
+ * @description Modal dialog for configuring a datasource plugin and its settings.
+ * @prop {string} header        - Title displayed in the dialog header.
+ * @prop {Function} onClose     - Callback when the dialog is closed without saving.
+ * @prop {Function} onOk        - Callback when the dialog is confirmed with new settings.
+ * @prop {Object} datasource    - Existing datasource configuration for editing.
+ */
+defineOptions({ name: 'DatasourceDialogBox' });
+
 import { computed, ref, watch } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
@@ -8,9 +18,10 @@ import TabNavigator from "./TabNavigator.vue";
 import TypeSelect from "./TypeSelect.vue";
 
 const freeboardStore = useFreeboardStore();
-
+// Retrieve available datasource plugins and dashboard instance from store
 const { datasourcePlugins, dashboard } = storeToRefs(freeboardStore);
 
+// Define props passed into this dialog
 const { header, onClose, onOk, datasource } = defineProps({
   header: String,
   onClose: Function,
@@ -18,18 +29,23 @@ const { header, onClose, onOk, datasource } = defineProps({
   datasource: Object,
 });
 
+// Reference to the DialogBox component
+const dialog = ref(null);
+// Reference to the TabNavigator component
 const tabNavigator = ref(null);
 
+// Store refs to child Form components for validation
 const components = ref({});
-
 const storeComponentRef = (name, el) => {
   components.value[name] = el;
 };
 
+// Track selected plugin type for the datasource
 const typeRef = ref(datasource ? datasource.type : null);
-
+// Dynamic form fields based on selected plugin
 const fields = ref([]);
 
+// Rebuild fields schema whenever the selected type changes
 watch(
   typeRef,
   (newValue) => {
@@ -37,45 +53,49 @@ watch(
       fields.value = [];
       return;
     }
-
-    const datasourceFields = datasourcePlugins.value[newValue].fields(datasource, dashboard.value, {
-      label: "form.labelGeneral",
-      icon: "hi-home",
-      name: "general",
-      settings: {
-        title: datasource?.title,
-        enabled: datasource?.enabled,
-      },
-      fields: [
-        {
-          name: "title",
-          label: "form.labelTitle",
-          type: "text",
-          required: true,
+    fields.value = datasourcePlugins.value[newValue].fields(
+      datasource,
+      dashboard.value,
+      {
+        label: "form.labelGeneral",
+        icon: "hi-home",
+        name: "general",
+        settings: {
+          title: datasource?.title,
+          enabled: datasource?.enabled,
         },
-        {
-          name: "enabled",
-          label: "form.labelEnabled",
-          type: "boolean",
-        },
-      ],
-    })
-
-    fields.value = datasourceFields;
+        fields: [
+          {
+            name: "title",
+            label: "form.labelTitle",
+            type: "text",
+            required: true,
+          },
+          {
+            name: "enabled",
+            label: "form.labelEnabled",
+            type: "boolean",
+          },
+        ],
+      }
+    );
   },
-  { immediate: true },
+  { immediate: true }
 );
 
-const datasourcePluginsOptions = computed(() => {
-  return Object.keys(datasourcePlugins.value).map((key) => ({
+// Build select options for plugin types
+const datasourcePluginsOptions = computed(() =>
+  Object.keys(datasourcePlugins.value).map((key) => ({
     value: key,
     label: datasourcePlugins.value[key].label,
-  }));
-});
+  }))
+);
 
-const dialog = ref(null);
-
+/**
+ * Confirm dialog: validate fields, assemble new config, invoke onOk, close modal.
+ */
 const onDialogBoxOk = () => {
+  // Prevent saving if any field component reports errors
   if (fields.value.some((f) => components.value[f.name].hasErrors())) {
     return;
   }
@@ -91,32 +111,23 @@ const onDialogBoxOk = () => {
       }
     });
   });
-  onOk({ ...result, settings: s, type: typeRef.value  });
+  onOk({ ...result, settings: s, type: typeRef.value });
   dialog.value.closeModal();
 };
 </script>
 
 <template>
-  <DialogBox
-    class="datasource-dialog-box"
-    :header="header"
-    :ok="$t('dialogBox.buttonOk')"
-    :cancel="$t('dialogBox.buttonCancel')"
-    ref="dialog"
-    @close="onClose"
-    @ok="() => onDialogBoxOk()"
-  >
+  <DialogBox class="datasource-dialog-box" :header="header" :ok="$t('dialogBox.buttonOk')"
+    :cancel="$t('dialogBox.buttonCancel')" ref="dialog" @close="onClose" @ok="() => onDialogBoxOk()">
+    <!-- Plugin type selector in header slot -->
     <template #header>
       <TypeSelect v-model="typeRef" :options="datasourcePluginsOptions" />
     </template>
-    <TabNavigator :fields="fields" v-if="typeRef" ref="tabNavigator">
 
+    <!-- Dynamic form sections for plugin settings -->
+    <TabNavigator v-if="typeRef" :fields="fields" ref="tabNavigator">
       <template v-slot:[field.name] v-for="field in fields">
-        <Form
-        :ref="(el) => storeComponentRef(field.name, el)"
-        :settings="field.settings"
-        :fields="field.fields"
-      />
+        <Form :ref="(el) => storeComponentRef(field.name, el)" :settings="field.settings" :fields="field.fields" />
       </template>
     </TabNavigator>
   </DialogBox>

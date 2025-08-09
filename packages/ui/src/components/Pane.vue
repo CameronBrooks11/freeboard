@@ -1,4 +1,12 @@
 <script setup lang="js">
+/**
+ * @component Pane
+ * @description Represents a dashboard pane, rendering its title, controls for editing/deleting the pane or adding widgets, and its widgets.
+ *
+ * @prop {Object} pane - Pane model instance containing title, layout, and widgets.
+ */
+defineOptions({ name: 'Pane' });
+
 import { useFreeboardStore } from "../stores/freeboard";
 import { storeToRefs } from "pinia";
 import ConfirmDialogBox from "./ConfirmDialogBox.vue";
@@ -14,6 +22,11 @@ const { t } = useI18n();
 const freeboardStore = useFreeboardStore();
 const { isEditing, dashboard } = storeToRefs(freeboardStore);
 
+/**
+ * Open dialog to edit the pane’s title.
+ *
+ * @param {Object} pane - Pane instance to edit.
+ */
 const openPaneEditDialogBox = (pane) => {
   freeboardStore.createComponent(PaneDialogBox, instance.appContext, {
     header: t("pane.titleEdit"),
@@ -24,6 +37,11 @@ const openPaneEditDialogBox = (pane) => {
   });
 };
 
+/**
+ * Open confirmation dialog to delete the pane.
+ *
+ * @param {Object} pane - Pane instance to delete.
+ */
 const openPaneDeleteDialogBox = (pane) => {
   freeboardStore.createComponent(ConfirmDialogBox, instance.appContext, {
     title: t("pane.titleDelete"),
@@ -31,6 +49,11 @@ const openPaneDeleteDialogBox = (pane) => {
   });
 };
 
+/**
+ * Open dialog to add a new widget to the pane.
+ *
+ * @param {Object} pane - Pane instance to add the widget into.
+ */
 const openWidgetAddDialogBox = (pane) => {
   freeboardStore.createComponent(WidgetDialogBox, instance.appContext, {
     header: t("pane.titleAdd"),
@@ -45,6 +68,7 @@ const openWidgetAddDialogBox = (pane) => {
   });
 };
 
+// Props passed in from parent component
 const { pane } = defineProps({ pane: Object });
 const instance = getCurrentInstance();
 </script>
@@ -54,34 +78,27 @@ const instance = getCurrentInstance();
     <header class="pane__header">
       <h1>{{ pane.title }}</h1>
       <Transition>
+        <!-- Pane action toolbar visible in edit mode -->
         <ul v-if="isEditing" class="pane__header__board-toolbar">
-          <li
-            @click="() => openWidgetAddDialogBox(pane)"
-            class="pane__header__board-toolbar__item"
-          >
-            <i class="pane__header__board-toolbar__item__icon"
-              ><v-icon name="hi-plus"
-            /></i>
+          <li @click="() => openWidgetAddDialogBox(pane)" class="pane__header__board-toolbar__item">
+            <i class="pane__header__board-toolbar__item__icon">
+              <v-icon name="hi-plus" />
+            </i>
           </li>
-          <li
-            @click="() => openPaneEditDialogBox(pane)"
-            class="pane__header__board-toolbar__item"
-          >
-            <i class="pane__header__board-toolbar__item__icon"
-              ><v-icon name="hi-clipboard-list"
-            /></i>
+          <li @click="() => openPaneEditDialogBox(pane)" class="pane__header__board-toolbar__item">
+            <i class="pane__header__board-toolbar__item__icon">
+              <v-icon name="hi-clipboard-list" />
+            </i>
           </li>
-          <li
-            @click="() => openPaneDeleteDialogBox(pane)"
-            class="pane__header__board-toolbar__item"
-          >
-            <i class="pane__header__board-toolbar__item__icon"
-              ><v-icon name="hi-trash"
-            /></i>
+          <li @click="() => openPaneDeleteDialogBox(pane)" class="pane__header__board-toolbar__item">
+            <i class="pane__header__board-toolbar__item__icon">
+              <v-icon name="hi-trash" />
+            </i>
           </li>
         </ul>
       </Transition>
     </header>
+    <!-- Render each widget in the pane -->
     <Widget v-for="widget in pane.widgets" :widget="widget" />
   </div>
 </template>

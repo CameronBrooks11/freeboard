@@ -1,22 +1,33 @@
 <script setup lang="js">
+/**
+ * @component Widget
+ * @description Renders a widget instance within a pane and provides edit/delete/move controls in edit mode.
+ *
+ * @prop {Object} widget - Widget model instance with settings, type, title, enabled flag, and render method.
+ */
+defineOptions({ name: 'Widget' });
+
 import { storeToRefs } from "pinia";
 import { useFreeboardStore } from "../stores/freeboard";
 import WidgetDialogBox from "./WidgetDialogBox.vue";
-import { getCurrentInstance, onMounted, onUpdated, ref, watch } from "vue";
+import { getCurrentInstance, onMounted, ref, watch } from "vue";
 import ConfirmDialogBox from "./ConfirmDialogBox.vue";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
 
-const { widget } = defineProps({
-  widget: Object,
-});
+// Widget instance passed from parent
+const { widget } = defineProps({ widget: Object });
 
 const freeboardStore = useFreeboardStore();
 const { isEditing, dashboard } = storeToRefs(freeboardStore);
 
+// Reference to the DOM element where the widget will render
 const widgetRef = ref(null);
 
+/**
+ * Open dialog to edit widget settings.
+ */
 const openWidgetEditDialogBox = () => {
   freeboardStore.createComponent(WidgetDialogBox, instance.appContext, {
     header: t("widget.titleEdit"),
@@ -31,6 +42,9 @@ const openWidgetEditDialogBox = () => {
   });
 };
 
+/**
+ * Open confirmation dialog to delete widget from its pane.
+ */
 const openWidgetDeleteDialogBox = () => {
   freeboardStore.createComponent(ConfirmDialogBox, instance.appContext, {
     title: t("widget.titleDelete"),
@@ -40,7 +54,9 @@ const openWidgetDeleteDialogBox = () => {
   });
 };
 
-
+/**
+ * Perform actual widget rendering when enabled and element is available.
+ */
 const render = () => {
   if (!widget.shouldRender || !widgetRef.value) {
     return;
@@ -48,6 +64,7 @@ const render = () => {
   widget.render(widgetRef.value);
 };
 
+// Render on mount and whenever the dashboard state changes
 onMounted(render);
 watch(dashboard, render);
 
@@ -60,50 +77,33 @@ const instance = getCurrentInstance();
       <div ref="widgetRef" class="widget__sub-section__widget-output"></div>
       <Transition>
         <ul class="widget__sub-section__board-toolbar" v-if="isEditing">
-          <li
-            class="widget__sub-section__board-toolbar__item"
-          >
+          <li class="widget__sub-section__board-toolbar__item">
             {{ widget.title }}
           </li>
-          <li
-            @click="() => widget.enabled = !widget.enabled"
-            class="widget__sub-section__board-toolbar__item"
-          >
-            <i class="widget__sub-section__board-toolbar__item__icon"
-              ><v-icon :name="widget.enabled ? 'hi-pause' : 'hi-play'"></v-icon
-            ></i>
+          <li @click="() => (widget.enabled = !widget.enabled)" class="widget__sub-section__board-toolbar__item">
+            <i class="widget__sub-section__board-toolbar__item__icon">
+              <v-icon :name="widget.enabled ? 'hi-pause' : 'hi-play'"></v-icon>
+            </i>
           </li>
-          <li
-            @click="() => widget.pane.moveWidgetUp()"
-            class="widget__sub-section__board-toolbar__item"
-          >
-            <i class="widget__sub-section__board-toolbar__item__icon"
-              ><v-icon name="hi-solid-chevron-up"></v-icon
-            ></i>
+          <li @click="() => widget.pane.moveWidgetUp()" class="widget__sub-section__board-toolbar__item">
+            <i class="widget__sub-section__board-toolbar__item__icon">
+              <v-icon name="hi-solid-chevron-up"></v-icon>
+            </i>
           </li>
-          <li
-            @click="() => widget.pane.moveWidgetDown()"
-            class="widget__sub-section__board-toolbar__item"
-          >
-            <i class="widget__sub-section__board-toolbar__item__icon"
-              ><v-icon name="hi-solid-chevron-down"></v-icon
-            ></i>
+          <li @click="() => widget.pane.moveWidgetDown()" class="widget__sub-section__board-toolbar__item">
+            <i class="widget__sub-section__board-toolbar__item__icon">
+              <v-icon name="hi-solid-chevron-down"></v-icon>
+            </i>
           </li>
-          <li
-            @click="() => openWidgetEditDialogBox()"
-            class="widget__sub-section__board-toolbar__item"
-          >
-            <i class="widget__sub-section__board-toolbar__item__icon"
-              ><v-icon name="hi-solid-cog"></v-icon
-            ></i>
+          <li @click="() => openWidgetEditDialogBox()" class="widget__sub-section__board-toolbar__item">
+            <i class="widget__sub-section__board-toolbar__item__icon">
+              <v-icon name="hi-solid-cog"></v-icon>
+            </i>
           </li>
-          <li
-            @click="() => openWidgetDeleteDialogBox()"
-            class="widget__sub-section__board-toolbar__item"
-          >
-            <i class="widget__sub-section__board-toolbar__item__icon"
-              ><v-icon name="hi-trash"></v-icon
-            ></i>
+          <li @click="() => openWidgetDeleteDialogBox()" class="widget__sub-section__board-toolbar__item">
+            <i class="widget__sub-section__board-toolbar__item__icon">
+              <v-icon name="hi-trash"></v-icon>
+            </i>
           </li>
         </ul>
       </Transition>

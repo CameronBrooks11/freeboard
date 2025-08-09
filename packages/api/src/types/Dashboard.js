@@ -1,3 +1,12 @@
+/**
+ * @module types/Dashboard
+ * @description GraphQL SDL type definitions for the Dashboard entity, including queries, mutations, subscriptions, and input types.
+ */
+
+/**
+ * GraphQL schema definition string for Dashboard.
+ * @type {string}
+ */
 export default `
   scalar Object
 

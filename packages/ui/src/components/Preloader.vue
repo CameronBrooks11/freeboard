@@ -5,6 +5,14 @@
   </div>
 </template>
 
+<script setup lang="js">
+/**
+ * @component Preloader
+ * @description Loading indicator with animated bars for async operations.
+ */
+defineOptions({ name: 'Preloader' });
+</script>
+
 <style lang="css" scoped>
 @import url("../assets/css/components/preloader.css");
 </style>

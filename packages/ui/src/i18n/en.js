@@ -1,11 +1,25 @@
+/**
+ * @module i18n/en
+ * @description English localization messages for Freeboard UI.
+ */
+
+/**
+ * English translation strings structured by component and form context.
+ * @constant {Object.<string, any>}
+ */
 export const en = {
+  // Translations for array form elements
   arrayFormElement: {
     buttonAdd: "Add",
   },
+
+  // Labels for authentication provider dialog
   authProviderDialogBox: {
     labelType: "Type",
     placeholderType: "Select an auth type...",
   },
+
+  // Titles and buttons for the list of auth providers
   authProvidersList: {
     titleAdd: "Add auth provider",
     titleEdit: "Edit auth provider",
@@ -13,6 +27,8 @@ export const en = {
     buttonAdd: "Add",
     labelName: "Name",
   },
+
+  // Descriptions for the code editor form element
   codeEditor: {
     buttonClose: "Close",
     descriptionHeader: `
@@ -21,16 +37,22 @@ export const en = {
     You can assume this javascript is wrapped in a function of the form <code><span>function</span>(<span>datasources</span>)</code>
     where datasources is a collection of javascript objects (keyed by their name) corresponding to the most current data in a datasource.</p>`,
   },
+
+  // Controls for dashboard header and settings
   dashboardControl: {
     labelSettings: "Settings",
     labelAuth: "Auth",
     labelDatasources: "Datasources",
     labelAddPane: "Add Pane",
   },
+
+  // Dialog box labels for datasource selection
   datasourceDialogBox: {
     labelType: "Type",
     placeholderType: "Select a datasource type...",
   },
+
+  // List actions for datasources
   datasourcesList: {
     titleAdd: "Add datasource",
     titleEdit: "Edit datasource",
@@ -39,17 +61,21 @@ export const en = {
     labelName: "Name",
     labelLastUpdated: "Last Updated",
   },
+
+  // Generic dialog box button labels
   dialogBox: {
     titleSettings: "Settings",
     titleConfirm: "Confirm",
     buttonOk: "Ok",
     buttonCancel: "Cancel",
   },
+
+  // Form field labels and placeholders
   form: {
-    labelAsset: 'Asset',
-    labelList: 'Select...',
-    labelService: 'Service',
-    labelAuth: 'Auth',
+    labelAsset: "Asset",
+    labelList: "Select...",
+    labelService: "Service",
+    labelAuth: "Auth",
     labelHTTP: "HTTP",
     labelHTML: "HTML",
     labelEnabled: "Enabled",
@@ -99,36 +125,52 @@ export const en = {
     labelThemeLight: "Light",
     suffixRefresh: "seconds",
     placeholderAuthProvider: "Select an auth provider",
-    placeholderList: "Search..."
+    placeholderList: "Search...",
   },
+
+  // Controls for Freeboard actions
   freeboardControl: {
     labelSave: "Save Freeboard",
     labelUpdate: "Update Freeboard",
     labelImport: "Import Freeboard",
     labelExport: "Export Freeboard",
   },
+
+  // Header title
   header: {
     title: "Freeboard",
   },
+
+  // Login button text
   login: {
     buttonOk: "Login",
   },
+
+  // Pane action titles
   pane: {
     titleAdd: "Add widget",
     titleEdit: "Edit pane",
     titleDelete: "delete pane",
   },
+
+  // Labels for switch form elements
   switchFormElement: {
     labelOn: "Yes",
     labelOff: "No",
   },
+
+  // Text area form element labels
   textareaFormElement: {
     labelCode: "Code",
   },
+
+  // Widget action titles
   widget: {
     titleEdit: "Edit widget",
     titleDelete: "delete widget",
   },
+
+  // Type select component labels
   typeSelect: {
     labelType: "Type",
     placeholderType: "Select...",

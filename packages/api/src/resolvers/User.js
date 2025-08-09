@@ -1,3 +1,16 @@
+/**
+ * @module resolvers/User
+ * @description GraphQL resolver definitions for user queries and mutations.
+ */
+
+/**
+ * @typedef {Object} IResolvers
+ *   Alias for the resolver map type from @graphql-tools/utils.
+ *
+ * @typedef {Object} GraphQLResolveInfo
+ *   Alias for GraphQLResolveInfo from graphql.
+ */
+
 import { createGraphQLError } from "graphql-yoga";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
@@ -10,10 +23,16 @@ import {
 } from "../auth.js";
 import { isStrongPassword, isValidEmail } from "../validators.js";
 
-export default {
+export default /** @type {IResolvers} */ {
   Query: {
     /**
-     * It allows to administrators users to list all users registered
+     * Allows administrators to list all registered users.
+     *
+     * @param {any} parent
+     * @param {any} args
+     * @param {Object} context - GraphQL context containing authenticated user.
+     * @param {GraphQLResolveInfo} info
+     * @returns {Promise<Object[]>} Array of user documents.
      */
     listAllUsers: async (parent, args, context) => {
       ensureThatUserIsLogged(context);
@@ -26,7 +45,14 @@ export default {
   },
   Mutation: {
     /**
-     * It allows to users to register as long as the limit of allowed users has not been reached
+     * Register a new user if the user limit is not reached and credentials are valid.
+     *
+     * @param {any} parent
+     * @param {{ email: string, password: string }} args - User email and password.
+     * @param {Object} context - GraphQL context.
+     * @param {GraphQLResolveInfo} info
+     * @returns {Promise<{ token: string }>} Signed JWT for the new user.
+     * @throws {GraphQLError} When input data is invalid or user limit exceeded.
      */
     registerUser: async (parent, { email, password }, context) => {
       if (!email || !password) {
@@ -59,6 +85,17 @@ export default {
         token: createAuthToken(user.email, user.admin, user.active, user.uuid),
       };
     },
+
+    /**
+     * Authenticate existing user and return a JWT token.
+     *
+     * @param {any} parent
+     * @param {{ email: string, password: string }} args - User email and password.
+     * @param {Object} context - GraphQL context.
+     * @param {GraphQLResolveInfo} info
+     * @returns {Promise<{ token: string }>} Signed JWT for the authenticated user.
+     * @throws {GraphQLError} When credentials are invalid or user not found.
+     */
     authUser: async (parent, { email, password }, context) => {
       if (!email || !password) {
         throw createGraphQLError("Invalid credentials");
@@ -79,13 +116,24 @@ export default {
       await User.findOneAndUpdate(
         { email },
         { lastLogin: new Date().toISOString() },
-        { new: true },
+        { new: true }
       ).lean();
 
       return {
         token: createAuthToken(user.email, user.admin, user.active, user._id),
       };
     },
+
+    /**
+     * Delete the authenticated user's own account.
+     *
+     * @param {any} parent
+     * @param {any} args
+     * @param {Object} context - GraphQL context containing authenticated user.
+     * @param {GraphQLResolveInfo} info
+     * @returns {Promise<any>} Result of the deletion operation.
+     * @throws {GraphQLError} When user is not authenticated.
+     */
     deleteMyUserAccount: async (parent, args, context) => {
       ensureThatUserIsLogged(context);
 

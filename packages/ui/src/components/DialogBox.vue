@@ -1,38 +1,71 @@
 <script setup lang="js">
+/**
+ * @component DialogBox
+ * @description Generic modal dialog with header slot, content slot, and footer with OK/Cancel controls.
+ *
+ * @prop {string} header - Title displayed in the dialog header.
+ * @prop {string} ok - Label for the OK button (triggers form submit).
+ * @prop {string} cancel - Label for the Cancel button.
+ * @prop {boolean} okDisabled - Disables the OK button when true.
+ *
+ * @emits ok - Emitted when the OK button is clicked or the form is submitted.
+ * @emits cancel - Emitted when the Cancel button is clicked.
+ * @emits close - Emitted when the dialog is closed (including on Escape key).
+ */
+defineOptions({ name: 'DialogBox' });
+
 import { onDeactivated, onMounted, ref } from "vue";
 import TextButton from "./TextButton.vue";
 
 const show = ref(false);
 
+const emit = defineEmits(["ok", "cancel", "close"]);
+
+/**
+ * Close the modal and emit 'close'.
+ */
 const closeModal = () => {
   show.value = false;
   emit("close");
 };
 
-const emit = defineEmits(["ok", "cancel", "close"]);
-
+/**
+ * Emit 'ok' when form is submitted.
+ *
+ * @param {Event} event - Submit or click event.
+ */
 const onOk = (event) => {
   emit("ok", event);
 };
 
+/**
+ * Handle Cancel button click: emit 'cancel' and close the modal.
+ *
+ * @param {Event} event - Click event.
+ */
 const onCancel = (event) => {
   emit("cancel", event);
   closeModal();
 };
 
+/**
+ * Handle global Escape key to cancel dialog.
+ *
+ * @param {KeyboardEvent} e
+ */
 const onKey = (e) => {
   if (e.code === 'Escape') {
     onCancel(e);
   }
-}
+};
 
 onMounted(() => {
   show.value = true;
-  window.addEventListener('keydown', onKey)
+  window.addEventListener('keydown', onKey);
 });
 
 onDeactivated(() => {
-  window.removeEventListener('keydown', onKey)
+  window.removeEventListener('keydown', onKey);
 });
 
 const { header, ok, cancel, okDisabled } = defineProps({
@@ -46,6 +79,7 @@ defineExpose({
   closeModal,
 });
 </script>
+
 <template>
   <Transition>
     <div v-if="show" class="dialog-box">

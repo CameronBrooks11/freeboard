@@ -5,6 +5,11 @@ import js from "@eslint/js";
 export default [
   js.configs.recommended,
   {
+    languageOptions: {
+      globals: {
+        ...globals.node,        // add Node globals like `process`
+      },
+    },
     rules: {
       "no-unused-vars": 1,
       "no-undef": 1,

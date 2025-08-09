@@ -1,8 +1,19 @@
+/**
+ * @module auth
+ * @description Authentication and authorization utilities for Freeboard GraphQL API.
+ */
+
 import { createGraphQLError } from "graphql-yoga";
 import User from "./models/User.js";
 import { config } from "./config.js";
 import jwt from "jsonwebtoken";
 
+/**
+ * Ensure the number of registered users does not exceed the configured limit.
+ *
+ * @param {number} numberOfCurrentlyUsersRegistered - Current count of registered users.
+ * @throws {GraphQLError} When the user limit has been reached.
+ */
 export const ensureLimitOfUsersIsNotReached = (
   numberOfCurrentlyUsersRegistered,
 ) => {
@@ -18,6 +29,12 @@ export const ensureLimitOfUsersIsNotReached = (
   }
 };
 
+/**
+ * Ensure the request context has an authenticated user.
+ *
+ * @param {Object} context - GraphQL resolver context containing user info.
+ * @throws {GraphQLError} When no authenticated user is present.
+ */
 export const ensureThatUserIsLogged = (context) => {
   if (!context.user) {
     throw createGraphQLError(
@@ -27,6 +44,12 @@ export const ensureThatUserIsLogged = (context) => {
   }
 };
 
+/**
+ * Ensure the authenticated user has administrator privileges.
+ *
+ * @param {Object} context - GraphQL resolver context containing user info.
+ * @throws {GraphQLError} When the user is not an administrator.
+ */
 export const ensureThatUserIsAdministrator = (context) => {
   if (!context.user || !context.user.admin) {
     throw createGraphQLError(
@@ -35,6 +58,13 @@ export const ensureThatUserIsAdministrator = (context) => {
   }
 };
 
+/**
+ * Retrieve the current user document based on the context.
+ *
+ * @param {Object} context - GraphQL resolver context containing user info.
+ * @returns {Promise<Object|null>} The user document or null if no user in context.
+ * @throws {GraphQLError} When the user record cannot be found.
+ */
 export const getUser = async (context) => {
   if (!context.user) {
     return null;
@@ -49,12 +79,28 @@ export const getUser = async (context) => {
   return user;
 };
 
+/**
+ * Create a signed JWT for authentication.
+ *
+ * @param {string} email       - User email address.
+ * @param {boolean} admin      - Whether the user has admin privileges.
+ * @param {boolean} active     - Whether the user account is active.
+ * @param {string} _id         - User document _id.
+ * @returns {string}           Signed JWT token.
+ */
 export const createAuthToken = (email, admin, active, _id) => {
   return jwt.sign({ email, admin, active, _id }, config.jwtSecret, {
     expiresIn: config.jwtTimeExpiration,
   });
 };
 
+/**
+ * Validate and decode a JWT token.
+ *
+ * @param {string} token - The JWT token to validate.
+ * @returns {Promise<Object>} Decoded token payload containing user claims.
+ * @throws {JsonWebTokenError} When the token is invalid or expired.
+ */
 export const validateAuthToken = async (token) => {
   const user = await jwt.verify(token, config.jwtSecret);
   return user;

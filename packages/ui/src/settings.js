@@ -1,7 +1,27 @@
+/**
+ * @module settings
+ * @description Generates configuration schema for dashboard settings forms.
+ */
+
 import { MAX_COLUMNS, MIN_COLUMNS } from "./models/Dashboard";
 
+/**
+ * Build settings panels and fields for the dashboard editor.
+ *
+ * @param {Object} dashboard             - Dashboard object containing current values.
+ * @param {string} dashboard.title       - Dashboard title.
+ * @param {number} dashboard.columns     - Number of columns in layout.
+ * @param {boolean} dashboard.published  - Publication status.
+ * @param {Object} dashboard.settings    - Nested settings object.
+ * @param {string} dashboard.settings.theme     - Theme setting.
+ * @param {string} dashboard.settings.style     - Custom CSS style.
+ * @param {string} dashboard.settings.script    - Custom JS script.
+ * @param {Array<string>} dashboard.settings.resources - External resource URLs.
+ * @returns {Array<Object>} Array of settings sections for the UI form.
+ */
 export default (dashboard) => {
   return [
+    // General settings: title, columns, published flag
     {
       label: "form.labelGeneral",
       icon: "hi-home",
@@ -9,7 +29,7 @@ export default (dashboard) => {
       settings: {
         title: dashboard.title,
         columns: dashboard.columns,
-        published: dashboard.published
+        published: dashboard.published,
       },
       fields: [
         {
@@ -34,6 +54,7 @@ export default (dashboard) => {
         },
       ],
     },
+    // Theme settings: auto, light, dark
     {
       label: "form.labelTheme",
       icon: "hi-pencil-alt",
@@ -60,11 +81,12 @@ export default (dashboard) => {
             {
               label: "form.labelThemeDark",
               value: "dark",
-            },
+            },          
           ],
         },
       ],
     },
+    // Style settings: custom CSS
     {
       label: "form.labelStyle",
       icon: "hi-beaker",
@@ -81,6 +103,7 @@ export default (dashboard) => {
         },
       ],
     },
+    // Script settings: custom JavaScript
     {
       label: "form.labelScript",
       icon: "hi-variable",
@@ -97,6 +120,7 @@ export default (dashboard) => {
         },
       ],
     },
+    // Resources: external library URLs fetched dynamically
     {
       label: "form.labelResources",
       icon: "hi-archive",
