@@ -1,25 +1,36 @@
 name: Deploy to GitHub Pages
 
+# Deploy on pushes to `dev` and on manual runs
 on:
   push:
     branches: [dev]
   workflow_dispatch:
 
+# Prevent overlapping runs per branch
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
+    name: Build docs + demo
     runs-on: ubuntu-latest
+
     steps:
+      # Checkout repository
       - uses: actions/checkout@v4
 
+      # Node.js with npm caching (root + workspaces)
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            packages/*/package-lock.json
 
-      - name: Clean modules
-        run: rm -rf node_modules
-
-      - name: Install deps (root)
+      # Clean install (npm ci removes node_modules automatically)
+      - name: Install dependencies
         run: npm ci
 
       # 1) Generate auto docs (JSDoc, GraphQL, Vue)
@@ -32,27 +43,31 @@ jobs:
 
       # 3) Build UI demo for /freeboard/demo/
       - name: Build UI app
-        run: FREEBOARD_STATIC=true FREEBOARD_BASE_PATH=/freeboard/demo/ npm run build
         working-directory: packages/ui
+        run: FREEBOARD_STATIC=true FREEBOARD_BASE_PATH=/freeboard/demo/ npm run build
 
       # 4) Build VitePress site for /freeboard/
       - name: Build site
         run: SITE_BASE=/freeboard/ npm run site:build:pages
 
-      # 5) Add demo under /demo/ inside the built site
+      # 5) Add demo under /demo/ inside the built site (cross-platform friendly on Linux runner)
       - name: Add demo to site
         run: |
           mkdir -p docs/.vitepress/dist/demo
-          cp -r packages/ui/dist/* docs/.vitepress/dist/demo/
+          rsync -a packages/ui/dist/ docs/.vitepress/dist/demo/
 
-      - uses: actions/configure-pages@v5
+      # Prepare and upload artifact to Pages
+      - name: Configure GitHub Pages
         id: pages
+        uses: actions/configure-pages@v5
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload static site
+        uses: actions/upload-pages-artifact@v3
         with:
           path: docs/.vitepress/dist
 
   deploy:
+    name: Deploy to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -61,6 +76,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
