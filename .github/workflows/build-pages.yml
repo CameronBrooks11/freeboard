@@ -5,18 +5,28 @@ on:
     branches: [dev]
   workflow_dispatch:
 
+# Avoid concurrent publishes from the same ref
 concurrency:
   group: pages-${{ github.ref }}
   cancel-in-progress: true
+
+# Least-privilege permissions for Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   build:
     name: Build docs + demo
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
-      # Checkout repository
+      # Checkout the repo (shallow for speed)
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       # Node.js with npm caching (root + workspaces)
       - uses: actions/setup-node@v4
@@ -27,11 +37,11 @@ jobs:
             package-lock.json
             packages/*/package-lock.json
 
-      # Install dependencies (ci = clean, reproducible)
+      # Clean, reproducible install
       - name: Install dependencies
         run: npm ci
 
-      # Build everything for GitHub Pages (docs + demo + copy)
+      # Build everything for GitHub Pages (docs + demo + copy) via package script
       - name: Build site
         run: npm run site:pages
 
@@ -49,9 +59,7 @@ jobs:
     name: Deploy to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
