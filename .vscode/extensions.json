@@ -1,0 +1,22 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint", // JavaScript/TypeScript linting
+    "esbenp.prettier-vscode", // Code formatting
+    "vue.volar", // Official Vue language features
+    "graphql.vscode-graphql", // Official GraphQL language server
+    "graphql.vscode-graphql-syntax", // GraphQL syntax highlighting
+    "redhat.vscode-yaml", // YAML editing and validation
+    "redhat.ansible", // Ansible playbook support
+    "davidanson.vscode-markdownlint", // Markdown linting
+    "editorconfig.editorconfig", // Enforce coding style from .editorconfig
+    "ms-azuretools.vscode-docker", // Official Docker tooling
+    "streetsidesoftware.code-spell-checker", // Spell checking in code/docs
+    "timonwong.shellcheck", // Shell script linting
+    "github.vscode-github-actions", // GitHub Actions support
+    "christian-kohler.npm-intellisense", // npm IntelliSense
+    "christian-kohler.path-intellisense" // Path IntelliSense
+  ],
+  "unwantedRecommendations": [
+    "johnsoncodehk.volar" // Deprecated; replaced by Vue.volar
+  ]
+}
