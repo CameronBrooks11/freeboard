@@ -8,5 +8,4 @@
 
 **API (JSDoc):** <a href="/dev/api/index.html" rel="external" target="_blank">/dev/api/index.html</a>
 
-**GraphQL schema:** <a href="/dev/graphql/schema.graphql" rel="external" target="_blank">/dev/graphql/schema.graphql</a>
-
+**GraphQL schema:** [/dev/graphql/](/dev/graphql/)

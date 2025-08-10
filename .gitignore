@@ -36,6 +36,7 @@ docs/auto/api
 docs/auto/components
 docs/auto/graphql
 docs/dev/components/
+docs/dev/graphql/
 docs/public/dev
 
 # VitePress site output & cache

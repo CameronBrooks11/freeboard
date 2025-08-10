@@ -23,12 +23,7 @@ export default defineConfig({
         rel: "external",
         target: "_blank",
       },
-      {
-        text: "GraphQL",
-        link: "/dev/graphql/schema.graphql",
-        rel: "external",
-        target: "_blank",
-      },
+      { text: "GraphQL", link: "/dev/graphql/" },
     ],
   },
 });
