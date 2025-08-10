@@ -62,6 +62,10 @@ python -m venv .venv
 - Secure environment variable store
 - i18n: externalize strings and labels
 
+## Acknowledgement
+
+Continues the work of [artificialhoney/freeboard](https://github.com/artificialhoney/freeboard) which is an archived prototype branch derived from the once-popular but long-unmaintained [Freeboard/freeboard](https://github.com/Freeboard/freeboard).
+
 ## Copyright
 
 Copyright © 2013 Jim Heising ([github.com/jheising](https://github.com/jheising))
