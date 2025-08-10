@@ -32,9 +32,11 @@ packages/*/.vite/
 *.log
 
 # Auto-generated documentation
-docs/auto/
-docs/dev/
-docs/public/
+docs/auto/api
+docs/auto/components
+docs/auto/graphql
+docs/dev/components/
+docs/public/dev
 
 # VitePress site output & cache
 docs/.vitepress/dist/

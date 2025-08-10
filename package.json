@@ -8,16 +8,20 @@
     "dev:api": "npm run dev --workspace=packages/api",
     "dev:proxy": "npm run dev --workspace=packages/proxy",
     "dev:ui": "npm run dev --workspace=packages/ui",
+    "lint:fix": "eslint --fix",
     "docs:generate:api": "jsdoc -c jsdoc.json",
     "docs:generate:graphql": "node scripts/build-schema.mjs",
     "docs:generate:vue": "vue-docgen -c docgen.config.js",
     "docs:generate": "npm run docs:generate:api && npm run docs:generate:graphql && npm run docs:generate:vue",
-    "docs:serve": "npx http-server docs/auto/api -p 8081",
     "site:stage": "node scripts/site-stage.mjs",
+    "demo:build:local": "cross-env FREEBOARD_STATIC=1 FREEBOARD_BASE_PATH=/demo/ npm run build --workspace=packages/ui",
+    "demo:build:pages": "cross-env FREEBOARD_STATIC=1 FREEBOARD_BASE_PATH=/freeboard/demo/ npm run build --workspace=packages/ui",
     "site:build:local": "cross-env SITE_BASE=/ vitepress build docs",
-    "site:build:pages": "vitepress build docs",
-    "site:preview": "vitepress preview docs --port 8080",
-    "lint:fix": "eslint --fix"
+    "site:build:pages": "cross-env SITE_BASE=/freeboard/ vitepress build docs",
+    "site:copy-demo": "shx mkdir -p docs/.vitepress/dist/demo && shx cp -r packages/ui/dist/* docs/.vitepress/dist/demo/",
+    "site:local": "npm run docs:generate && npm run site:stage && npm run demo:build:local && npm run site:build:local && npm run site:copy-demo",
+    "site:pages": "npm run docs:generate && npm run site:stage && npm run demo:build:pages && npm run site:build:pages && npm run site:copy-demo",
+    "site:preview": "vitepress preview docs --port 8000"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
@@ -32,6 +36,7 @@
     "jsdoc": "^4.0.3",
     "jsdoc-type-pratt-parser": "^4.1.0",
     "rimraf": "^6.0.1",
+    "shx": "^0.4.0",
     "vitepress": "^1.6.4",
     "vue-docgen-cli": "^4.79.0"
   },

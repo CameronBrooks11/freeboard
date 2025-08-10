@@ -1,7 +1,7 @@
 # Manual
 
 - [Adding Widgets & Datasources](/manual/adding_widgets_datasources)
-- [API](/manual/api)
 - [Development Misc](/manual/dev_misc)
+- [API](/manual/api)
 - [UI](/manual/ui)
 - [Proxy](/manual/proxy)

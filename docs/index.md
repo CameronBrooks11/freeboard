@@ -1,7 +1,12 @@
 # Freeboard
 
-- **Demo:** [/demo/](/demo/)
-- **Manual:** [/manual/](/manual/)
-- **API (JSDoc):** [/dev/api/index.html](/dev/api/index.html)
-- **GraphQL schema:** [/dev/graphql/schema.graphql](/dev/graphql/schema.graphql)
-- **Vue components:** [/dev/components/](/dev/components/)
+**Demo:** <a href="/demo/" rel="external" target="_blank">/demo/</a>
+
+**Manual:** [/manual/](/manual/)
+
+**Vue components:** [/dev/components/](/dev/components/)
+
+**API (JSDoc):** <a href="/dev/api/index.html" rel="external" target="_blank">/dev/api/index.html</a>
+
+**GraphQL schema:** <a href="/dev/graphql/schema.graphql" rel="external" target="_blank">/dev/graphql/schema.graphql</a>
+

@@ -14,11 +14,21 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: "Home", link: "/" },
-      { text: "Demo", link: "/demo/" },
+      { text: "Demo", link: "/demo/", rel: "external", target: "_blank" },
       { text: "Manual", link: "/manual/" },
-      { text: "API (JSDoc)", link: "/dev/api/index.html" },
-      { text: "GraphQL", link: "/dev/graphql/schema.graphql" },
       { text: "Components", link: "/dev/components/" },
+      {
+        text: "API (JSDoc)",
+        link: "/dev/api/index.html",
+        rel: "external",
+        target: "_blank",
+      },
+      {
+        text: "GraphQL",
+        link: "/dev/graphql/schema.graphql",
+        rel: "external",
+        target: "_blank",
+      },
     ],
   },
 });
