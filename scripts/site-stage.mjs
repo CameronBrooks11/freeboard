@@ -29,7 +29,7 @@ if (existsSync("docs/auto/graphql")) {
     const schema = readFileSync(schemaPath, "utf8");
     const page = `# GraphQL Schema
 
-[Download raw](/dev/graphql/schema.graphql)
+<a href="schema.graphql" download target="_blank" rel="noopener">Download raw</a>
 
 \`\`\`graphql
 ${schema}
