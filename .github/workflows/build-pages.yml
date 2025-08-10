@@ -1,12 +1,10 @@
 name: Deploy to GitHub Pages
 
-# Deploy on pushes to `dev` and on manual runs
 on:
   push:
     branches: [dev]
   workflow_dispatch:
 
-# Prevent overlapping runs per branch
 concurrency:
   group: pages-${{ github.ref }}
   cancel-in-progress: true
@@ -29,32 +27,13 @@ jobs:
             package-lock.json
             packages/*/package-lock.json
 
-      # Clean install (npm ci removes node_modules automatically)
+      # Install dependencies (ci = clean, reproducible)
       - name: Install dependencies
         run: npm ci
 
-      # 1) Generate auto docs (JSDoc, GraphQL, Vue)
-      - name: Generate docs
-        run: npm run docs:generate
-
-      # 2) Stage auto docs into VitePress site
-      - name: Stage docs into site
-        run: npm run site:stage
-
-      # 3) Build UI demo for /freeboard/demo/
-      - name: Build UI app
-        working-directory: packages/ui
-        run: FREEBOARD_STATIC=true FREEBOARD_BASE_PATH=/freeboard/demo/ npm run build
-
-      # 4) Build VitePress site for /freeboard/
+      # Build everything for GitHub Pages (docs + demo + copy)
       - name: Build site
-        run: SITE_BASE=/freeboard/ npm run site:build:pages
-
-      # 5) Add demo under /demo/ inside the built site (cross-platform friendly on Linux runner)
-      - name: Add demo to site
-        run: |
-          mkdir -p docs/.vitepress/dist/demo
-          rsync -a packages/ui/dist/ docs/.vitepress/dist/demo/
+        run: npm run site:pages
 
       # Prepare and upload artifact to Pages
       - name: Configure GitHub Pages
@@ -76,7 +55,6 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
