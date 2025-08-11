@@ -17,12 +17,7 @@ export default defineConfig({
       { text: "Demo", link: "/demo/", rel: "external", target: "_blank" },
       { text: "Manual", link: "/manual/" },
       { text: "Components", link: "/dev/components/" },
-      {
-        text: "API (JSDoc)",
-        link: "/dev/api/index.html",
-        rel: "external",
-        target: "_blank",
-      },
+      { text: "API (JSDoc)", link: "/dev/api/index.html" },
       { text: "GraphQL", link: "/dev/graphql/" },
     ],
   },

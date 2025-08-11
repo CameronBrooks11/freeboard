@@ -19,6 +19,11 @@ features:
     details: Browse component docs and examples.
     link: /dev/components/
     linkText: Components
+  - icon: 📚
+    title: API (JSDoc)
+    details: Generated API reference.
+    link: /dev/api/
+    linkText: Open API Docs
   - icon: 🧬
     title: GraphQL Schema
     details: Formatted schema with syntax highlighting.
@@ -31,5 +36,5 @@ features:
 - **Demo:** <a href="/demo/" rel="external" target="_blank">/demo/</a>
 - **Manual:** [/manual/](/manual/)
 - **Vue components:** [/dev/components/](/dev/components/)
-- **API (JSDoc):** <a href="/dev/api/index.html" rel="external" target="_blank">/dev/api/index.html</a>
+- **API (JSDoc):** [/dev/api/](/dev/api/)
 - **GraphQL schema:** [/dev/graphql/](/dev/graphql/)

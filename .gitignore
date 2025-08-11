@@ -31,12 +31,9 @@ packages/*/.vite/
 *.log
 
 # Auto-generated documentation
-docs/auto/api
-docs/auto/components
-docs/auto/graphql
-docs/dev/components/
-docs/dev/graphql/
-docs/public/dev
+docs/auto/
+docs/dev/
+docs/public/
 
 # VitePress site output & cache
 docs/.vitepress/dist/
