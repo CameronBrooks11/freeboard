@@ -30,11 +30,3 @@ features:
     link: /dev/graphql/
     linkText: View Schema
 ---
-
-## Quick links
-
-- **Demo:** <a href="/demo/" rel="external" target="_blank">/demo/</a>
-- **Manual:** [/manual/](/manual/)
-- **Vue components:** [/dev/components/](/dev/components/)
-- **API (JSDoc):** [/dev/api/](/dev/api/)
-- **GraphQL schema:** [/dev/graphql/](/dev/graphql/)
