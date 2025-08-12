@@ -1,39 +1,62 @@
 /**
  * @module types/User
- * @description GraphQL SDL type definitions for the User entity, including queries, mutations, and Token type.
+ * @description
+ * GraphQL SDL (Schema Definition Language) type definitions for the **User** entity.
+ * Includes:
+ * - Object type definitions for `User` and `Token`
+ * - Queries for listing users
+ * - Mutations for registration, authentication, and self-deletion
+ *
+ * @remarks
+ * The `User` type represents an application account with authentication and authorization fields.
  */
 
 /**
- * GraphQL schema definition string for User, Query, Mutation, and Token types.
- * @type {string}
+ * @constant {string} UserSchema
+ * @description
+ * GraphQL schema definition string for `User`, `Token`, and associated queries/mutations.
  */
 export default `
-	type User {
+  """Represents an application user account."""
+  type User {
+    """Unique identifier of the user."""
     _id: ID!
+
+    """User's email address (used for login)."""
     email: String!
+
+    """Indicates whether the user has administrative privileges."""
     admin: Boolean!
+
+    """Indicates whether the account is active."""
     active: Boolean!
+
+    """Date and time when the user registered (ISO 8601 format)."""
     registrationDate: String!
+
+    """Date and time when the user last logged in (ISO 8601 format)."""
     lastLogin: String!
-	}
+  }
 
   type Query {
-    """ Get list of all users registered on database """
+    """Retrieve the list of all registered users."""
     listAllUsers: [User]
   }
 
+  """Represents an authentication or registration token."""
   type Token {
+    """JWT or API token string returned after successful authentication."""
     token: String
   }
 
   type Mutation {
-    """ It allows users to register """
+    """Register a new user and return an authentication token."""
     registerUser(email: String!, password: String!): Token
 
-    """ It allows users to authenticate """
+    """Authenticate a user and return an authentication token."""
     authUser(email: String!, password: String!): Token
 
-    """ It allows to user to delete their account permanently """
+    """Delete the currently authenticated user's account permanently."""
     deleteMyUserAccount: User!
   }
 `;
