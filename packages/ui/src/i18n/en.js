@@ -134,6 +134,17 @@ export const en = {
     labelUpdate: "Update Freeboard",
     labelImport: "Import Freeboard",
     labelExport: "Export Freeboard",
+    labelOpenSaved: "Open Saved",
+  },
+
+  // Saved dashboards dialog
+  savedDashboards: {
+    title: "Saved Dashboards",
+    loading: "Loading dashboards…",
+    error: "Could not load dashboards.",
+    empty: "No dashboards found.",
+    published: "Published",
+    private: "Private",
   },
 
   // Header title

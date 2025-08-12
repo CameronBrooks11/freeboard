@@ -102,3 +102,17 @@ export const USER_AUTH_MUTATION = gql`
     }
   }
 `;
+
+/**
+ * GraphQL query to fetch a list of dashboards.
+ * @constant {import('graphql').DocumentNode} DASHBOARDS_LIST_QUERY
+ */
+export const DASHBOARDS_LIST_QUERY = gql`
+  query Dashboards {
+    dashboards {
+      _id
+      title
+      published
+    }
+  }
+`;

@@ -1,13 +1,14 @@
 <script setup lang="js">
 /**
  * @component Freeboard
- * @description Root component that initializes plugins, fetches and subscribes to dashboard data, and renders header and board.
+ * @description Root component that initializes plugins, fetches/subscribes to dashboard data,
+ *              and renders header + board. Reacts to route `/:id` changes without remounting.
  *
- * @prop {string} id - Optional dashboard ID to load.
+ * @prop {string} id - Optional dashboard ID to load (provided by vue-router via props).
  */
 defineOptions({ name: 'Freeboard' });
 
-import { reactive, ref, watch } from "vue";
+import { reactive, ref, watch, computed } from "vue";
 import Header from "./Header.vue";
 import Board from "./Board.vue";
 import { useFreeboardStore } from "../stores/freeboard";
@@ -23,80 +24,96 @@ import { OAuth2PasswordGrantProvider } from "../auth/OAuth2PasswordGrantProvider
 import { usePreferredColorScheme } from "@vueuse/core";
 import { BaseWidget } from "../widgets/BaseWidget";
 
+// ----------------------------------------------------------------------------
+// Store & theming
+// ----------------------------------------------------------------------------
 const freeboardStore = useFreeboardStore();
-
-// React to system color scheme changes
-const cssClass = usePreferredColorScheme();
-
-watch(
-  cssClass,
-  () => {
-    freeboardStore.loadDashboardTheme();
-  },
-  { immediate: true }
-);
-
-// Dashboard ID prop
-const { id } = defineProps({ id: String });
-
-const idRef = ref(id);
-
 const { showLoadingIndicator, isEditing, isSaved, dashboard } =
   storeToRefs(freeboardStore);
 
-// Subscribe to live dashboard updates via SSE
-const { onResult } = useSubscription(
-  DASHBOARD_UPDATE_SUBSCRIPTION,
-  () => ({ id: idRef.value }),
-  { context: { apiName: "stream" }, enabled: !!idRef.value }
-);
+// React to system color scheme changes
+const cssClass = usePreferredColorScheme();
+watch(cssClass, () => freeboardStore.loadDashboardTheme(), { immediate: true });
 
-// Query initial dashboard data
+// ----------------------------------------------------------------------------
+// Props & reactive route id
+// ----------------------------------------------------------------------------
+const props = defineProps({ id: String });
+/** Reactive route id derived from props so it updates on `/:id` navigation. */
+const routeId = computed(() => props.id || undefined);
+/** Enable GraphQL only when there is an id. */
+const queryEnabled = computed(() => !!routeId.value);
+
+// ----------------------------------------------------------------------------
+// GraphQL: initial query (reactive variables) + live updates (SSE)
+// ----------------------------------------------------------------------------
+/**
+ * Query initial dashboard data. Variables and `enabled` are reactive so this
+ * re-runs when the route `id` changes.
+ */
 const { result, loading, error } = useQuery(
   DASHBOARD_READ_QUERY,
-  { id: idRef.value },
-  { enabled: !!idRef.value }
+  () => ({ id: routeId.value }),
+  { enabled: queryEnabled, fetchPolicy: "network-only" }
 );
 
-// Redirect to home on error
-watch(error, () => {
-  router.push("/");
-});
+/**
+ * Subscribe to dashboard updates (SSE). Also reactive to the current `id`.
+ */
+const { onResult: onSubResult } = useSubscription(
+  DASHBOARD_UPDATE_SUBSCRIPTION,
+  () => ({ id: routeId.value }),
+  { context: { apiName: "stream" }, enabled: queryEnabled }
+);
+
+// Redirect to home on query error (e.g., not found/unauthorized)
+watch(error, () => router.push("/"));
 
 // Show loader while query is in flight
-watch(loading, (l) => {
-  showLoadingIndicator.value = l;
+watch(loading, (l) => { showLoadingIndicator.value = l; });
+
+// Show loader when the route id changes (before the query returns)
+watch(routeId, (id) => {
+  if (id) showLoadingIndicator.value = true;
 });
 
 /**
  * Handle incoming dashboard data (initial or subscription).
+ * @param {{ dashboard?: any }|undefined} data
  */
-const handleResult = (newResult) => {
+const applyResult = (data) => {
+  const dash = data?.dashboard;
   showLoadingIndicator.value = false;
-  const dash = newResult.dashboard;
-  if (!dash && idRef.value) {
+
+  if (!dash && routeId.value) {
     // Dashboard not found, go to create new
     isEditing.value = true;
     router.push("/");
-  } else if (dash) {
-    idRef.value = dash._id;
+    return;
+  }
+
+  if (dash) {
+    // Load new dashboard in store and mark as saved
     freeboardStore.loadDashboard(dash);
     isSaved.value = true;
   }
 };
 
-watch(result, handleResult);
-onResult((res) => handleResult(res.data));
+// React to initial query result
+watch(result, () => applyResult(result.value));
+// React to subscription updates
+onSubResult(({ data }) => applyResult(data));
 
-// Persist settings when dashboard reactive object changes
+// ----------------------------------------------------------------------------
+// Persist settings on dashboard mutation
+// ----------------------------------------------------------------------------
 const d = reactive(dashboard.value);
+watch(d, () => freeboardStore.saveSettingsToLocalStorage());
 
-watch(d, () => {
-  freeboardStore.saveSettingsToLocalStorage();
-});
-
-// Initial plugin registration and load
-freeboardStore.loadSettingsFromLocalStorage(!idRef.value);
+// ----------------------------------------------------------------------------
+// Initial plugin registration and baseline UI state
+// ----------------------------------------------------------------------------
+freeboardStore.loadSettingsFromLocalStorage(!routeId.value);
 freeboardStore.loadDashboardAssets();
 freeboardStore.loadDashboardTheme();
 freeboardStore.loadAuthPlugin(HeaderAuthProvider);
@@ -109,7 +126,7 @@ freeboardStore.loadWidgetPlugin(BaseWidget);
 freeboardStore.allowEdit = __FREEBOARD_STATIC__ || freeboardStore.isLoggedIn();
 freeboardStore.isEditing = __FREEBOARD_STATIC__ || freeboardStore.isLoggedIn();
 
-// Hide loader after setup
+// Hide loader after baseline setup (query watcher will override as needed)
 showLoadingIndicator.value = false;
 </script>
 
@@ -119,7 +136,7 @@ showLoadingIndicator.value = false;
       <!-- Loading indicator -->
       <Preloader v-if="showLoadingIndicator" />
       <!-- Main UI when loaded -->
-      <Header v-if="!showLoadingIndicator" />
+      <Header v-else />
       <Board v-if="!showLoadingIndicator" />
     </div>
   </Transition>

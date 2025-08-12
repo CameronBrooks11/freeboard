@@ -3,7 +3,7 @@
  * @description Entry point for Freeboard UI: configures Vue app, Apollo client, routing, state, i18n, and mounts the App component.
  */
 
-import { createApp, provide, h } from "vue";
+import { createApp } from "vue";
 import { DefaultApolloClient } from "@vue/apollo-composable";
 import {
   ApolloClient,
@@ -20,6 +20,7 @@ import {
   HiDatabase,
   HiEye,
   HiCloudUpload,
+  HiCollection,
   HiPlusCircle,
   HiDownload,
   HiUpload,
@@ -57,6 +58,7 @@ addIcons(
   HiDatabase,
   HiEye,
   HiCloudUpload,
+  HiCollection,
   HiPlusCircle,
   HiDownload,
   HiUpload,
@@ -171,13 +173,10 @@ const apolloClient = new ApolloClient({
  *
  * @type {import('vue').App}
  */
-const app = createApp({
-  setup() {
-    provide(DefaultApolloClient, apolloClient);
-  },
-  
-  render: () => h(App),
-})
+const app = createApp(App);
+app.provide(DefaultApolloClient, apolloClient);
+
+app
   .use(pinia)
   .use(router)
   .use(i18n)
