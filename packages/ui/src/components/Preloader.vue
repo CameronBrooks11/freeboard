@@ -1,10 +1,3 @@
-<template>
-  <div class="preloader">
-    <div class="preloader__loading preloader__loading--up"></div>
-    <div class="preloader__loading preloader__loading--down"></div>
-  </div>
-</template>
-
 <script setup lang="js">
 /**
  * @component Preloader
@@ -12,6 +5,13 @@
  */
 defineOptions({ name: 'Preloader' });
 </script>
+
+<template>
+  <div class="preloader">
+    <div class="preloader__loading preloader__loading--up"></div>
+    <div class="preloader__loading preloader__loading--down"></div>
+  </div>
+</template>
 
 <style lang="css" scoped>
 @import url("../assets/css/components/preloader.css");
