@@ -8,8 +8,6 @@
  *
  * @prop {Function} onClose - Callback to invoke when the dialog is closed.
  *
- * @example
- * <SavedDashboardsDialogBox :onClose="closeDialog" />
  */
 
 defineOptions({ name: 'SavedDashboardsDialogBox' });
