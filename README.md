@@ -61,6 +61,7 @@ python -m venv .venv
 
 - Secure environment variable store
 - i18n: externalize strings and labels
+- docker versions package tags to ensure re-pull on version bump
 
 ## Acknowledgement
 
