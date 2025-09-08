@@ -10,6 +10,7 @@ hero:
     - theme: brand
       text: Open Demo
       link: /demo/
+      target: _blank
     - theme: alt
       text: Read the Manual
       link: /manual/
