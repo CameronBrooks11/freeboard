@@ -12,7 +12,6 @@ defineOptions({ name: 'ArrayFormElement' });
 
 import { ref, watch } from "vue";
 import Form from "./Form.vue";
-import TextButton from "./TextButton.vue";
 import ActionButton from "./ActionButton.vue";
 
 const props = defineProps(["modelValue", "options"]);
@@ -71,13 +70,13 @@ defineExpose({
       <thead class="array-form-element__table__head">
         <tr v-if="value.length" class="array-form-element__table__head__row">
           <th class="array-form-element__table__head__row__cell">
-            <span v-for="setting in options">{{ setting.label }}</span>
+            <span v-for="setting in options" :key="setting.name || setting.label">{{ setting.label }}</span>
           </th>
           <th>&nbsp;</th>
         </tr>
       </thead>
       <tbody class="array-form-element__table__body">
-        <tr v-for="(val, index) in value" class="array-form-element__table__body__row">
+        <tr v-for="(val, index) in value" :key="index" class="array-form-element__table__body__row">
           <td class="array-form-element__table__body__row__cell">
             <Form :settings="val" :fields="options" :hideLabels="true" :skipTranslate="true"
               @change="(v) => onSettingChange(index, v)" />

@@ -13,9 +13,6 @@ import DatasourcesDialogBox from "./DatasourcesDialogBox.vue";
 import AuthProvidersDialogBox from "./AuthProvidersDialogBox.vue";
 import SettingsDialogBox from "./SettingsDialogBox.vue";
 import createSettings from "../settings";
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
 
 const freeboardStore = useFreeboardStore();
 const { dashboard } = storeToRefs(freeboardStore);

@@ -5,6 +5,7 @@
 
 import { storeToRefs } from "pinia";
 import { useFreeboardStore } from "../stores/freeboard";
+import { generateModelId } from "./id";
 
 /**
  * Wrapper around a datasource plugin instance, managing settings, type, and data flow.
@@ -12,10 +13,12 @@ import { useFreeboardStore } from "../stores/freeboard";
  * @class Datasource
  */
 export class Datasource {
+  /** @type {string} Stable datasource identifier used in bindings. */
+  id = generateModelId("ds");
   /** @type {string|null} Display title of the datasource. */
   title = null;
-  /** @type {boolean} Whether the datasource is enabled. */
-  enabled = true;
+  /** @private {boolean} Whether the datasource is enabled. */
+  _enabled = true;
   /** @type {any} Most recently fetched data. */
   latestData = null;
   /** @private {Object} Current settings object for the datasource. */
@@ -33,13 +36,15 @@ export class Datasource {
    * @param {Object} newValue - New settings for the datasource.
    */
   set settings(newValue) {
+    const nextValue = newValue || {};
+
     if (
       this.datasourceInstance !== undefined &&
       typeof this.datasourceInstance.onSettingsChanged === "function"
     ) {
-      this.datasourceInstance.onSettingsChanged(newValue);
+      this.datasourceInstance.onSettingsChanged(nextValue);
     }
-    this._settings = newValue;
+    this._settings = nextValue;
   }
 
   /**
@@ -52,29 +57,76 @@ export class Datasource {
   }
 
   /**
+   * Enable or disable the datasource runtime.
+   *
+   * @param {boolean} newValue
+   */
+  set enabled(newValue) {
+    const nextValue = !!newValue;
+    if (this._enabled === nextValue) {
+      return;
+    }
+
+    this._enabled = nextValue;
+    if (this._enabled) {
+      this.startDatasourceInstance();
+    } else {
+      this.disposeDatasourceInstance();
+    }
+  }
+
+  /**
+   * Get datasource enabled status.
+   *
+   * @returns {boolean}
+   */
+  get enabled() {
+    return this._enabled;
+  }
+
+  /**
+   * Create a datasource plugin instance for current type/settings.
+   */
+  startDatasourceInstance() {
+    if (!this._type || !this.enabled) {
+      return;
+    }
+
+    const freeboardStore = useFreeboardStore();
+    const { datasourcePlugins } = storeToRefs(freeboardStore);
+    const datasourceType = datasourcePlugins.value[this._type];
+
+    if (!datasourceType || typeof datasourceType.newInstance !== "function") {
+      return;
+    }
+
+    try {
+      datasourceType.newInstance(
+        this.settings,
+        (datasourceInstance) => {
+          this.datasourceInstance = datasourceInstance;
+          this.lastError = null;
+          if (typeof datasourceInstance.updateNow === "function") {
+            datasourceInstance.updateNow();
+          }
+        },
+        (newData) => this.updateCallback(newData)
+      );
+    } catch (error) {
+      this.lastError = error;
+      console.error(`Datasource '${this._type}' failed to initialize`, error);
+    }
+  }
+
+  /**
    * Set the datasource type and instantiate the corresponding plugin.
    *
    * @param {string} newValue - Type key of the datasource plugin.
    */
   set type(newValue) {
-    const freeboardStore = useFreeboardStore();
-    const { datasourcePlugins } = storeToRefs(freeboardStore);
-
-    if (
-      newValue in datasourcePlugins.value &&
-      typeof datasourcePlugins.value[newValue].newInstance === "function"
-    ) {
-      const datasourceType = datasourcePlugins.value[newValue];
-      datasourceType.newInstance(
-        this.settings,
-        (datasourceInstance) => {
-          this.datasourceInstance = datasourceInstance;
-          datasourceInstance.updateNow();
-        },
-        (newData) => this.updateCallback(newData)
-      );
-    }
     this._type = newValue;
+    this.disposeDatasourceInstance();
+    this.startDatasourceInstance();
   }
 
   /**
@@ -105,11 +157,16 @@ export class Datasource {
    * @param {any} newData - The newly fetched data payload.
    */
   updateCallback(newData) {
+    if (!this.enabled) {
+      return;
+    }
+
     const freeboardStore = useFreeboardStore();
     const { dashboard } = storeToRefs(freeboardStore);
 
     this.latestData = newData;
     this.lastUpdated = new Date();
+    this.lastError = null;
     dashboard.value.processDatasourceUpdate(this);
   }
 
@@ -120,6 +177,7 @@ export class Datasource {
    */
   serialize() {
     return {
+      id: this.id,
       title: this.title,
       type: this.type,
       enabled: this.enabled,
@@ -133,8 +191,9 @@ export class Datasource {
    * @param {{ title: string, type: string, enabled: boolean, settings: Object }} object - Serialized data.
    */
   deserialize(object) {
+    this.id = object.id || generateModelId("ds");
     this.title = object.title;
-    this.enabled = object.enabled;
+    this.enabled = object.enabled !== undefined ? !!object.enabled : true;
     this.settings = object.settings;
     this.type = object.type;
   }
@@ -155,6 +214,7 @@ export class Datasource {
    */
   updateNow() {
     if (
+      this.enabled &&
       this.datasourceInstance !== undefined &&
       typeof this.datasourceInstance.updateNow === "function"
     ) {

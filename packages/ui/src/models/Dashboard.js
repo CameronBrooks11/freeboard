@@ -6,6 +6,8 @@
 import { AuthProvider } from "./AuthProvider";
 import { Datasource } from "./Datasource";
 import { Pane } from "./Pane";
+import { generateModelId } from "./id";
+import { normalizeDatasourceValue } from "../widgets/runtime/bindings";
 
 /**
  * Minimum number of columns allowed for dashboard layout.
@@ -18,6 +20,7 @@ export const MIN_COLUMNS = 3;
  * @constant {number}
  */
 export const MAX_COLUMNS = 12;
+const RESERVED_DATASOURCE_TITLES = new Set(["datasources", "datasourceTitles"]);
 
 /**
  * Represents a Freeboard dashboard with layout, content, and settings.
@@ -68,6 +71,7 @@ export class Dashboard {
     l.forEach((layout, index) => {
       this.panes[index].layout = layout;
     });
+    this.clampPaneLayoutHeights();
   }
 
   /**
@@ -159,16 +163,31 @@ export class Dashboard {
       this.addAuthProvider(authProvider);
     });
 
+    object.datasources?.forEach((datasourceConfig) => {
+      const datasource = new Datasource();
+      datasource.deserialize(datasourceConfig);
+      this.addDatasource(datasource);
+    });
+
     object.panes?.forEach((paneConfig) => {
       const pane = new Pane();
       pane.deserialize(paneConfig);
       this.addPane(pane);
     });
 
-    object.datasources?.forEach((datasourceConfig) => {
-      const datasource = new Datasource();
-      datasource.deserialize(datasourceConfig);
-      this.addDatasource(datasource);
+    this.clampPaneLayoutHeights();
+
+    const snapshot = this.buildDatasourceSnapshot();
+    const context = {
+      changedDatasource: null,
+      changedDatasourceId: null,
+      changedDatasourceTitle: null,
+      snapshot,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.panes?.forEach((pane) => {
+      pane.widgets?.forEach((widget) => widget.processDatasourceUpdate(null, context));
     });
   }
 
@@ -198,6 +217,16 @@ export class Dashboard {
    * @param {Datasource} datasource - Datasource instance to add.
    */
   addDatasource(datasource) {
+    if (!datasource.id) {
+      datasource.id = generateModelId("ds");
+    }
+
+    while (this.datasources.some((item) => item.id === datasource.id)) {
+      datasource.id = generateModelId("ds");
+    }
+
+    datasource.title = this.ensureUniqueDatasourceTitle(datasource.title, datasource.id);
+
     this.datasources = [...this.datasources, datasource];
   }
 
@@ -219,7 +248,9 @@ export class Dashboard {
    * @param {Pane} pane - Pane instance to add.
    */
   addPane(pane) {
+    this.ensurePaneLayoutId(pane);
     this.panes = [...this.panes, pane];
+    this.clampPaneLayoutHeights();
   }
 
   /**
@@ -245,7 +276,7 @@ export class Dashboard {
       y: Math.floor(this.panes.length / this.columns),
       w: 1,
       h: 1,
-      i: this.panes.length,
+      i: generateModelId("pane"),
     };
 
     this.addPane(newPane);
@@ -258,9 +289,30 @@ export class Dashboard {
    * @param {Widget} widget - Widget instance to add.
    */
   addWidget(pane, widget) {
+    if (!widget.id) {
+      widget.id = generateModelId("w");
+    }
+
+    while (
+      pane.widgets.some((item) => item.id === widget.id) ||
+      this.panes.some((p) => p.widgets.some((item) => item.id === widget.id))
+    ) {
+      widget.id = generateModelId("w");
+    }
+
     pane.widgets.push(widget);
     widget.pane = pane;
     this.panes = [...this.panes];
+    this.clampPaneLayoutHeights();
+
+    const snapshot = this.buildDatasourceSnapshot();
+    widget.processDatasourceUpdate(null, {
+      changedDatasource: null,
+      changedDatasourceId: null,
+      changedDatasourceTitle: null,
+      snapshot,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   /**
@@ -270,10 +322,12 @@ export class Dashboard {
    * @param {Widget} widget - Widget instance to remove.
    */
   deleteWidget(pane, widget) {
+    widget.dispose();
     pane.widgets = pane.widgets.filter((item) => {
       return item !== widget;
     });
     this.panes = [...this.panes];
+    this.clampPaneLayoutHeights();
   }
 
   /**
@@ -298,11 +352,192 @@ export class Dashboard {
    * @param {Datasource} datasource - Datasource that has new data.
    */
   processDatasourceUpdate(datasource) {
+    const snapshot = this.buildDatasourceSnapshot();
+    const context = {
+      changedDatasource: datasource?.id ?? datasource?.title ?? null,
+      changedDatasourceId: datasource?.id ?? null,
+      changedDatasourceTitle: datasource?.title ?? null,
+      snapshot,
+      timestamp:
+        datasource?.lastUpdated instanceof Date
+          ? datasource.lastUpdated.toISOString()
+          : new Date().toISOString(),
+    };
+
     this.panes?.forEach((pane) => {
       pane.widgets?.forEach((widget) => {
-        widget.processDatasourceUpdate(datasource);
+        try {
+          widget.processDatasourceUpdate(datasource, context);
+        } catch (error) {
+          console.error("Failed to propagate datasource update to widget", error);
+        }
       });
     });
+  }
+
+  /**
+   * Build a normalized datasource snapshot map keyed by datasource id,
+   * with legacy title aliases when unambiguous.
+   *
+   * @returns {Record<string, any>}
+   */
+  buildDatasourceSnapshot() {
+    const snapshot = {
+      datasources: {},
+      datasourceTitles: {},
+    };
+    const duplicateTitles = new Set();
+
+    this.datasources?.forEach((datasource) => {
+      if (!datasource?.id) {
+        return;
+      }
+
+      const normalizedValue = normalizeDatasourceValue(datasource.latestData);
+      snapshot.datasources[datasource.id] = normalizedValue;
+      snapshot[datasource.id] = normalizedValue;
+
+      const title = String(datasource.title || "").trim();
+      if (!title) {
+        return;
+      }
+      if (["datasources", "datasourceTitles"].includes(title)) {
+        return;
+      }
+
+      if (title in snapshot.datasourceTitles) {
+        duplicateTitles.add(title);
+        return;
+      }
+
+      snapshot.datasourceTitles[title] = datasource.id;
+      // Legacy fallback support.
+      snapshot[title] = normalizedValue;
+    });
+
+    duplicateTitles.forEach((title) => {
+      delete snapshot.datasourceTitles[title];
+      delete snapshot[title];
+    });
+
+    return snapshot;
+  }
+
+  /**
+   * Determine whether a datasource title conflicts with another datasource.
+   *
+   * @param {string} title
+   * @param {string|null} [excludeId]
+   * @returns {boolean}
+   */
+  hasDatasourceTitleConflict(title, excludeId = null) {
+    const candidate = String(title || "").trim().toLowerCase();
+    if (!candidate) {
+      return true;
+    }
+
+    if (RESERVED_DATASOURCE_TITLES.has(candidate)) {
+      return true;
+    }
+
+    return this.datasources.some((datasource) => {
+      if (!datasource) {
+        return false;
+      }
+
+      if (excludeId && datasource.id === excludeId) {
+        return false;
+      }
+
+      return String(datasource.title || "").trim().toLowerCase() === candidate;
+    });
+  }
+
+  /**
+   * Ensure datasource title is unique and non-reserved.
+   *
+   * @param {string} title
+   * @param {string|null} [excludeId]
+   * @returns {string}
+   */
+  ensureUniqueDatasourceTitle(title, excludeId = null) {
+    const base = String(title || "").trim() || "Datasource";
+    let candidate = base;
+    let suffix = 2;
+
+    while (this.hasDatasourceTitleConflict(candidate, excludeId)) {
+      candidate = `${base} (${suffix})`;
+      suffix += 1;
+    }
+
+    return candidate;
+  }
+
+  /**
+   * Compute minimum rows required for a pane based on widget preferred rows.
+   *
+   * @param {Pane} pane
+   * @returns {number}
+   */
+  getPaneMinRows(pane) {
+    const widgetRows =
+      pane?.widgets?.reduce((sum, widget) => {
+        if (!widget || typeof widget.getPreferredRows !== "function") {
+          return sum + 1;
+        }
+        return sum + Math.max(1, Number(widget.getPreferredRows()) || 1);
+      }, 0) || 1;
+
+    return Math.max(1, Math.ceil(widgetRows));
+  }
+
+  /**
+   * Clamp pane layout heights to minimum content requirements.
+   */
+  clampPaneLayoutHeights() {
+    this.panes.forEach((pane) => {
+      if (!pane.layout || typeof pane.layout !== "object") {
+        pane.layout = {};
+      }
+
+      const minRows = this.getPaneMinRows(pane);
+      const currentRows = Number(pane.layout.h);
+      pane.layout.h = Number.isFinite(currentRows)
+        ? Math.max(Math.ceil(currentRows), minRows)
+        : minRows;
+    });
+  }
+
+  /**
+   * Ensure a pane has a unique grid layout identifier.
+   *
+   * @param {Pane} pane
+   */
+  ensurePaneLayoutId(pane) {
+    if (!pane.layout || typeof pane.layout !== "object") {
+      pane.layout = {};
+    }
+
+    const existingIds = new Set(
+      this.panes
+        .map((item) => item?.layout?.i)
+        .filter((value) => value !== undefined && value !== null)
+        .map((value) => String(value))
+    );
+
+    const currentId = pane.layout.i;
+    if (currentId === undefined || currentId === null) {
+      pane.layout.i = generateModelId("pane");
+      return;
+    }
+
+    const normalizedCurrentId = String(currentId);
+    if (existingIds.has(normalizedCurrentId)) {
+      pane.layout.i = generateModelId("pane");
+      return;
+    }
+
+    pane.layout.i = normalizedCurrentId;
   }
 
   /**
@@ -314,5 +549,76 @@ export class Dashboard {
   getAuthProviderByName(title) {
     return this.authProviders.find((a) => a.title === title)
       ?.authProviderInstance;
+  }
+
+  /**
+   * Rewrite widget binding strings when a datasource title changes.
+   * Keeps legacy title-path dashboards functional after title edits.
+   *
+   * @param {string} oldTitle
+   * @param {string} newTitle
+   */
+  renameDatasourceBindings(oldTitle, newTitle) {
+    const from = String(oldTitle || "").trim();
+    const to = String(newTitle || "").trim();
+
+    if (!from || !to || from === to) {
+      return;
+    }
+
+    this.panes?.forEach((pane) => {
+      pane.widgets?.forEach((widget) => {
+        widget.settings = this.replaceDatasourceReferences(widget.settings, from, to);
+      });
+    });
+  }
+
+  /**
+   * Recursively replace datasource title references inside widget settings.
+   *
+   * @param {any} value
+   * @param {string} oldTitle
+   * @param {string} newTitle
+   * @param {string} [fieldName]
+   * @returns {any}
+   */
+  replaceDatasourceReferences(value, oldTitle, newTitle, fieldName = "") {
+    if (Array.isArray(value)) {
+      return value.map((item) =>
+        this.replaceDatasourceReferences(item, oldTitle, newTitle, fieldName)
+      );
+    }
+
+    if (value && typeof value === "object") {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, innerValue]) => [
+          key,
+          this.replaceDatasourceReferences(innerValue, oldTitle, newTitle, key),
+        ])
+      );
+    }
+
+    if (typeof value !== "string") {
+      return value;
+    }
+
+    const shouldRewrite =
+      /(?:path|template|binding)$/i.test(fieldName) || fieldName === "";
+    if (!shouldRewrite) {
+      return value;
+    }
+
+    const escapedOldTitle = oldTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const bindingRootRegex = new RegExp(`^\\s*${escapedOldTitle}(?=\\.|\\[)`);
+    const templateRegex = new RegExp(`\\{\\{\\s*${escapedOldTitle}(?=\\.|\\[)`, "g");
+
+    let next = value;
+    if (bindingRootRegex.test(next)) {
+      next = next.replace(bindingRootRegex, newTitle);
+    }
+
+    next = next.replace(templateRegex, `{{ ${newTitle}`);
+
+    return next;
   }
 }

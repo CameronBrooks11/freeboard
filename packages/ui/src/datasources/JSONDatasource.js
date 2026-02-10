@@ -198,7 +198,10 @@ export class JSONDatasource {
     if (body) {
       try {
         body = JSON.parse(body);
-      } catch {}
+      } catch {
+        // Keep raw request body if it is not valid JSON.
+        body = this.currentSettings.body;
+      }
     }
 
     // Retrieve authenticated request headers if auth provider set

@@ -120,7 +120,7 @@ const getHeaders = () => {
 /**
  * Apollo Link to handle GraphQL errors: logs out user and redirects to login page.
  */
-const errorLink = onError(({ graphQLErrors, networkError }) => {
+const errorLink = onError(({ graphQLErrors }) => {
   if (graphQLErrors) {
     const store = useFreeboardStore();
     store.logout();

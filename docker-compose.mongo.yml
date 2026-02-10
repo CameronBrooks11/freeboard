@@ -1,17 +1,29 @@
 services:
   mongo:
-    image: ${FREEBOARD_MONGO_IMAGE:-mongo}
+    image: ${FREEBOARD_MONGO_IMAGE:-mongo:7.0}
     restart: unless-stopped
     container_name: freeboard-mongo
+    init: true
+    stop_grace_period: 10s
     ports:
       - 27017:27017
     volumes:
-      - ${FREEBOARD_MONGO_DB_PATH:-./db}:/data/db
+      - freeboard-mongo-data:/data/db
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     environment:
       MONGO_INITDB_ROOT_USERNAME: freeboard
       MONGO_INITDB_ROOT_PASSWORD: unsecure
       MONGO_INITDB_DATABASE: freeboard
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet --host 127.0.0.1 --port 27017 -u \"$${MONGO_INITDB_ROOT_USERNAME}\" -p \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval \"quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)\"",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
     networks:
       - freeboard
 
@@ -19,3 +31,7 @@ networks:
   freeboard:
     name: freeboard
     driver: bridge
+
+volumes:
+  freeboard-mongo-data:
+    name: freeboard-mongo-data

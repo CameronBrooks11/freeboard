@@ -12,7 +12,7 @@
  */
 defineOptions({ name: 'ListFormElement' });
 
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import { levenshteinDistance } from "../fuzzy";
 import { useI18n } from "vue-i18n";
 import { asyncComputed } from "@vueuse/core";

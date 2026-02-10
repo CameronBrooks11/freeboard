@@ -2,6 +2,8 @@
  * @module widgets/BaseWidget
  * @description Default widget rendering HTML/CSS/JS templates in an iframe for Freeboard UI.
  */
+import { normalizeDatasourceValue } from "./runtime/bindings";
+
 export class BaseWidget {
   /**
    * Unique widget type identifier.
@@ -214,12 +216,26 @@ export class BaseWidget {
    * Handle datasource updates by posting messages to the iframe window.
    *
    * @param {Object} datasource - Datasource instance providing the update.
+   * @param {{ snapshot?: Record<string, any> }} [context] - Optional normalized datasource snapshot.
    */
-  processDatasourceUpdate(datasource) {
+  processDatasourceUpdate(datasource, context = {}) {
+    if (!datasource?.id && !datasource?.title) {
+      return;
+    }
+
+    const value = normalizeDatasourceValue(datasource.latestData);
+
     this.iframeElement.contentWindow?.postMessage({
       type: "datasource:update",
-      datasource: datasource.title,
-      ...datasource.latestData,
+      datasource: datasource.id ?? datasource.title,
+      datasourceId: datasource.id,
+      datasourceTitle: datasource.title,
+      value,
+      snapshot: context.snapshot || {},
+      raw: datasource.latestData,
+      ...(datasource.latestData && typeof datasource.latestData === "object"
+        ? datasource.latestData
+        : {}),
     });
   }
 }

@@ -16,7 +16,7 @@ import { RouterLink } from "vue-router";
 
 // Retrieve editing flags and dashboard instance
 const freeboardStore = useFreeboardStore();
-const { allowEdit, isEditing, dashboard } = storeToRefs(freeboardStore);
+const { allowEdit, isEditing } = storeToRefs(freeboardStore);
 </script>
 
 <template>

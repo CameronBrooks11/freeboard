@@ -1,48 +1,59 @@
 # Architecture
 
-Freeboard is a monorepo providing a Vue frontend, a GraphQL API, a lightweight HTTP proxy, and MongoDB persistence.
+Freeboard is a monorepo with three runtime services and one shared data store.
 
-## Components
+## Services
 
-- **UI (`packages/ui`)**  
-  Vue 3 + Vite application. In dev it runs on port 5173; in Docker it’s served by Nginx.
-- **API (`packages/api`)**  
-  Node.js service exposing GraphQL (graphql-yoga) on port 4001. Uses Mongoose to persist users and dashboards in MongoDB. Publishes subscription events via an in-process PubSub.
-- **Proxy (`packages/proxy`)**  
-  Express service on port 8001 to fetch third-party URLs server-side and return them to the UI, avoiding browser CORS limits.
-- **MongoDB**  
-  Stores `users` and `dashboards` collections.
+- UI (`packages/ui`): Vue 3 + Vite SPA
+- API (`packages/api`): GraphQL Yoga + Mongoose
+- Proxy (`packages/proxy`): HTTP fetch proxy for CORS-restricted upstreams
+- MongoDB: persistence for users and dashboards
 
-## Data Flow
+## Runtime Data Flow
 
-1. UI authenticates and calls the GraphQL API (`/graphql`) for queries/mutations.
-2. API reads/writes MongoDB via Mongoose.
-3. UI subscribes to updates (GraphQL subscriptions) to live-refresh dashboards.
-4. For external data that blocks on CORS, the UI requests through the Proxy (`/proxy?url=...`).
+1. UI authenticates with API (`/graphql`) and stores JWT token in local storage.
+2. UI queries/mutates dashboards through GraphQL.
+3. API persists dashboards/users in MongoDB.
+4. Datasource plugins in UI produce updates.
+5. Dashboard model normalizes datasource state and pushes updates to widgets.
 
-## Ports (default)
+## Widget Runtime Flow
 
-- UI: 5173 (dev), 8080 (container)
-- API: 4001
-- Proxy: 8001
-- MongoDB: 27017
+1. Widget plugins are registered in `Freeboard.vue`.
+2. Widget model instantiates plugin via `newInstance(settings, callback)`.
+3. Dashboard builds normalized snapshot:
+   - `datasources.<id>`
+   - `datasourceTitles.<title> -> id`
+4. Widget runtime resolves bindings/templates against snapshot.
+5. Widget updates are isolated; runtime errors are captured per widget.
+6. Pane layout enforces minimum height from widget preferred rows.
+
+See: [Widget Runtime](/manual/widget-runtime)
+
+## Key UI Models
+
+- `Dashboard` (`packages/ui/src/models/Dashboard.js`)
+  - owns panes, datasources, auth providers
+  - handles serialization/deserialization
+  - propagates datasource updates to widgets
+- `Datasource` (`packages/ui/src/models/Datasource.js`)
+  - owns datasource plugin instance and update lifecycle
+- `Widget` (`packages/ui/src/models/Widget.js`)
+  - owns widget plugin instance, rendering, errors, and resize forwarding
+
+## Ports (Default Dev)
+
+- UI: `5173`
+- API: `4001`
+- Proxy: `8001`
+- MongoDB: `27017`
 
 ## Configuration
 
-Key environment variables (see `.env`):
+Core env values:
 
-- `FREEBOARD_MONGO_URL` – Mongo connection string
-- `FREEBOARD_ADMIN_EMAIL`, `FREEBOARD_ADMIN_PASSWORD` – bootstrap admin
-- `VITE_API_URL` – UI → API endpoint
-
-## Monorepo
-
-Managed with npm workspaces:
-
-- `packages/api`, `packages/ui`, `packages/proxy`
-
-Documentation:
-
-- JSDoc HTML: `docs/auto/api/`
-- GraphQL schema: `docs/auto/graphql/`
-- Vue component docs: `docs/auto/components/`
+- `MONGO_URL` (API local development)
+- `FREEBOARD_MONGO_URL` (containerized API)
+- `PORT` (API/proxy workspace process port)
+- `FREEBOARD_MONGO_IMAGE` (Mongo image tag for dev compose)
+- `FREEBOARD_STATIC` (static UI build mode; only enable for static deploy builds)

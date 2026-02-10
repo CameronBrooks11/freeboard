@@ -11,9 +11,6 @@ import { USER_AUTH_MUTATION } from "../gql";
 import { useMutation } from "@vue/apollo-composable";
 import { useFreeboardStore } from "../stores/freeboard";
 import router from "../router";
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
 const freeboardStore = useFreeboardStore();
 
 // Reference to the Form component for validation and value retrieval

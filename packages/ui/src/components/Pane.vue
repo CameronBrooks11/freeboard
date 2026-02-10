@@ -59,10 +59,10 @@ const openWidgetAddDialogBox = (pane) => {
     header: t("pane.titleAdd"),
     onOk: (newSettings) => {
       const newViewModel = new _Widget();
+      newViewModel.enabled = newSettings.enabled;
       newViewModel.settings = newSettings.settings;
       newViewModel.type = newSettings.type;
       newViewModel.title = newSettings.title;
-      newViewModel.enabled = newSettings.enabled;
       dashboard.value.addWidget(pane, newViewModel);
     },
   });
@@ -99,7 +99,7 @@ const instance = getCurrentInstance();
       </Transition>
     </header>
     <!-- Render each widget in the pane -->
-    <Widget v-for="widget in pane.widgets" :widget="widget" />
+    <Widget v-for="widget in pane.widgets" :widget="widget" :key="widget.id" />
   </div>
 </template>
 

@@ -1,10 +1,18 @@
-# Adding Widgets & Datasources
+# Base Widget Examples
 
-## Simple Digital Clock
+This page centralizes the legacy `adding-widgets-datasources` examples for the
+current Base widget runtime.
 
-Start by adding a clock datasource and name it "clockSource", set it to be enabled, keep refresh rate at 2 second and hit ok.
+## 1. Simple Digital Clock
 
-In styling add:
+### Datasource
+
+- Type: `Clock`
+- Title: `clockSource`
+- Enabled: `true`
+- Refresh: `2s`
+
+### Widget CSS
 
 ```css
 body {
@@ -15,7 +23,7 @@ body {
 }
 ```
 
-In script add:
+### Widget JS
 
 ```js
 window.addEventListener("message", (event) => {
@@ -23,7 +31,7 @@ window.addEventListener("message", (event) => {
     event.data?.type === "datasource:update" &&
     event.data.datasource === "clockSource"
   ) {
-    const date = new Date(event.data.data); // 'data' is the Date from ClockDatasource
+    const date = new Date(event.data.data);
     const options = {
       timeZone: "America/New_York",
       hour: "2-digit",
@@ -36,17 +44,17 @@ window.addEventListener("message", (event) => {
 });
 ```
 
-In html put:
+### Widget HTML
 
 ```html
 <div id="time-display">Waiting for time...</div>
 ```
 
-## Graphic Analog Clock
+## 2. Graphic Analog Clock
 
-We will use the same datasource `clockSource`.
+Uses the same datasource as example 1 (`clockSource`).
 
-In style put:
+### Widget CSS
 
 ```css
 html,
@@ -65,7 +73,6 @@ body {
   height: 90%;
   max-width: 180px;
   aspect-ratio: 1 / 1;
-  /* Ensures perfect circle */
   border: 6px solid #333;
   border-radius: 50%;
   position: relative;
@@ -81,13 +88,11 @@ body {
   top: 50%;
   left: 50%;
   transform-origin: 0% 50%;
-  /* Pivot from the center of the clock */
   transform: rotate(90deg);
 }
 
 .hand.hour {
   width: 35%;
-  /* Shorter for hour hand */
   height: 4px;
   background: #000;
 }
@@ -113,7 +118,7 @@ body {
 }
 ```
 
-In script put:
+### Widget JS
 
 ```js
 window.addEventListener("message", (event) => {
@@ -123,12 +128,10 @@ window.addEventListener("message", (event) => {
     const minutes = currentTime.getMinutes();
     const hours = currentTime.getHours();
 
-    // Calculate angles, adjust for 12 o'clock
     const secondDeg = seconds * 6 - 90;
     const minuteDeg = minutes * 6 + seconds * 0.1 - 90;
     const hourDeg = (hours % 12) * 30 + minutes * 0.5 - 90;
 
-    // Apply transforms
     document.querySelector(
       ".hand.second"
     ).style.transform = `rotate(${secondDeg}deg)`;
@@ -142,7 +145,7 @@ window.addEventListener("message", (event) => {
 });
 ```
 
-In html put:
+### Widget HTML
 
 ```html
 <div class="clock">
@@ -153,17 +156,18 @@ In html put:
 </div>
 ```
 
-## Random Fact JSON Source
+## 3. Random Fact JSON Source
 
-Add a new JSON data source and enter:
+### Datasource
 
-Title: randomFact
-Enabled: yes
-url: https://uselessfacts.jsph.pl/api/v2/facts/random?language=en
-Use proxy: yes
-Refresh interval: 15 (seconds)
+- Type: `JSON`
+- Title: `randomFact`
+- Enabled: `true`
+- URL: `https://uselessfacts.jsph.pl/api/v2/facts/random?language=en`
+- Use proxy: `true`
+- Refresh: `15s`
 
-Now add the new midget, title it Random Fact and enable to yes. In style put:
+### Widget CSS
 
 ```css
 html,
@@ -176,7 +180,6 @@ body {
   justify-content: center;
   align-items: center;
   background: #1e1e1e;
-  /* Dark background */
   color: #fff;
   font-family: "Segoe UI", Tahoma, sans-serif;
 }
@@ -195,7 +198,6 @@ body {
   font-size: 1.2rem;
   line-height: 1.2;
   color: #ffeb3b;
-  /* Accent color for the text */
   font-weight: 500;
 }
 
@@ -212,7 +214,7 @@ body {
 }
 ```
 
-In script put:
+### Widget JS
 
 ```js
 window.addEventListener("message", (event) => {
@@ -227,7 +229,7 @@ window.addEventListener("message", (event) => {
 });
 ```
 
-In html put:
+### Widget HTML
 
 ```html
 <div class="container">
@@ -235,79 +237,98 @@ In html put:
 </div>
 ```
 
-## Current Temperature JSON Source
+## 4. Current Temperature JSON Source
 
-Add the json source:
+### Datasource
 
-Title: localTemp
-Enabled: yes
-URL: https://api.open-meteo.com/v1/forecast?latitude=42.9837&longitude=-81.2497&hourly=temperature_2m&current_weather=true
-Use proxy: yes
-Refresh interval: 60 seconds
+- Type: `JSON`
+- Title: `localTemp`
+- Enabled: `true`
+- URL:
+  `https://api.open-meteo.com/v1/forecast?latitude=42.9837&longitude=-81.2497&hourly=temperature_2m&current_weather=true`
+- Use proxy: `true`
+- Refresh: `60s`
 
-Create a new widget title it Local Temp and enable to yes. In style put:
+### Widget CSS
 
 ```css
 html,
 body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #gauge {
-    width: 160px;
-    height: 160px;
+  width: 160px;
+  height: 160px;
 }
 ```
 
-In script put:
+### Widget JS
 
 ```js
-const ctx = document.getElementById('gauge').getContext('2d');
+const ctx = document.getElementById("gauge").getContext("2d");
 const size = Math.min(ctx.canvas.width, ctx.canvas.height);
 ctx.canvas.width = size;
 ctx.canvas.height = size;
 
 function drawGauge(temp) {
-    const max = 50, min = -20;
-    const pct = (temp - min) / (max - min);
-    const angle = pct * Math.PI * 1.5 + Math.PI * 0.75;
-    ctx.clearRect(0, 0, size, size);
-    // background arc
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, size * 0.4, Math.PI * 0.75, Math.PI * 0.75 + Math.PI * 1.5);
-    ctx.strokeStyle = '#eee'; ctx.lineWidth = size * 0.05; ctx.stroke();
-    // filled arc
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, size * 0.4, Math.PI * 0.75, angle);
-    ctx.strokeStyle = temp >= 0 ? 'red' : 'blue'; ctx.lineWidth = size * 0.07; ctx.stroke();
-    // needle
-    ctx.save();
-    ctx.translate(size / 2, size / 2);
-    ctx.rotate(angle);
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(size * 0.35, 0);
-    ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.restore();
-    document.getElementById('temp-label').innerText = temp.toFixed(1) + ' °C';
+  const max = 50;
+  const min = -20;
+  const pct = (temp - min) / (max - min);
+  const angle = pct * Math.PI * 1.5 + Math.PI * 0.75;
+  ctx.clearRect(0, 0, size, size);
+
+  ctx.beginPath();
+  ctx.arc(
+    size / 2,
+    size / 2,
+    size * 0.4,
+    Math.PI * 0.75,
+    Math.PI * 0.75 + Math.PI * 1.5
+  );
+  ctx.strokeStyle = "#eee";
+  ctx.lineWidth = size * 0.05;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size * 0.4, Math.PI * 0.75, angle);
+  ctx.strokeStyle = temp >= 0 ? "red" : "blue";
+  ctx.lineWidth = size * 0.07;
+  ctx.stroke();
+
+  ctx.save();
+  ctx.translate(size / 2, size / 2);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(size * 0.35, 0);
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+
+  document.getElementById("temp-label").innerText = `${temp.toFixed(1)} C`;
 }
 
-window.addEventListener('message', event => {
-    if (event.data.type === 'datasource:update' && event.data.datasource === 'localTemp') {
-        const temp = event.data.data.current_weather.temperature;
-        drawGauge(temp);
-    }
+window.addEventListener("message", (event) => {
+  if (
+    event.data.type === "datasource:update" &&
+    event.data.datasource === "localTemp"
+  ) {
+    const temp = event.data.data.current_weather.temperature;
+    drawGauge(temp);
+  }
 });
 ```
 
-In html put:
+### Widget HTML
 
 ```html
 <canvas id="gauge"></canvas>

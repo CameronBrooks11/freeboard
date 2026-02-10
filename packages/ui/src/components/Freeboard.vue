@@ -8,7 +8,7 @@
  */
 defineOptions({ name: 'Freeboard' });
 
-import { reactive, ref, watch, computed } from "vue";
+import { reactive, watch, computed } from "vue";
 import Header from "./Header.vue";
 import Board from "./Board.vue";
 import { useFreeboardStore } from "../stores/freeboard";
@@ -23,6 +23,14 @@ import { HeaderAuthProvider } from "../auth/HeaderAuthProvider";
 import { OAuth2PasswordGrantProvider } from "../auth/OAuth2PasswordGrantProvider";
 import { usePreferredColorScheme } from "@vueuse/core";
 import { BaseWidget } from "../widgets/BaseWidget";
+import { TextWidget } from "../widgets/TextWidget";
+import { IndicatorWidget } from "../widgets/IndicatorWidget";
+import { GaugeWidget } from "../widgets/GaugeWidget";
+import { PointerWidget } from "../widgets/PointerWidget";
+import { PictureWidget } from "../widgets/PictureWidget";
+import { HtmlWidget } from "../widgets/HtmlWidget";
+import { SparklineWidget } from "../widgets/SparklineWidget";
+import { MapWidget } from "../widgets/MapWidget";
 
 // ----------------------------------------------------------------------------
 // Store & theming
@@ -113,7 +121,7 @@ watch(d, () => freeboardStore.saveSettingsToLocalStorage());
 // ----------------------------------------------------------------------------
 // Initial plugin registration and baseline UI state
 // ----------------------------------------------------------------------------
-freeboardStore.loadSettingsFromLocalStorage(!routeId.value);
+freeboardStore.loadSettingsFromLocalStorage();
 freeboardStore.loadDashboardAssets();
 freeboardStore.loadDashboardTheme();
 freeboardStore.loadAuthPlugin(HeaderAuthProvider);
@@ -121,6 +129,14 @@ freeboardStore.loadAuthPlugin(OAuth2PasswordGrantProvider);
 freeboardStore.loadDatasourcePlugin(JSONDatasource);
 freeboardStore.loadDatasourcePlugin(ClockDatasource);
 freeboardStore.loadWidgetPlugin(BaseWidget);
+freeboardStore.loadWidgetPlugin(TextWidget);
+freeboardStore.loadWidgetPlugin(IndicatorWidget);
+freeboardStore.loadWidgetPlugin(GaugeWidget);
+freeboardStore.loadWidgetPlugin(PointerWidget);
+freeboardStore.loadWidgetPlugin(PictureWidget);
+freeboardStore.loadWidgetPlugin(HtmlWidget);
+freeboardStore.loadWidgetPlugin(SparklineWidget);
+freeboardStore.loadWidgetPlugin(MapWidget);
 
 // Determine edit mode based on static build or login
 freeboardStore.allowEdit = __FREEBOARD_STATIC__ || freeboardStore.isLoggedIn();
@@ -131,15 +147,13 @@ showLoadingIndicator.value = false;
 </script>
 
 <template>
-  <Transition>
-    <div class="freeboard">
-      <!-- Loading indicator -->
-      <Preloader v-if="showLoadingIndicator" />
-      <!-- Main UI when loaded -->
-      <Header v-else />
-      <Board v-if="!showLoadingIndicator" />
-    </div>
-  </Transition>
+  <div class="freeboard">
+    <!-- Loading indicator -->
+    <Preloader v-if="showLoadingIndicator" />
+    <!-- Main UI when loaded -->
+    <Header v-else />
+    <Board v-if="!showLoadingIndicator" />
+  </div>
 </template>
 
 <style lang="css" scoped>

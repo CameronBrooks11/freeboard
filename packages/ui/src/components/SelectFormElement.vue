@@ -48,7 +48,7 @@ defineExpose({
       <option value="" :selected="modelValue === ''" v-if="placeholder" :disabled="props.placeholderDisabled">
         {{ placeholder }}
       </option>
-      <option :value="option.value" v-for="option in options" :selected="modelValue === option.value">
+      <option :value="option.value" v-for="option in options" :key="option.value" :selected="modelValue === option.value">
         {{ option.label }}
       </option>
     </select>

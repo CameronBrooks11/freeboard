@@ -3,11 +3,12 @@
  * @description Pinia store for Freeboard application state, including dashboard data, plugins, and UI actions.
  */
 
-import { defineStore, storeToRefs } from "pinia";
+import { defineStore } from "pinia";
 import renderComponent from "../render";
 import { Dashboard } from "../models/Dashboard";
 import router from "../router";
 import { usePreferredColorScheme } from "@vueuse/core";
+import { validateWidgetPlugin } from "../widgets/runtime/plugin";
 
 export const useFreeboardStore = defineStore("freeboard", {
   /**
@@ -43,16 +44,20 @@ export const useFreeboardStore = defineStore("freeboard", {
     /**
      * Load saved settings (e.g., token) from localStorage.
      *
-     * @param {Dashboard} [dashboard] - Optional dashboard instance to hydrate.
      */
-    loadSettingsFromLocalStorage(dashboard) {
+    loadSettingsFromLocalStorage() {
       const item = localStorage.getItem("freeboard");
       if (!item) {
         return;
       }
-      const settings = JSON.parse(item);
-      if (settings.token) {
-        this.token = settings.token;
+      try {
+        const settings = JSON.parse(item);
+        if (settings.token) {
+          this.token = settings.token;
+        }
+      } catch {
+        this.token = null;
+        localStorage.removeItem("freeboard");
       }
       // TODO: Sync with local limited, use indexdb
       /*
@@ -143,11 +148,8 @@ export const useFreeboardStore = defineStore("freeboard", {
      * @param {Object} plugin - Plugin class with typeName and optional label.
      */
     loadWidgetPlugin(plugin) {
-      if (plugin.label === undefined) {
-        plugin.label = plugin.typeName;
-      }
-
-      this.widgetPlugins[plugin.typeName] = plugin;
+      const normalizedPlugin = validateWidgetPlugin(plugin);
+      this.widgetPlugins[normalizedPlugin.typeName] = normalizedPlugin;
     },
 
     /**

@@ -13,5 +13,22 @@ export default [
   },
 
   js.configs.recommended,
+  {
+    name: "app/compile-time-globals",
+    languageOptions: {
+      globals: {
+        __FREEBOARD_VERSION__: "readonly",
+        __FREEBOARD_STATIC__: "readonly",
+      },
+    },
+  },
   ...pluginVue.configs["flat/essential"],
+  {
+    name: "app/vue-rules-override",
+    rules: {
+      "vue/multi-word-component-names": "off",
+      "vue/no-reserved-component-names": "off",
+      "vue/no-mutating-props": "off",
+    },
+  },
 ];

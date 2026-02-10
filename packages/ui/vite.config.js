@@ -50,10 +50,14 @@ export default defineConfig(({ mode }) => {
   const PROXY_PORT = Number(env.FREEBOARD_PROXY_PORT || 8001);
 
   /**
-   * Whether running in static deployment mode.
-   * Used to determine the base public path.
+   * Parse FREEBOARD_STATIC as a strict boolean.
+   * Accepts: 1, true, yes, on (case-insensitive).
    */
-  const isStatic = JSON.stringify(process.env.FREEBOARD_STATIC);
+  const isStatic = ["1", "true", "yes", "on"].includes(
+    String(env.FREEBOARD_STATIC || "")
+      .trim()
+      .toLowerCase()
+  );
 
   /**
    * Public base path for built assets.
@@ -61,7 +65,7 @@ export default defineConfig(({ mode }) => {
    */
   const STATIC_BASE =
     env.FREEBOARD_BASE_PATH ||
-    (process.env.FREEBOARD_STATIC ? "/freeboard/" : "/");
+    (isStatic ? "/freeboard/" : "/");
 
   return {
     // Enable Vue 3 single-file component support
@@ -83,7 +87,7 @@ export default defineConfig(({ mode }) => {
     define: {
       // Inject package version and static flags into the client
       __FREEBOARD_VERSION__: JSON.stringify(process.env.npm_package_version),
-      __FREEBOARD_STATIC__: isStatic,
+      __FREEBOARD_STATIC__: isStatic ? "true" : "false",
       __FREEBOARD_BASE_PATH__: JSON.stringify(STATIC_BASE),
     },
 

@@ -26,10 +26,15 @@ const openDatasourceEditDialogBox = (datasource) => {
     header: t("datasourcesList.titleEdit"),
     datasource,
     onOk: (newSettings) => {
-      datasource.title = newSettings.title;
+      const previousTitle = datasource.title;
+      datasource.title = dashboard.value.ensureUniqueDatasourceTitle(
+        newSettings.title,
+        datasource.id
+      );
       datasource.enabled = newSettings.enabled;
-      datasource.settings = newSettings.settings;
       datasource.type = newSettings.type;
+      datasource.settings = newSettings.settings;
+      dashboard.value.renameDatasourceBindings(previousTitle, datasource.title);
     },
   });
 };
@@ -50,7 +55,9 @@ const openDatasourceAddDialogBox = () => {
     header: t("datasourcesList.titleAdd"),
     onOk: (newSettings) => {
       const newViewModel = new Datasource();
-      newViewModel.title = newSettings.title;
+      newViewModel.title = dashboard.value.ensureUniqueDatasourceTitle(
+        newSettings.title
+      );
       newViewModel.enabled = newSettings.enabled;
       newViewModel.settings = newSettings.settings;
       newViewModel.type = newSettings.type;
@@ -78,7 +85,7 @@ const instance = getCurrentInstance();
         </tr>
       </thead>
       <tbody class="datasources-list__table__body">
-        <tr v-for="datasource in dashboard.datasources" class="datasources-list__table__body__row">
+        <tr v-for="datasource in dashboard.datasources" :key="datasource.id" class="datasources-list__table__body__row">
           <td class="datasources-list__table__body__row__cell">
             <TextButton @click="() => openDatasourceEditDialogBox(datasource)">{{ datasource.title }}</TextButton>
           </td>

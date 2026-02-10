@@ -14,8 +14,6 @@ defineOptions({ name: 'Form' });
 
 import {
   markRaw,
-  onMounted,
-  reactive,
   ref,
   toRef,
   watch,
@@ -61,7 +59,7 @@ const components = ref({});
  */
 const getValue = () => {
   const value = {};
-  fields.value.forEach((field) => {
+  formFields.value.forEach((field) => {
     value[field.name] = field.model;
   });
   return value;
@@ -105,7 +103,7 @@ const hasErrors = () => {
  */
 const validateField = (key) => {
   const e = [];
-  const field = fields.value.find((f) => f.name === key);
+  const field = formFields.value.find((f) => f.name === key);
 
   field?.validators.forEach((validator) => {
     const result = validator(field.model);
@@ -185,6 +183,9 @@ const translateField = (field) => {
  */
 const fieldToFormElement = (field) => {
   const validators = [];
+  const customValidators = Array.isArray(field.validators)
+    ? field.validators
+    : [];
   let type = null;
   if (field.type === "number") {
     if (field.required) {
@@ -236,7 +237,7 @@ const fieldToFormElement = (field) => {
     type = listFormElementRef;
   }
 
-  return { ...field, component: type, validators };
+  return { ...field, component: type, validators: [...customValidators, ...validators] };
 };
 
 // Expose methods for parent components (DialogBox) to call
@@ -246,7 +247,7 @@ defineExpose({
 });
 
 // Reactive reference for processed fields
-const fields = ref(null);
+const formFields = ref([]);
 
 // Watch for prop changes to rebuild field components
 const f = toRef(props, "fields");
@@ -254,14 +255,14 @@ const s = toRef(props, "settings");
 
 watch([f, s], async () => {
   // Build, translate, and resolve each field definition
-  fields.value = await Promise.all(
-    f.value
+  formFields.value = await Promise.all(
+    (f.value || [])
       .map(fieldToFormElement)
       .map(translateField)
       .map(resolveFieldOptions)
   );
   // Initialize each field’s model and watch for changes
-  fields.value.forEach((field) => {
+  formFields.value.forEach((field) => {
     const value = field.model?.value || s.value[field.name] || field.default;
     const r = ref(value);
     field.model = r;
@@ -274,7 +275,7 @@ watch([f, s], async () => {
 
 <template>
   <div class="form">
-    <div class="form__row" v-for="field in fields">
+    <div class="form__row" v-for="field in formFields" :key="field.name">
       <div class="form__row__label" v-if="!hideLabels">
         <label>{{ field.label }}</label>
       </div>
@@ -284,9 +285,11 @@ watch([f, s], async () => {
             v-model="field.model" :options="field.options || field.settings" :placeholder="field.placeholder"
             :secret="field.type === 'password'" :language="field.language"></component>
         </div>
-        <div class="form__row__value__error" v-for="error in errors[field.name]" v-if="errors[field.name]">
-          {{ error }}
-        </div>
+        <template v-if="errors[field.name]">
+          <div class="form__row__value__error" v-for="error in errors[field.name]" :key="`${field.name}-${error}`">
+            {{ error }}
+          </div>
+        </template>
         <div class="form__row__value__description" v-if="field.description">
           {{ field.description }}
         </div>

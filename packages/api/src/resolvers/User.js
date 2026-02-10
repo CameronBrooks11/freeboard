@@ -49,12 +49,10 @@ export default /** @type {IResolvers} */ {
      *
      * @param {any} parent
      * @param {{ email: string, password: string }} args - User email and password.
-     * @param {Object} context - GraphQL context.
-     * @param {GraphQLResolveInfo} info
      * @returns {Promise<{ token: string }>} Signed JWT for the new user.
      * @throws {GraphQLError} When input data is invalid or user limit exceeded.
      */
-    registerUser: async (parent, { email, password }, context) => {
+    registerUser: async (parent, { email, password }) => {
       if (!email || !password) {
         throw createGraphQLError("Data provided is not valid");
       }
@@ -91,12 +89,10 @@ export default /** @type {IResolvers} */ {
      *
      * @param {any} parent
      * @param {{ email: string, password: string }} args - User email and password.
-     * @param {Object} context - GraphQL context.
-     * @param {GraphQLResolveInfo} info
      * @returns {Promise<{ token: string }>} Signed JWT for the authenticated user.
      * @throws {GraphQLError} When credentials are invalid or user not found.
      */
-    authUser: async (parent, { email, password }, context) => {
+    authUser: async (parent, { email, password }) => {
       if (!email || !password) {
         throw createGraphQLError("Invalid credentials");
       }

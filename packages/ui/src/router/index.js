@@ -57,15 +57,17 @@ if (__FREEBOARD_STATIC__) {
   /**
    * Global navigation guard to enforce login state.
    *
-   * - Redirect unauthenticated users to Login when accessing Home.
+   * - Redirect unauthenticated users to Login when accessing any non-login route.
    * - Redirect authenticated users away from Login to Home.
    */
-  router.beforeEach(async (to, from) => {
+  router.beforeEach(async (to) => {
     const freeboardStore = useFreeboardStore();
     freeboardStore.loadSettingsFromLocalStorage();
-    if (!freeboardStore.isLoggedIn() && to.name === "Home") {
+
+    const isLoginRoute = to.name === "Login";
+    if (!freeboardStore.isLoggedIn() && !isLoginRoute) {
       return { name: "Login" };
-    } else if (freeboardStore.isLoggedIn() && to.name === "Login") {
+    } else if (freeboardStore.isLoggedIn() && isLoginRoute) {
       return { name: "Home" };
     }
   });

@@ -10,7 +10,7 @@
  */
 defineOptions({ name: 'PaneDialogBox' });
 
-import { computed, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
 import { useI18n } from "vue-i18n";

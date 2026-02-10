@@ -7,6 +7,7 @@ This Freeboard is a fork of [Jim Heising's damn-sexy dashboard app](https://gith
 - Distributable through **docker compose**
 - Modern **Vue.js** v3 frontend
 - Extendable **HTTP-Proxy** to bypass CORS
+- Built-in widget set: **Base, Text, Indicator, Gauge, Pointer, Picture, HTML, Sparkline, Map**
 - **Monorepo** through `npm` workspaces
 - **Commit-Hooks** with `pre-commit`
 - **CSS-Variables** for all colors
@@ -49,6 +50,28 @@ docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
 npm run dev
 ```
 
+`npm run dev` now:
+
+- Starts Mongo in Docker and waits for healthy status.
+- Starts UI/API/Proxy (without coupling Mongo log streaming into the process group).
+- On Ctrl+C, stops UI/API/Proxy and keeps Mongo running.
+
+Useful Mongo dev commands:
+
+```bash
+npm run dev:mongo:up
+npm run dev:mongo:status
+npm run dev:mongo:logs
+npm run dev:mongo:down
+npm run dev:mongo:reset
+```
+
+Recommended local loop:
+
+1. `npm run dev` (or `npm run dev:mongo:up` + `npm run dev:services`)
+2. use `npm run dev:mongo:logs` only when troubleshooting Mongo
+3. use `npm run dev:mongo:reset` only when a clean DB is needed
+
 ## RaspberryPi
 
 ```bash
@@ -56,12 +79,6 @@ python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/ansible-playbook ansible/playbook.yml --become
 ```
-
-## TODO
-
-- Secure environment variable store
-- i18n: externalize strings and labels
-- docker versions package tags to ensure re-pull on version bump
 
 ## Acknowledgement
 
@@ -74,5 +91,7 @@ Copyright © 2013 Jim Heising ([github.com/jheising](https://github.com/jheising
 Copyright © 2013 Bug Labs, Inc. ([buglabs.net](https://buglabs.net))
 
 Copyright © 2024 Sebastian Krüger ([sk.honeymachine.io](https://sk.honeymachine.io))
+
+Copyright © 2026 Cameron K. Brooks ([github.com/CameronBrooks11](https://github.com/CameronBrooks11))
 
 Licensed under the [MIT License](/LICENSE)

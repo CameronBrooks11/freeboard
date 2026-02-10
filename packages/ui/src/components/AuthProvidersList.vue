@@ -86,7 +86,8 @@ const instance = getCurrentInstance();
         </tr>
       </thead>
       <tbody class="auth-providers-list__table__body">
-        <tr v-for="authProvider in dashboard.authProviders" class="auth-providers-list__table__body__row">
+        <tr v-for="authProvider in dashboard.authProviders" :key="authProvider.id || authProvider.title"
+          class="auth-providers-list__table__body__row">
           <td class="auth-providers-list__table__body__row__cell" colspan="2">
             <TextButton @click="() => openAuthProviderEditDialogBox(authProvider)">
               {{ authProvider.title }}

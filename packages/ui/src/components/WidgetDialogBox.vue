@@ -124,7 +124,7 @@ const onDialogBoxOk = () => {
     </template>
     <!-- Dynamic form tabs for general and type-specific settings -->
     <TabNavigator :fields="fields" v-if="typeRef">
-      <template v-slot:[field.name] v-for="field in fields">
+      <template v-for="field in fields" :key="field.name" #[field.name]>
         <Form :ref="(el) => storeComponentRef(field.name, el)" :settings="field.settings" :fields="field.fields" />
       </template>
     </TabNavigator>

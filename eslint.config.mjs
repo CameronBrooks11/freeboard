@@ -1,9 +1,14 @@
 import globals from "globals";
 import js from "@eslint/js";
+import pluginVue from "eslint-plugin-vue";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
+  {
+    ignores: ["**/dist/**", "**/dist-ssr/**", "**/coverage/**"],
+  },
   js.configs.recommended,
+  ...pluginVue.configs["flat/essential"],
   {
     languageOptions: {
       globals: {
@@ -33,4 +38,18 @@ export default [
     },
   },
   { languageOptions: { globals: globals.browser } },
+  {
+    files: ["packages/ui/src/**/*.{js,mjs,cjs,vue}"],
+    languageOptions: {
+      globals: {
+        __FREEBOARD_VERSION__: "readonly",
+        __FREEBOARD_STATIC__: "readonly",
+      },
+    },
+    rules: {
+      "vue/multi-word-component-names": "off",
+      "vue/no-reserved-component-names": "off",
+      "vue/no-mutating-props": "off",
+    },
+  },
 ];

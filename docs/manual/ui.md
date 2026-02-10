@@ -28,7 +28,7 @@ It supports a plugin architecture for datasources, widgets and auth providers.
   - **Models**: `models/AuthProvider.js`, `Dashboard.js`, `Datasource.js`, `Pane.js`, `Widget.js`
   - **Router**: `router/index.js`
   - **Store**: `stores/freeboard.js`
-  - **Widgets**: `widgets/BaseWidget.js`
+  - **Widgets**: `widgets/BaseWidget.js`, `TextWidget.js`, `IndicatorWidget.js`, `GaugeWidget.js`, `PointerWidget.js`, `PictureWidget.js`, `HtmlWidget.js`, `SparklineWidget.js`, `MapWidget.js`
   - **Components**: `components/*.vue`
 
 ## Key Configuration
@@ -76,7 +76,7 @@ Defines:
 
 - **Auth Providers**: classes with `typeName`, `label`, `fields`, and `createRequest`
 - **Datasources**: classes with `typeName`, `label`, `fields`, and lifecycle methods (`onSettingsChanged`, `updateNow`, `onDispose`)
-- **Widgets**: classes with `typeName`, `label`, `fields`, `template`, `newInstance`, and methods `render`, `onSettingsChanged`, `processDatasourceUpdate`, `onDispose`
+- **Widgets**: plugin classes validated at registration and typically implemented on `ReactiveWidget`; support binding resolution via snapshot context and lifecycle methods (`render`, `onSettingsChanged`, `processDatasourceUpdate`, `onResize`, `onDispose`)
 
 ## Models & Store
 

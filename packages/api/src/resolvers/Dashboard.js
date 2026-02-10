@@ -58,10 +58,9 @@ export default /** @type {IResolvers} */ {
      * @param {any} parent
      * @param {{ _id: string }} args - Dashboard ID.
      * @param {Object} context - GraphQL context containing user info.
-     * @param {GraphQLResolveInfo} info
      * @returns {Promise<Object>} The requested dashboard.
      */
-    dashboard: async (parent, { _id }, context, info) => {
+    dashboard: async (parent, { _id }, context) => {
       return getDashboard(await Dashboard.findOne({ _id }), context);
     },
 
@@ -71,10 +70,9 @@ export default /** @type {IResolvers} */ {
      * @param {any} parent
      * @param {any} args
      * @param {Object} context - GraphQL context containing user info.
-     * @param {GraphQLResolveInfo} info
      * @returns {Promise<Object[]>} List of user's dashboards.
      */
-    dashboards: async (parent, args, context, info) => {
+    dashboards: async (parent, args, context) => {
       ensureThatUserIsLogged(context);
       const res = await Dashboard.find({ user: context.user._id })
         .populate()
@@ -91,10 +89,9 @@ export default /** @type {IResolvers} */ {
      * @param {any} parent
      * @param {{ dashboard: any }} args - Dashboard input data.
      * @param {Object} context - GraphQL context containing user info.
-     * @param {GraphQLResolveInfo} info
      * @returns {Promise<Object>} The created dashboard.
      */
-    createDashboard: async (parent, { dashboard }, context, info) => {
+    createDashboard: async (parent, { dashboard }, context) => {
       ensureThatUserIsLogged(context);
 
       const newDashboard = new Dashboard({
@@ -125,10 +122,9 @@ export default /** @type {IResolvers} */ {
      * @param {any} parent
      * @param {{ _id: string, dashboard: any }} args - Dashboard ID and update data.
      * @param {Object} context - GraphQL context containing user info.
-     * @param {GraphQLResolveInfo} info
      * @returns {Promise<Object>} The updated dashboard.
      */
-    updateDashboard: async (parent, { _id, dashboard }, context, info) => {
+    updateDashboard: async (parent, { _id, dashboard }, context) => {
       ensureThatUserIsLogged(context);
 
       const res = await Dashboard.findOne({ _id });
@@ -156,10 +152,9 @@ export default /** @type {IResolvers} */ {
      * @param {any} parent
      * @param {{ _id: string }} args - Dashboard ID.
      * @param {Object} context - GraphQL context containing user info.
-     * @param {GraphQLResolveInfo} info
      * @returns {Promise<Object>} The deleted dashboard data.
      */
-    deleteDashboard: async (parent, { _id }, context, info) => {
+    deleteDashboard: async (parent, { _id }, context) => {
       ensureThatUserIsLogged(context);
 
       const res = await Dashboard.findOne({ _id, user: context.user._id });
@@ -177,12 +172,11 @@ export default /** @type {IResolvers} */ {
       /**
        * Subscribe to real-time updates for a specific dashboard.
        *
-       * @param {any} _
-       * @param {{ _id: string }} args - Dashboard ID.
-       * @param {Object} context - GraphQL context.
-       * @returns {AsyncIterable<any>} Subscription iterator.
-       */
-      subscribe: (_, args, context) => {
+      * @param {any} _
+      * @param {{ _id: string }} args - Dashboard ID.
+      * @returns {AsyncIterable<any>} Subscription iterator.
+      */
+      subscribe: (_, args) => {
         return pubSub.subscribe(`dashboard:${args._id}`);
       },
     },

@@ -96,7 +96,7 @@ export class Pane {
     this.layout = object.layout || {};
 
     object.widgets?.forEach((widgetConfig) => {
-      const widget = new Widget(widgetConfig.settings, widgetConfig.type);
+      const widget = new Widget();
       widget.deserialize(widgetConfig);
       dashboard.value.addWidget(this, widget);
     });

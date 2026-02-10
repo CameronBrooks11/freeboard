@@ -45,6 +45,21 @@ const typeRef = ref(datasource ? datasource.type : null);
 // Dynamic form fields based on selected plugin
 const fields = ref([]);
 
+const validateUniqueDatasourceTitle = (value) => {
+  if (!String(value || "").trim()) {
+    return {};
+  }
+
+  const duplicate = dashboard.value.hasDatasourceTitleConflict(
+    value,
+    datasource?.id
+  );
+
+  return duplicate
+    ? { error: "Datasource title must be unique and not use reserved names." }
+    : {};
+};
+
 // Rebuild fields schema whenever the selected type changes
 watch(
   typeRef,
@@ -70,6 +85,7 @@ watch(
             label: "form.labelTitle",
             type: "text",
             required: true,
+            validators: [validateUniqueDatasourceTitle],
           },
           {
             name: "enabled",
@@ -126,7 +142,7 @@ const onDialogBoxOk = () => {
 
     <!-- Dynamic form sections for plugin settings -->
     <TabNavigator v-if="typeRef" :fields="fields" ref="tabNavigator">
-      <template v-slot:[field.name] v-for="field in fields">
+      <template v-for="field in fields" :key="field.name" #[field.name]>
         <Form :ref="(el) => storeComponentRef(field.name, el)" :settings="field.settings" :fields="field.fields" />
       </template>
     </TabNavigator>

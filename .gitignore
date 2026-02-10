@@ -54,3 +54,6 @@ mongo-data/
 docker-data/
 *.pid
 *.seed
+
+# Private planning docs
+planning/

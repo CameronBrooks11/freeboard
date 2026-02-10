@@ -114,7 +114,7 @@ const onDialogBoxOk = () => {
 
     <!-- Tabbed form sections for provider settings -->
     <TabNavigator :fields="fields">
-      <template v-slot:[field.name] v-for="field in fields">
+      <template v-for="field in fields" :key="field.name" #[field.name]>
         <Form :ref="(el) => storeComponentRef(field.name, el)" :settings="field.settings" :fields="field.fields" />
       </template>
     </TabNavigator>

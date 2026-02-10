@@ -47,7 +47,7 @@ const openDashboard = async (id) => {
   try {
     // Navigate to dashboard route
     await router.push(`/${id}`);
-  } catch (_) {
+  } catch {
     // Fallback: fetch dashboard directly if navigation fails
     const { onResult } = useQuery(DASHBOARD_READ_QUERY, { id });
     await new Promise((resolve) => {

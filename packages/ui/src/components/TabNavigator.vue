@@ -27,7 +27,8 @@ onMounted(() => {
     <!-- Tab menu -->
     <div class="tab-navigator__menu">
       <ul class="tab-navigator__menu__board-toolbar">
-        <li v-for="(field, i) in fields" @click="() => (index = i)" class="tab-navigator__menu__board-toolbar__item"
+        <li v-for="(field, i) in fields" :key="field.name || i" @click="() => (index = i)"
+          class="tab-navigator__menu__board-toolbar__item"
           :class="{ 'tab-navigator__menu__board-toolbar__item--active': index === i }">
           <i class="tab-navigator__menu__board-toolbar__item__icon">
             <v-icon :name="field.icon" />
@@ -41,7 +42,7 @@ onMounted(() => {
 
     <!-- Tab content -->
     <div ref="tabs" class="tab-navigator__tabs">
-      <div v-for="(field, i) in fields" :style="{ display: index === i ? 'inherit' : 'none' }">
+      <div v-for="(field, i) in fields" :key="field.name || i" :style="{ display: index === i ? 'inherit' : 'none' }">
         <!-- Render named slot for each tab -->
         <slot :name="field.name" :key="field.name"></slot>
       </div>
