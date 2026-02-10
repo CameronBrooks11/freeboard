@@ -55,8 +55,10 @@ Examples:
 
 Some widget fields support interpolation:
 
-- `{{ Weather.payload.temperature }} °C`
-- `{{ datasources.ds_ab12cd.status }}`
+```text
+{{ Weather.payload.temperature }} °C
+{{ datasources.ds_ab12cd.status }}
+```
 
 ## Troubleshooting
 
