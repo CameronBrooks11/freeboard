@@ -22,7 +22,7 @@
 - [x] Raise a PR and verify required PR CI runs/passes (`Required CI`)
 - [x] Change default branch to `main`
 - [x] Create branch protection rules to enforce PR reviews and CI passing before merge
-- [ ] Test and verify branch protection rules are working as expected (e.g. by attempting to merge a PR with failing CI or without required reviews)
+- [x] Test and verify branch protection rules are working as expected (e.g. by attempting to merge a PR with failing CI or without required reviews)
 
 ## Misc Tasks
 
