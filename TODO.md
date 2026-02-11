@@ -35,3 +35,4 @@
 - [ ] Secure environment variable store
 - [ ] i18n: externalize strings and labels
 - [ ] docker versions package tags to ensure re-pull on version bump
+- [ ] Service accounts / machine-to-machine auth: scoped API tokens, rotation/revocation, audit trail, and admin management UX (defer until after current phased model rollout)
