@@ -7,10 +7,6 @@ on:
 env:
   REGISTRY: ghcr.io
 
-concurrency:
-  group: docker-publish-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
