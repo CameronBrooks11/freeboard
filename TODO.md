@@ -16,10 +16,13 @@
 - [x] Implement next widget set with same runtime patterns: Pointer, Picture, HTML
 - [x] Implement advanced widgets: Sparkline, Map
 - [x] Add focused tests for runtime + widget lifecycle
-- [ ] Add focused tests for serialization/pane sizing smoke paths
+- [x] Add focused tests for serialization/pane sizing smoke paths
 - [x] Add CI job(s) for critical test and lint gates
 - [x] Update docs for runtime contract and migrated widgets
 - [ ] Raise a PR and verify required PR CI runs/passes (`Required CI`)
+- [ ] Change default branch to `main` and delete `dev` branch after merge
+- [ ] Create branch protection rules to enforce PR reviews and CI passing before merge
+- [ ] Test branch protection rules by attempting to push directly to `main` and by opening a PR without passing CI
 
 ## Misc Tasks
 

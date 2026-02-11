@@ -7,17 +7,12 @@ on:
 env:
   REGISTRY: ghcr.io
 
-concurrency:
-  group: docker-publish-${{ github.ref }}
-  cancel-in-progress: true
-
+# Intentionally no cancel-in-progress concurrency for publish builds:
+# rapid sequential pushes can otherwise skip changed-image publishes.
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    concurrency:
-      group: docker-publish-${{ github.ref }}-${{ matrix.name }}
-      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:

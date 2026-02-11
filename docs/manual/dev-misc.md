@@ -33,6 +33,45 @@ If your change is docs-only, still run `npm run lint` to catch formatting or syn
   - push events use diff-based per-package skip logic.
 - If Pages deploy did not run, verify changed files matched Pages workflow `paths` filters.
 
+## CI Workflow Matrix
+
+| Workflow | Trigger | Heavy-work cancellation | Notes |
+| --- | --- | --- | --- |
+| `CI` (`.github/workflows/ci.yml`) | `pull_request` to `dev`, `merge_group`, `workflow_dispatch` | Yes (`concurrency: ci-<pr/ref>`) | Required gate via `Required CI` job; path-gated jobs |
+| `Deploy to GitHub Pages` (`.github/workflows/build-pages.yml`) | `push` to `dev` on docs/demo-related paths, `workflow_dispatch` | Yes (`concurrency: pages-<ref>`) | Builds docs + demo site |
+| `Build & publish docker images` (`.github/workflows/build-docker-images.yml`) | `push` to `dev`, `workflow_dispatch` | No (intentional) | Per-package diff skip; manual dispatch forces full rebuild |
+
+## CI Runtime Budget (Targets)
+
+- `CI` docs-only PR: under 5 minutes
+- `CI` code PR (lint + selective tests + build verify): under 15 minutes
+- `Deploy to GitHub Pages`: under 15 minutes for build job
+- `Build & publish docker images`: under 90 minutes worst case (all images, multi-arch)
+
+Treat these as operating targets. If runs consistently exceed budget, optimize path filters or split heavy work.
+
+Note: Docker publish concurrency cancellation is intentionally disabled to prevent missed publishes when multiple commits land before earlier image builds finish.
+
+## CI Ownership and Path-Filter Policy
+
+- Owner: repository maintainers.
+- Any change to workflow path filters must update:
+  - `.github/workflows/ci.yml` (change classification)
+  - `.github/workflows/build-pages.yml` (docs/demo trigger scope)
+  - this doc section (so behavior remains explicit)
+- Rule: prefer narrow path filters that match true build inputs; avoid broad globs that trigger expensive jobs for docs-only changes.
+
+## Branch Protection Mapping
+
+Use these required checks in branch protection:
+
+- `Required CI` (from `.github/workflows/ci.yml`)
+
+Optional non-required deploy checks:
+
+- `Deploy to GitHub Pages`
+- `Build & publish docker images`
+
 ## Mongo Dev Helpers
 
 - Start Mongo only: `npm run dev:mongo:up`

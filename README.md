@@ -106,7 +106,8 @@ npm run build:verify
   - Uses concurrency cancellation by branch/ref.
 - `Build & publish docker images` (`.github/workflows/build-docker-images.yml`)
   - Trigger: push to `dev` and manual dispatch.
-  - Matrix builds skip unchanged packages and cancel superseded runs.
+  - Matrix builds skip unchanged packages.
+  - Concurrency auto-cancel is intentionally disabled to avoid missing publishes during rapid sequential pushes.
 
 ## RaspberryPi
 
