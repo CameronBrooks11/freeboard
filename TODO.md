@@ -15,9 +15,11 @@
 
 - [x] Implement next widget set with same runtime patterns: Pointer, Picture, HTML
 - [x] Implement advanced widgets: Sparkline, Map
-- [ ] Add focused tests for runtime + widget lifecycle + serialization
-- [ ] Add CI job(s) for critical test and lint gates
+- [x] Add focused tests for runtime + widget lifecycle
+- [ ] Add focused tests for serialization/pane sizing smoke paths
+- [x] Add CI job(s) for critical test and lint gates
 - [x] Update docs for runtime contract and migrated widgets
+- [ ] Raise a PR and verify required PR CI runs/passes (`Required CI`)
 
 ## Misc Tasks
 
