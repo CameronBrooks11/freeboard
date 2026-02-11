@@ -6,8 +6,16 @@
 import { AuthProvider } from "./AuthProvider";
 import { Datasource } from "./Datasource";
 import { Pane } from "./Pane";
+import {
+  buildDatasourceSnapshot,
+  clampPaneLayoutHeights,
+  ensureUniqueDatasourceTitle,
+  getPaneMinRows,
+  hasDatasourceTitleConflict,
+  replaceDatasourceReferences,
+  serializeDashboardState,
+} from "./dashboardRuntime.js";
 import { generateModelId } from "./id";
-import { normalizeDatasourceValue } from "../widgets/runtime/bindings";
 
 /**
  * Minimum number of columns allowed for dashboard layout.
@@ -20,7 +28,6 @@ export const MIN_COLUMNS = 3;
  * @constant {number}
  */
 export const MAX_COLUMNS = 12;
-const RESERVED_DATASOURCE_TITLES = new Set(["datasources", "datasourceTitles"]);
 
 /**
  * Represents a Freeboard dashboard with layout, content, and settings.
@@ -108,37 +115,7 @@ export class Dashboard {
    * @returns {Object} Serialized dashboard data.
    */
   serialize() {
-    const panes = [];
-
-    this.panes.forEach((pane) => {
-      panes.push(pane.serialize());
-    });
-
-    const datasources = [];
-
-    this.datasources.forEach((datasource) => {
-      datasources.push(datasource.serialize());
-    });
-
-    const authProviders = [];
-
-    this.authProviders.forEach((authProvider) => {
-      authProviders.push(authProvider.serialize());
-    });
-
-    return {
-      version: __FREEBOARD_VERSION__,
-      _id: this._id,
-      title: this.title,
-      published: this.published,
-      image: this.image,
-      columns: this.columns,
-      width: this.width,
-      datasources: datasources,
-      panes: panes,
-      authProviders: authProviders,
-      settings: this.settings,
-    };
+    return serializeDashboardState(this, __FREEBOARD_VERSION__);
   }
 
   /**
@@ -382,45 +359,7 @@ export class Dashboard {
    * @returns {Record<string, any>}
    */
   buildDatasourceSnapshot() {
-    const snapshot = {
-      datasources: {},
-      datasourceTitles: {},
-    };
-    const duplicateTitles = new Set();
-
-    this.datasources?.forEach((datasource) => {
-      if (!datasource?.id) {
-        return;
-      }
-
-      const normalizedValue = normalizeDatasourceValue(datasource.latestData);
-      snapshot.datasources[datasource.id] = normalizedValue;
-      snapshot[datasource.id] = normalizedValue;
-
-      const title = String(datasource.title || "").trim();
-      if (!title) {
-        return;
-      }
-      if (["datasources", "datasourceTitles"].includes(title)) {
-        return;
-      }
-
-      if (title in snapshot.datasourceTitles) {
-        duplicateTitles.add(title);
-        return;
-      }
-
-      snapshot.datasourceTitles[title] = datasource.id;
-      // Legacy fallback support.
-      snapshot[title] = normalizedValue;
-    });
-
-    duplicateTitles.forEach((title) => {
-      delete snapshot.datasourceTitles[title];
-      delete snapshot[title];
-    });
-
-    return snapshot;
+    return buildDatasourceSnapshot(this.datasources);
   }
 
   /**
@@ -431,26 +370,7 @@ export class Dashboard {
    * @returns {boolean}
    */
   hasDatasourceTitleConflict(title, excludeId = null) {
-    const candidate = String(title || "").trim().toLowerCase();
-    if (!candidate) {
-      return true;
-    }
-
-    if (RESERVED_DATASOURCE_TITLES.has(candidate)) {
-      return true;
-    }
-
-    return this.datasources.some((datasource) => {
-      if (!datasource) {
-        return false;
-      }
-
-      if (excludeId && datasource.id === excludeId) {
-        return false;
-      }
-
-      return String(datasource.title || "").trim().toLowerCase() === candidate;
-    });
+    return hasDatasourceTitleConflict(this.datasources, title, excludeId);
   }
 
   /**
@@ -461,16 +381,7 @@ export class Dashboard {
    * @returns {string}
    */
   ensureUniqueDatasourceTitle(title, excludeId = null) {
-    const base = String(title || "").trim() || "Datasource";
-    let candidate = base;
-    let suffix = 2;
-
-    while (this.hasDatasourceTitleConflict(candidate, excludeId)) {
-      candidate = `${base} (${suffix})`;
-      suffix += 1;
-    }
-
-    return candidate;
+    return ensureUniqueDatasourceTitle(this.datasources, title, excludeId);
   }
 
   /**
@@ -480,32 +391,14 @@ export class Dashboard {
    * @returns {number}
    */
   getPaneMinRows(pane) {
-    const widgetRows =
-      pane?.widgets?.reduce((sum, widget) => {
-        if (!widget || typeof widget.getPreferredRows !== "function") {
-          return sum + 1;
-        }
-        return sum + Math.max(1, Number(widget.getPreferredRows()) || 1);
-      }, 0) || 1;
-
-    return Math.max(1, Math.ceil(widgetRows));
+    return getPaneMinRows(pane);
   }
 
   /**
    * Clamp pane layout heights to minimum content requirements.
    */
   clampPaneLayoutHeights() {
-    this.panes.forEach((pane) => {
-      if (!pane.layout || typeof pane.layout !== "object") {
-        pane.layout = {};
-      }
-
-      const minRows = this.getPaneMinRows(pane);
-      const currentRows = Number(pane.layout.h);
-      pane.layout.h = Number.isFinite(currentRows)
-        ? Math.max(Math.ceil(currentRows), minRows)
-        : minRows;
-    });
+    clampPaneLayoutHeights(this.panes);
   }
 
   /**
@@ -583,42 +476,6 @@ export class Dashboard {
    * @returns {any}
    */
   replaceDatasourceReferences(value, oldTitle, newTitle, fieldName = "") {
-    if (Array.isArray(value)) {
-      return value.map((item) =>
-        this.replaceDatasourceReferences(item, oldTitle, newTitle, fieldName)
-      );
-    }
-
-    if (value && typeof value === "object") {
-      return Object.fromEntries(
-        Object.entries(value).map(([key, innerValue]) => [
-          key,
-          this.replaceDatasourceReferences(innerValue, oldTitle, newTitle, key),
-        ])
-      );
-    }
-
-    if (typeof value !== "string") {
-      return value;
-    }
-
-    const shouldRewrite =
-      /(?:path|template|binding)$/i.test(fieldName) || fieldName === "";
-    if (!shouldRewrite) {
-      return value;
-    }
-
-    const escapedOldTitle = oldTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const bindingRootRegex = new RegExp(`^\\s*${escapedOldTitle}(?=\\.|\\[)`);
-    const templateRegex = new RegExp(`\\{\\{\\s*${escapedOldTitle}(?=\\.|\\[)`, "g");
-
-    let next = value;
-    if (bindingRootRegex.test(next)) {
-      next = next.replace(bindingRootRegex, newTitle);
-    }
-
-    next = next.replace(templateRegex, `{{ ${newTitle}`);
-
-    return next;
+    return replaceDatasourceReferences(value, oldTitle, newTitle, fieldName);
   }
 }

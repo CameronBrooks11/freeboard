@@ -82,4 +82,4 @@ Core env values:
   - Runs on push to `dev` and manual dispatch.
   - Per-package diff detection skips unchanged matrix entries.
   - Manual dispatch forces full rebuild intentionally.
-  - Workflow and matrix job concurrency cancellation enabled.
+  - Concurrency cancellation is intentionally disabled to avoid skipped publishes on rapid sequential pushes.
