@@ -3,6 +3,9 @@
 # Use Node.js 18 Alpine image for lightweight container
 FROM node:18-alpine
 
+# Default secure runtime mode (can be overridden by environment)
+ENV NODE_ENV=production
+
 # Set working directory inside the container
 WORKDIR /usr/app
 

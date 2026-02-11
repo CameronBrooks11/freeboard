@@ -21,7 +21,14 @@ import {
   ensureThatUserIsLogged,
   getUser,
 } from "../auth.js";
-import { isStrongPassword, isValidEmail } from "../validators.js";
+import {
+  getCredentialPolicyHints,
+  isStrongPassword,
+  isValidEmail,
+  normalizeEmail,
+} from "../validators.js";
+
+const credentialPolicy = getCredentialPolicyHints();
 
 export default /** @type {IResolvers} */ {
   Query: {
@@ -57,30 +64,36 @@ export default /** @type {IResolvers} */ {
         throw createGraphQLError("Data provided is not valid");
       }
 
-      if (!isValidEmail(email)) {
-        throw createGraphQLError("The email is not valid");
+      const normalizedEmail = normalizeEmail(email);
+
+      if (!isValidEmail(normalizedEmail)) {
+        throw createGraphQLError(`The email is not valid. ${credentialPolicy.email}.`);
       }
 
       if (!isStrongPassword(password)) {
-        throw createGraphQLError("The password is not secure enough");
+        throw createGraphQLError(
+          `The password is not secure enough. ${credentialPolicy.password}.`
+        );
       }
 
       const registeredUsersCount = await User.find().estimatedDocumentCount();
 
       ensureLimitOfUsersIsNotReached(registeredUsersCount);
 
-      const isAnEmailAlreadyRegistered = await User.findOne({ email }).lean();
+      const isAnEmailAlreadyRegistered = await User.findOne({
+        email: normalizedEmail,
+      }).lean();
 
       if (isAnEmailAlreadyRegistered) {
         throw createGraphQLError("Data provided is not valid");
       }
 
-      await new User({ email, password }).save();
+      await new User({ email: normalizedEmail, password }).save();
 
-      const user = await User.findOne({ email }).lean();
+      const user = await User.findOne({ email: normalizedEmail }).lean();
 
       return {
-        token: createAuthToken(user.email, user.admin, user.active, user.uuid),
+        token: createAuthToken(user.email, user.admin, user.active, user._id),
       };
     },
 
@@ -97,7 +110,11 @@ export default /** @type {IResolvers} */ {
         throw createGraphQLError("Invalid credentials");
       }
 
-      const user = await User.findOne({ email, active: true }).lean();
+      const normalizedEmail = normalizeEmail(email);
+      const user = await User.findOne({
+        email: normalizedEmail,
+        active: true,
+      }).lean();
 
       if (!user) {
         throw createGraphQLError("User not found or login not allowed");
@@ -110,7 +127,7 @@ export default /** @type {IResolvers} */ {
       }
 
       await User.findOneAndUpdate(
-        { email },
+        { email: normalizedEmail },
         { lastLogin: new Date().toISOString() },
         { new: true }
       ).lean();
@@ -135,7 +152,12 @@ export default /** @type {IResolvers} */ {
 
       const user = await getUser(context);
 
-      return User.deleteOne({ uuid: user.uuid });
+      const deletedUser = await User.findOneAndDelete({ _id: user._id }).lean();
+      if (!deletedUser) {
+        throw createGraphQLError("User not found or login not allowed");
+      }
+
+      return deletedUser;
     },
   },
 };

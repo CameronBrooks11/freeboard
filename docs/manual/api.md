@@ -6,7 +6,11 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
 
 ## Configuration (`config.js`)
 
-- Loads environment variables via `dotenv`
+- Loads environment variables with deterministic precedence:
+  - process env (shell/CI)
+  - `packages/api/.env` (optional package-local override)
+  - repo-root `.env`
+  - code defaults
 - Exports a frozen `config` object with:
   - `mongoUrl` (MongoDB connection string)
   - `port` (HTTP port)
@@ -30,13 +34,14 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
 ## Models
 
 - **Dashboard** (`models/Dashboard.js`):
-  - Uses `shortid` for string `_id`
+  - Uses `nanoid` for string `_id`
   - Fields: `user`, `version`, `title`, `published`, `image`, `datasources`, `columns`, `width`, `panes`, `authProviders`, `settings`
   - Timestamps enabled
 - **User** (`models/User.js`):
-  - `_id` via `shortid`
+  - `_id` via `nanoid`
   - Fields: `email`, `password`, `admin`, `active`, `registrationDate`, `lastLogin`
   - Pre-save hook hashes `password` with `bcrypt`
+  - Model-level validators enforce email and password policy (defense in depth)
 
 ## Resolvers
 
@@ -55,8 +60,15 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
 
 ## Input Validation (`validators.js`)
 
-- `isValidEmail(email)` checks standard email pattern
-- `isStrongPassword(password)` enforces digits, lowercase, uppercase, min length 8
+- `normalizeEmail(email)` lowercases/trims email for consistent identity lookups
+- `isValidEmail(email)` enforces valid `name@domain.ext` format
+- `isStrongPassword(password)` enforces:
+  - at least 12 chars
+  - uppercase + lowercase + number + symbol
+- Same policy is enforced for:
+  - bootstrap admin (`CREATE_ADMIN=true`)
+  - user registration (`registerUser`)
+  - model persistence validation
 
 ## Server Entry Point (`index.js`)
 

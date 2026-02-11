@@ -36,13 +36,22 @@ npm install
 
 ## Usage
 
-**Login:** admin@freeboard / freeboard
+**Login:** Use the credentials configured in `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`).
+For local bootstrap, set `CREATE_ADMIN=true` once, then log in with those values.
+`CREATE_ADMIN=true` now validates credentials strictly:
+- `ADMIN_EMAIL` must be `name@domain.ext`
+- `ADMIN_PASSWORD` must be at least 12 chars and include uppercase, lowercase, number, and symbol
+The same email/password policy is enforced for `registerUser`.
 
 ### Docker-Compose
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
 ```
+
+For containerized production mode, set these in `.env` first:
+- `JWT_SECRET` (API required)
+- `PROXY_ALLOWED_HOSTS` (Proxy required allowlist)
 
 ### Development
 
@@ -55,6 +64,12 @@ npm run dev
 - Starts Mongo in Docker and waits for healthy status.
 - Starts UI/API/Proxy (without coupling Mongo log streaming into the process group).
 - On Ctrl+C, stops UI/API/Proxy and keeps Mongo running.
+
+API env loading order is deterministic:
+1. existing process env (shell/CI)
+2. `packages/api/.env` (optional override file)
+3. repo root `.env`
+4. code defaults
 
 Useful Mongo dev commands:
 

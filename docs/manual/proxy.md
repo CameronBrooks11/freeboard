@@ -2,25 +2,46 @@
 
 ## Overview
 
-The proxy service forwards client requests to arbitrary URLs to bypass CORS restrictions. It uses Express and Node’s built-in `http` and `https` modules to proxy both `GET` and `POST` requests.
+The proxy service forwards selected client requests to upstream URLs to bypass browser CORS restrictions.
+
+It is hardened to reduce SSRF risk and unsafe TLS behavior:
+
+- protocol restriction (`http` / `https` only)
+- destination host allowlist (required in production)
+- destination port allowlist
+- private/internal destination blocking (hostname + resolved IP checks)
+- minimal outbound request headers (no raw header passthrough)
+- TLS verification enabled by default
 
 ## Core Handler
 
 - **Endpoints**: `GET /proxy` and `POST /proxy`
 - **URL Extraction**: Reads the `url` query parameter from the incoming request
-- **Protocol Detection**: Checks `url.protocol` to choose `http` or `https`
+- **Validation**:
+  - Rejects non-HTTP(S) protocols
+  - Rejects disallowed hosts/ports
+  - Resolves DNS and rejects blocked private/internal addresses
 - **Request Options**:
-  - `host`, `port`, `protocol`, `path`, `method`, and original `headers`
-  - For HTTPS, uses `new https.Agent({ rejectUnauthorized: false, servername: url.hostname })` to disable certificate verification
+  - Uses `hostname`, normalized `path`, explicit `method`, and safe outbound headers
+  - HTTPS uses `https.Agent` with certificate validation enabled unless explicit dev override is set
 - **Data Flow**:
-  - Pipes request body for `POST` methods
-  - Streams the upstream response back to the client
+  - Forwards supported request body content for write methods
+  - Streams upstream response with size cap enforcement
 
 ## Server Setup (`src/index.js`)
 
 - Applies `bodyParser.text({ type: "*/*" })` to parse all bodies as text
 - Registers the `handler` for both `app.post("/proxy", handler)` and `app.get("/proxy", handler)`
 - Starts listening on `PORT` (default `8001`) at `0.0.0.0`
+
+## Key Environment Variables
+
+- `PROXY_ALLOWED_HOSTS`: comma-separated destination host allowlist (required in production)
+- `PROXY_ALLOWED_PORTS`: comma-separated allowed ports (default: `80,443`)
+- `PROXY_TIMEOUT_MS`: upstream timeout in milliseconds
+- `PROXY_MAX_RESPONSE_BYTES`: max response payload size in bytes
+- `PROXY_ALLOW_PRIVATE_DESTINATIONS`: set `true` only for controlled local/dev use
+- `PROXY_ALLOW_INSECURE_TLS`: set `true` only for controlled local/dev use
 
 ## Dockerfile
 
@@ -33,9 +54,10 @@ The proxy service forwards client requests to arbitrary URLs to bypass CORS rest
 ## Running Locally
 
 1. Install dependencies: `npm install`
-2. Start the service: `npm run start`
+2. Start proxy workspace only: `npm run start:proxy`
 
 ## Notes
 
 - The `url` parameter must be URL-encoded when calling the proxy
-- Certificate verification is disabled for HTTPS targets—consider enabling `rejectUnauthorized` in production for security
+- In production, keep `PROXY_ALLOW_INSECURE_TLS=false` and define a strict `PROXY_ALLOWED_HOSTS` list
+- In containerized deployment (`docker-compose.yml`), startup is fail-fast unless `PROXY_ALLOWED_HOSTS` is set

@@ -10,6 +10,12 @@ This page is for dashboard users configuring datasources and bindings.
 - Supports periodic refresh
 - Can use proxy path to avoid browser CORS restrictions
 
+Proxy/security note:
+
+- For local dev, `Use Proxy = true` usually works out of the box.
+- For containerized production mode, upstream hosts must be included in `PROXY_ALLOWED_HOSTS`.
+- See [Proxy](/manual/proxy) for allowlist and TLS behavior.
+
 Typical settings:
 
 - URL

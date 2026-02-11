@@ -1,7 +1,6 @@
 # Base Widget Examples
 
-This page centralizes the legacy `adding-widgets-datasources` examples for the
-current Base widget runtime.
+Use these examples to validate the current Base widget runtime quickly.
 
 ## 1. Simple Digital Clock
 
@@ -314,7 +313,9 @@ function drawGauge(temp) {
   ctx.stroke();
   ctx.restore();
 
-  document.getElementById("temp-label").innerText = `${temp.toFixed(1)} C`;
+  document.getElementById("temp-label").innerText = `${temp.toFixed(
+    1
+  )} C`;
 }
 
 window.addEventListener("message", (event) => {
@@ -332,5 +333,8 @@ window.addEventListener("message", (event) => {
 
 ```html
 <canvas id="gauge"></canvas>
-<div id="temp-label" style="text-align:center;font-size:2em;margin-top:-50px;"></div>
+<div
+  id="temp-label"
+  style="text-align:center;font-size:2em;margin-top:-50px;"
+></div>
 ```

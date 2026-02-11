@@ -17,3 +17,5 @@ All JSON datasource examples below assume:
 - `Use Proxy = true`
 - `Method = GET`
 - `Enabled = true`
+
+For containerized production deployments, each upstream host used in these examples must be listed in `PROXY_ALLOWED_HOSTS`.

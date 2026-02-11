@@ -3,13 +3,51 @@
  * @description Environment and default configuration values for Freeboard API.
  */
 
-import { createRequire } from "module";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
+import {
+  getCredentialPolicyHints,
+  isStrongPassword,
+  isValidEmail,
+  normalizeEmail,
+} from "./validators.js";
 
-/** Create CommonJS `require` in ES module context */
-const require = createRequire(import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const apiPackageDir = path.resolve(__dirname, "..");
+const repoRootDir = path.resolve(__dirname, "../../..");
 
-// Load environment variables from .env file into process.env
-require("dotenv").config();
+const loadEnvFile = (filePath, { overridableKeys = new Set() } = {}) => {
+  if (!fs.existsSync(filePath)) {
+    return new Set();
+  }
+
+  const parsed = dotenv.parse(fs.readFileSync(filePath));
+  const loadedKeys = new Set();
+  for (const [key, value] of Object.entries(parsed)) {
+    const hasExternalValue = Object.prototype.hasOwnProperty.call(
+      process.env,
+      key
+    );
+    if (!hasExternalValue || overridableKeys.has(key)) {
+      process.env[key] = value;
+      loadedKeys.add(key);
+    }
+  }
+
+  return loadedKeys;
+};
+
+// Deterministic env precedence:
+// 1) existing process env (shell/CI)
+// 2) packages/api/.env (optional local override)
+// 3) repo-root .env
+const rootEnvLoadedKeys = loadEnvFile(path.join(repoRootDir, ".env"));
+loadEnvFile(path.join(apiPackageDir, ".env"), {
+  overridableKeys: rootEnvLoadedKeys,
+});
 
 /**
  * Convert a value to a finite number, or return a fallback if the conversion fails.
@@ -21,6 +59,58 @@ require("dotenv").config();
 const num = (v, fallback) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
+};
+
+const bool = (v, fallback = false) => {
+  if (v === undefined || v === null || v === "") {
+    return fallback;
+  }
+
+  if (typeof v === "boolean") {
+    return v;
+  }
+
+  const normalized = String(v).trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+};
+
+const environment = String(process.env.NODE_ENV || "development").toLowerCase();
+const isNonDevRuntime = !["development", "test"].includes(environment);
+
+const isWeakJwtSecret = (secret) => {
+  if (!secret || typeof secret !== "string") {
+    return true;
+  }
+
+  const normalized = secret.trim().toLowerCase();
+  if (secret.length < 32) {
+    return true;
+  }
+
+  if (
+    normalized.includes("replace-with") ||
+    normalized.includes("example") ||
+    normalized.includes("local-only")
+  ) {
+    return true;
+  }
+
+  return ["freeboard", "changeme", "default", "secret", "password"].includes(
+    normalized
+  );
+};
+
+const credentialPolicy = getCredentialPolicyHints();
+
+const warnAndThrow = (message) => {
+  console.warn(`Configuration warning: ${message}`);
+  throw new Error(message);
 };
 
 /**
@@ -47,10 +137,30 @@ export const config = Object.freeze({
   mongoUrl:
     process.env.MONGO_URL ||
     "mongodb://freeboard:unsecure@127.0.0.1:27017/freeboard", // Prefer IPv4 literal and include a DB name to be explicit
-  jwtSecret: process.env.JWT_SECRET || "freeboard",
+  jwtSecret: process.env.JWT_SECRET || "freeboard-dev-insecure-local-only",
   jwtTimeExpiration: process.env.JWT_TIME_EXPIRATION || "2h",
   userLimit: num(process.env.USER_LIMIT, 0),
-  adminEmail: process.env.ADMIN_EMAIL || "admin@freeboard",
-  adminPassword: process.env.ADMIN_PASSWORD || "freeboard",
-  createAdmin: process.env.CREATE_ADMIN === "false" ? false : true, // default true unless explicitly "false"
+  adminEmail: normalizeEmail(process.env.ADMIN_EMAIL || ""),
+  adminPassword: process.env.ADMIN_PASSWORD || "",
+  createAdmin: bool(process.env.CREATE_ADMIN, false),
 });
+
+if (isNonDevRuntime && isWeakJwtSecret(config.jwtSecret)) {
+  throw new Error(
+    "JWT_SECRET is missing or too weak for non-development runtime. Provide a strong secret (>=32 chars)."
+  );
+}
+
+if (config.createAdmin) {
+  if (!isValidEmail(config.adminEmail)) {
+    warnAndThrow(
+      `CREATE_ADMIN=true requires valid ADMIN_EMAIL. ${credentialPolicy.email}.`
+    );
+  }
+
+  if (!isStrongPassword(config.adminPassword)) {
+    warnAndThrow(
+      `CREATE_ADMIN=true requires strong ADMIN_PASSWORD. ${credentialPolicy.password}.`
+    );
+  }
+}

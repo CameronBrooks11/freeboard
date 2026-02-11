@@ -17,12 +17,27 @@ services:
     image: ghcr.io/cameronbrooks11/freeboard-api:dev
     environment:
       - MONGO_URL=${FREEBOARD_MONGO_URL:-mongodb://freeboard:unsecure@freeboard-mongo:27017/freeboard}
+      - NODE_ENV=${FREEBOARD_RUNTIME_ENV:-production}
+      - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env for containerized deployments}
+      - JWT_TIME_EXPIRATION=${JWT_TIME_EXPIRATION:-2h}
+      - USER_LIMIT=${USER_LIMIT:-0}
+      - CREATE_ADMIN=${CREATE_ADMIN:-false}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
     networks:
       - freeboard
   freeboard-proxy:
     restart: unless-stopped
     container_name: freeboard-proxy
     image: ghcr.io/cameronbrooks11/freeboard-proxy:dev
+    environment:
+      - NODE_ENV=${FREEBOARD_RUNTIME_ENV:-production}
+      - PROXY_ALLOWED_HOSTS=${PROXY_ALLOWED_HOSTS:?Set PROXY_ALLOWED_HOSTS in .env for containerized deployments}
+      - PROXY_ALLOWED_PORTS=${PROXY_ALLOWED_PORTS:-80,443}
+      - PROXY_TIMEOUT_MS=${PROXY_TIMEOUT_MS:-15000}
+      - PROXY_MAX_RESPONSE_BYTES=${PROXY_MAX_RESPONSE_BYTES:-5242880}
+      - PROXY_ALLOW_PRIVATE_DESTINATIONS=${PROXY_ALLOW_PRIVATE_DESTINATIONS:-false}
+      - PROXY_ALLOW_INSECURE_TLS=${PROXY_ALLOW_INSECURE_TLS:-false}
     networks:
       - freeboard
 networks:

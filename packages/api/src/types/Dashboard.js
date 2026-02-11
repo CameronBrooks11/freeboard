@@ -101,7 +101,6 @@ export default `
     panes: [Object]
     authProviders: [Object]
     settings: Object
-    user: String
   }
 
   """Input type for updating an existing dashboard."""
@@ -116,6 +115,5 @@ export default `
     panes: [Object]
     authProviders: [Object]
     settings: Object
-    user: String
   }
 `;

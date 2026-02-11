@@ -18,9 +18,55 @@ import Dashboard from "../models/Dashboard.js";
 import { transformDashboard } from "./merge.js";
 
 const pubSub = createPubSub();
+const DASHBOARD_MUTABLE_FIELDS = new Set([
+  "title",
+  "version",
+  "published",
+  "image",
+  "datasources",
+  "columns",
+  "width",
+  "panes",
+  "authProviders",
+  "settings",
+]);
+
+const sanitizeDashboardInput = (dashboard = {}) => {
+  const sanitized = {};
+  for (const [key, value] of Object.entries(dashboard || {})) {
+    if (DASHBOARD_MUTABLE_FIELDS.has(key)) {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+};
+
+const canReadDashboard = (dashboard, context) => {
+  if (!dashboard) {
+    return false;
+  }
+
+  if (dashboard.published) {
+    return true;
+  }
+
+  if (!context.user) {
+    return false;
+  }
+
+  return dashboard.user === context.user._id;
+};
+
+const canManageDashboard = (dashboard, context) => {
+  if (!dashboard || !context.user) {
+    return false;
+  }
+
+  return dashboard.user === context.user._id;
+};
 
 /**
- * Transform and filter a Dashboard document based on the request context.
+ * Transform and filter a Dashboard document based on read authorization.
  *
  * @param {Object} res - Raw Mongoose Dashboard document.
  * @param {Object} context - GraphQL context, may include authenticated user.
@@ -28,26 +74,11 @@ const pubSub = createPubSub();
  * @throws {GraphQLError} If dashboard not found or access denied.
  */
 const getDashboard = (res, context) => {
-  if (res) {
-    if (context.user) {
-      const { user, ...result } = transformDashboard(res);
-      // If the dashboard owner matches the requester, omit the user field
-      if (user === context.user._id) {
-        return result;
-      } else {
-        return { ...result, user };
-      }
-    } else {
-      if (res.published) {
-        // Unauthenticated users only see published dashboards
-        return transformDashboard(res);
-      } else {
-        throw createGraphQLError("Dashboard not found");
-      }
-    }
-  } else {
+  if (!canReadDashboard(res, context)) {
     throw createGraphQLError("Dashboard not found");
   }
+
+  return transformDashboard(res);
 };
 
 export default /** @type {IResolvers} */ {
@@ -61,7 +92,8 @@ export default /** @type {IResolvers} */ {
      * @returns {Promise<Object>} The requested dashboard.
      */
     dashboard: async (parent, { _id }, context) => {
-      return getDashboard(await Dashboard.findOne({ _id }), context);
+      const dashboard = await Dashboard.findOne({ _id }).lean();
+      return getDashboard(dashboard, context);
     },
 
     /**
@@ -94,18 +126,9 @@ export default /** @type {IResolvers} */ {
     createDashboard: async (parent, { dashboard }, context) => {
       ensureThatUserIsLogged(context);
 
+      const sanitizedDashboard = sanitizeDashboardInput(dashboard);
       const newDashboard = new Dashboard({
-        title: dashboard.title,
-        version: dashboard.version,
-        published: dashboard.published,
-        image: dashboard.image,
-        width: dashboard.width,
-        columns: dashboard.columns,
-        datasources: dashboard.datasources,
-        panes: dashboard.panes,
-        layout: dashboard.layout,
-        authProviders: dashboard.authProviders,
-        settings: dashboard.settings,
+        ...sanitizedDashboard,
         user: context.user._id,
       });
       try {
@@ -127,23 +150,21 @@ export default /** @type {IResolvers} */ {
     updateDashboard: async (parent, { _id, dashboard }, context) => {
       ensureThatUserIsLogged(context);
 
-      const res = await Dashboard.findOne({ _id });
+      const sanitizedDashboard = sanitizeDashboardInput(dashboard);
+      const updated = await Dashboard.findOneAndUpdate(
+        { _id, user: context.user._id },
+        { $set: sanitizedDashboard },
+        { new: true, runValidators: true }
+      ).lean();
 
-      if (res) {
-        return Dashboard.findByIdAndUpdate(
-          _id,
-          { $set: { ...dashboard } },
-          { new: true }
-        )
-          .then((d) => getDashboard(d, context))
-          .then((d) => {
-            // Notify subscribers of dashboard updates
-            pubSub.publish(`dashboard:${d._id}`, { dashboard: d });
-            return d;
-          });
-      } else {
+      if (!updated || !canManageDashboard(updated, context)) {
         throw createGraphQLError("Dashboard not found");
       }
+
+      const transformed = transformDashboard(updated);
+      // Notify owner-scoped subscribers of dashboard updates.
+      pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
+      return transformed;
     },
 
     /**
@@ -157,13 +178,16 @@ export default /** @type {IResolvers} */ {
     deleteDashboard: async (parent, { _id }, context) => {
       ensureThatUserIsLogged(context);
 
-      const res = await Dashboard.findOne({ _id, user: context.user._id });
-      
-      if (res) {
-        return Dashboard.findByIdAndDelete(_id).then(transformDashboard);
-      } else {
+      const deleted = await Dashboard.findOneAndDelete({
+        _id,
+        user: context.user._id,
+      }).lean();
+
+      if (!deleted || !canManageDashboard(deleted, context)) {
         throw createGraphQLError("Dashboard not found");
       }
+
+      return transformDashboard(deleted);
     },
   },
 
@@ -176,7 +200,14 @@ export default /** @type {IResolvers} */ {
       * @param {{ _id: string }} args - Dashboard ID.
       * @returns {AsyncIterable<any>} Subscription iterator.
       */
-      subscribe: (_, args) => {
+      subscribe: async (_, args, context) => {
+        ensureThatUserIsLogged(context);
+
+        const dashboard = await Dashboard.findOne({ _id: args._id }).lean();
+        if (!canManageDashboard(dashboard, context)) {
+          throw createGraphQLError("Dashboard not found");
+        }
+
         return pubSub.subscribe(`dashboard:${args._id}`);
       },
     },

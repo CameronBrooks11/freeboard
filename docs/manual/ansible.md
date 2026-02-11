@@ -76,3 +76,10 @@ Targeted runs:
 
 - `systemctl status freeboard`
 - `journalctl -u freeboard -b`
+
+## RPi Mongo Images
+
+The RPi 4 and below has problems running mongodb due to the broadcom chip used being arm8l but only supporting 32-bit instructions. The RPi 5's new chip supports arm64 instructions and can run the official Mongo image just fine. For the Pi 4 and below, use the unofficial images linked in the vars above, which are built from the same Mongo sources but with a custom build process to produce armv7l binaries that can run on the Pi's hardware. These images are not official and may have some limitations, but they should work for basic Freeboard use cases on Pi 4 and below. This has only been tested on the Pi 4B, but should work on the Pi 3 as well. The Pi 5 should be able to use the official Mongo image without issue.
+
+- [github.com/themattman/mongodb-raspberrypi-docker](https://github.com/themattman/mongodb-raspberrypi-docker)
+- [github.com/themattman/mongodb-raspberrypi-binaries](https://github.com/themattman/mongodb-raspberrypi-binaries)

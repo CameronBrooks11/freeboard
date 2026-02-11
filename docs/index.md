@@ -5,7 +5,7 @@ titleTemplate: Demo + Docs
 hero:
   name: Freeboard
   text: Demo + Docs
-  tagline: Build, preview, and browse all project docs from one place.
+  tagline: Build dashboard mashups quickly with secure-by-default runtime guidance.
   actions:
     - theme: brand
       text: Open Demo
@@ -14,20 +14,28 @@ hero:
     - theme: alt
       text: Read the Manual
       link: /manual/
+    - theme: alt
+      text: Install
+      link: /manual/installation
 features:
   - icon: 🧩
-    title: Vue Components
-    details: Browse component docs and examples.
-    link: /dev/components/
-    linkText: Components
+    title: Build Dashboards
+    details: Datasource + widget guides with copyable examples.
+    link: /manual/widget-examples/
+    linkText: Widget Examples
+  - icon: 🔐
+    title: Secure Setup
+    details: Required runtime env settings and hardening defaults.
+    link: /manual/installation
+    linkText: Installation
   - icon: 📚
-    title: API (JSDoc)
-    details: Generated API reference.
-    link: /dev/api/
-    linkText: Open API Docs
+    title: Manual
+    details: Concise docs for users, developers, and operators.
+    link: /manual/
+    linkText: Open Manual
   - icon: 🧬
-    title: GraphQL Schema
-    details: Formatted schema with syntax highlighting.
-    link: /dev/graphql/
-    linkText: View Schema
+    title: Developer Refs
+    details: Components, API docs, and GraphQL schema.
+    link: /dev/components/
+    linkText: Open Dev Refs
 ---

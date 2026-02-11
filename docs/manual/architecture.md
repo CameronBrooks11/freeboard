@@ -57,3 +57,14 @@ Core env values:
 - `PORT` (API/proxy workspace process port)
 - `FREEBOARD_MONGO_IMAGE` (Mongo image tag for dev compose)
 - `FREEBOARD_STATIC` (static UI build mode; only enable for static deploy builds)
+- `FREEBOARD_RUNTIME_ENV` (`production` for containerized runtime defaults)
+- `JWT_SECRET` (required for containerized API startup)
+- `PROXY_ALLOWED_HOSTS` (required for containerized proxy startup)
+
+## Security Defaults
+
+- API and Proxy are hardened for production behavior when `NODE_ENV=production`.
+- Container artifacts default to production mode.
+- Docker Compose startup is fail-fast for missing critical env:
+  - API requires `JWT_SECRET`
+  - Proxy requires `PROXY_ALLOWED_HOSTS`

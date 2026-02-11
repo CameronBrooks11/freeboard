@@ -10,6 +10,12 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
 import { nanoid } from "nanoid";
+import {
+  EMAIL_POLICY_MESSAGE,
+  PASSWORD_POLICY_MESSAGE,
+  isStrongPassword,
+  isValidEmail,
+} from "../validators.js";
 
 /**
  * @typedef {Object} MongooseSchema
@@ -59,10 +65,27 @@ const UserSchema = new Schema(
       unique: true,
       trim: true,      // Remove surrounding whitespace
       lowercase: true, // Store emails in lowercase
+      validate: {
+        validator: isValidEmail,
+        message: EMAIL_POLICY_MESSAGE,
+      },
     },
     password: {
       type: String,
       required: true,  // Plaintext will be hashed before save
+      validate: {
+        validator(value) {
+          const isPasswordModified =
+            typeof this?.isModified === "function"
+              ? this.isModified("password")
+              : true;
+          if (!isPasswordModified) {
+            return true;
+          }
+          return isStrongPassword(value);
+        },
+        message: PASSWORD_POLICY_MESSAGE,
+      },
     },
     admin: {
       type: Boolean,
@@ -89,6 +112,26 @@ const UserSchema = new Schema(
     timestamps: true, // Adds createdAt and updatedAt fields
   },
 );
+
+const ensureNoDirectPasswordUpdate = function (next) {
+  const update = this.getUpdate() || {};
+  const directPasswordUpdate =
+    update.password !== undefined || update.$set?.password !== undefined;
+
+  if (directPasswordUpdate) {
+    return next(
+      new Error(
+        "Direct password updates are not supported through update queries. Use a dedicated password reset/change flow."
+      )
+    );
+  }
+
+  return next();
+};
+
+UserSchema.pre("findOneAndUpdate", ensureNoDirectPasswordUpdate);
+UserSchema.pre("updateOne", ensureNoDirectPasswordUpdate);
+UserSchema.pre("updateMany", ensureNoDirectPasswordUpdate);
 
 /**
  * Pre-save hook to hash the password if it has been modified.
