@@ -87,6 +87,27 @@ Recommended local loop:
 2. use `npm run dev:mongo:logs` only when troubleshooting Mongo
 3. use `npm run dev:mongo:reset` only when a clean DB is needed
 
+### Local Quality Checks
+
+```bash
+npm run lint
+npm run test
+npm run build:verify
+```
+
+### CI Workflows
+
+- `CI` (`.github/workflows/ci.yml`)
+  - Trigger: pull requests to `dev` (and merge queue/manual dispatch).
+  - Path-aware: docs-only changes skip heavy lint/test/build jobs.
+  - Required check job: `Required CI` (stable branch-protection target).
+- `Deploy to GitHub Pages` (`.github/workflows/build-pages.yml`)
+  - Trigger: push to `dev` for docs/demo-relevant paths only.
+  - Uses concurrency cancellation by branch/ref.
+- `Build & publish docker images` (`.github/workflows/build-docker-images.yml`)
+  - Trigger: push to `dev` and manual dispatch.
+  - Matrix builds skip unchanged packages and cancel superseded runs.
+
 ## RaspberryPi
 
 ```bash

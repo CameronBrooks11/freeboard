@@ -82,5 +82,8 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
 ## Running & Docs
 
 - **Development**: `npm run dev --workspace=packages/api`
+- **Tests**: `npm run test:api`
+  - Test location: `packages/api/test/*.test.js`
+  - Focus: auth/config validation, resolver authorization boundaries, model credential policy
 - **Generate reference docs**: `npm run docs:generate`
   - Runs JSDoc, GraphQL Codegen, Vue DocGen (for component library)

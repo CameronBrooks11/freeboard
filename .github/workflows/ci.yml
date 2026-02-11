@@ -1,0 +1,233 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev]
+  merge_group:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Classify changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      docs_only: ${{ steps.classify.outputs.docs_only }}
+      non_docs: ${{ steps.classify.outputs.non_docs }}
+      run_api_tests: ${{ steps.classify.outputs.run_api_tests }}
+      run_ui_tests: ${{ steps.classify.outputs.run_ui_tests }}
+      run_build_verify: ${{ steps.classify.outputs.run_build_verify }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            docs:
+              - 'docs/**'
+              - 'planning/**'
+              - '**/*.md'
+              - 'LICENSE'
+            api:
+              - 'packages/api/src/**'
+              - 'packages/api/package.json'
+              - 'packages/api/Dockerfile'
+            ui:
+              - 'packages/ui/src/**'
+              - 'packages/ui/package.json'
+              - 'packages/ui/vite.config.js'
+              - 'packages/ui/index.html'
+              - 'packages/ui/eslint.config.js'
+            proxy:
+              - 'packages/proxy/src/**'
+              - 'packages/proxy/package.json'
+              - 'packages/proxy/Dockerfile'
+            shared:
+              - 'package.json'
+              - 'package-lock.json'
+              - 'scripts/**'
+              - '.github/workflows/**'
+              - 'eslint.config.*'
+              - 'codegen.yml'
+              - 'docker-compose*.yml'
+
+      - name: Classify CI jobs
+        id: classify
+        shell: bash
+        run: |
+          docs="${{ steps.filter.outputs.docs }}"
+          api="${{ steps.filter.outputs.api }}"
+          ui="${{ steps.filter.outputs.ui }}"
+          proxy="${{ steps.filter.outputs.proxy }}"
+          shared="${{ steps.filter.outputs.shared }}"
+
+          non_docs=false
+          if [[ "$api" == "true" || "$ui" == "true" || "$proxy" == "true" || "$shared" == "true" ]]; then
+            non_docs=true
+          fi
+
+          docs_only=false
+          if [[ "$docs" == "true" && "$non_docs" == "false" ]]; then
+            docs_only=true
+          fi
+
+          run_api_tests=false
+          if [[ "$api" == "true" || "$shared" == "true" ]]; then
+            run_api_tests=true
+          fi
+
+          run_ui_tests=false
+          if [[ "$ui" == "true" || "$shared" == "true" ]]; then
+            run_ui_tests=true
+          fi
+
+          run_build_verify=false
+          if [[ "$api" == "true" || "$ui" == "true" || "$proxy" == "true" || "$shared" == "true" ]]; then
+            run_build_verify=true
+          fi
+
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "non_docs=$non_docs" >> "$GITHUB_OUTPUT"
+          echo "run_api_tests=$run_api_tests" >> "$GITHUB_OUTPUT"
+          echo "run_ui_tests=$run_ui_tests" >> "$GITHUB_OUTPUT"
+          echo "run_build_verify=$run_build_verify" >> "$GITHUB_OUTPUT"
+
+          echo "CI classification:"
+          echo "  docs_only=$docs_only"
+          echo "  non_docs=$non_docs"
+          echo "  run_api_tests=$run_api_tests"
+          echo "  run_ui_tests=$run_ui_tests"
+          echo "  run_build_verify=$run_build_verify"
+
+  lint:
+    name: Lint
+    needs: changes
+    if: needs.changes.outputs.non_docs == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+
+  test-api:
+    name: Test API
+    needs: changes
+    if: needs.changes.outputs.run_api_tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Run API tests
+        run: npm run test:api
+
+  test-ui:
+    name: Test UI runtime
+    needs: changes
+    if: needs.changes.outputs.run_ui_tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Run UI tests
+        run: npm run test:ui
+
+  build-verify:
+    name: Build verify
+    needs: changes
+    if: needs.changes.outputs.run_build_verify == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build verify
+        run: npm run build:verify
+
+  required:
+    name: Required CI
+    if: always()
+    needs:
+      - changes
+      - lint
+      - test-api
+      - test-ui
+      - build-verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate required results
+        shell: bash
+        run: |
+          status=0
+
+          if [[ "${{ needs.changes.result }}" != "success" ]]; then
+            echo "Required job failed: changes (result=${{ needs.changes.result }})"
+            exit 1
+          fi
+
+          check_required() {
+            local should_run="$1"
+            local result="$2"
+            local label="$3"
+            if [[ "$should_run" == "true" && "$result" != "success" ]]; then
+              echo "Required job failed: $label (result=$result)"
+              status=1
+            else
+              echo "Job ok: $label (should_run=$should_run, result=$result)"
+            fi
+          }
+
+          check_required "${{ needs.changes.outputs.non_docs }}" "${{ needs.lint.result }}" "lint"
+          check_required "${{ needs.changes.outputs.run_api_tests }}" "${{ needs.test-api.result }}" "test-api"
+          check_required "${{ needs.changes.outputs.run_ui_tests }}" "${{ needs.test-ui.result }}" "test-ui"
+          check_required "${{ needs.changes.outputs.run_build_verify }}" "${{ needs.build-verify.result }}" "build-verify"
+
+          if [[ "$status" -ne 0 ]]; then
+            exit "$status"
+          fi

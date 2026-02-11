@@ -3,6 +3,20 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [dev]
+    paths:
+      - "docs/**"
+      - "scripts/site-stage.mjs"
+      - "scripts/build-schema.mjs"
+      - "docgen.config.js"
+      - "jsdoc.json"
+      - "package.json"
+      - "package-lock.json"
+      - "packages/ui/src/**"
+      - "packages/ui/index.html"
+      - "packages/ui/vite.config.js"
+      - "packages/ui/package.json"
+      - "packages/api/src/**"
+      - "packages/proxy/src/**"
   workflow_dispatch:
 
 # Avoid concurrent publishes from the same ref

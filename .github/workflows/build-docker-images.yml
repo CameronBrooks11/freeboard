@@ -7,9 +7,17 @@ on:
 env:
   REGISTRY: ghcr.io
 
+concurrency:
+  group: docker-publish-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
+    concurrency:
+      group: docker-publish-${{ github.ref }}-${{ matrix.name }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -27,8 +35,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      attestations: write
-      id-token: write
 
     steps:
       - name: Checkout repository
@@ -38,16 +44,38 @@ jobs:
 
       - name: Determine if package has changed
         id: changes
+        shell: bash
         run: |
-          echo "Checking for changes in ${{ matrix.context }}"
-          git fetch origin dev
-          CHANGED=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- "${{ matrix.context }}")
-          if [ -z "$CHANGED" ]; then
+          echo "Checking for changes in ${{ matrix.context }} for event '${{ github.event_name }}'"
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Manual dispatch: forcing rebuild for ${{ matrix.context }}"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          BEFORE_SHA="${{ github.event.before }}"
+          CURRENT_SHA="${{ github.sha }}"
+
+          if [[ -z "$BEFORE_SHA" || "$BEFORE_SHA" =~ ^0+$ ]]; then
+            echo "No usable 'before' SHA from event payload; deriving from commit parent."
+            if git rev-parse "${CURRENT_SHA}^" >/dev/null 2>&1; then
+              BEFORE_SHA="$(git rev-parse "${CURRENT_SHA}^")"
+            else
+              echo "No parent commit available; forcing rebuild for safety."
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA" -- "${{ matrix.context }}")"
+          if [[ -z "$CHANGED_FILES" ]]; then
             echo "No changes in ${{ matrix.context }}"
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
-            echo "Changes detected in ${{ matrix.context }}"
-            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changes detected in ${{ matrix.context }}:"
+            echo "$CHANGED_FILES"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Docker

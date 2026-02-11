@@ -3,7 +3,7 @@
  * @description Base class for widgets driven by datasource snapshot bindings.
  */
 
-import { resolveBinding, resolveTemplate } from "./bindings";
+import { resolveBinding, resolveTemplate } from "./bindings.js";
 
 /**
  * Base widget class with snapshot-aware update flow.
