@@ -2,8 +2,8 @@
 
 ## Requirements
 
-- Node.js 20.x (LTS)
-- npm 10+
+- Node.js 24.x (LTS)
+- npm 11+
 - Docker Engine >= 20.10
 - Docker Compose v2 (`docker compose`)
 - Git
@@ -15,6 +15,8 @@
 git clone https://github.com/CameronBrooks11/freeboard.git
 cd freeboard
 git checkout main
+# Optional: align to repo Node baseline via .nvmrc
+nvm use || nvm install
 npm install
 ```
 

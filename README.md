@@ -18,8 +18,8 @@ This Freeboard is a fork of [Jim Heising's damn-sexy dashboard app](https://gith
 
 ## Requirements
 
-- Node.js: v20.x (LTS)
-- npm: v10+
+- Node.js: v24.x (LTS)
+- npm: v11+
 - Docker Engine: ≥ 20.10
 - Docker Compose: v2 (`docker compose` CLI)
 - Python: 3.8+ (for Raspberry Pi Ansible playbook)
@@ -31,6 +31,8 @@ This Freeboard is a fork of [Jim Heising's damn-sexy dashboard app](https://gith
 git clone git@github.com:CameronBrooks11/freeboard.git
 cd freeboard
 git checkout main
+# Optional: align to repo Node baseline via .nvmrc
+nvm use || nvm install
 npm install
 ```
 

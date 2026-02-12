@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:20.11.1-alpine3.20 AS build-stage
+FROM node:24.13.1-alpine AS build-stage
 WORKDIR /app
 
 COPY package.json package-lock.json ./

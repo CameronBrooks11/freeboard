@@ -30,6 +30,7 @@
 - [ ] Formatting review and clean up (should have package.json commands for this where relevant)
 - [ ] Unicode or latex or some kind of support such that gauge units can have proper degree symbol (\deg C, °\deg F) instead of hardcoding (°C, °F)
 - [ ] Add tokei + misc (workflow from `anolis`) to track codebase stats and health over time
+- [x] Review the archived `oauth` branch to look at the oauth package and determine if any of that work can be salvaged or should be reimplemented from scratch with learnings from the phased model implementation
 
 ## Longer-Term Tasks
 
@@ -37,4 +38,3 @@
 - [ ] i18n: externalize strings and labels
 - [ ] docker versions package tags to ensure re-pull on version bump
 - [ ] Service accounts / machine-to-machine auth: scoped API tokens, rotation/revocation, audit trail, and admin management UX (defer until after current phased model rollout)
-- [ ] Review the archived `oauth` branch to look at the oauth package and determine if any of that work can be salvaged or should be reimplemented from scratch with learnings from the phased model implementation

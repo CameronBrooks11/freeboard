@@ -11,6 +11,7 @@ on:
       - "jsdoc.json"
       - "package.json"
       - "package-lock.json"
+      - ".nvmrc"
       - "packages/ui/src/**"
       - "packages/ui/index.html"
       - "packages/ui/vite.config.js"
@@ -45,7 +46,7 @@ jobs:
       # Node.js with npm caching (root + workspaces)
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: |
             package-lock.json
