@@ -3,7 +3,7 @@
  * @description Authentication provider implementing OAuth2 password grant flow.
  */
 
-import proxy from "../proxy";
+import proxy from "../proxy.js";
 
 const EXPIRES_AT_PROPERTY_NAME = "expires_at";
 const EXPIRES_IN_PROPERTY_NAME = "expires_in";
@@ -129,19 +129,22 @@ export class OAuth2PasswordGrantProvider {
    * @returns {Promise<string>} Access token string.
    */
   getAccessToken() {
+    const now = new Date();
     if (
       this.tokenProperties &&
-      this.tokenProperties[EXPIRES_AT_PROPERTY_NAME] > new Date()
+      this.tokenProperties[EXPIRES_AT_PROPERTY_NAME] > now
     ) {
       // Token still valid
       return Promise.resolve(this.tokenProperties.access_token);
     } else if (
       this.tokenProperties &&
-      this.tokenProperties[EXPIRES_AT_PROPERTY_NAME] >= new Date()
+      this.tokenProperties[EXPIRES_AT_PROPERTY_NAME] <= now &&
+      this.tokenProperties.refresh_token
     ) {
       // Token expired: use refresh_token to obtain new token
       return fetch(proxy(this.currentSettings.url), {
         body: new URLSearchParams({
+          grant_type: "refresh_token",
           refresh_token: this.tokenProperties.refresh_token,
         }),
         headers: {

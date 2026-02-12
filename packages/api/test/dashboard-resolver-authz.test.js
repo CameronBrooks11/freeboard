@@ -64,6 +64,8 @@ test("dashboard query allows published dashboard for anonymous user", async () =
   assert.equal(result._id, "dash-1");
   assert.equal(result.title, "Main");
   assert.equal(result.published, true);
+  assert.equal(result.user, "owner-1");
+  assert.equal(result.isOwner, false);
 });
 
 test("updateDashboard scopes update by owner and strips immutable fields", async () => {
@@ -99,6 +101,7 @@ test("updateDashboard scopes update by owner and strips immutable fields", async
   });
   assert.deepEqual(receivedOptions, { new: true, runValidators: true });
   assert.equal(result.title, "Updated");
+  assert.equal(result.isOwner, true);
 });
 
 test("deleteDashboard denies deleting non-owned dashboard", async () => {

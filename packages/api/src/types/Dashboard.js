@@ -63,6 +63,9 @@ export default `
 
     """ID or username of the dashboard owner."""
     user: String
+
+    """Whether the requesting user is the dashboard owner."""
+    isOwner: Boolean!
   }
 
   type Query {

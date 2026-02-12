@@ -9,6 +9,7 @@ import { Dashboard } from "../models/Dashboard";
 import router from "../router";
 import { usePreferredColorScheme } from "@vueuse/core";
 import { validateWidgetPlugin } from "../widgets/runtime/plugin";
+import { disposeDashboardAssets } from "../dashboardAssets";
 
 export const useFreeboardStore = defineStore("freeboard", {
   /**
@@ -220,12 +221,9 @@ export const useFreeboardStore = defineStore("freeboard", {
      */
     loadDashboardAssets() {
       this.showLoadingIndicator = true;
-      const assets = {};
-      Object.values(assets).forEach((asset) => {
-        asset.node.remove();
-        asset.node = null;
-      });
+      disposeDashboardAssets(this.assets);
 
+      const assets = {};
       const head = document.head || document.getElementsByTagName("head")[0];
 
       if (this.dashboard.settings.script) {

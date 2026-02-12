@@ -52,6 +52,7 @@ import { SSELink } from "./sse";
 import { createHead } from "@unhead/vue";
 import { createI18n } from "vue-i18n";
 import { en } from "./i18n/en";
+import { shouldForceLogoutOnGraphQLErrors } from "./apolloAuthError";
 
 // Register icon set for use throughout the app
 addIcons(
@@ -118,10 +119,10 @@ const getHeaders = () => {
 };
 
 /**
- * Apollo Link to handle GraphQL errors: logs out user and redirects to login page.
+ * Apollo Link to handle GraphQL auth errors: logs out user and redirects to login page.
  */
 const errorLink = onError(({ graphQLErrors }) => {
-  if (graphQLErrors) {
+  if (shouldForceLogoutOnGraphQLErrors(graphQLErrors)) {
     const store = useFreeboardStore();
     store.logout();
     router.push("/login");

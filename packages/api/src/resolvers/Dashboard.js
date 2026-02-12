@@ -78,7 +78,7 @@ const getDashboard = (res, context) => {
     throw createGraphQLError("Dashboard not found");
   }
 
-  return transformDashboard(res);
+  return transformDashboard(res, context.user?._id || null);
 };
 
 export default /** @type {IResolvers} */ {
@@ -110,7 +110,9 @@ export default /** @type {IResolvers} */ {
         .populate()
         .exec();
 
-      return res.map(transformDashboard);
+      return res.map((dashboard) =>
+        transformDashboard(dashboard, context.user?._id || null)
+      );
     },
   },
 
@@ -132,7 +134,11 @@ export default /** @type {IResolvers} */ {
         user: context.user._id,
       });
       try {
-        return newDashboard.save().then(transformDashboard);
+        return newDashboard
+          .save()
+          .then((dashboard) =>
+            transformDashboard(dashboard, context.user?._id || null)
+          );
       } catch (error) {
         console.error(error);
         throw error;
@@ -161,7 +167,7 @@ export default /** @type {IResolvers} */ {
         throw createGraphQLError("Dashboard not found");
       }
 
-      const transformed = transformDashboard(updated);
+      const transformed = transformDashboard(updated, context.user?._id || null);
       // Notify owner-scoped subscribers of dashboard updates.
       pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
       return transformed;
@@ -187,7 +193,7 @@ export default /** @type {IResolvers} */ {
         throw createGraphQLError("Dashboard not found");
       }
 
-      return transformDashboard(deleted);
+      return transformDashboard(deleted, context.user?._id || null);
     },
   },
 

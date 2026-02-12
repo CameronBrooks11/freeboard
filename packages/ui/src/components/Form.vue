@@ -30,6 +30,7 @@ import ArrayFormElement from "./ArrayFormElement.vue";
 import CodeEditorFormElement from "./CodeEditorFormElement.vue";
 import { useI18n } from "vue-i18n";
 import ListFormElement from "./ListFormElement.vue";
+import { resolveFieldModelValue } from "../formModel";
 
 const { t } = useI18n();
 
@@ -263,7 +264,7 @@ watch([f, s], async () => {
   );
   // Initialize each field’s model and watch for changes
   formFields.value.forEach((field) => {
-    const value = field.model?.value || s.value[field.name] || field.default;
+    const value = resolveFieldModelValue(field, s.value || {});
     const r = ref(value);
     field.model = r;
     watch(r, onUpdate);

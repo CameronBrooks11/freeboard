@@ -16,6 +16,7 @@ import {
   serializeDashboardState,
 } from "./dashboardRuntime.js";
 import { generateModelId } from "./id";
+import { resolveDashboardIsOwner } from "./ownership.js";
 
 /**
  * Minimum number of columns allowed for dashboard layout.
@@ -132,7 +133,7 @@ export class Dashboard {
     this.width = object.width;
     this.published = !!object.published;
     this.settings = object.settings || {};
-    this.isOwner = !object.user;
+    this.isOwner = resolveDashboardIsOwner(object);
 
     object.authProviders?.forEach((providerConfig) => {
       const authProvider = new AuthProvider();

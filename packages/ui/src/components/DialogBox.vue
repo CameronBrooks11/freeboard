@@ -14,8 +14,9 @@
  */
 defineOptions({ name: 'DialogBox' });
 
-import { onDeactivated, onMounted, ref } from "vue";
+import { onBeforeUnmount, onDeactivated, onMounted, ref } from "vue";
 import TextButton from "./TextButton.vue";
+import { bindEscapeKeyListener } from "../escapeKeyListener";
 
 const show = ref(false);
 
@@ -48,24 +49,19 @@ const onCancel = (event) => {
   closeModal();
 };
 
-/**
- * Handle global Escape key to cancel dialog.
- *
- * @param {KeyboardEvent} e
- */
-const onKey = (e) => {
-  if (e.code === 'Escape') {
-    onCancel(e);
-  }
-};
+let unbindEscapeListener = () => {};
 
 onMounted(() => {
   show.value = true;
-  window.addEventListener('keydown', onKey);
+  unbindEscapeListener = bindEscapeKeyListener(onCancel, window);
+});
+
+onBeforeUnmount(() => {
+  unbindEscapeListener();
 });
 
 onDeactivated(() => {
-  window.removeEventListener('keydown', onKey);
+  unbindEscapeListener();
 });
 
 const { header, ok, cancel, okDisabled } = defineProps({

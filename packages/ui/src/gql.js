@@ -22,6 +22,7 @@ export const DASHBOARD_CREATE_MUTATION = gql`
       panes
       authProviders
       settings
+      isOwner
     }
   }
 `;
@@ -43,6 +44,7 @@ export const DASHBOARD_UPDATE_MUTATION = gql`
       panes
       authProviders
       settings
+      isOwner
     }
   }
 `;
@@ -65,6 +67,7 @@ export const DASHBOARD_READ_QUERY = gql`
       authProviders
       settings
       user
+      isOwner
     }
   }
 `;
@@ -87,6 +90,7 @@ export const DASHBOARD_UPDATE_SUBSCRIPTION = gql`
       authProviders
       settings
       user
+      isOwner
     }
   }
 `;
