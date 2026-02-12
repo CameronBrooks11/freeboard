@@ -13,7 +13,11 @@ import Header from "./Header.vue";
 import Board from "./Board.vue";
 import { useFreeboardStore } from "../stores/freeboard";
 import { useQuery, useSubscription } from "@vue/apollo-composable";
-import { DASHBOARD_READ_QUERY, DASHBOARD_UPDATE_SUBSCRIPTION } from "../gql";
+import {
+  DASHBOARD_READ_QUERY,
+  DASHBOARD_UPDATE_SUBSCRIPTION,
+  PUBLIC_AUTH_POLICY_QUERY,
+} from "../gql";
 import router from "../router";
 import { storeToRefs } from "pinia";
 import Preloader from "./Preloader.vue";
@@ -36,7 +40,7 @@ import { MapWidget } from "../widgets/MapWidget";
 // Store & theming
 // ----------------------------------------------------------------------------
 const freeboardStore = useFreeboardStore();
-const { showLoadingIndicator, isEditing, isSaved, dashboard } =
+const { showLoadingIndicator, isSaved, dashboard } =
   storeToRefs(freeboardStore);
 
 // React to system color scheme changes
@@ -74,6 +78,17 @@ const { onResult: onSubResult } = useSubscription(
   { context: { apiName: "stream" }, enabled: queryEnabled }
 );
 
+const { result: publicPolicyResult } = useQuery(PUBLIC_AUTH_POLICY_QUERY, {}, {
+  fetchPolicy: "network-only",
+});
+
+watch(publicPolicyResult, () => {
+  const policy = publicPolicyResult.value?.publicAuthPolicy;
+  if (policy) {
+    freeboardStore.setPublicAuthPolicy(policy);
+  }
+});
+
 // Redirect to home on query error (e.g., not found/unauthorized)
 watch(error, () => router.push("/"));
 
@@ -95,7 +110,7 @@ const applyResult = (data) => {
 
   if (!dash && routeId.value) {
     // Dashboard not found, go to create new
-    isEditing.value = true;
+    freeboardStore.syncEditingPermissions();
     router.push("/");
     return;
   }
@@ -137,10 +152,7 @@ freeboardStore.loadWidgetPlugin(PictureWidget);
 freeboardStore.loadWidgetPlugin(HtmlWidget);
 freeboardStore.loadWidgetPlugin(SparklineWidget);
 freeboardStore.loadWidgetPlugin(MapWidget);
-
-// Determine edit mode based on static build or login
-freeboardStore.allowEdit = __FREEBOARD_STATIC__ || freeboardStore.isLoggedIn();
-freeboardStore.isEditing = __FREEBOARD_STATIC__ || freeboardStore.isLoggedIn();
+freeboardStore.syncEditingPermissions();
 
 // Hide loader after baseline setup (query watcher will override as needed)
 showLoadingIndicator.value = false;

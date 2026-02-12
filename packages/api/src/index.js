@@ -68,7 +68,7 @@ const ensureAdminUser = async () => {
   await new User({
     email: config.adminEmail,
     password: config.adminPassword,
-    admin: true,
+    role: "admin",
     active: true,
   }).save();
   console.log(`Admin user created: ${config.adminEmail}`);

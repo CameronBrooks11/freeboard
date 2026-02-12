@@ -39,4 +39,17 @@ test("user model accepts valid credentials at schema validation", () => {
 
   const validationError = user.validateSync();
   assert.equal(validationError, undefined);
+  assert.equal(user.role, "viewer");
+});
+
+test("user model rejects unsupported role values", () => {
+  const user = new User({
+    email: "valid.user@example.com",
+    password: "StrongPass123!",
+    role: "superadmin",
+  });
+
+  const validationError = user.validateSync();
+  assert.ok(validationError);
+  assert.ok(validationError.errors.role);
 });

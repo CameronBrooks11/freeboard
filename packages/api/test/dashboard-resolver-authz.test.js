@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 
 import Dashboard from "../src/models/Dashboard.js";
+import Policy from "../src/models/Policy.js";
 import DashboardResolvers from "../src/resolvers/Dashboard.js";
 
 const originalMethods = {
   findOne: Dashboard.findOne,
   findOneAndUpdate: Dashboard.findOneAndUpdate,
   findOneAndDelete: Dashboard.findOneAndDelete,
+  policyFindOne: Policy.findOne,
 };
 
 const asLean = (value) => ({
@@ -36,6 +38,7 @@ afterEach(() => {
   Dashboard.findOne = originalMethods.findOne;
   Dashboard.findOneAndUpdate = originalMethods.findOneAndUpdate;
   Dashboard.findOneAndDelete = originalMethods.findOneAndDelete;
+  Policy.findOne = originalMethods.policyFindOne;
 });
 
 test("dashboard query denies private dashboard to non-owner", async () => {
@@ -46,7 +49,7 @@ test("dashboard query denies private dashboard to non-owner", async () => {
       DashboardResolvers.Query.dashboard(
         null,
         { _id: "dash-1" },
-        { user: { _id: "someone-else" } }
+        { user: { _id: "someone-else", role: "viewer" } }
       ),
     /Dashboard not found/
   );
@@ -73,6 +76,8 @@ test("updateDashboard scopes update by owner and strips immutable fields", async
   let receivedUpdate = null;
   let receivedOptions = null;
 
+  Dashboard.findOne = () => asLean(buildDashboardDoc({ user: "owner-1" }));
+
   Dashboard.findOneAndUpdate = (filter, update, options) => {
     receivedFilter = filter;
     receivedUpdate = update;
@@ -80,7 +85,7 @@ test("updateDashboard scopes update by owner and strips immutable fields", async
     return asLean(buildDashboardDoc({ title: "Updated" }));
   };
 
-  const context = { user: { _id: "owner-1" } };
+  const context = { user: { _id: "owner-1", role: "editor" } };
 
   const result = await DashboardResolvers.Mutation.updateDashboard(
     null,
@@ -95,7 +100,7 @@ test("updateDashboard scopes update by owner and strips immutable fields", async
     context
   );
 
-  assert.deepEqual(receivedFilter, { _id: "dash-1", user: "owner-1" });
+  assert.deepEqual(receivedFilter, { _id: "dash-1" });
   assert.deepEqual(receivedUpdate, {
     $set: { title: "Updated", settings: { theme: "dark" } },
   });
@@ -105,6 +110,7 @@ test("updateDashboard scopes update by owner and strips immutable fields", async
 });
 
 test("deleteDashboard denies deleting non-owned dashboard", async () => {
+  Dashboard.findOne = () => asLean(buildDashboardDoc({ user: "owner-1" }));
   Dashboard.findOneAndDelete = () => asLean(null);
 
   await assert.rejects(
@@ -112,7 +118,7 @@ test("deleteDashboard denies deleting non-owned dashboard", async () => {
       DashboardResolvers.Mutation.deleteDashboard(
         null,
         { _id: "dash-1" },
-        { user: { _id: "other-user" } }
+        { user: { _id: "other-user", role: "editor" } }
       ),
     /Dashboard not found/
   );
@@ -126,8 +132,113 @@ test("dashboard subscription denies non-owner", async () => {
       DashboardResolvers.Subscription.dashboard.subscribe(
         null,
         { _id: "dash-1" },
-        { user: { _id: "other-user" } }
+        { user: { _id: "other-user", role: "editor" } }
       ),
     /Dashboard not found/
+  );
+});
+
+test("createDashboard rejects viewer role", async () => {
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Mutation.createDashboard(
+        null,
+        {
+          dashboard: buildDashboardDoc(),
+        },
+        {
+          user: { _id: "viewer-1", role: "viewer" },
+        }
+      ),
+    /do not have access/i
+  );
+});
+
+test("admin updateDashboard can edit another user's dashboard", async () => {
+  Dashboard.findOne = () => asLean(buildDashboardDoc({ user: "owner-1" }));
+  Dashboard.findOneAndUpdate = () =>
+    asLean(buildDashboardDoc({ title: "Updated by admin", user: "owner-1" }));
+
+  const result = await DashboardResolvers.Mutation.updateDashboard(
+    null,
+    {
+      _id: "dash-1",
+      dashboard: { title: "Updated by admin" },
+    },
+    { user: { _id: "admin-1", role: "admin" } }
+  );
+
+  assert.equal(result.title, "Updated by admin");
+  assert.equal(result.user, "owner-1");
+  assert.equal(result.isOwner, false);
+});
+
+test("editor can update already-published dashboard without toggling publish state", async () => {
+  const policyValues = {
+    "auth.publish.editorCanPublish": false,
+  };
+  Policy.findOne = ({ key }) =>
+    asLean(
+      Object.prototype.hasOwnProperty.call(policyValues, key)
+        ? { key, value: policyValues[key] }
+        : null
+    );
+
+  Dashboard.findOne = () =>
+    asLean(buildDashboardDoc({ user: "owner-1", published: true }));
+  Dashboard.findOneAndUpdate = () =>
+    asLean(
+      buildDashboardDoc({
+        user: "owner-1",
+        published: true,
+        title: "Edited without publish toggle",
+      })
+    );
+
+  const result = await DashboardResolvers.Mutation.updateDashboard(
+    null,
+    {
+      _id: "dash-1",
+      dashboard: { title: "Edited without publish toggle", published: true },
+    },
+    { user: { _id: "owner-1", role: "editor" } }
+  );
+
+  assert.equal(result.title, "Edited without publish toggle");
+  assert.equal(result.published, true);
+});
+
+test("editor cannot toggle publish state when policy disallows publishing", async () => {
+  const policyValues = {
+    "auth.publish.editorCanPublish": false,
+  };
+  Policy.findOne = ({ key }) =>
+    asLean(
+      Object.prototype.hasOwnProperty.call(policyValues, key)
+        ? { key, value: policyValues[key] }
+        : null
+    );
+
+  Dashboard.findOne = () =>
+    asLean(buildDashboardDoc({ user: "owner-1", published: false }));
+  Dashboard.findOneAndUpdate = () =>
+    asLean(
+      buildDashboardDoc({
+        user: "owner-1",
+        published: true,
+      })
+    );
+
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Mutation.updateDashboard(
+        null,
+        {
+          _id: "dash-1",
+          dashboard: { published: true },
+        },
+        { user: { _id: "owner-1", role: "editor" } }
+      ),
+    /Editors are not allowed to publish dashboards/
   );
 });

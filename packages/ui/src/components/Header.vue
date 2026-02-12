@@ -6,6 +6,7 @@
 defineOptions({ name: 'Header' });
 
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
 import { useFreeboardStore } from "../stores/freeboard";
 // Admin controls and toggles
 import DashboardControl from "./DashboardControl.vue";
@@ -17,6 +18,7 @@ import { RouterLink } from "vue-router";
 // Retrieve editing flags and dashboard instance
 const freeboardStore = useFreeboardStore();
 const { allowEdit, isEditing } = storeToRefs(freeboardStore);
+const showAdminButton = computed(() => freeboardStore.isAdmin());
 </script>
 
 <template>
@@ -31,6 +33,12 @@ const { allowEdit, isEditing } = storeToRefs(freeboardStore);
             </h1>
           </RouterLink>
           <div class="header__admin-bar__admin-menu__board-tools">
+            <div class="header__admin-bar__admin-menu__admin-link" v-if="showAdminButton">
+              <RouterLink to="/admin" class="header__admin-bar__admin-menu__admin-link__button">
+                <v-icon name="hi-briefcase" />
+                <span>{{ $t("admin.title") }}</span>
+              </RouterLink>
+            </div>
             <div class="header__admin-bar__admin-menu__board-tools__board-actions">
               <FreeboardControl />
               <DashboardControl />

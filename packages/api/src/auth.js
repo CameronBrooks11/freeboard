@@ -39,7 +39,9 @@ export const ensureThatUserIsLogged = (context) => {
   if (!context.user) {
     throw createGraphQLError(
       "You must be logged in to perform this action",
-      {},
+      {
+        extensions: { code: "UNAUTHENTICATED" },
+      },
     );
   }
 };
@@ -51,10 +53,29 @@ export const ensureThatUserIsLogged = (context) => {
  * @throws {GraphQLError} When the user is not an administrator.
  */
 export const ensureThatUserIsAdministrator = (context) => {
-  if (!context.user || !context.user.admin) {
+  ensureThatUserIsLogged(context);
+  if (context.user.role !== "admin") {
     throw createGraphQLError(
       "You must be an administrator to perform this action",
+      {
+        extensions: { code: "FORBIDDEN" },
+      }
     );
+  }
+};
+
+/**
+ * Ensure the authenticated user has one of the allowed roles.
+ *
+ * @param {Object} context - GraphQL resolver context containing user info.
+ * @param {string[]} allowedRoles - Allowed role values.
+ */
+export const ensureThatUserHasRole = (context, allowedRoles = []) => {
+  ensureThatUserIsLogged(context);
+  if (!allowedRoles.includes(context.user.role)) {
+    throw createGraphQLError("You do not have access to perform this action", {
+      extensions: { code: "FORBIDDEN" },
+    });
   }
 };
 
@@ -83,15 +104,26 @@ export const getUser = async (context) => {
  * Create a signed JWT for authentication.
  *
  * @param {string} email       - User email address.
- * @param {boolean} admin      - Whether the user has admin privileges.
+ * @param {string} role        - User role.
  * @param {boolean} active     - Whether the user account is active.
  * @param {string} _id         - User document _id.
  * @returns {string}           Signed JWT token.
  */
-export const createAuthToken = (email, admin, active, _id) => {
-  return jwt.sign({ email, admin, active, _id }, config.jwtSecret, {
+export const createAuthToken = (email, role, active, _id) => {
+  const normalizedRole = String(role || "").toLowerCase();
+  return jwt.sign(
+    {
+      email,
+      role: normalizedRole,
+      admin: normalizedRole === "admin",
+      active,
+      _id,
+    },
+    config.jwtSecret,
+    {
     expiresIn: config.jwtTimeExpiration,
-  });
+    }
+  );
 };
 
 /**

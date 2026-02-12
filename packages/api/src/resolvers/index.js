@@ -15,13 +15,14 @@ import { mergeResolvers } from "@graphql-tools/merge";
 
 import Dashboard from "./Dashboard.js";
 import User from "./User.js";
+import Policy from "./Policy.js";
 
 /**
  * Array of individual resolver objects to be merged.
  *
  * @type {IResolversArray}
  */
-const resolvers = [Dashboard, User];
+const resolvers = [Dashboard, User, Policy];
 
 /**
  * Merges all resolver modules into a single resolver map for the executable schema.

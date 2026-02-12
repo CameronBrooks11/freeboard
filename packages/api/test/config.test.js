@@ -9,6 +9,11 @@ const CONFIG_ENV_KEYS = [
   "ADMIN_PASSWORD",
   "MONGO_URL",
   "PORT",
+  "AUTH_REGISTRATION_MODE",
+  "AUTH_REGISTRATION_DEFAULT_ROLE",
+  "AUTH_EDITOR_CAN_PUBLISH",
+  "EXECUTION_MODE",
+  "POLICY_EDIT_LOCK",
 ];
 
 const withEnv = async (overrides, run) => {
@@ -113,6 +118,75 @@ test("config accepts valid CREATE_ADMIN credentials and normalizes email", async
       const { config } = await importConfigFresh();
       assert.equal(config.createAdmin, true);
       assert.equal(config.adminEmail, "admin@example.com");
+    }
+  );
+});
+
+test("config rejects unsupported registration mode", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "development",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      CREATE_ADMIN: "false",
+      AUTH_REGISTRATION_MODE: "invalid-mode",
+    },
+    async () => {
+      await assert.rejects(() => importConfigFresh(), /Invalid registration mode/);
+    }
+  );
+});
+
+test("config rejects unsupported registration default role", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "development",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      CREATE_ADMIN: "false",
+      AUTH_REGISTRATION_MODE: "open",
+      AUTH_REGISTRATION_DEFAULT_ROLE: "admin",
+    },
+    async () => {
+      await assert.rejects(
+        () => importConfigFresh(),
+        /Invalid non-admin role/
+      );
+    }
+  );
+});
+
+test("config accepts valid auth policy environment overrides", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "development",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      CREATE_ADMIN: "false",
+      AUTH_REGISTRATION_MODE: "open",
+      AUTH_REGISTRATION_DEFAULT_ROLE: "editor",
+      AUTH_EDITOR_CAN_PUBLISH: "true",
+      EXECUTION_MODE: "trusted",
+      POLICY_EDIT_LOCK: "true",
+    },
+    async () => {
+      const { config } = await importConfigFresh();
+      assert.equal(config.registrationMode, "open");
+      assert.equal(config.registrationDefaultRole, "editor");
+      assert.equal(config.editorCanPublish, true);
+      assert.equal(config.executionMode, "trusted");
+      assert.equal(config.policyEditLock, true);
+    }
+  );
+});
+
+test("config rejects unsupported execution mode", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "development",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      CREATE_ADMIN: "false",
+      EXECUTION_MODE: "unsafe",
+    },
+    async () => {
+      await assert.rejects(() => importConfigFresh(), /Invalid execution mode/);
     }
   );
 });

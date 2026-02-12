@@ -5,8 +5,8 @@
 
 import { createPubSub } from "graphql-yoga";
 import { validateAuthToken } from "./auth.js";
-import User from "./types/User.js";
-import Dashboard from "./types/Dashboard.js";
+import User from "./models/User.js";
+import Dashboard from "./models/Dashboard.js";
 
 /**
  * PubSub engine for subscriptions.
@@ -65,7 +65,27 @@ export const setContext = async ({ req }) => {
       }
       // Validate JWT and attach user claims to context
       const user = await validateAuthToken(token);
-      context.user = user; // Add to Apollo Server context the user who is doing the request if auth token is provided and it's a valid token
+      const persistedUser = await User.findOne({
+        _id: user?._id,
+        active: true,
+      }).lean();
+      if (!persistedUser) {
+        return context;
+      }
+      const normalizedRole =
+        typeof persistedUser?.role === "string"
+          ? persistedUser.role.toLowerCase()
+          : user?.admin
+            ? "admin"
+            : "viewer";
+      context.user = {
+        ...user,
+        _id: persistedUser._id,
+        email: persistedUser.email,
+        active: persistedUser.active,
+        role: normalizedRole,
+        admin: normalizedRole === "admin",
+      };
     } catch (e) {
       // Invalid token: log and continue without user
       console.warn(e);

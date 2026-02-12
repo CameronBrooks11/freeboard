@@ -10,6 +10,84 @@ import router from "../router";
 import { usePreferredColorScheme } from "@vueuse/core";
 import { validateWidgetPlugin } from "../widgets/runtime/plugin";
 import { disposeDashboardAssets } from "../dashboardAssets";
+import { normalizeCreateDashboardPayload } from "../auth/publishPolicy";
+
+const DEFAULT_PUBLIC_AUTH_POLICY = Object.freeze({
+  registrationMode: "disabled",
+  registrationDefaultRole: "viewer",
+  editorCanPublish: false,
+  executionMode: "safe",
+  policyEditLock: false,
+});
+
+const EDITOR_ROLES = new Set(["editor", "admin"]);
+
+const decodeBase64 = (value) => {
+  if (typeof globalThis.atob === "function") {
+    return globalThis.atob(value);
+  }
+  if (typeof globalThis.Buffer !== "undefined") {
+    return globalThis.Buffer.from(value, "base64").toString("utf8");
+  }
+  throw new Error("No base64 decoder available");
+};
+
+const parseJwtPayload = (token) => {
+  if (!token || typeof token !== "string") {
+    return null;
+  }
+
+  const payloadSegment = token.split(".")[1];
+  if (!payloadSegment) {
+    return null;
+  }
+
+  const normalizedBase64 = payloadSegment
+    .replace(/-/g, "+")
+    .replace(/_/g, "/")
+    .padEnd(Math.ceil(payloadSegment.length / 4) * 4, "=");
+
+  try {
+    const payloadJson = decodeBase64(normalizedBase64);
+    return JSON.parse(payloadJson);
+  } catch {
+    return null;
+  }
+};
+
+const normalizeRole = (role) => {
+  const normalized = String(role || "").toLowerCase();
+  if (["viewer", "editor", "admin"].includes(normalized)) {
+    return normalized;
+  }
+  return "viewer";
+};
+
+const normalizePublicAuthPolicy = (policy = {}) => ({
+  registrationMode: ["disabled", "invite", "open"].includes(
+    String(policy.registrationMode || "").toLowerCase()
+  )
+    ? String(policy.registrationMode).toLowerCase()
+    : DEFAULT_PUBLIC_AUTH_POLICY.registrationMode,
+  registrationDefaultRole: ["viewer", "editor"].includes(
+    String(policy.registrationDefaultRole || "").toLowerCase()
+  )
+    ? String(policy.registrationDefaultRole).toLowerCase()
+    : DEFAULT_PUBLIC_AUTH_POLICY.registrationDefaultRole,
+  editorCanPublish:
+    policy.editorCanPublish === undefined
+      ? DEFAULT_PUBLIC_AUTH_POLICY.editorCanPublish
+      : Boolean(policy.editorCanPublish),
+  executionMode: ["safe", "trusted"].includes(
+    String(policy.executionMode || "").toLowerCase()
+  )
+    ? String(policy.executionMode).toLowerCase()
+    : DEFAULT_PUBLIC_AUTH_POLICY.executionMode,
+  policyEditLock:
+    policy.policyEditLock === undefined
+      ? DEFAULT_PUBLIC_AUTH_POLICY.policyEditLock
+      : Boolean(policy.policyEditLock),
+});
 
 export const useFreeboardStore = defineStore("freeboard", {
   /**
@@ -25,7 +103,9 @@ export const useFreeboardStore = defineStore("freeboard", {
    *   authPlugins: Object<string, any>,
    *   dashboard: Dashboard,
    *   assets: Object<string, any>,
-   *   token: string|null
+   *   token: string|null,
+   *   currentUser: Object|null,
+   *   publicAuthPolicy: Object
    * }}
    */
   state: () => ({
@@ -39,9 +119,87 @@ export const useFreeboardStore = defineStore("freeboard", {
     dashboard: new Dashboard(),
     assets: {},
     token: null,
+    currentUser: null,
+    publicAuthPolicy: { ...DEFAULT_PUBLIC_AUTH_POLICY },
   }),
 
   actions: {
+    setPublicAuthPolicy(policy) {
+      const previousExecutionMode = this.publicAuthPolicy.executionMode;
+      this.publicAuthPolicy = normalizePublicAuthPolicy(policy);
+      if (
+        previousExecutionMode !== this.publicAuthPolicy.executionMode &&
+        this.dashboard
+      ) {
+        this.loadDashboardAssets();
+      }
+    },
+
+    setCurrentUser(user) {
+      if (!user) {
+        this.currentUser = null;
+        return;
+      }
+      this.currentUser = {
+        _id: user._id || null,
+        email: user.email || null,
+        role: normalizeRole(user.role),
+        active: user.active !== false,
+      };
+    },
+
+    hydrateSessionFromToken() {
+      const payload = parseJwtPayload(this.token);
+      if (!payload) {
+        this.token = null;
+        this.currentUser = null;
+        return;
+      }
+
+      this.currentUser = {
+        _id: payload._id || null,
+        email: payload.email || null,
+        role: normalizeRole(payload.role || (payload.admin ? "admin" : "viewer")),
+        active: payload.active !== false,
+      };
+    },
+
+    getUserRole() {
+      return this.currentUser?.role || "viewer";
+    },
+
+    isAdmin() {
+      return this.isLoggedIn() && this.getUserRole() === "admin";
+    },
+
+    canEditDashboards() {
+      return this.isLoggedIn() && EDITOR_ROLES.has(this.getUserRole());
+    },
+
+    canCurrentUserPublish() {
+      if (!this.isLoggedIn()) {
+        return false;
+      }
+      if (this.getUserRole() === "admin") {
+        return true;
+      }
+      return this.getUserRole() === "editor" && this.publicAuthPolicy.editorCanPublish;
+    },
+
+    isTrustedExecutionMode() {
+      return this.publicAuthPolicy.executionMode === "trusted";
+    },
+
+    syncEditingPermissions() {
+      const canEdit = __FREEBOARD_STATIC__ || this.canEditDashboards();
+      this.allowEdit = canEdit;
+      if (!canEdit) {
+        this.isEditing = false;
+      } else if (!this.isEditing) {
+        this.isEditing = true;
+      }
+    },
+
     /**
      * Load saved settings (e.g., token) from localStorage.
      *
@@ -49,6 +207,9 @@ export const useFreeboardStore = defineStore("freeboard", {
     loadSettingsFromLocalStorage() {
       const item = localStorage.getItem("freeboard");
       if (!item) {
+        this.token = null;
+        this.currentUser = null;
+        this.syncEditingPermissions();
         return;
       }
       try {
@@ -58,8 +219,11 @@ export const useFreeboardStore = defineStore("freeboard", {
         }
       } catch {
         this.token = null;
+        this.currentUser = null;
         localStorage.removeItem("freeboard");
       }
+      this.hydrateSessionFromToken();
+      this.syncEditingPermissions();
       // TODO: Sync with local limited, use indexdb
       /*
       if (dashboard && settings.dashboard) {
@@ -97,6 +261,8 @@ export const useFreeboardStore = defineStore("freeboard", {
      */
     login(token) {
       this.token = token;
+      this.hydrateSessionFromToken();
+      this.syncEditingPermissions();
       this.saveSettingsToLocalStorage();
     },
 
@@ -105,6 +271,8 @@ export const useFreeboardStore = defineStore("freeboard", {
      */
     logout() {
       this.token = null;
+      this.currentUser = null;
+      this.syncEditingPermissions();
       this.saveSettingsToLocalStorage();
     },
 
@@ -114,7 +282,7 @@ export const useFreeboardStore = defineStore("freeboard", {
      * @returns {boolean} True if a token is present.
      */
     isLoggedIn() {
-      return !!this.token;
+      return Boolean(this.token && this.currentUser && this.currentUser.active !== false);
     },
 
     /**
@@ -165,9 +333,14 @@ export const useFreeboardStore = defineStore("freeboard", {
       if (this.isSaved && this.dashboard.isOwner) {
         updateDashboard({ id, dashboard: dashboard });
       } else {
-        const result = await createDashboard({ dashboard: dashboard });
+        const createPayload = normalizeCreateDashboardPayload({
+          dashboard,
+          canPublish: this.canCurrentUserPublish(),
+        });
+        const result = await createDashboard({ dashboard: createPayload });
         this.isSaved = true;
         this.dashboard._id = result.data.createDashboard._id;
+        this.dashboard.published = result.data.createDashboard.published;
         router.push(`/${result.data.createDashboard._id}`);
       }
     },
@@ -225,6 +398,12 @@ export const useFreeboardStore = defineStore("freeboard", {
 
       const assets = {};
       const head = document.head || document.getElementsByTagName("head")[0];
+
+      if (!this.isTrustedExecutionMode()) {
+        this.assets = assets;
+        this.showLoadingIndicator = false;
+        return;
+      }
 
       if (this.dashboard.settings.script) {
         const script = this.createAsset(

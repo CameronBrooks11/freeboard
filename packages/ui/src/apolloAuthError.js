@@ -44,4 +44,3 @@ export const shouldForceLogoutOnGraphQLErrors = (graphQLErrors) => {
   }
   return graphQLErrors.some(isAuthGraphQLError);
 };
-

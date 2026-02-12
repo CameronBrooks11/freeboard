@@ -17,9 +17,13 @@ import { MAX_COLUMNS, MIN_COLUMNS } from "./models/Dashboard";
  * @param {string} dashboard.settings.style     - Custom CSS style.
  * @param {string} dashboard.settings.script    - Custom JS script.
  * @param {Array<string>} dashboard.settings.resources - External resource URLs.
+ * @param {Object} [policy={}]                      - Runtime policy hints.
+ * @param {boolean} [policy.canPublish=true]        - Whether current user can toggle publish.
  * @returns {Array<Object>} Array of settings sections for the UI form.
  */
-export default (dashboard) => {
+export default (dashboard, policy = {}) => {
+  const canPublish = policy.canPublish !== false;
+
   return [
     // General settings: title, columns, published flag
     {
@@ -51,6 +55,8 @@ export default (dashboard) => {
           name: "published",
           label: "form.labelPublished",
           type: "boolean",
+          disabled: !canPublish,
+          description: !canPublish ? "form.descriptionPublishAdminOnly" : undefined,
         },
       ],
     },

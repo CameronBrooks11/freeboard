@@ -14,6 +14,8 @@
 import { createGraphQLError } from "graphql-yoga";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
+import InviteToken from "../models/InviteToken.js";
+import PasswordResetToken from "../models/PasswordResetToken.js";
 import {
   createAuthToken,
   ensureLimitOfUsersIsNotReached,
@@ -21,14 +23,193 @@ import {
   ensureThatUserIsLogged,
   getUser,
 } from "../auth.js";
+import { recordAuditEvent } from "../audit.js";
+import { getAuthPolicyState } from "../policyStore.js";
+import { normalizeNonAdminRole, normalizeRole } from "../policy.js";
 import {
   getCredentialPolicyHints,
   isStrongPassword,
   isValidEmail,
   normalizeEmail,
 } from "../validators.js";
+import { generateOneTimeToken, hashOneTimeToken } from "../tokenSecurity.js";
 
 const credentialPolicy = getCredentialPolicyHints();
+const roleSortPriority = Object.freeze({
+  admin: 0,
+  editor: 1,
+  viewer: 2,
+});
+
+const INVITE_DEFAULT_EXPIRY_HOURS = 72;
+const PASSWORD_RESET_DEFAULT_EXPIRY_HOURS = 2;
+const PASSWORD_RESET_ADMIN_DEFAULT_EXPIRY_HOURS = 24;
+const MAX_TOKEN_EXPIRY_HOURS = 24 * 14;
+
+const clampExpiryHours = (inputHours, fallbackHours) => {
+  const parsed = Number(inputHours);
+  if (!Number.isFinite(parsed)) {
+    return fallbackHours;
+  }
+  if (parsed < 1) {
+    return 1;
+  }
+  if (parsed > MAX_TOKEN_EXPIRY_HOURS) {
+    return MAX_TOKEN_EXPIRY_HOURS;
+  }
+  return Math.floor(parsed);
+};
+
+const computeExpiryDate = (hours) =>
+  new Date(Date.now() + clampExpiryHours(hours, 1) * 60 * 60 * 1000);
+
+const ensureSelfRegistrationAllowed = (registrationMode) => {
+  if (registrationMode === "open") {
+    return;
+  }
+
+  if (registrationMode === "invite") {
+    throw createGraphQLError("Invitation is required to create an account", {
+      extensions: { code: "FORBIDDEN" },
+    });
+  }
+
+  throw createGraphQLError("Self-registration is disabled", {
+    extensions: { code: "FORBIDDEN" },
+  });
+};
+
+const ensureAtLeastOneActiveAdminWillRemain = async (excludedUserId) => {
+  const remainingAdmins = await User.countDocuments({
+    role: "admin",
+    active: true,
+    _id: { $ne: excludedUserId },
+  });
+  if (remainingAdmins === 0) {
+    throw createGraphQLError("At least one active administrator must remain", {
+      extensions: { code: "FORBIDDEN" },
+    });
+  }
+};
+
+const sortUsersForAdmin = (users) =>
+  [...users].sort((a, b) => {
+    const roleDelta =
+      (roleSortPriority[a.role] ?? Number.MAX_SAFE_INTEGER) -
+      (roleSortPriority[b.role] ?? Number.MAX_SAFE_INTEGER);
+    if (roleDelta !== 0) {
+      return roleDelta;
+    }
+    return (
+      new Date(a.registrationDate).valueOf() - new Date(b.registrationDate).valueOf()
+    );
+  });
+
+const toInviteView = (invite) => ({
+  _id: invite._id,
+  email: invite.email,
+  role: invite.role,
+  expiresAt: invite.expiresAt,
+  revokedAt: invite.revokedAt || null,
+  acceptedAt: invite.acceptedAt || null,
+  createdAt: invite.createdAt,
+});
+
+const ensurePasswordIsStrong = (password) => {
+  if (!isStrongPassword(password)) {
+    throw createGraphQLError(
+      `The password is not secure enough. ${credentialPolicy.password}.`
+    );
+  }
+};
+
+const ensureEmailIsValid = (email) => {
+  if (!isValidEmail(email)) {
+    throw createGraphQLError(`The email is not valid. ${credentialPolicy.email}.`);
+  }
+};
+
+const findActiveInviteByToken = async (token) => {
+  const tokenHash = hashOneTimeToken(token);
+  const now = new Date();
+  return InviteToken.findOne({
+    tokenHash,
+    revokedAt: null,
+    acceptedAt: null,
+    expiresAt: { $gt: now },
+  }).lean();
+};
+
+const issueInviteToken = async ({ email, role, createdBy, expiresInHours }) => {
+  const normalizedEmail = normalizeEmail(email);
+  ensureEmailIsValid(normalizedEmail);
+  const normalizedRole = normalizeNonAdminRole(role);
+
+  const existingUser = await User.findOne({ email: normalizedEmail }).lean();
+  if (existingUser) {
+    throw createGraphQLError("Data provided is not valid");
+  }
+
+  const now = new Date();
+  await InviteToken.updateMany(
+    {
+      email: normalizedEmail,
+      revokedAt: null,
+      acceptedAt: null,
+      expiresAt: { $gt: now },
+    },
+    { $set: { revokedAt: now } }
+  );
+
+  const rawToken = generateOneTimeToken();
+  const invite = await new InviteToken({
+    email: normalizedEmail,
+    role: normalizedRole,
+    tokenHash: hashOneTimeToken(rawToken),
+    createdBy: createdBy || null,
+    expiresAt: computeExpiryDate(
+      clampExpiryHours(expiresInHours, INVITE_DEFAULT_EXPIRY_HOURS)
+    ),
+  }).save();
+
+  return {
+    invite: toInviteView(invite),
+    token: rawToken,
+  };
+};
+
+const issuePasswordResetToken = async ({
+  user,
+  createdBy = null,
+  requestedByEmail = null,
+  expiresInHours = PASSWORD_RESET_DEFAULT_EXPIRY_HOURS,
+}) => {
+  const now = new Date();
+  await PasswordResetToken.updateMany(
+    {
+      userId: user._id,
+      revokedAt: null,
+      usedAt: null,
+      expiresAt: { $gt: now },
+    },
+    { $set: { revokedAt: now } }
+  );
+
+  const rawToken = generateOneTimeToken();
+  const reset = await new PasswordResetToken({
+    userId: user._id,
+    tokenHash: hashOneTimeToken(rawToken),
+    createdBy,
+    requestedByEmail,
+    expiresAt: computeExpiryDate(clampExpiryHours(expiresInHours, 1)),
+  }).save();
+
+  return {
+    userId: user._id,
+    token: rawToken,
+    expiresAt: reset.expiresAt,
+  };
+};
 
 export default /** @type {IResolvers} */ {
   Query: {
@@ -43,11 +224,46 @@ export default /** @type {IResolvers} */ {
      */
     listAllUsers: async (parent, args, context) => {
       ensureThatUserIsLogged(context);
-
       ensureThatUserIsAdministrator(context);
 
-      const sortCriteria = { admin: "desc", registrationDate: "asc" };
-      return User.find().sort(sortCriteria).lean();
+      const users = await User.find().lean();
+      return sortUsersForAdmin(users);
+    },
+
+    /**
+     * Fetch the currently authenticated user.
+     *
+     * @param {any} parent
+     * @param {any} args
+     * @param {Object} context
+     * @returns {Promise<Object>}
+     */
+    me: async (parent, args, context) => {
+      ensureThatUserIsLogged(context);
+      return getUser(context);
+    },
+
+    /**
+     * List pending invites.
+     *
+     * @param {any} parent
+     * @param {any} args
+     * @param {Object} context
+     * @returns {Promise<Object[]>}
+     */
+    listPendingInvites: async (parent, args, context) => {
+      ensureThatUserIsLogged(context);
+      ensureThatUserIsAdministrator(context);
+
+      const now = new Date();
+      const invites = await InviteToken.find({
+        revokedAt: null,
+        acceptedAt: null,
+        expiresAt: { $gt: now },
+      })
+        .sort({ createdAt: "desc" })
+        .lean();
+      return invites.map(toInviteView);
     },
   },
   Mutation: {
@@ -64,36 +280,111 @@ export default /** @type {IResolvers} */ {
         throw createGraphQLError("Data provided is not valid");
       }
 
+      const authPolicy = await getAuthPolicyState();
+      ensureSelfRegistrationAllowed(authPolicy.registrationMode);
+
       const normalizedEmail = normalizeEmail(email);
+      ensureEmailIsValid(normalizedEmail);
+      ensurePasswordIsStrong(password);
 
-      if (!isValidEmail(normalizedEmail)) {
-        throw createGraphQLError(`The email is not valid. ${credentialPolicy.email}.`);
-      }
-
-      if (!isStrongPassword(password)) {
-        throw createGraphQLError(
-          `The password is not secure enough. ${credentialPolicy.password}.`
-        );
-      }
-
-      const registeredUsersCount = await User.find().estimatedDocumentCount();
-
+      const registeredUsersCount = await User.estimatedDocumentCount();
       ensureLimitOfUsersIsNotReached(registeredUsersCount);
 
       const isAnEmailAlreadyRegistered = await User.findOne({
         email: normalizedEmail,
       }).lean();
-
       if (isAnEmailAlreadyRegistered) {
         throw createGraphQLError("Data provided is not valid");
       }
 
-      await new User({ email: normalizedEmail, password }).save();
+      const createdUser = await new User({
+        email: normalizedEmail,
+        password,
+        role: authPolicy.registrationDefaultRole,
+        active: true,
+      }).save();
+      const user = await User.findOne({ _id: createdUser._id }).lean();
+      if (!user) {
+        throw createGraphQLError("User not found or login not allowed");
+      }
 
-      const user = await User.findOne({ email: normalizedEmail }).lean();
+      await recordAuditEvent({
+        actorUserId: user._id,
+        action: "user.self_registered",
+        targetType: "user",
+        targetId: user._id,
+        metadata: {
+          registrationMode: authPolicy.registrationMode,
+          role: user.role,
+        },
+      });
 
       return {
-        token: createAuthToken(user.email, user.admin, user.active, user._id),
+        token: createAuthToken(user.email, user.role, user.active, user._id),
+      };
+    },
+
+    /**
+     * Accept invite token and register account.
+     *
+     * @param {any} parent
+     * @param {{ token: string, password: string }} args
+     * @returns {Promise<{ token: string }>}
+     */
+    acceptInvite: async (parent, { token, password }) => {
+      if (!token || !password) {
+        throw createGraphQLError("Data provided is not valid");
+      }
+      ensurePasswordIsStrong(password);
+
+      const invite = await findActiveInviteByToken(token);
+      if (!invite) {
+        throw createGraphQLError("Invite token is invalid or expired", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      const existingUser = await User.findOne({ email: invite.email }).lean();
+      if (existingUser) {
+        throw createGraphQLError("Invite token is invalid or expired", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      const registeredUsersCount = await User.estimatedDocumentCount();
+      ensureLimitOfUsersIsNotReached(registeredUsersCount);
+
+      const createdUser = await new User({
+        email: invite.email,
+        password,
+        role: invite.role,
+        active: true,
+      }).save();
+      const user = await User.findOne({ _id: createdUser._id }).lean();
+      if (!user) {
+        throw createGraphQLError("User not found or login not allowed");
+      }
+
+      await InviteToken.findOneAndUpdate(
+        { _id: invite._id },
+        { $set: { acceptedAt: new Date(), acceptedUserId: user._id } },
+        { new: false }
+      ).lean();
+
+      await recordAuditEvent({
+        actorUserId: user._id,
+        action: "invite.accepted",
+        targetType: "invite",
+        targetId: invite._id,
+        metadata: {
+          email: invite.email,
+          role: invite.role,
+          acceptedUserId: user._id,
+        },
+      });
+
+      return {
+        token: createAuthToken(user.email, user.role, user.active, user._id),
       };
     },
 
@@ -113,28 +404,131 @@ export default /** @type {IResolvers} */ {
       const normalizedEmail = normalizeEmail(email);
       const user = await User.findOne({
         email: normalizedEmail,
-        active: true,
       }).lean();
 
       if (!user) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw createGraphQLError("Invalid credentials");
+      }
+      if (!user.active) {
+        throw createGraphQLError(
+          "Your account is deactivated. Contact an administrator.",
+          {
+            extensions: { code: "FORBIDDEN" },
+          }
+        );
       }
 
       const isCorrectPassword = await bcrypt.compare(password, user.password);
-
       if (!isCorrectPassword) {
         throw createGraphQLError("Invalid credentials");
       }
 
       await User.findOneAndUpdate(
-        { email: normalizedEmail },
-        { lastLogin: new Date().toISOString() },
-        { new: true }
+        { _id: user._id },
+        { $set: { lastLogin: new Date() } },
+        { new: false }
       ).lean();
 
       return {
-        token: createAuthToken(user.email, user.admin, user.active, user._id),
+        token: createAuthToken(user.email, user.role, user.active, user._id),
       };
+    },
+
+    /**
+     * Initiate password reset flow for an email.
+     *
+     * @param {any} parent
+     * @param {{ email: string }} args
+     * @returns {Promise<boolean>}
+     */
+    requestPasswordReset: async (parent, { email }) => {
+      const normalizedEmail = normalizeEmail(email);
+      if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
+        return true;
+      }
+
+      const user = await User.findOne({
+        email: normalizedEmail,
+        active: true,
+      }).lean();
+      if (!user) {
+        return true;
+      }
+
+      await issuePasswordResetToken({
+        user,
+        createdBy: null,
+        requestedByEmail: normalizedEmail,
+        expiresInHours: PASSWORD_RESET_DEFAULT_EXPIRY_HOURS,
+      });
+
+      await recordAuditEvent({
+        actorUserId: null,
+        action: "password_reset.requested",
+        targetType: "user",
+        targetId: user._id,
+        metadata: { requestedByEmail: normalizedEmail },
+      });
+
+      return true;
+    },
+
+    /**
+     * Complete password reset flow with one-time token.
+     *
+     * @param {any} parent
+     * @param {{ token: string, password: string }} args
+     * @returns {Promise<boolean>}
+     */
+    resetPassword: async (parent, { token, password }) => {
+      if (!token || !password) {
+        throw createGraphQLError("Data provided is not valid");
+      }
+      ensurePasswordIsStrong(password);
+
+      const tokenHash = hashOneTimeToken(token);
+      const now = new Date();
+      const reset = await PasswordResetToken.findOne({
+        tokenHash,
+        revokedAt: null,
+        usedAt: null,
+        expiresAt: { $gt: now },
+      }).lean();
+
+      if (!reset) {
+        throw createGraphQLError("Password reset token is invalid or expired", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      const user = await User.findOne({
+        _id: reset.userId,
+        active: true,
+      });
+      if (!user) {
+        throw createGraphQLError("Password reset token is invalid or expired", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      user.password = password;
+      await user.save();
+
+      await PasswordResetToken.findOneAndUpdate(
+        { _id: reset._id },
+        { $set: { usedAt: new Date() } },
+        { new: false }
+      ).lean();
+
+      await recordAuditEvent({
+        actorUserId: user._id,
+        action: "password_reset.completed",
+        targetType: "user",
+        targetId: user._id,
+        metadata: { tokenId: reset._id },
+      });
+
+      return true;
     },
 
     /**
@@ -149,15 +543,285 @@ export default /** @type {IResolvers} */ {
      */
     deleteMyUserAccount: async (parent, args, context) => {
       ensureThatUserIsLogged(context);
-
       const user = await getUser(context);
+
+      if (user.role === "admin") {
+        await ensureAtLeastOneActiveAdminWillRemain(user._id);
+      }
 
       const deletedUser = await User.findOneAndDelete({ _id: user._id }).lean();
       if (!deletedUser) {
         throw createGraphQLError("User not found or login not allowed");
       }
 
+      await recordAuditEvent({
+        actorUserId: user._id,
+        action: "user.self_deleted",
+        targetType: "user",
+        targetId: user._id,
+        metadata: { email: user.email, role: user.role },
+      });
+
       return deletedUser;
+    },
+
+    /**
+     * Create a user account as administrator.
+     *
+     * @param {any} parent
+     * @param {{ email: string, password: string, role: string, active?: boolean }} args
+     * @param {Object} context
+     * @returns {Promise<Object>}
+     */
+    adminCreateUser: async (parent, { email, password, role, active = true }, context) => {
+      ensureThatUserIsLogged(context);
+      ensureThatUserIsAdministrator(context);
+
+      const normalizedEmail = normalizeEmail(email);
+      ensureEmailIsValid(normalizedEmail);
+      ensurePasswordIsStrong(password);
+      const normalizedRole = normalizeRole(role);
+
+      const existingUser = await User.findOne({ email: normalizedEmail }).lean();
+      if (existingUser) {
+        throw createGraphQLError("Data provided is not valid");
+      }
+
+      const registeredUsersCount = await User.estimatedDocumentCount();
+      ensureLimitOfUsersIsNotReached(registeredUsersCount);
+
+      const createdUser = await new User({
+        email: normalizedEmail,
+        password,
+        role: normalizedRole,
+        active: Boolean(active),
+      }).save();
+      const created = await User.findOne({ _id: createdUser._id }).lean();
+      if (!created) {
+        throw createGraphQLError("User not found or login not allowed");
+      }
+
+      await recordAuditEvent({
+        actorUserId: context.user._id,
+        action: "user.admin_created",
+        targetType: "user",
+        targetId: created._id,
+        metadata: { role: created.role, active: created.active },
+      });
+
+      return created;
+    },
+
+    /**
+     * Create invite token as administrator.
+     *
+     * @param {any} parent
+     * @param {{ email: string, role: string, expiresInHours?: number }} args
+     * @param {Object} context
+     * @returns {Promise<{invite: Object, token: string}>}
+     */
+    adminCreateInvite: async (parent, { email, role, expiresInHours }, context) => {
+      ensureThatUserIsLogged(context);
+      ensureThatUserIsAdministrator(context);
+
+      const payload = await issueInviteToken({
+        email,
+        role,
+        createdBy: context.user._id,
+        expiresInHours: clampExpiryHours(expiresInHours, INVITE_DEFAULT_EXPIRY_HOURS),
+      });
+
+      await recordAuditEvent({
+        actorUserId: context.user._id,
+        action: "invite.created",
+        targetType: "invite",
+        targetId: payload.invite._id,
+        metadata: {
+          email: payload.invite.email,
+          role: payload.invite.role,
+          expiresAt: payload.invite.expiresAt,
+        },
+      });
+
+      return payload;
+    },
+
+    /**
+     * Revoke invite token as administrator.
+     *
+     * @param {any} parent
+     * @param {{ _id: string }} args
+     * @param {Object} context
+     * @returns {Promise<boolean>}
+     */
+    adminRevokeInvite: async (parent, { _id }, context) => {
+      ensureThatUserIsLogged(context);
+      ensureThatUserIsAdministrator(context);
+
+      const now = new Date();
+      const updated = await InviteToken.findOneAndUpdate(
+        {
+          _id,
+          revokedAt: null,
+          acceptedAt: null,
+          expiresAt: { $gt: now },
+        },
+        { $set: { revokedAt: now } },
+        { new: true }
+      ).lean();
+
+      if (updated) {
+        await recordAuditEvent({
+          actorUserId: context.user._id,
+          action: "invite.revoked",
+          targetType: "invite",
+          targetId: _id,
+          metadata: { email: updated.email },
+        });
+      }
+
+      return Boolean(updated);
+    },
+
+    /**
+     * Update a user account as administrator.
+     *
+     * @param {any} parent
+     * @param {{ _id: string, role?: string, active?: boolean }} args
+     * @param {Object} context
+     * @returns {Promise<Object>}
+     */
+    adminUpdateUser: async (parent, { _id, role, active }, context) => {
+      ensureThatUserIsLogged(context);
+      ensureThatUserIsAdministrator(context);
+
+      const user = await User.findOne({ _id }).lean();
+      if (!user) {
+        throw createGraphQLError("User not found or login not allowed");
+      }
+
+      const update = {};
+      if (role !== undefined) {
+        update.role = normalizeRole(role);
+      }
+      if (active !== undefined) {
+        update.active = Boolean(active);
+      }
+      if (Object.keys(update).length === 0) {
+        return user;
+      }
+
+      if (String(_id) === String(context.user._id) && update.role && update.role !== "admin") {
+        throw createGraphQLError("Administrators cannot demote themselves", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      const adminPrivilegeRemoved =
+        user.role === "admin" &&
+        ((update.role && update.role !== "admin") || update.active === false);
+      if (adminPrivilegeRemoved) {
+        await ensureAtLeastOneActiveAdminWillRemain(user._id);
+      }
+
+      const updatedUser = await User.findOneAndUpdate(
+        { _id },
+        { $set: update },
+        { new: true, runValidators: true }
+      ).lean();
+      if (!updatedUser) {
+        throw createGraphQLError("User not found or login not allowed");
+      }
+
+      await recordAuditEvent({
+        actorUserId: context.user._id,
+        action: "user.admin_updated",
+        targetType: "user",
+        targetId: updatedUser._id,
+        metadata: { update },
+      });
+
+      return updatedUser;
+    },
+
+    /**
+     * Delete a user account as administrator.
+     *
+     * @param {any} parent
+     * @param {{ _id: string }} args
+     * @param {Object} context
+     * @returns {Promise<Object>}
+     */
+    adminDeleteUser: async (parent, { _id }, context) => {
+      ensureThatUserIsLogged(context);
+      ensureThatUserIsAdministrator(context);
+
+      if (String(_id) === String(context.user._id)) {
+        throw createGraphQLError("Administrators cannot delete their own account", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      const user = await User.findOne({ _id }).lean();
+      if (!user) {
+        throw createGraphQLError("User not found or login not allowed");
+      }
+      if (user.role === "admin") {
+        await ensureAtLeastOneActiveAdminWillRemain(user._id);
+      }
+
+      const deletedUser = await User.findOneAndDelete({ _id }).lean();
+      if (!deletedUser) {
+        throw createGraphQLError("User not found or login not allowed");
+      }
+
+      await recordAuditEvent({
+        actorUserId: context.user._id,
+        action: "user.admin_deleted",
+        targetType: "user",
+        targetId: deletedUser._id,
+        metadata: { email: deletedUser.email, role: deletedUser.role },
+      });
+
+      return deletedUser;
+    },
+
+    /**
+     * Admin-only password reset token issuance.
+     *
+     * @param {any} parent
+     * @param {{ _id: string, expiresInHours?: number }} args
+     * @param {Object} context
+     * @returns {Promise<{userId: string, token: string, expiresAt: Date}>}
+     */
+    adminIssuePasswordReset: async (parent, { _id, expiresInHours }, context) => {
+      ensureThatUserIsLogged(context);
+      ensureThatUserIsAdministrator(context);
+
+      const user = await User.findOne({ _id, active: true }).lean();
+      if (!user) {
+        throw createGraphQLError("User not found or login not allowed");
+      }
+
+      const payload = await issuePasswordResetToken({
+        user,
+        createdBy: context.user._id,
+        requestedByEmail: null,
+        expiresInHours: clampExpiryHours(
+          expiresInHours,
+          PASSWORD_RESET_ADMIN_DEFAULT_EXPIRY_HOURS
+        ),
+      });
+
+      await recordAuditEvent({
+        actorUserId: context.user._id,
+        action: "password_reset.admin_issued",
+        targetType: "user",
+        targetId: user._id,
+        metadata: { expiresAt: payload.expiresAt },
+      });
+
+      return payload;
     },
   },
 };

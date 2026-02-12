@@ -12,9 +12,9 @@
  */
 
 import { createGraphQLError, createPubSub } from "graphql-yoga";
-import { ensureThatUserIsLogged } from "../auth.js";
+import { ensureThatUserHasRole, ensureThatUserIsLogged } from "../auth.js";
 import Dashboard from "../models/Dashboard.js";
-
+import { getAuthPolicyState } from "../policyStore.js";
 import { transformDashboard } from "./merge.js";
 
 const pubSub = createPubSub();
@@ -54,6 +54,10 @@ const canReadDashboard = (dashboard, context) => {
     return false;
   }
 
+  if (context.user.role === "admin") {
+    return true;
+  }
+
   return dashboard.user === context.user._id;
 };
 
@@ -62,7 +66,38 @@ const canManageDashboard = (dashboard, context) => {
     return false;
   }
 
+  if (context.user.role === "admin") {
+    return true;
+  }
+
   return dashboard.user === context.user._id;
+};
+
+const ensurePublishPermission = async (inputDashboard, existingDashboard, context) => {
+  if (!context.user || context.user.role === "admin") {
+    return;
+  }
+
+  const hasPublishedField = Object.prototype.hasOwnProperty.call(
+    inputDashboard || {},
+    "published"
+  );
+  if (!hasPublishedField) {
+    return;
+  }
+
+  const nextPublished = inputDashboard?.published === true;
+  const previousPublished = existingDashboard?.published === true;
+  if (nextPublished === previousPublished) {
+    return;
+  }
+
+  const authPolicy = await getAuthPolicyState();
+  if (!authPolicy.editorCanPublish) {
+    throw createGraphQLError("Editors are not allowed to publish dashboards", {
+      extensions: { code: "FORBIDDEN" },
+    });
+  }
 };
 
 /**
@@ -97,20 +132,18 @@ export default /** @type {IResolvers} */ {
     },
 
     /**
-     * Fetch all dashboards belonging to the authenticated user.
+     * Fetch dashboards scoped by user role.
      *
      * @param {any} parent
      * @param {any} args
      * @param {Object} context - GraphQL context containing user info.
-     * @returns {Promise<Object[]>} List of user's dashboards.
+     * @returns {Promise<Object[]>} List of dashboards.
      */
     dashboards: async (parent, args, context) => {
       ensureThatUserIsLogged(context);
-      const res = await Dashboard.find({ user: context.user._id })
-        .populate()
-        .exec();
-
-      return res.map((dashboard) =>
+      const filter = context.user.role === "admin" ? {} : { user: context.user._id };
+      const dashboards = await Dashboard.find(filter).lean();
+      return dashboards.map((dashboard) =>
         transformDashboard(dashboard, context.user?._id || null)
       );
     },
@@ -126,23 +159,18 @@ export default /** @type {IResolvers} */ {
      * @returns {Promise<Object>} The created dashboard.
      */
     createDashboard: async (parent, { dashboard }, context) => {
-      ensureThatUserIsLogged(context);
+      ensureThatUserHasRole(context, ["editor", "admin"]);
 
       const sanitizedDashboard = sanitizeDashboardInput(dashboard);
+      await ensurePublishPermission(sanitizedDashboard, null, context);
+
       const newDashboard = new Dashboard({
         ...sanitizedDashboard,
         user: context.user._id,
       });
-      try {
-        return newDashboard
-          .save()
-          .then((dashboard) =>
-            transformDashboard(dashboard, context.user?._id || null)
-          );
-      } catch (error) {
-        console.error(error);
-        throw error;
-      }
+
+      const created = await newDashboard.save();
+      return transformDashboard(created, context.user?._id || null);
     },
 
     /**
@@ -154,15 +182,21 @@ export default /** @type {IResolvers} */ {
      * @returns {Promise<Object>} The updated dashboard.
      */
     updateDashboard: async (parent, { _id, dashboard }, context) => {
-      ensureThatUserIsLogged(context);
+      ensureThatUserHasRole(context, ["editor", "admin"]);
+
+      const existing = await Dashboard.findOne({ _id }).lean();
+      if (!canManageDashboard(existing, context)) {
+        throw createGraphQLError("Dashboard not found");
+      }
 
       const sanitizedDashboard = sanitizeDashboardInput(dashboard);
+      await ensurePublishPermission(sanitizedDashboard, existing, context);
+
       const updated = await Dashboard.findOneAndUpdate(
-        { _id, user: context.user._id },
+        { _id },
         { $set: sanitizedDashboard },
         { new: true, runValidators: true }
       ).lean();
-
       if (!updated || !canManageDashboard(updated, context)) {
         throw createGraphQLError("Dashboard not found");
       }
@@ -182,13 +216,14 @@ export default /** @type {IResolvers} */ {
      * @returns {Promise<Object>} The deleted dashboard data.
      */
     deleteDashboard: async (parent, { _id }, context) => {
-      ensureThatUserIsLogged(context);
+      ensureThatUserHasRole(context, ["editor", "admin"]);
 
-      const deleted = await Dashboard.findOneAndDelete({
-        _id,
-        user: context.user._id,
-      }).lean();
+      const existing = await Dashboard.findOne({ _id }).lean();
+      if (!canManageDashboard(existing, context)) {
+        throw createGraphQLError("Dashboard not found");
+      }
 
+      const deleted = await Dashboard.findOneAndDelete({ _id }).lean();
       if (!deleted || !canManageDashboard(deleted, context)) {
         throw createGraphQLError("Dashboard not found");
       }
@@ -202,10 +237,10 @@ export default /** @type {IResolvers} */ {
       /**
        * Subscribe to real-time updates for a specific dashboard.
        *
-      * @param {any} _
-      * @param {{ _id: string }} args - Dashboard ID.
-      * @returns {AsyncIterable<any>} Subscription iterator.
-      */
+       * @param {any} _
+       * @param {{ _id: string }} args - Dashboard ID.
+       * @returns {AsyncIterable<any>} Subscription iterator.
+       */
       subscribe: async (_, args, context) => {
         ensureThatUserIsLogged(context);
 

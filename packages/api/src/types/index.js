@@ -12,13 +12,14 @@ import { mergeTypeDefs } from "@graphql-tools/merge";
 
 import Dashboard from "./Dashboard.js";
 import User from "./User.js";
+import Policy from "./Policy.js";
 
 /**
  * Array of GraphQL SDL strings for each type module.
  *
  * @type {string[]}
  */
-const typeDefs = [Dashboard, User];
+const typeDefs = [Dashboard, User, Policy];
 
 // NOTE: 2nd param is optional, and defaults to false
 // Only use if you have defined the same type multiple times in

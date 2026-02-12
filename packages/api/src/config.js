@@ -13,6 +13,11 @@ import {
   isValidEmail,
   normalizeEmail,
 } from "./validators.js";
+import {
+  normalizeExecutionMode,
+  normalizeNonAdminRole,
+  normalizeRegistrationMode,
+} from "./policy.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -124,6 +129,11 @@ const warnAndThrow = (message) => {
  * @property {string} adminEmail        - Default administrator email.
  * @property {string} adminPassword     - Default administrator password.
  * @property {boolean} createAdmin      - Whether to create an admin user on startup.
+ * @property {string} registrationMode  - Registration mode (`disabled|invite|open`).
+ * @property {string} registrationDefaultRole - Default role for self-registration (`viewer|editor`).
+ * @property {boolean} editorCanPublish - Whether editors can publish dashboards.
+ * @property {string} executionMode   - Runtime execution mode (`safe|trusted`).
+ * @property {boolean} policyEditLock   - Whether runtime policy mutations are blocked.
  */
 
 /**
@@ -143,6 +153,19 @@ export const config = Object.freeze({
   adminEmail: normalizeEmail(process.env.ADMIN_EMAIL || ""),
   adminPassword: process.env.ADMIN_PASSWORD || "",
   createAdmin: bool(process.env.CREATE_ADMIN, false),
+  registrationMode: String(process.env.AUTH_REGISTRATION_MODE || "disabled")
+    .trim()
+    .toLowerCase(),
+  registrationDefaultRole: String(
+    process.env.AUTH_REGISTRATION_DEFAULT_ROLE || "viewer"
+  )
+    .trim()
+    .toLowerCase(),
+  editorCanPublish: bool(process.env.AUTH_EDITOR_CAN_PUBLISH, false),
+  executionMode: String(process.env.EXECUTION_MODE || "safe")
+    .trim()
+    .toLowerCase(),
+  policyEditLock: bool(process.env.POLICY_EDIT_LOCK, false),
 });
 
 if (isNonDevRuntime && isWeakJwtSecret(config.jwtSecret)) {
@@ -163,4 +186,22 @@ if (config.createAdmin) {
       `CREATE_ADMIN=true requires strong ADMIN_PASSWORD. ${credentialPolicy.password}.`
     );
   }
+}
+
+try {
+  normalizeRegistrationMode(config.registrationMode);
+} catch (error) {
+  warnAndThrow(error.message);
+}
+
+try {
+  normalizeNonAdminRole(config.registrationDefaultRole);
+} catch (error) {
+  warnAndThrow(error.message);
+}
+
+try {
+  normalizeExecutionMode(config.executionMode);
+} catch (error) {
+  warnAndThrow(error.message);
 }

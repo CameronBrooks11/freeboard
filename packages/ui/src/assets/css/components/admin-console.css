@@ -1,0 +1,122 @@
+.admin-console {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-console__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-console__back {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.admin-console__section {
+  border: 1px solid var(--color-shade-3);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--color-shade-1);
+}
+
+.admin-console__form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-console__form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.95rem;
+}
+
+.admin-console__form-grid input,
+.admin-console__form-grid select {
+  border: 1px solid var(--color-shade-4);
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: var(--color-shade-0);
+  color: var(--color-shade-8);
+}
+
+.admin-console__checkbox {
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.admin-console__checkbox input {
+  margin-right: 6px;
+}
+
+.admin-console button {
+  border: 1px solid var(--color-shade-4);
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: var(--color-shade-0);
+  color: var(--color-shade-8);
+  cursor: pointer;
+}
+
+.admin-console button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.admin-console button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-console__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-console__table th,
+.admin-console__table td {
+  border-bottom: 1px solid var(--color-shade-3);
+  padding: 8px;
+  text-align: left;
+}
+
+.admin-console__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-console__hint {
+  font-size: 0.9rem;
+  color: var(--color-shade-6);
+}
+
+.admin-console__status {
+  color: #1c7f43;
+}
+
+.admin-console__error {
+  color: #b63333;
+}
+
+.admin-console__token-card {
+  margin-top: 12px;
+  border: 1px dashed var(--color-shade-4);
+  border-radius: 6px;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  word-break: break-all;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

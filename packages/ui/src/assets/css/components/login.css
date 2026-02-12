@@ -2,3 +2,41 @@
   background: var(--color-shade-2);
   height: 100%;
 }
+
+.login__hint {
+  margin-top: 0.75rem;
+  color: var(--color-shade-6);
+  font-size: 0.9rem;
+}
+
+.login__info {
+  margin-top: 0.75rem;
+  color: #1c7f43;
+  font-size: 0.9rem;
+}
+
+.login__switch-mode {
+  margin-top: 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.login__switch-mode:hover {
+  text-decoration: underline;
+}
+
+.login__error {
+  color: #c53b3b;
+  margin-top: 0.75rem;
+}
+
+.login__actions {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

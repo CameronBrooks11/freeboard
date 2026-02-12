@@ -8,7 +8,7 @@ defineOptions({ name: 'DashboardControl' });
 import { storeToRefs } from "pinia";
 import { useFreeboardStore } from "../stores/freeboard";
 import Form from "./Form.vue";
-import { getCurrentInstance, ref, watch } from "vue";
+import { computed, getCurrentInstance, ref, watch } from "vue";
 import DatasourcesDialogBox from "./DatasourcesDialogBox.vue";
 import AuthProvidersDialogBox from "./AuthProvidersDialogBox.vue";
 import SettingsDialogBox from "./SettingsDialogBox.vue";
@@ -18,11 +18,11 @@ const freeboardStore = useFreeboardStore();
 const { dashboard } = storeToRefs(freeboardStore);
 
 // Inline settings schema and current values
-const fields = ref(createSettings(dashboard.value)[0].fields);
+const canPublish = computed(() => freeboardStore.canCurrentUserPublish());
+const fields = computed(() =>
+  createSettings(dashboard.value, { canPublish: canPublish.value })[0].fields
+);
 const settings = ref({});
-
-// Reference to the form component for potential validation
-const form = ref(null);
 
 // Sync settings when the dashboard object changes
 watch(
@@ -40,10 +40,13 @@ const openSettingsDialogBox = () => {
   freeboardStore.createComponent(SettingsDialogBox, instance.appContext, {
     onOk: (newSettings) => {
       dashboard.value.settings = newSettings.settings;
+      const nextPublished = canPublish.value
+        ? newSettings.published
+        : dashboard.value.published;
       settings.value = {
         title: newSettings.title,
         columns: newSettings.columns,
-        published: newSettings.published,
+        published: nextPublished,
       };
       onChange(settings.value);
       freeboardStore.loadDashboardAssets();
@@ -71,7 +74,9 @@ const openAuthProvidersDialogBox = () => {
 const onChange = (s) => {
   dashboard.value.columns = parseInt(s.columns);
   dashboard.value.title = s.title;
-  dashboard.value.published = s.published;
+  if (canPublish.value) {
+    dashboard.value.published = s.published;
+  }
 };
 
 const instance = getCurrentInstance();
@@ -106,7 +111,7 @@ const instance = getCurrentInstance();
       </li>
     </ul>
     <div class="dashboard-control__form">
-      <Form ref="form" :settings="settings" :fields="fields" @change="onChange" />
+      <Form :settings="settings" :fields="fields" @change="onChange" />
     </div>
   </div>
 </template>

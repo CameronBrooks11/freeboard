@@ -108,6 +108,250 @@ export const USER_AUTH_MUTATION = gql`
 `;
 
 /**
+ * GraphQL mutation to self-register a user in open registration mode.
+ * @constant {import('graphql').DocumentNode} USER_REGISTER_MUTATION
+ */
+export const USER_REGISTER_MUTATION = gql`
+  mutation UserRegister($email: String!, $password: String!) {
+    registerUser(email: $email, password: $password) {
+      token
+    }
+  }
+`;
+
+/**
+ * Query public auth policy needed by login/registration UX.
+ * @constant {import('graphql').DocumentNode} PUBLIC_AUTH_POLICY_QUERY
+ */
+export const PUBLIC_AUTH_POLICY_QUERY = gql`
+  query PublicAuthPolicy {
+    publicAuthPolicy {
+      registrationMode
+      registrationDefaultRole
+      editorCanPublish
+      executionMode
+      policyEditLock
+    }
+  }
+`;
+
+/**
+ * Query for currently authenticated user.
+ * @constant {import('graphql').DocumentNode} CURRENT_USER_QUERY
+ */
+export const CURRENT_USER_QUERY = gql`
+  query CurrentUser {
+    me {
+      _id
+      email
+      role
+      active
+    }
+  }
+`;
+
+/**
+ * Admin query for user management.
+ * @constant {import('graphql').DocumentNode} ADMIN_USERS_QUERY
+ */
+export const ADMIN_USERS_QUERY = gql`
+  query AdminUsers {
+    listAllUsers {
+      _id
+      email
+      role
+      active
+      registrationDate
+      lastLogin
+    }
+  }
+`;
+
+/**
+ * Admin query for mutable auth policy snapshot.
+ * @constant {import('graphql').DocumentNode} AUTH_POLICY_QUERY
+ */
+export const AUTH_POLICY_QUERY = gql`
+  query AuthPolicy {
+    authPolicy {
+      registrationMode
+      registrationDefaultRole
+      editorCanPublish
+      executionMode
+      policyEditLock
+    }
+  }
+`;
+
+/**
+ * Admin mutation for creating users.
+ * @constant {import('graphql').DocumentNode} ADMIN_CREATE_USER_MUTATION
+ */
+export const ADMIN_CREATE_USER_MUTATION = gql`
+  mutation AdminCreateUser(
+    $email: String!
+    $password: String!
+    $role: UserRole!
+    $active: Boolean
+  ) {
+    adminCreateUser(email: $email, password: $password, role: $role, active: $active) {
+      _id
+      email
+      role
+      active
+      registrationDate
+      lastLogin
+    }
+  }
+`;
+
+/**
+ * Admin mutation for updating users.
+ * @constant {import('graphql').DocumentNode} ADMIN_UPDATE_USER_MUTATION
+ */
+export const ADMIN_UPDATE_USER_MUTATION = gql`
+  mutation AdminUpdateUser($id: ID!, $role: UserRole, $active: Boolean) {
+    adminUpdateUser(_id: $id, role: $role, active: $active) {
+      _id
+      email
+      role
+      active
+      registrationDate
+      lastLogin
+    }
+  }
+`;
+
+/**
+ * Admin mutation for deleting users.
+ * @constant {import('graphql').DocumentNode} ADMIN_DELETE_USER_MUTATION
+ */
+export const ADMIN_DELETE_USER_MUTATION = gql`
+  mutation AdminDeleteUser($id: ID!) {
+    adminDeleteUser(_id: $id) {
+      _id
+    }
+  }
+`;
+
+/**
+ * Admin mutation for auth policy management.
+ * @constant {import('graphql').DocumentNode} SET_AUTH_POLICY_MUTATION
+ */
+export const SET_AUTH_POLICY_MUTATION = gql`
+  mutation SetAuthPolicy(
+    $registrationMode: RegistrationMode
+    $registrationDefaultRole: UserRole
+    $editorCanPublish: Boolean
+    $executionMode: ExecutionMode
+  ) {
+    setAuthPolicy(
+      registrationMode: $registrationMode
+      registrationDefaultRole: $registrationDefaultRole
+      editorCanPublish: $editorCanPublish
+      executionMode: $executionMode
+    ) {
+      registrationMode
+      registrationDefaultRole
+      editorCanPublish
+      executionMode
+      policyEditLock
+    }
+  }
+`;
+
+/**
+ * Admin query for pending invitation list.
+ * @constant {import('graphql').DocumentNode} ADMIN_PENDING_INVITES_QUERY
+ */
+export const ADMIN_PENDING_INVITES_QUERY = gql`
+  query AdminPendingInvites {
+    listPendingInvites {
+      _id
+      email
+      role
+      expiresAt
+      createdAt
+    }
+  }
+`;
+
+/**
+ * Admin mutation for invite creation.
+ * @constant {import('graphql').DocumentNode} ADMIN_CREATE_INVITE_MUTATION
+ */
+export const ADMIN_CREATE_INVITE_MUTATION = gql`
+  mutation AdminCreateInvite($email: String!, $role: UserRole!, $expiresInHours: Int) {
+    adminCreateInvite(email: $email, role: $role, expiresInHours: $expiresInHours) {
+      token
+      invite {
+        _id
+        email
+        role
+        expiresAt
+        createdAt
+      }
+    }
+  }
+`;
+
+/**
+ * Admin mutation for invite revocation.
+ * @constant {import('graphql').DocumentNode} ADMIN_REVOKE_INVITE_MUTATION
+ */
+export const ADMIN_REVOKE_INVITE_MUTATION = gql`
+  mutation AdminRevokeInvite($id: ID!) {
+    adminRevokeInvite(_id: $id)
+  }
+`;
+
+/**
+ * Accept invite token and bootstrap account.
+ * @constant {import('graphql').DocumentNode} ACCEPT_INVITE_MUTATION
+ */
+export const ACCEPT_INVITE_MUTATION = gql`
+  mutation AcceptInvite($token: String!, $password: String!) {
+    acceptInvite(token: $token, password: $password) {
+      token
+    }
+  }
+`;
+
+/**
+ * Initiate password reset request.
+ * @constant {import('graphql').DocumentNode} REQUEST_PASSWORD_RESET_MUTATION
+ */
+export const REQUEST_PASSWORD_RESET_MUTATION = gql`
+  mutation RequestPasswordReset($email: String!) {
+    requestPasswordReset(email: $email)
+  }
+`;
+
+/**
+ * Complete password reset with one-time token.
+ * @constant {import('graphql').DocumentNode} RESET_PASSWORD_MUTATION
+ */
+export const RESET_PASSWORD_MUTATION = gql`
+  mutation ResetPassword($token: String!, $password: String!) {
+    resetPassword(token: $token, password: $password)
+  }
+`;
+
+/**
+ * Admin-only password reset token issuance.
+ * @constant {import('graphql').DocumentNode} ADMIN_ISSUE_PASSWORD_RESET_MUTATION
+ */
+export const ADMIN_ISSUE_PASSWORD_RESET_MUTATION = gql`
+  mutation AdminIssuePasswordReset($id: ID!, $expiresInHours: Int) {
+    adminIssuePasswordReset(_id: $id, expiresInHours: $expiresInHours) {
+      userId
+      token
+      expiresAt
+    }
+  }
+`;
+
+/**
  * GraphQL query to fetch a list of dashboards.
  * @constant {import('graphql').DocumentNode} DASHBOARDS_LIST_QUERY
  */
