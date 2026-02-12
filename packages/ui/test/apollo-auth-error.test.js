@@ -13,12 +13,13 @@ test("isAuthGraphQLError matches auth extension codes", () => {
   );
   assert.equal(
     isAuthGraphQLError({ message: "boom", extensions: { code: "FORBIDDEN" } }),
-    true
+    false
   );
 });
 
 test("isAuthGraphQLError matches auth-related messages when code is absent", () => {
-  assert.equal(isAuthGraphQLError({ message: "Unauthorized request" }), true);
+  assert.equal(isAuthGraphQLError({ message: "Unauthorized request" }), false);
+  assert.equal(isAuthGraphQLError({ message: "JWT token expired" }), true);
   assert.equal(isAuthGraphQLError({ message: "Validation failed" }), false);
 });
 
@@ -34,7 +35,13 @@ test("shouldForceLogoutOnGraphQLErrors returns true only when any auth error exi
       { message: "Validation failed" },
       { message: "forbidden access" },
     ]),
+    false
+  );
+  assert.equal(
+    shouldForceLogoutOnGraphQLErrors([
+      { message: "Validation failed" },
+      { message: "jwt malformed" },
+    ]),
     true
   );
 });
-

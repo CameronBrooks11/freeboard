@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  normalizeDashboardAccessLevel,
+  normalizeDashboardVisibility,
   normalizeExecutionMode,
   normalizeNonAdminRole,
   normalizeRegistrationMode,
@@ -31,4 +33,29 @@ test("normalizeExecutionMode accepts safe and trusted", () => {
 
 test("normalizeExecutionMode rejects unknown value", () => {
   assert.throws(() => normalizeExecutionMode("unsafe"), /Invalid execution mode/);
+});
+
+test("normalizeDashboardVisibility accepts supported values", () => {
+  assert.equal(normalizeDashboardVisibility("private"), "private");
+  assert.equal(normalizeDashboardVisibility("LINK"), "link");
+  assert.equal(normalizeDashboardVisibility("public"), "public");
+});
+
+test("normalizeDashboardVisibility rejects unsupported value", () => {
+  assert.throws(
+    () => normalizeDashboardVisibility("internal"),
+    /Invalid dashboard visibility/
+  );
+});
+
+test("normalizeDashboardAccessLevel accepts supported values", () => {
+  assert.equal(normalizeDashboardAccessLevel("viewer"), "viewer");
+  assert.equal(normalizeDashboardAccessLevel("EDITOR"), "editor");
+});
+
+test("normalizeDashboardAccessLevel rejects unsupported value", () => {
+  assert.throws(
+    () => normalizeDashboardAccessLevel("owner"),
+    /Invalid dashboard access level/
+  );
 });

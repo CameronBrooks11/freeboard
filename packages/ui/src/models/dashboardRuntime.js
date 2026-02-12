@@ -231,7 +231,7 @@ export const serializeDashboardState = (dashboard, version) => {
     version,
     _id: dashboard._id,
     title: dashboard.title,
-    published: dashboard.published,
+    visibility: dashboard.visibility,
     image: dashboard.image,
     columns: dashboard.columns,
     width: dashboard.width,

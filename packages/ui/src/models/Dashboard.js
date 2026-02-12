@@ -40,8 +40,12 @@ export class Dashboard {
   _id = null;
   /** @type {string} Dashboard title. */
   title = "Dashboard";
-  /** @type {boolean} Publication status. */
-  published = true;
+  /** @type {string} Visibility status. */
+  visibility = "private";
+  /** @type {string|null} Opaque share token for link access. */
+  shareToken = null;
+  /** @type {Array<{userId: string, accessLevel: string}>} Dashboard ACL entries. */
+  acl = [];
   /** @type {string|null} Optional image URL. */
   image = null;
   /** @type {number} Number of columns in layout. */
@@ -60,6 +64,10 @@ export class Dashboard {
   };
   /** @type {boolean} Whether the current user is the owner. */
   isOwner = true;
+  /** @type {boolean} Whether current user can edit this dashboard. */
+  canEdit = true;
+  /** @type {boolean} Whether current user can manage sharing/collaborators. */
+  canManageSharing = true;
 
   /**
    * Get the layout array mapped from pane layouts.
@@ -131,9 +139,22 @@ export class Dashboard {
     this.columns = object.columns;
     this.image = object.image;
     this.width = object.width;
-    this.published = !!object.published;
+    this.visibility =
+      typeof object.visibility === "string"
+        ? object.visibility
+        : object.published === true
+          ? "public"
+          : "private";
+    this.shareToken = object.shareToken || null;
+    this.acl = Array.isArray(object.acl) ? object.acl : [];
     this.settings = object.settings || {};
     this.isOwner = resolveDashboardIsOwner(object);
+    this.canEdit =
+      object.canEdit === undefined ? this.isOwner : Boolean(object.canEdit);
+    this.canManageSharing =
+      object.canManageSharing === undefined
+        ? this.isOwner
+        : Boolean(object.canManageSharing);
 
     object.authProviders?.forEach((providerConfig) => {
       const authProvider = new AuthProvider();

@@ -60,6 +60,24 @@ if (__FREEBOARD_STATIC__) {
         }),
       },
       {
+        path: "/s/:shareToken",
+        name: "SharedDashboard",
+        component: Freeboard,
+        props: (to) => ({
+          shareToken: String(to.params.shareToken || ""),
+        }),
+        sensitive: true,
+      },
+      {
+        path: "/p/:id",
+        name: "PublicDashboard",
+        component: Freeboard,
+        props: (to) => ({
+          id: String(to.params.id || ""),
+        }),
+        sensitive: true,
+      },
+      {
         path: "/",
         name: "Home",
         component: Freeboard,

@@ -64,7 +64,7 @@ test("serializeDashboardState includes versioned payload and serialized child mo
     {
       _id: "dashboard-1",
       title: "Main",
-      published: false,
+      visibility: "private",
       image: null,
       columns: 6,
       width: "lg",
@@ -89,7 +89,7 @@ test("serializeDashboardState includes versioned payload and serialized child mo
   assert.equal(serialized.version, "test-version");
   assert.equal(serialized._id, "dashboard-1");
   assert.equal(serialized.title, "Main");
-  assert.equal(serialized.published, false);
+  assert.equal(serialized.visibility, "private");
   assert.equal(serialized.columns, 6);
   assert.equal(serialized.width, "lg");
   assert.deepEqual(serialized.settings, { theme: "dark" });

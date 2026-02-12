@@ -20,6 +20,14 @@ const toMutablePolicyInput = (args = {}) => {
   if (args.editorCanPublish !== undefined) {
     input.editorCanPublish = Boolean(args.editorCanPublish);
   }
+  if (args.dashboardDefaultVisibility !== undefined) {
+    input.dashboardDefaultVisibility = args.dashboardDefaultVisibility;
+  }
+  if (args.dashboardPublicListingEnabled !== undefined) {
+    input.dashboardPublicListingEnabled = Boolean(
+      args.dashboardPublicListingEnabled
+    );
+  }
   if (args.executionMode !== undefined) {
     input.executionMode = args.executionMode;
   }
@@ -40,6 +48,11 @@ export default {
   ExecutionMode: {
     SAFE: "safe",
     TRUSTED: "trusted",
+  },
+  DashboardVisibility: {
+    PRIVATE: "private",
+    LINK: "link",
+    PUBLIC: "public",
   },
   Query: {
     publicAuthPolicy: async () => getAuthPolicyState(),

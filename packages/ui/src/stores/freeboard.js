@@ -16,6 +16,8 @@ const DEFAULT_PUBLIC_AUTH_POLICY = Object.freeze({
   registrationMode: "disabled",
   registrationDefaultRole: "viewer",
   editorCanPublish: false,
+  dashboardDefaultVisibility: "private",
+  dashboardPublicListingEnabled: false,
   executionMode: "safe",
   policyEditLock: false,
 });
@@ -78,6 +80,15 @@ const normalizePublicAuthPolicy = (policy = {}) => ({
     policy.editorCanPublish === undefined
       ? DEFAULT_PUBLIC_AUTH_POLICY.editorCanPublish
       : Boolean(policy.editorCanPublish),
+  dashboardDefaultVisibility: ["private", "link", "public"].includes(
+    String(policy.dashboardDefaultVisibility || "").toLowerCase()
+  )
+    ? String(policy.dashboardDefaultVisibility).toLowerCase()
+    : DEFAULT_PUBLIC_AUTH_POLICY.dashboardDefaultVisibility,
+  dashboardPublicListingEnabled:
+    policy.dashboardPublicListingEnabled === undefined
+      ? DEFAULT_PUBLIC_AUTH_POLICY.dashboardPublicListingEnabled
+      : Boolean(policy.dashboardPublicListingEnabled),
   executionMode: ["safe", "trusted"].includes(
     String(policy.executionMode || "").toLowerCase()
   )
@@ -191,7 +202,9 @@ export const useFreeboardStore = defineStore("freeboard", {
     },
 
     syncEditingPermissions() {
-      const canEdit = __FREEBOARD_STATIC__ || this.canEditDashboards();
+      const roleCanEdit = __FREEBOARD_STATIC__ || this.canEditDashboards();
+      const dashboardCanEdit = !this.isSaved || this.dashboard?.canEdit !== false;
+      const canEdit = roleCanEdit && dashboardCanEdit;
       this.allowEdit = canEdit;
       if (!canEdit) {
         this.isEditing = false;
@@ -330,19 +343,34 @@ export const useFreeboardStore = defineStore("freeboard", {
      * @param {Function} updateDashboard - GraphQL update mutation.
      */
     async saveDashboard(id, dashboard, createDashboard, updateDashboard) {
-      if (this.isSaved && this.dashboard.isOwner) {
-        updateDashboard({ id, dashboard: dashboard });
+      if (this.isSaved) {
+        if (!this.dashboard?.canEdit) {
+          throw new Error("You do not have permission to edit this dashboard.");
+        }
+        const result = await updateDashboard({ id, dashboard });
+        const updated = result?.data?.updateDashboard;
+        if (updated) {
+          this.dashboard.visibility = updated.visibility;
+          this.dashboard.shareToken = updated.shareToken || null;
+          this.dashboard.canEdit = updated.canEdit !== false;
+          this.dashboard.canManageSharing = updated.canManageSharing === true;
+        }
       } else {
         const createPayload = normalizeCreateDashboardPayload({
           dashboard,
           canPublish: this.canCurrentUserPublish(),
         });
         const result = await createDashboard({ dashboard: createPayload });
+        const created = result?.data?.createDashboard;
         this.isSaved = true;
-        this.dashboard._id = result.data.createDashboard._id;
-        this.dashboard.published = result.data.createDashboard.published;
-        router.push(`/${result.data.createDashboard._id}`);
+        this.dashboard._id = created._id;
+        this.dashboard.visibility = created.visibility;
+        this.dashboard.shareToken = created.shareToken || null;
+        this.dashboard.canEdit = created.canEdit !== false;
+        this.dashboard.canManageSharing = created.canManageSharing === true;
+        router.push(`/${created._id}`);
       }
+      this.syncEditingPermissions();
     },
 
     /**
@@ -469,6 +497,7 @@ export const useFreeboardStore = defineStore("freeboard", {
       this.dashboard.deserialize(dashboardData);
       this.loadDashboardAssets();
       this.loadDashboardTheme();
+      this.syncEditingPermissions();
       this.showLoadingIndicator = false;
     },
 

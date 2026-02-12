@@ -12,4 +12,4 @@
  * @returns {Object}
  */
 export const normalizeCreateDashboardPayload = ({ dashboard, canPublish }) =>
-  canPublish ? dashboard : { ...dashboard, published: false };
+  canPublish ? dashboard : { ...dashboard, visibility: "private" };

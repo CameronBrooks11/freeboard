@@ -23,6 +23,22 @@ test("resolveAuthNavigation redirects unauthenticated users away from protected 
   assert.deepEqual(redirect, { name: "Login" });
 });
 
+test("resolveAuthNavigation allows unauthenticated access to public share routes", () => {
+  const redirect = resolveAuthNavigation({
+    routeName: "SharedDashboard",
+    isLoggedIn: false,
+    isAdmin: false,
+  });
+  assert.equal(redirect, null);
+
+  const publicRedirect = resolveAuthNavigation({
+    routeName: "PublicDashboard",
+    isLoggedIn: false,
+    isAdmin: false,
+  });
+  assert.equal(publicRedirect, null);
+});
+
 test("resolveAuthNavigation redirects authenticated users away from auth-entry routes", () => {
   const redirect = resolveAuthNavigation({
     routeName: "Login",

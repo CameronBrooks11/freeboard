@@ -24,11 +24,20 @@ export default `
     TRUSTED
   }
 
+  """Dashboard visibility states."""
+  enum DashboardVisibility {
+    PRIVATE
+    LINK
+    PUBLIC
+  }
+
   """Authentication/registration policy snapshot."""
   type AuthPolicy {
     registrationMode: RegistrationMode!
     registrationDefaultRole: UserRole!
     editorCanPublish: Boolean!
+    dashboardDefaultVisibility: DashboardVisibility!
+    dashboardPublicListingEnabled: Boolean!
     executionMode: ExecutionMode!
     policyEditLock: Boolean!
   }
@@ -47,6 +56,8 @@ export default `
       registrationMode: RegistrationMode
       registrationDefaultRole: UserRole
       editorCanPublish: Boolean
+      dashboardDefaultVisibility: DashboardVisibility
+      dashboardPublicListingEnabled: Boolean
       executionMode: ExecutionMode
     ): AuthPolicy!
   }

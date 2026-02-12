@@ -4,6 +4,7 @@
  */
 
 const AUTH_ENTRY_ROUTE_NAMES = new Set(["Login", "InviteAccept", "PasswordReset"]);
+const PUBLIC_ROUTE_NAMES = new Set(["SharedDashboard", "PublicDashboard"]);
 
 /**
  * Check if route name is an authentication entry point.
@@ -35,7 +36,8 @@ export const resolveAuthNavigation = ({
   isAdmin = false,
 }) => {
   const authEntry = isAuthEntryRoute(routeName);
-  if (!isLoggedIn && !authEntry) {
+  const publicRoute = typeof routeName === "string" && PUBLIC_ROUTE_NAMES.has(routeName);
+  if (!isLoggedIn && !authEntry && !publicRoute) {
     return { name: "Login" };
   }
   if (isLoggedIn && authEntry) {

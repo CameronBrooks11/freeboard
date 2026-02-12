@@ -14,7 +14,8 @@ export const DASHBOARD_CREATE_MUTATION = gql`
     createDashboard(dashboard: $dashboard) {
       _id
       title
-      published
+      visibility
+      shareToken
       image
       datasources
       columns
@@ -22,7 +23,13 @@ export const DASHBOARD_CREATE_MUTATION = gql`
       panes
       authProviders
       settings
+      acl {
+        userId
+        accessLevel
+      }
       isOwner
+      canEdit
+      canManageSharing
     }
   }
 `;
@@ -36,7 +43,8 @@ export const DASHBOARD_UPDATE_MUTATION = gql`
     updateDashboard(_id: $id, dashboard: $dashboard) {
       _id
       title
-      published
+      visibility
+      shareToken
       image
       datasources
       columns
@@ -44,7 +52,13 @@ export const DASHBOARD_UPDATE_MUTATION = gql`
       panes
       authProviders
       settings
+      acl {
+        userId
+        accessLevel
+      }
       isOwner
+      canEdit
+      canManageSharing
     }
   }
 `;
@@ -58,7 +72,8 @@ export const DASHBOARD_READ_QUERY = gql`
     dashboard(_id: $id) {
       _id
       title
-      published
+      visibility
+      shareToken
       image
       datasources
       columns
@@ -67,7 +82,43 @@ export const DASHBOARD_READ_QUERY = gql`
       authProviders
       settings
       user
+      acl {
+        userId
+        accessLevel
+      }
       isOwner
+      canEdit
+      canManageSharing
+    }
+  }
+`;
+
+/**
+ * GraphQL query to fetch a dashboard by opaque share token.
+ * @constant {import('graphql').DocumentNode} DASHBOARD_READ_BY_SHARE_TOKEN_QUERY
+ */
+export const DASHBOARD_READ_BY_SHARE_TOKEN_QUERY = gql`
+  query DashboardReadByShareToken($shareToken: String!) {
+    dashboardByShareToken(shareToken: $shareToken) {
+      _id
+      title
+      visibility
+      shareToken
+      image
+      datasources
+      columns
+      width
+      panes
+      authProviders
+      settings
+      user
+      acl {
+        userId
+        accessLevel
+      }
+      isOwner
+      canEdit
+      canManageSharing
     }
   }
 `;
@@ -81,7 +132,8 @@ export const DASHBOARD_UPDATE_SUBSCRIPTION = gql`
     dashboard(_id: $id) {
       _id
       title
-      published
+      visibility
+      shareToken
       image
       datasources
       columns
@@ -90,7 +142,13 @@ export const DASHBOARD_UPDATE_SUBSCRIPTION = gql`
       authProviders
       settings
       user
+      acl {
+        userId
+        accessLevel
+      }
       isOwner
+      canEdit
+      canManageSharing
     }
   }
 `;
@@ -129,6 +187,8 @@ export const PUBLIC_AUTH_POLICY_QUERY = gql`
       registrationMode
       registrationDefaultRole
       editorCanPublish
+      dashboardDefaultVisibility
+      dashboardPublicListingEnabled
       executionMode
       policyEditLock
     }
@@ -177,6 +237,8 @@ export const AUTH_POLICY_QUERY = gql`
       registrationMode
       registrationDefaultRole
       editorCanPublish
+      dashboardDefaultVisibility
+      dashboardPublicListingEnabled
       executionMode
       policyEditLock
     }
@@ -243,17 +305,23 @@ export const SET_AUTH_POLICY_MUTATION = gql`
     $registrationMode: RegistrationMode
     $registrationDefaultRole: UserRole
     $editorCanPublish: Boolean
+    $dashboardDefaultVisibility: DashboardVisibility
+    $dashboardPublicListingEnabled: Boolean
     $executionMode: ExecutionMode
   ) {
     setAuthPolicy(
       registrationMode: $registrationMode
       registrationDefaultRole: $registrationDefaultRole
       editorCanPublish: $editorCanPublish
+      dashboardDefaultVisibility: $dashboardDefaultVisibility
+      dashboardPublicListingEnabled: $dashboardPublicListingEnabled
       executionMode: $executionMode
     ) {
       registrationMode
       registrationDefaultRole
       editorCanPublish
+      dashboardDefaultVisibility
+      dashboardPublicListingEnabled
       executionMode
       policyEditLock
     }
@@ -360,7 +428,115 @@ export const DASHBOARDS_LIST_QUERY = gql`
     dashboards {
       _id
       title
-      published
+      visibility
+      isOwner
+      canEdit
+    }
+  }
+`;
+
+/**
+ * Query collaborators for a dashboard.
+ * @constant {import('graphql').DocumentNode} DASHBOARD_COLLABORATORS_QUERY
+ */
+export const DASHBOARD_COLLABORATORS_QUERY = gql`
+  query DashboardCollaborators($id: ID!) {
+    dashboardCollaborators(_id: $id) {
+      userId
+      email
+      accessLevel
+      isOwner
+    }
+  }
+`;
+
+/**
+ * Update dashboard visibility.
+ * @constant {import('graphql').DocumentNode} DASHBOARD_SET_VISIBILITY_MUTATION
+ */
+export const DASHBOARD_SET_VISIBILITY_MUTATION = gql`
+  mutation SetDashboardVisibility($id: ID!, $visibility: DashboardVisibility!) {
+    setDashboardVisibility(_id: $id, visibility: $visibility) {
+      _id
+      visibility
+      shareToken
+      isOwner
+      canEdit
+      canManageSharing
+    }
+  }
+`;
+
+/**
+ * Rotate dashboard share token.
+ * @constant {import('graphql').DocumentNode} DASHBOARD_ROTATE_SHARE_TOKEN_MUTATION
+ */
+export const DASHBOARD_ROTATE_SHARE_TOKEN_MUTATION = gql`
+  mutation RotateDashboardShareToken($id: ID!) {
+    rotateDashboardShareToken(_id: $id) {
+      _id
+      visibility
+      shareToken
+      isOwner
+      canManageSharing
+    }
+  }
+`;
+
+/**
+ * Upsert dashboard collaborator access by email.
+ * @constant {import('graphql').DocumentNode} DASHBOARD_UPSERT_ACCESS_MUTATION
+ */
+export const DASHBOARD_UPSERT_ACCESS_MUTATION = gql`
+  mutation UpsertDashboardAccess(
+    $id: ID!
+    $email: String!
+    $accessLevel: DashboardAccessLevel!
+  ) {
+    upsertDashboardAccess(_id: $id, email: $email, accessLevel: $accessLevel) {
+      _id
+      acl {
+        userId
+        accessLevel
+      }
+      canManageSharing
+    }
+  }
+`;
+
+/**
+ * Revoke dashboard collaborator access.
+ * @constant {import('graphql').DocumentNode} DASHBOARD_REVOKE_ACCESS_MUTATION
+ */
+export const DASHBOARD_REVOKE_ACCESS_MUTATION = gql`
+  mutation RevokeDashboardAccess($id: ID!, $userId: ID!) {
+    revokeDashboardAccess(_id: $id, userId: $userId) {
+      _id
+      acl {
+        userId
+        accessLevel
+      }
+      canManageSharing
+    }
+  }
+`;
+
+/**
+ * Transfer dashboard ownership.
+ * @constant {import('graphql').DocumentNode} DASHBOARD_TRANSFER_OWNERSHIP_MUTATION
+ */
+export const DASHBOARD_TRANSFER_OWNERSHIP_MUTATION = gql`
+  mutation TransferDashboardOwnership($id: ID!, $newOwnerUserId: ID!) {
+    transferDashboardOwnership(_id: $id, newOwnerUserId: $newOwnerUserId) {
+      _id
+      user
+      isOwner
+      canEdit
+      canManageSharing
+      acl {
+        userId
+        accessLevel
+      }
     }
   }
 `;

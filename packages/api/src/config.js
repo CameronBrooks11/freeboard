@@ -14,6 +14,7 @@ import {
   normalizeEmail,
 } from "./validators.js";
 import {
+  normalizeDashboardVisibility,
   normalizeExecutionMode,
   normalizeNonAdminRole,
   normalizeRegistrationMode,
@@ -132,6 +133,8 @@ const warnAndThrow = (message) => {
  * @property {string} registrationMode  - Registration mode (`disabled|invite|open`).
  * @property {string} registrationDefaultRole - Default role for self-registration (`viewer|editor`).
  * @property {boolean} editorCanPublish - Whether editors can publish dashboards.
+ * @property {string} dashboardDefaultVisibility - Default dashboard visibility (`private|link|public`).
+ * @property {boolean} dashboardPublicListingEnabled - Whether public dashboards can appear in listings.
  * @property {string} executionMode   - Runtime execution mode (`safe|trusted`).
  * @property {boolean} policyEditLock   - Whether runtime policy mutations are blocked.
  */
@@ -162,6 +165,15 @@ export const config = Object.freeze({
     .trim()
     .toLowerCase(),
   editorCanPublish: bool(process.env.AUTH_EDITOR_CAN_PUBLISH, false),
+  dashboardDefaultVisibility: String(
+    process.env.DASHBOARD_DEFAULT_VISIBILITY || "private"
+  )
+    .trim()
+    .toLowerCase(),
+  dashboardPublicListingEnabled: bool(
+    process.env.DASHBOARD_PUBLIC_LISTING_ENABLED,
+    false
+  ),
   executionMode: String(process.env.EXECUTION_MODE || "safe")
     .trim()
     .toLowerCase(),
@@ -196,6 +208,12 @@ try {
 
 try {
   normalizeNonAdminRole(config.registrationDefaultRole);
+} catch (error) {
+  warnAndThrow(error.message);
+}
+
+try {
+  normalizeDashboardVisibility(config.dashboardDefaultVisibility);
 } catch (error) {
   warnAndThrow(error.message);
 }

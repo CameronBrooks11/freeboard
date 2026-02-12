@@ -6,6 +6,7 @@
 import Policy from "./models/Policy.js";
 import { config } from "./config.js";
 import {
+  normalizeDashboardVisibility,
   normalizeExecutionMode,
   normalizeNonAdminRole,
   normalizeRegistrationMode,
@@ -15,6 +16,8 @@ const POLICY_KEYS = Object.freeze({
   registrationMode: "auth.registration.mode",
   registrationDefaultRole: "auth.registration.defaultRole",
   editorCanPublish: "auth.publish.editorCanPublish",
+  dashboardDefaultVisibility: "dashboard.visibility.default",
+  dashboardPublicListingEnabled: "dashboard.listing.public.enabled",
   executionMode: "app.execution.mode",
 });
 
@@ -47,6 +50,8 @@ const writeStoredPolicy = async (key, value, updatedBy = null) => {
  *  registrationMode: string,
  *  registrationDefaultRole: string,
  *  editorCanPublish: boolean,
+ *  dashboardDefaultVisibility: string,
+ *  dashboardPublicListingEnabled: boolean,
  *  executionMode: string,
  *  policyEditLock: boolean
  * }>}
@@ -59,6 +64,12 @@ export const getAuthPolicyState = async () => {
     config.registrationDefaultRole;
   const editorCanPublishRaw =
     (await readStoredPolicy(POLICY_KEYS.editorCanPublish)) ?? config.editorCanPublish;
+  const dashboardDefaultVisibilityRaw =
+    (await readStoredPolicy(POLICY_KEYS.dashboardDefaultVisibility)) ??
+    config.dashboardDefaultVisibility;
+  const dashboardPublicListingEnabledRaw =
+    (await readStoredPolicy(POLICY_KEYS.dashboardPublicListingEnabled)) ??
+    config.dashboardPublicListingEnabled;
   const executionModeRaw =
     (await readStoredPolicy(POLICY_KEYS.executionMode)) ?? config.executionMode;
 
@@ -66,6 +77,10 @@ export const getAuthPolicyState = async () => {
     registrationMode: normalizeRegistrationMode(registrationModeRaw),
     registrationDefaultRole: normalizeNonAdminRole(registrationDefaultRoleRaw),
     editorCanPublish: Boolean(editorCanPublishRaw),
+    dashboardDefaultVisibility: normalizeDashboardVisibility(
+      dashboardDefaultVisibilityRaw
+    ),
+    dashboardPublicListingEnabled: Boolean(dashboardPublicListingEnabledRaw),
     executionMode: normalizeExecutionMode(executionModeRaw),
     policyEditLock: config.policyEditLock,
   };
@@ -80,6 +95,8 @@ export const getAuthPolicyState = async () => {
  *  registrationMode: string,
  *  registrationDefaultRole: string,
  *  editorCanPublish: boolean,
+ *  dashboardDefaultVisibility: string,
+ *  dashboardPublicListingEnabled: boolean,
  *  executionMode: string,
  *  policyEditLock: boolean
  * }>}
@@ -99,6 +116,19 @@ export const setAuthPolicyState = async (input, actorUserId = null) => {
     await writeStoredPolicy(
       POLICY_KEYS.editorCanPublish,
       Boolean(input.editorCanPublish),
+      actorUserId
+    );
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, "dashboardDefaultVisibility")) {
+    const value = normalizeDashboardVisibility(input.dashboardDefaultVisibility);
+    await writeStoredPolicy(POLICY_KEYS.dashboardDefaultVisibility, value, actorUserId);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, "dashboardPublicListingEnabled")) {
+    await writeStoredPolicy(
+      POLICY_KEYS.dashboardPublicListingEnabled,
+      Boolean(input.dashboardPublicListingEnabled),
       actorUserId
     );
   }

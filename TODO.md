@@ -29,6 +29,7 @@
 - [ ] npm deprecication warnings investigation/fixes
 - [ ] Formatting review and clean up (should have package.json commands for this where relevant)
 - [ ] Unicode or latex or some kind of support such that gauge units can have proper degree symbol (\deg C, °\deg F) instead of hardcoding (°C, °F)
+- [ ] Add tokei + misc (workflow from `anolis`) to track codebase stats and health over time
 
 ## Longer-Term Tasks
 

@@ -3,6 +3,7 @@
  * @description Small helper for persisting non-blocking audit events.
  */
 
+import mongoose from "mongoose";
 import AuditEvent from "./models/AuditEvent.js";
 
 /**
@@ -27,6 +28,11 @@ export const recordAuditEvent = async ({
     return;
   }
 
+  const readyState = AuditEvent?.db?.readyState ?? mongoose.connection?.readyState;
+  if (readyState !== 1) {
+    return;
+  }
+
   try {
     await new AuditEvent({
       actorUserId,
@@ -39,4 +45,3 @@ export const recordAuditEvent = async ({
     console.warn("Audit event persistence failed", error?.message || error);
   }
 };
-

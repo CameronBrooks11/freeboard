@@ -41,6 +41,7 @@ export const en = {
   // Controls for dashboard header and settings
   dashboardControl: {
     labelSettings: "Settings",
+    labelShare: "Share",
     labelAuth: "Auth",
     labelDatasources: "Datasources",
     labelAddPane: "Add Pane",
@@ -105,7 +106,14 @@ export const en = {
     labelType: "Type",
     labelGeneral: "General",
     labelColumns: "Columns",
-    labelPublished: "Published",
+    labelVisibility: "Visibility",
+    labelVisibilityPrivate: "Private",
+    labelVisibilityLink: "Link",
+    labelVisibilityPublic: "Public",
+    labelOwner: "Owner",
+    labelAccessLevel: "Access Level",
+    labelAccessViewer: "Viewer",
+    labelAccessEditor: "Editor",
     labelStyle: "Style",
     labelScript: "Script",
     labelStylesheet: "Stylesheet",
@@ -127,8 +135,6 @@ export const en = {
     labelThemeDark: "Dark",
     labelThemeLight: "Light",
     suffixRefresh: "seconds",
-    descriptionPublishAdminOnly:
-      "Only administrators can change publish visibility with current policy.",
     placeholderAuthProvider: "Select an auth provider",
     placeholderList: "Search...",
   },
@@ -148,7 +154,8 @@ export const en = {
     loading: "Loading dashboards…",
     error: "Could not load dashboards.",
     empty: "No dashboards found.",
-    published: "Published",
+    public: "Public",
+    link: "Link",
     private: "Private",
   },
 
@@ -165,6 +172,8 @@ export const en = {
     registrationMode: "Registration Mode",
     registrationDefaultRole: "Registration Default Role",
     editorCanPublish: "Editors can publish dashboards",
+    dashboardDefaultVisibility: "Default Dashboard Visibility",
+    dashboardPublicListingEnabled: "Include public dashboards in user listings",
     executionMode: "Execution Mode",
     currentRuntimeMode: "Current execution mode",
     savePolicy: "Save Policy",
@@ -188,6 +197,26 @@ export const en = {
     saveUser: "Save",
     issueResetToken: "Issue Reset Token",
     deleteUser: "Delete",
+  },
+
+  share: {
+    title: "Share Dashboard",
+    unsavedHint: "Save the dashboard before configuring sharing.",
+    noPermission: "You do not have permission to manage sharing for this dashboard.",
+    visibility: "Visibility",
+    visibilityDescription:
+      "Private is authenticated-only. Link requires the share URL. Public can be listed.",
+    shareLink: "Share Link",
+    copyLink: "Copy Link",
+    revokeLink: "Revoke Link",
+    collaboratorsTitle: "Collaborators",
+    ownerTransferTitle: "Transfer Ownership",
+    addCollaborator: "Grant Access",
+    removeCollaborator: "Remove",
+    loadingCollaborators: "Loading collaborators...",
+    noCollaborators: "No collaborators yet.",
+    transferButton: "Transfer Ownership",
+    saveVisibility: "Save Visibility",
   },
 
   // Login button text

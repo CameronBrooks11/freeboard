@@ -12,8 +12,10 @@
  */
 
 import { createGraphQLError } from "graphql-yoga";
+import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
+import Dashboard from "../models/Dashboard.js";
 import InviteToken from "../models/InviteToken.js";
 import PasswordResetToken from "../models/PasswordResetToken.js";
 import {
@@ -45,6 +47,18 @@ const INVITE_DEFAULT_EXPIRY_HOURS = 72;
 const PASSWORD_RESET_DEFAULT_EXPIRY_HOURS = 2;
 const PASSWORD_RESET_ADMIN_DEFAULT_EXPIRY_HOURS = 24;
 const MAX_TOKEN_EXPIRY_HOURS = 24 * 14;
+
+const toComparableId = (value) => {
+  if (!value) {
+    return null;
+  }
+  if (typeof value?.toString === "function") {
+    return value.toString();
+  }
+  return String(value);
+};
+
+const generateShareToken = () => crypto.randomBytes(24).toString("base64url");
 
 const clampExpiryHours = (inputHours, fallbackHours) => {
   const parsed = Number(inputHours);
@@ -90,6 +104,132 @@ const ensureAtLeastOneActiveAdminWillRemain = async (excludedUserId) => {
       extensions: { code: "FORBIDDEN" },
     });
   }
+};
+
+const findFallbackActiveAdmin = async (excludedUserId = null) => {
+  const filter = {
+    role: "admin",
+    active: true,
+  };
+  if (excludedUserId) {
+    filter._id = { $ne: excludedUserId };
+  }
+  return User.findOne(filter).sort({ registrationDate: 1 }).lean();
+};
+
+const reconcileDashboardAccessForRemovedUser = async ({
+  targetUserId,
+  replacementOwnerUserId = null,
+  actorUserId = null,
+  reason = "user_delete",
+}) => {
+  const normalizedTargetUserId = toComparableId(targetUserId);
+  const normalizedReplacementOwnerUserId = toComparableId(replacementOwnerUserId);
+  if (!normalizedTargetUserId) {
+    return {
+      ownershipReassignments: 0,
+      aclRevocations: 0,
+    };
+  }
+
+  const impactedDashboards = await Dashboard.find({
+    $or: [
+      { user: normalizedTargetUserId },
+      { acl: { $elemMatch: { userId: normalizedTargetUserId } } },
+    ],
+  }).lean();
+
+  const ownedDashboards = impactedDashboards.filter(
+    (dashboard) => toComparableId(dashboard.user) === normalizedTargetUserId
+  );
+
+  if (ownedDashboards.length > 0 && !normalizedReplacementOwnerUserId) {
+    throw createGraphQLError(
+      "Cannot remove user while owning dashboards without an active administrator recovery owner",
+      {
+        extensions: { code: "FORBIDDEN" },
+      }
+    );
+  }
+
+  let ownershipReassignments = 0;
+  let aclRevocations = 0;
+
+  for (const dashboard of impactedDashboards) {
+    const dashboardId = toComparableId(dashboard._id);
+    const ownerWasTarget = toComparableId(dashboard.user) === normalizedTargetUserId;
+    const currentAcl = Array.isArray(dashboard.acl) ? dashboard.acl : [];
+    const aclWithoutTarget = currentAcl.filter(
+      (entry) => toComparableId(entry?.userId) !== normalizedTargetUserId
+    );
+    const nextAcl = ownerWasTarget
+      ? aclWithoutTarget.filter(
+          (entry) =>
+            toComparableId(entry?.userId) !== normalizedReplacementOwnerUserId
+        )
+      : aclWithoutTarget;
+    const aclChanged = nextAcl.length !== currentAcl.length;
+
+    if (!ownerWasTarget && !aclChanged) {
+      continue;
+    }
+
+    const update = ownerWasTarget
+      ? {
+          user: normalizedReplacementOwnerUserId,
+          visibility: "private",
+          shareToken: generateShareToken(),
+          acl: nextAcl,
+        }
+      : {
+          acl: nextAcl,
+        };
+
+    const updated = await Dashboard.findOneAndUpdate(
+      { _id: dashboardId },
+      { $set: update },
+      { new: true, runValidators: true }
+    ).lean();
+
+    if (!updated) {
+      continue;
+    }
+
+    if (ownerWasTarget) {
+      ownershipReassignments += 1;
+      await recordAuditEvent({
+        actorUserId,
+        action: "dashboard.ownership.reassigned_for_user_offboarding",
+        targetType: "dashboard",
+        targetId: dashboardId,
+        metadata: {
+          fromUserId: normalizedTargetUserId,
+          toUserId: normalizedReplacementOwnerUserId,
+          reason,
+          forcedPrivate: true,
+        },
+      });
+    }
+
+    if (aclChanged) {
+      aclRevocations += 1;
+      await recordAuditEvent({
+        actorUserId,
+        action: "dashboard.acl.revoked_for_user_offboarding",
+        targetType: "dashboard",
+        targetId: dashboardId,
+        metadata: {
+          userId: normalizedTargetUserId,
+          reason,
+        },
+      });
+    }
+  }
+
+  return {
+    ownershipReassignments,
+    aclRevocations,
+  };
 };
 
 const sortUsersForAdmin = (users) =>
@@ -549,6 +689,14 @@ export default /** @type {IResolvers} */ {
         await ensureAtLeastOneActiveAdminWillRemain(user._id);
       }
 
+      const fallbackAdmin = await findFallbackActiveAdmin(user._id);
+      const dashboardReconciliation = await reconcileDashboardAccessForRemovedUser({
+        targetUserId: user._id,
+        replacementOwnerUserId: fallbackAdmin?._id || null,
+        actorUserId: user._id,
+        reason: "self_delete",
+      });
+
       const deletedUser = await User.findOneAndDelete({ _id: user._id }).lean();
       if (!deletedUser) {
         throw createGraphQLError("User not found or login not allowed");
@@ -559,7 +707,13 @@ export default /** @type {IResolvers} */ {
         action: "user.self_deleted",
         targetType: "user",
         targetId: user._id,
-        metadata: { email: user.email, role: user.role },
+        metadata: {
+          email: user.email,
+          role: user.role,
+          dashboardOwnershipReassignments:
+            dashboardReconciliation.ownershipReassignments,
+          dashboardAclRevocations: dashboardReconciliation.aclRevocations,
+        },
       });
 
       return deletedUser;
@@ -770,6 +924,13 @@ export default /** @type {IResolvers} */ {
         await ensureAtLeastOneActiveAdminWillRemain(user._id);
       }
 
+      const dashboardReconciliation = await reconcileDashboardAccessForRemovedUser({
+        targetUserId: user._id,
+        replacementOwnerUserId: context.user._id,
+        actorUserId: context.user._id,
+        reason: "admin_delete",
+      });
+
       const deletedUser = await User.findOneAndDelete({ _id }).lean();
       if (!deletedUser) {
         throw createGraphQLError("User not found or login not allowed");
@@ -780,7 +941,13 @@ export default /** @type {IResolvers} */ {
         action: "user.admin_deleted",
         targetType: "user",
         targetId: deletedUser._id,
-        metadata: { email: deletedUser.email, role: deletedUser.role },
+        metadata: {
+          email: deletedUser.email,
+          role: deletedUser.role,
+          dashboardOwnershipReassignments:
+            dashboardReconciliation.ownershipReassignments,
+          dashboardAclRevocations: dashboardReconciliation.aclRevocations,
+        },
       });
 
       return deletedUser;

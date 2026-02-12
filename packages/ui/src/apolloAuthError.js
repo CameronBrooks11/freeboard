@@ -2,7 +2,7 @@
  * Auth-related GraphQL error codes that should trigger session reset.
  * @type {Set<string>}
  */
-const AUTH_ERROR_CODES = new Set(["UNAUTHENTICATED", "FORBIDDEN"]);
+const AUTH_ERROR_CODES = new Set(["UNAUTHENTICATED"]);
 
 /**
  * Auth-related GraphQL message fragments used as fallback when no code is set.
@@ -10,10 +10,9 @@ const AUTH_ERROR_CODES = new Set(["UNAUTHENTICATED", "FORBIDDEN"]);
  */
 const AUTH_MESSAGE_PATTERNS = [
   /unauthenticated/i,
-  /unauthorized/i,
-  /forbidden/i,
   /invalid token/i,
   /jwt/i,
+  /token expired/i,
 ];
 
 /**

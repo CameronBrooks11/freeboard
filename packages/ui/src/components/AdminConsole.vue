@@ -25,10 +25,13 @@ import {
 const ROLE_OPTIONS = Object.freeze(["viewer", "editor", "admin"]);
 const INVITE_ROLE_OPTIONS = Object.freeze(["viewer", "editor"]);
 const REGISTRATION_MODE_OPTIONS = Object.freeze(["disabled", "invite", "open"]);
+const DASHBOARD_VISIBILITY_OPTIONS = Object.freeze(["private", "link", "public"]);
 const EXECUTION_MODE_OPTIONS = Object.freeze(["safe", "trusted"]);
 
 const roleToEnum = (role) => String(role || "viewer").toUpperCase();
 const registrationModeToEnum = (mode) => String(mode || "disabled").toUpperCase();
+const dashboardVisibilityToEnum = (visibility) =>
+  String(visibility || "private").toUpperCase();
 const executionModeToEnum = (mode) => String(mode || "safe").toUpperCase();
 
 const freeboardStore = useFreeboardStore();
@@ -55,6 +58,8 @@ const policyDraft = ref({
   registrationMode: "disabled",
   registrationDefaultRole: "viewer",
   editorCanPublish: false,
+  dashboardDefaultVisibility: "private",
+  dashboardPublicListingEnabled: false,
   executionMode: "safe",
   policyEditLock: false,
 });
@@ -149,6 +154,8 @@ watch(policyResult, () => {
     registrationMode: policy.value.registrationMode,
     registrationDefaultRole: policy.value.registrationDefaultRole,
     editorCanPublish: policy.value.editorCanPublish,
+    dashboardDefaultVisibility: policy.value.dashboardDefaultVisibility,
+    dashboardPublicListingEnabled: policy.value.dashboardPublicListingEnabled,
     executionMode: policy.value.executionMode,
     policyEditLock: policy.value.policyEditLock,
   };
@@ -177,6 +184,12 @@ const savePolicy = async () => {
       registrationMode: registrationModeToEnum(policyDraft.value.registrationMode),
       registrationDefaultRole: roleToEnum(policyDraft.value.registrationDefaultRole),
       editorCanPublish: Boolean(policyDraft.value.editorCanPublish),
+      dashboardDefaultVisibility: dashboardVisibilityToEnum(
+        policyDraft.value.dashboardDefaultVisibility
+      ),
+      dashboardPublicListingEnabled: Boolean(
+        policyDraft.value.dashboardPublicListingEnabled
+      ),
       executionMode: executionModeToEnum(policyDraft.value.executionMode),
     });
     const updatedPolicy = result.data?.setAuthPolicy;
@@ -372,6 +385,29 @@ const issueResetToken = async (user) => {
             :disabled="isPolicyLocked || isBusy"
           />
           {{ $t("admin.editorCanPublish") }}
+        </label>
+        <label>
+          {{ $t("admin.dashboardDefaultVisibility") }}
+          <select
+            v-model="policyDraft.dashboardDefaultVisibility"
+            :disabled="isPolicyLocked || isBusy"
+          >
+            <option
+              v-for="option in DASHBOARD_VISIBILITY_OPTIONS"
+              :key="`dashboard-visibility-${option}`"
+              :value="option"
+            >
+              {{ option }}
+            </option>
+          </select>
+        </label>
+        <label class="admin-console__checkbox">
+          <input
+            type="checkbox"
+            v-model="policyDraft.dashboardPublicListingEnabled"
+            :disabled="isPolicyLocked || isBusy"
+          />
+          {{ $t("admin.dashboardPublicListingEnabled") }}
         </label>
         <label>
           {{ $t("admin.executionMode") }}

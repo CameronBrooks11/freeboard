@@ -12,6 +12,8 @@ const CONFIG_ENV_KEYS = [
   "AUTH_REGISTRATION_MODE",
   "AUTH_REGISTRATION_DEFAULT_ROLE",
   "AUTH_EDITOR_CAN_PUBLISH",
+  "DASHBOARD_DEFAULT_VISIBILITY",
+  "DASHBOARD_PUBLIC_LISTING_ENABLED",
   "EXECUTION_MODE",
   "POLICY_EDIT_LOCK",
 ];
@@ -163,6 +165,8 @@ test("config accepts valid auth policy environment overrides", async () => {
       AUTH_REGISTRATION_MODE: "open",
       AUTH_REGISTRATION_DEFAULT_ROLE: "editor",
       AUTH_EDITOR_CAN_PUBLISH: "true",
+      DASHBOARD_DEFAULT_VISIBILITY: "public",
+      DASHBOARD_PUBLIC_LISTING_ENABLED: "true",
       EXECUTION_MODE: "trusted",
       POLICY_EDIT_LOCK: "true",
     },
@@ -171,8 +175,27 @@ test("config accepts valid auth policy environment overrides", async () => {
       assert.equal(config.registrationMode, "open");
       assert.equal(config.registrationDefaultRole, "editor");
       assert.equal(config.editorCanPublish, true);
+      assert.equal(config.dashboardDefaultVisibility, "public");
+      assert.equal(config.dashboardPublicListingEnabled, true);
       assert.equal(config.executionMode, "trusted");
       assert.equal(config.policyEditLock, true);
+    }
+  );
+});
+
+test("config rejects unsupported dashboard default visibility", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "development",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      CREATE_ADMIN: "false",
+      DASHBOARD_DEFAULT_VISIBILITY: "internal",
+    },
+    async () => {
+      await assert.rejects(
+        () => importConfigFresh(),
+        /Invalid dashboard visibility/
+      );
     }
   );
 });

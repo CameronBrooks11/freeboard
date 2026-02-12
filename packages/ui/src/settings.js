@@ -11,21 +11,15 @@ import { MAX_COLUMNS, MIN_COLUMNS } from "./models/Dashboard";
  * @param {Object} dashboard             - Dashboard object containing current values.
  * @param {string} dashboard.title       - Dashboard title.
  * @param {number} dashboard.columns     - Number of columns in layout.
- * @param {boolean} dashboard.published  - Publication status.
  * @param {Object} dashboard.settings    - Nested settings object.
  * @param {string} dashboard.settings.theme     - Theme setting.
  * @param {string} dashboard.settings.style     - Custom CSS style.
  * @param {string} dashboard.settings.script    - Custom JS script.
  * @param {Array<string>} dashboard.settings.resources - External resource URLs.
- * @param {Object} [policy={}]                      - Runtime policy hints.
- * @param {boolean} [policy.canPublish=true]        - Whether current user can toggle publish.
  * @returns {Array<Object>} Array of settings sections for the UI form.
  */
-export default (dashboard, policy = {}) => {
-  const canPublish = policy.canPublish !== false;
-
-  return [
-    // General settings: title, columns, published flag
+export default (dashboard) => [
+  // General settings: title and columns
     {
       label: "form.labelGeneral",
       icon: "hi-home",
@@ -33,7 +27,6 @@ export default (dashboard, policy = {}) => {
       settings: {
         title: dashboard.title,
         columns: dashboard.columns,
-        published: dashboard.published,
       },
       fields: [
         {
@@ -50,13 +43,6 @@ export default (dashboard, policy = {}) => {
           options: [...Array(MAX_COLUMNS).keys()]
             .filter((i) => i >= MIN_COLUMNS - 1)
             .map((i) => ({ value: i + 1, label: `form.labelColumn${i + 1}` })),
-        },
-        {
-          name: "published",
-          label: "form.labelPublished",
-          type: "boolean",
-          disabled: !canPublish,
-          description: !canPublish ? "form.descriptionPublishAdminOnly" : undefined,
         },
       ],
     },
@@ -157,5 +143,4 @@ export default (dashboard, policy = {}) => {
         },
       ],
     },
-  ];
-};
+];

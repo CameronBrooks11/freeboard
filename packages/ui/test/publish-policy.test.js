@@ -3,18 +3,18 @@ import test from "node:test";
 
 import { normalizeCreateDashboardPayload } from "../src/auth/publishPolicy.js";
 
-test("normalizeCreateDashboardPayload preserves published value for publishers", () => {
+test("normalizeCreateDashboardPayload preserves visibility for publishers", () => {
   const payload = normalizeCreateDashboardPayload({
-    dashboard: { title: "Ops", published: true },
+    dashboard: { title: "Ops", visibility: "public" },
     canPublish: true,
   });
-  assert.deepEqual(payload, { title: "Ops", published: true });
+  assert.deepEqual(payload, { title: "Ops", visibility: "public" });
 });
 
 test("normalizeCreateDashboardPayload forces private create for non-publishers", () => {
   const payload = normalizeCreateDashboardPayload({
-    dashboard: { title: "Ops", published: true },
+    dashboard: { title: "Ops", visibility: "public" },
     canPublish: false,
   });
-  assert.deepEqual(payload, { title: "Ops", published: false });
+  assert.deepEqual(payload, { title: "Ops", visibility: "private" });
 });

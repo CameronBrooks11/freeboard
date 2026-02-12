@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * @component DashboardControl
- * @description Renders dashboard action toolbar and inline settings form for title, columns, and publish flag.
+ * @description Renders dashboard action toolbar and inline settings form for title/columns.
  */
 defineOptions({ name: 'DashboardControl' });
 
@@ -12,16 +12,14 @@ import { computed, getCurrentInstance, ref, watch } from "vue";
 import DatasourcesDialogBox from "./DatasourcesDialogBox.vue";
 import AuthProvidersDialogBox from "./AuthProvidersDialogBox.vue";
 import SettingsDialogBox from "./SettingsDialogBox.vue";
+import ShareDialogBox from "./ShareDialogBox.vue";
 import createSettings from "../settings";
 
 const freeboardStore = useFreeboardStore();
 const { dashboard } = storeToRefs(freeboardStore);
 
 // Inline settings schema and current values
-const canPublish = computed(() => freeboardStore.canCurrentUserPublish());
-const fields = computed(() =>
-  createSettings(dashboard.value, { canPublish: canPublish.value })[0].fields
-);
+const fields = computed(() => createSettings(dashboard.value)[0].fields);
 const settings = ref({});
 
 // Sync settings when the dashboard object changes
@@ -40,13 +38,9 @@ const openSettingsDialogBox = () => {
   freeboardStore.createComponent(SettingsDialogBox, instance.appContext, {
     onOk: (newSettings) => {
       dashboard.value.settings = newSettings.settings;
-      const nextPublished = canPublish.value
-        ? newSettings.published
-        : dashboard.value.published;
       settings.value = {
         title: newSettings.title,
         columns: newSettings.columns,
-        published: nextPublished,
       };
       onChange(settings.value);
       freeboardStore.loadDashboardAssets();
@@ -66,17 +60,19 @@ const openAuthProvidersDialogBox = () => {
   freeboardStore.createComponent(AuthProvidersDialogBox, instance.appContext);
 };
 
+/** Open the dashboard share/collaboration dialog */
+const openShareDialogBox = () => {
+  freeboardStore.createComponent(ShareDialogBox, instance.appContext);
+};
+
 /**
  * Apply inline form changes to the dashboard model.
  *
- * @param {{ title: string; columns: string; published: boolean }} s
+ * @param {{ title: string; columns: string }} s
  */
 const onChange = (s) => {
-  dashboard.value.columns = parseInt(s.columns);
+  dashboard.value.columns = parseInt(s.columns, 10);
   dashboard.value.title = s.title;
-  if (canPublish.value) {
-    dashboard.value.published = s.published;
-  }
 };
 
 const instance = getCurrentInstance();
@@ -101,6 +97,12 @@ const instance = getCurrentInstance();
         <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-eye" /></i><label
           class="dashboard-control__board-toolbar__item__label">{{
             $t("dashboardControl.labelAuth")
+          }}</label>
+      </li>
+      <li @click="() => openShareDialogBox()" class="dashboard-control__board-toolbar__item">
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-collection" /></i><label
+          class="dashboard-control__board-toolbar__item__label">{{
+            $t("dashboardControl.labelShare")
           }}</label>
       </li>
       <li @click="() => dashboard.createPane()" class="dashboard-control__board-toolbar__item">

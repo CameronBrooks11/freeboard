@@ -15,6 +15,7 @@ import { useFreeboardStore } from "../stores/freeboard";
 import { useQuery, useSubscription } from "@vue/apollo-composable";
 import {
   DASHBOARD_READ_QUERY,
+  DASHBOARD_READ_BY_SHARE_TOKEN_QUERY,
   DASHBOARD_UPDATE_SUBSCRIPTION,
   PUBLIC_AUTH_POLICY_QUERY,
 } from "../gql";
@@ -50,11 +51,15 @@ watch(cssClass, () => freeboardStore.loadDashboardTheme(), { immediate: true });
 // ----------------------------------------------------------------------------
 // Props & reactive route id
 // ----------------------------------------------------------------------------
-const props = defineProps({ id: String });
+const props = defineProps({ id: String, shareToken: String });
 /** Reactive route id derived from props so it updates on `/:id` navigation. */
 const routeId = computed(() => props.id || undefined);
-/** Enable GraphQL only when there is an id. */
-const queryEnabled = computed(() => !!routeId.value);
+/** Reactive share token route value for link/public access. */
+const routeShareToken = computed(() => props.shareToken || undefined);
+/** Enable id query only when there is an id route. */
+const queryEnabledById = computed(() => !!routeId.value && !routeShareToken.value);
+/** Enable share-token query only when there is a share token route. */
+const queryEnabledByShareToken = computed(() => !!routeShareToken.value);
 
 // ----------------------------------------------------------------------------
 // GraphQL: initial query (reactive variables) + live updates (SSE)
@@ -63,10 +68,24 @@ const queryEnabled = computed(() => !!routeId.value);
  * Query initial dashboard data. Variables and `enabled` are reactive so this
  * re-runs when the route `id` changes.
  */
-const { result, loading, error } = useQuery(
+const {
+  result: resultById,
+  loading: loadingById,
+  error: errorById,
+} = useQuery(
   DASHBOARD_READ_QUERY,
   () => ({ id: routeId.value }),
-  { enabled: queryEnabled, fetchPolicy: "network-only" }
+  { enabled: queryEnabledById, fetchPolicy: "network-only" }
+);
+
+const {
+  result: resultByShareToken,
+  loading: loadingByShareToken,
+  error: errorByShareToken,
+} = useQuery(
+  DASHBOARD_READ_BY_SHARE_TOKEN_QUERY,
+  () => ({ shareToken: routeShareToken.value }),
+  { enabled: queryEnabledByShareToken, fetchPolicy: "network-only" }
 );
 
 /**
@@ -75,7 +94,7 @@ const { result, loading, error } = useQuery(
 const { onResult: onSubResult } = useSubscription(
   DASHBOARD_UPDATE_SUBSCRIPTION,
   () => ({ id: routeId.value }),
-  { context: { apiName: "stream" }, enabled: queryEnabled }
+  { context: { apiName: "stream" }, enabled: queryEnabledById }
 );
 
 const { result: publicPolicyResult } = useQuery(PUBLIC_AUTH_POLICY_QUERY, {}, {
@@ -90,14 +109,22 @@ watch(publicPolicyResult, () => {
 });
 
 // Redirect to home on query error (e.g., not found/unauthorized)
-watch(error, () => router.push("/"));
+watch([errorById, errorByShareToken], ([idError, shareError]) => {
+  if (idError || shareError) {
+    router.push("/");
+  }
+});
 
 // Show loader while query is in flight
-watch(loading, (l) => { showLoadingIndicator.value = l; });
+watch([loadingById, loadingByShareToken], ([idLoading, shareLoading]) => {
+  showLoadingIndicator.value = Boolean(idLoading || shareLoading);
+});
 
 // Show loader when the route id changes (before the query returns)
-watch(routeId, (id) => {
-  if (id) showLoadingIndicator.value = true;
+watch([routeId, routeShareToken], ([id, shareToken]) => {
+  if (id || shareToken) {
+    showLoadingIndicator.value = true;
+  }
 });
 
 /**
@@ -105,10 +132,10 @@ watch(routeId, (id) => {
  * @param {{ dashboard?: any }|undefined} data
  */
 const applyResult = (data) => {
-  const dash = data?.dashboard;
+  const dash = data?.dashboard || data?.dashboardByShareToken;
   showLoadingIndicator.value = false;
 
-  if (!dash && routeId.value) {
+  if (!dash && (routeId.value || routeShareToken.value)) {
     // Dashboard not found, go to create new
     freeboardStore.syncEditingPermissions();
     router.push("/");
@@ -116,14 +143,16 @@ const applyResult = (data) => {
   }
 
   if (dash) {
-    // Load new dashboard in store and mark as saved
-    freeboardStore.loadDashboard(dash);
+    // Mark as saved before loading so permission sync can use dashboard-level ACL flags.
     isSaved.value = true;
+    freeboardStore.loadDashboard(dash);
+    freeboardStore.syncEditingPermissions();
   }
 };
 
-// React to initial query result
-watch(result, () => applyResult(result.value));
+// React to initial query results
+watch(resultById, () => applyResult(resultById.value));
+watch(resultByShareToken, () => applyResult(resultByShareToken.value));
 // React to subscription updates
 onSubResult(({ data }) => applyResult(data));
 

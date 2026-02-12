@@ -33,6 +33,17 @@ const { result, loading, error } = useQuery(DASHBOARDS_LIST_QUERY);
 // UI state to track if a dashboard is being opened
 const picking = ref(false);
 
+const visibilityLabelKey = (visibility) => {
+  const normalized = String(visibility || "").toLowerCase();
+  if (normalized === "public") {
+    return "savedDashboards.public";
+  }
+  if (normalized === "link") {
+    return "savedDashboards.link";
+  }
+  return "savedDashboards.private";
+};
+
 /**
  * @function openDashboard
  * @description
@@ -78,7 +89,7 @@ const openDashboard = async (id) => {
         <button class="saved-dashboards__button" :disabled="picking" @click="openDashboard(d._id)">
           <span class="saved-dashboards__title">{{ d.title || d._id }}</span>
           <span class="saved-dashboards__meta">
-            {{ d.published ? $t('savedDashboards.published') : $t('savedDashboards.private') }}
+            {{ $t(visibilityLabelKey(d.visibility)) }}
           </span>
         </button>
       </li>

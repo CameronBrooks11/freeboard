@@ -1,79 +1,67 @@
 /**
  * @module types/Dashboard
- * @description
- * GraphQL SDL (Schema Definition Language) type definitions for the **Dashboard** entity.
- * Includes:
- * - Scalar definitions
- * - Object type definitions
- * - Queries
- * - Mutations
- * - Subscriptions
- * - Input types for creation and updates
- *
- * @remarks
- * The `Dashboard` type represents the persisted configuration of a dashboard in the Freeboard system,
- * including its layout, datasources, and user settings.
- *
+ * @description GraphQL schema for dashboard visibility, sharing, and collaboration.
  */
 
-/**
- * @constant {string} DashboardSchema
- * @description
- * GraphQL schema definition string for the Dashboard entity.
- * Defines all fields, available queries, mutations, subscriptions, and input types.
- */
 export default `
   """Custom scalar for arbitrary JSON-like objects."""
   scalar Object
 
+  """Dashboard ACL access level."""
+  enum DashboardAccessLevel {
+    VIEWER
+    EDITOR
+  }
+
+  """Per-dashboard ACL entry."""
+  type DashboardAclEntry {
+    userId: ID!
+    accessLevel: DashboardAccessLevel!
+  }
+
+  """Collaborator view with user identity details."""
+  type DashboardCollaborator {
+    userId: ID!
+    email: String
+    accessLevel: DashboardAccessLevel!
+    isOwner: Boolean!
+  }
+
   """Represents a saved dashboard configuration."""
   type Dashboard {
-    """Unique identifier of the dashboard."""
     _id: ID!
-
-    """Human-readable title of the dashboard."""
     title: String!
-
-    """Version identifier for dashboard structure."""
     version: String!
-
-    """Publication state of the dashboard."""
-    published: Boolean!
-
-    """Optional preview image (Base64 or URL)."""
+    visibility: DashboardVisibility!
+    shareToken: String
     image: String
-
-    """List of data sources used by the dashboard."""
     datasources: [Object]
-
-    """Number of columns in the dashboard grid."""
     columns: Int
-
-    """Fixed width of the dashboard layout."""
     width: String
-
-    """List of dashboard panes (widgets + positions)."""
     panes: [Object]
-
-    """Authentication providers required for access."""
     authProviders: [Object]
-
-    """Additional dashboard-level settings."""
     settings: Object
-
-    """ID or username of the dashboard owner."""
     user: String
-
-    """Whether the requesting user is the dashboard owner."""
+    acl: [DashboardAclEntry!]!
     isOwner: Boolean!
+    canEdit: Boolean!
+    canManageSharing: Boolean!
+    createdAt: String
+    updatedAt: String
   }
 
   type Query {
     """Retrieve a single dashboard by ID."""
     dashboard(_id: ID!): Dashboard
 
-    """Get list of all dashboards saved in the database."""
+    """Retrieve dashboard by opaque share token."""
+    dashboardByShareToken(shareToken: String!): Dashboard
+
+    """List dashboards available to the current user."""
     dashboards: [Dashboard]!
+
+    """List collaborators for a dashboard."""
+    dashboardCollaborators(_id: ID!): [DashboardCollaborator!]!
   }
 
   type Mutation {
@@ -85,6 +73,25 @@ export default `
 
     """Delete a dashboard by ID."""
     deleteDashboard(_id: ID!): Dashboard!
+
+    """Set visibility for a dashboard."""
+    setDashboardVisibility(_id: ID!, visibility: DashboardVisibility!): Dashboard!
+
+    """Rotate the share token for a dashboard."""
+    rotateDashboardShareToken(_id: ID!): Dashboard!
+
+    """Grant or update dashboard ACL access by user email."""
+    upsertDashboardAccess(
+      _id: ID!
+      email: String!
+      accessLevel: DashboardAccessLevel!
+    ): Dashboard!
+
+    """Revoke dashboard ACL access."""
+    revokeDashboardAccess(_id: ID!, userId: ID!): Dashboard!
+
+    """Transfer dashboard ownership."""
+    transferDashboardOwnership(_id: ID!, newOwnerUserId: ID!): Dashboard!
   }
 
   type Subscription {
@@ -96,7 +103,7 @@ export default `
   input CreateDashboardInput {
     title: String!
     version: String!
-    published: Boolean!
+    visibility: DashboardVisibility
     image: String
     datasources: [Object]
     columns: Int
@@ -110,7 +117,7 @@ export default `
   input UpdateDashboardInput {
     title: String
     version: String
-    published: Boolean
+    visibility: DashboardVisibility
     image: String
     datasources: [Object]
     columns: Int

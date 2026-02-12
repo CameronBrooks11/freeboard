@@ -19,7 +19,6 @@ import createSettings from "../settings";
 const freeboardStore = useFreeboardStore();
 
 const { dashboard } = storeToRefs(freeboardStore);
-const canPublish = computed(() => freeboardStore.canCurrentUserPublish());
 
 // Store child form component refs for validation
 const components = ref({});
@@ -35,9 +34,7 @@ const { onClose, onOk } = defineProps({
 });
 
 // Compute tab fields schema from current dashboard settings
-const fields = computed(() =>
-  createSettings(dashboard.value, { canPublish: canPublish.value })
-);
+const fields = computed(() => createSettings(dashboard.value));
 
 // Reference to the DialogBox for closing the modal programmatically
 const dialog = ref(null);

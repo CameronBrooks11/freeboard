@@ -7,7 +7,9 @@ const buildDoc = (overrides = {}) => ({
   _id: { toString: () => "dash-1" },
   version: "1",
   title: "Main",
-  published: false,
+  visibility: "private",
+  shareToken: "share-token-1",
+  acl: [],
   image: null,
   datasources: [],
   columns: 3,
@@ -27,12 +29,25 @@ test("transformDashboard includes owner user id", () => {
 });
 
 test("transformDashboard derives isOwner from viewer context", () => {
-  const ownerView = transformDashboard(buildDoc(), "owner-1");
-  const otherView = transformDashboard(buildDoc(), "someone-else");
-  const anonymousView = transformDashboard(buildDoc(), null);
+  const ownerView = transformDashboard(buildDoc(), "owner-1", {
+    canEdit: true,
+    canManageSharing: true,
+  });
+  const otherView = transformDashboard(buildDoc(), "someone-else", {
+    canEdit: false,
+    canManageSharing: false,
+  });
+  const anonymousView = transformDashboard(buildDoc(), null, {
+    canEdit: false,
+    canManageSharing: false,
+  });
 
   assert.equal(ownerView.isOwner, true);
+  assert.equal(ownerView.canEdit, true);
+  assert.equal(ownerView.shareToken, "share-token-1");
   assert.equal(otherView.isOwner, false);
+  assert.equal(otherView.canEdit, false);
+  assert.equal(otherView.shareToken, null);
   assert.equal(anonymousView.isOwner, false);
 });
 
