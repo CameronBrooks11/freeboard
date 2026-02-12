@@ -13,6 +13,7 @@ const originalMethods = {
   dashboardFindOneAndDelete: Dashboard.findOneAndDelete,
   dashboardPrototypeSave: Dashboard.prototype.save,
   policyFindOne: Policy.findOne,
+  userFind: User.find,
   userFindOne: User.findOne,
 };
 
@@ -66,6 +67,7 @@ afterEach(() => {
   Dashboard.findOneAndDelete = originalMethods.dashboardFindOneAndDelete;
   Dashboard.prototype.save = originalMethods.dashboardPrototypeSave;
   Policy.findOne = originalMethods.policyFindOne;
+  User.find = originalMethods.userFind;
   User.findOne = originalMethods.userFindOne;
 });
 
@@ -233,6 +235,132 @@ test("setDashboardVisibility allows reducing exposure to private even when publi
   );
 
   assert.equal(result.visibility, "private");
+});
+
+test("setDashboardVisibility to private immediately revokes share-token access", async () => {
+  let dashboardState = buildDashboardDoc({
+    _id: "dash-1",
+    user: "owner-1",
+    visibility: "link",
+    shareToken: "token-1",
+  });
+  Dashboard.findOne = (filter) => {
+    if (filter?._id === "dash-1") {
+      return asLean(dashboardState);
+    }
+    if (filter?.shareToken === "token-1") {
+      return asLean(dashboardState);
+    }
+    return asLean(null);
+  };
+  Dashboard.findOneAndUpdate = (filter, update) => {
+    assert.deepEqual(filter, { _id: "dash-1" });
+    dashboardState = {
+      ...dashboardState,
+      ...update.$set,
+    };
+    return asLean(dashboardState);
+  };
+
+  const updated = await DashboardResolvers.Mutation.setDashboardVisibility(
+    null,
+    { _id: "dash-1", visibility: "private" },
+    { user: { _id: "owner-1", role: "editor" } }
+  );
+  assert.equal(updated.visibility, "private");
+
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Query.dashboardByShareToken(
+        null,
+        { shareToken: "token-1" },
+        {}
+      ),
+    /Dashboard not found/
+  );
+});
+
+test("upsertDashboardAccess allows acl editor collaborator to grant viewer access", async () => {
+  let dashboardState = buildDashboardDoc({
+    _id: "dash-1",
+    user: "owner-1",
+    acl: [{ userId: "editor-1", accessLevel: "editor" }],
+  });
+  Dashboard.findOne = ({ _id }) => asLean(_id === "dash-1" ? dashboardState : null);
+  User.findOne = ({ email }) =>
+    asLean(
+      email === "viewer@example.com"
+        ? {
+            _id: "viewer-2",
+            email: "viewer@example.com",
+            active: true,
+          }
+        : null
+    );
+  Dashboard.findOneAndUpdate = (filter, update) => {
+    assert.deepEqual(filter, { _id: "dash-1" });
+    assert.ok(
+      update.$set.acl.some(
+        (entry) =>
+          entry.userId === "viewer-2" && entry.accessLevel === "viewer"
+      )
+    );
+    dashboardState = {
+      ...dashboardState,
+      ...update.$set,
+    };
+    return asLean(dashboardState);
+  };
+
+  const result = await DashboardResolvers.Mutation.upsertDashboardAccess(
+    null,
+    { _id: "dash-1", email: "viewer@example.com", accessLevel: "viewer" },
+    { user: { _id: "editor-1", role: "editor" } }
+  );
+
+  assert.ok(
+    result.acl.some(
+      (entry) => entry.userId === "viewer-2" && entry.accessLevel === "viewer"
+    )
+  );
+  assert.equal(result.canManageSharing, true);
+});
+
+test("dashboardCollaborators allows acl editor collaborator", async () => {
+  Dashboard.findOne = ({ _id }) =>
+    asLean(
+      _id === "dash-1"
+        ? buildDashboardDoc({
+            _id: "dash-1",
+            user: "owner-1",
+            acl: [{ userId: "editor-1", accessLevel: "editor" }],
+          })
+        : null
+    );
+  User.find = () => ({
+    select: () =>
+      asLean([
+        { _id: "owner-1", email: "owner@example.com" },
+        { _id: "editor-1", email: "editor@example.com" },
+      ]),
+  });
+
+  const result = await DashboardResolvers.Query.dashboardCollaborators(
+    null,
+    { _id: "dash-1" },
+    { user: { _id: "editor-1", role: "editor" } }
+  );
+
+  assert.equal(result.length, 2);
+  assert.ok(result.some((entry) => entry.isOwner && entry.userId === "owner-1"));
+  assert.ok(
+    result.some(
+      (entry) =>
+        !entry.isOwner &&
+        entry.userId === "editor-1" &&
+        entry.accessLevel === "editor"
+    )
+  );
 });
 
 test("createDashboard falls back to private when default visibility is external and editor cannot publish", async () => {

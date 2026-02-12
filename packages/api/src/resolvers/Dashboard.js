@@ -54,10 +54,10 @@ const getDashboardVisibility = (dashboard) => {
     try {
       return normalizeDashboardVisibility(dashboard.visibility);
     } catch {
-      // fall through to published fallback
+      // fall through to default
     }
   }
-  return dashboard?.published === true ? "public" : "private";
+  return "private";
 };
 
 const sanitizeDashboardInput = (dashboard = {}) => {

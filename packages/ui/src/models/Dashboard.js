@@ -142,9 +142,7 @@ export class Dashboard {
     this.visibility =
       typeof object.visibility === "string"
         ? object.visibility
-        : object.published === true
-          ? "public"
-          : "private";
+        : "private";
     this.shareToken = object.shareToken || null;
     this.acl = Array.isArray(object.acl) ? object.acl : [];
     this.settings = object.settings || {};

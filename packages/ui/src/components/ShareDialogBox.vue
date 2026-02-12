@@ -12,6 +12,10 @@ import DialogBox from "./DialogBox.vue";
 import { useFreeboardStore } from "../stores/freeboard";
 import router from "../router";
 import {
+  buildFallbackSharePath,
+  isDashboardShareable,
+} from "../sharePolicy";
+import {
   DASHBOARD_COLLABORATORS_QUERY,
   DASHBOARD_REVOKE_ACCESS_MUTATION,
   DASHBOARD_ROTATE_SHARE_TOKEN_MUTATION,
@@ -37,7 +41,12 @@ const errorMessage = ref("");
 const canManageSharing = computed(
   () => Boolean(dashboard.value?.canManageSharing) || !isSaved.value
 );
-const isShareableDashboard = computed(() => Boolean(isSaved.value && dashboard.value?._id));
+const isShareableDashboard = computed(() =>
+  isDashboardShareable({
+    isSaved: isSaved.value,
+    dashboardId: dashboard.value?._id,
+  })
+);
 
 const {
   result: collaboratorsResult,
@@ -167,33 +176,38 @@ const shareLink = computed(() => {
     return "";
   }
 
+  const fallbackPath = buildFallbackSharePath({
+    visibility: dashboard.value.visibility,
+    dashboardId: dashboard.value._id,
+    shareToken: dashboard.value.shareToken,
+  });
+  if (!fallbackPath) {
+    return "";
+  }
+
+  let resolvedPath = fallbackPath;
+
   if (dashboard.value.visibility === "public") {
-    let publicHref = `/p/${encodeURIComponent(dashboard.value._id)}`;
     try {
-      publicHref = router.resolve({
+      resolvedPath = router.resolve({
         name: "PublicDashboard",
         params: { id: dashboard.value._id },
       }).href;
     } catch {
-      // fallback path kept above
+      // Use fallback route path.
     }
-    return new URL(publicHref, window.location.origin).toString();
-  }
-
-  if (dashboard.value.visibility === "link" && dashboard.value.shareToken) {
-    let sharedHref = `/s/${encodeURIComponent(dashboard.value.shareToken)}`;
+  } else if (dashboard.value.visibility === "link" && dashboard.value.shareToken) {
     try {
-      sharedHref = router.resolve({
+      resolvedPath = router.resolve({
         name: "SharedDashboard",
         params: { shareToken: dashboard.value.shareToken },
       }).href;
     } catch {
-      // fallback path kept above
+      // Use fallback route path.
     }
-    return new URL(sharedHref, window.location.origin).toString();
   }
 
-  return "";
+  return new URL(resolvedPath, window.location.origin).toString();
 });
 
 const copyShareLink = async () => {

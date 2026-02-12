@@ -33,6 +33,8 @@
     "test:api": "npm run test:ci --workspace=packages/api",
     "test:ui": "npm run test:ci --workspace=packages/ui",
     "test:proxy": "npm run test:ci --workspace=packages/proxy",
+    "phase3:cutover:dashboards": "node scripts/phase3-dashboard-cutover.mjs",
+    "phase3:reset:dashboards:private": "node scripts/phase3-dashboard-reset-private.mjs",
     "ci": "npm run lint && npm run test && npm run build:verify",
     "clean": "rimraf packages/ui/dist docs/.vitepress/dist docs/auto",
     "clean:deps": "rimraf node_modules packages/*/node_modules",
