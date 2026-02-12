@@ -16,6 +16,9 @@ const CONFIG_ENV_KEYS = [
   "DASHBOARD_PUBLIC_LISTING_ENABLED",
   "EXECUTION_MODE",
   "POLICY_EDIT_LOCK",
+  "AUTH_LOGIN_MAX_ATTEMPTS",
+  "AUTH_LOGIN_WINDOW_SECONDS",
+  "AUTH_LOGIN_LOCK_SECONDS",
 ];
 
 const withEnv = async (overrides, run) => {
@@ -124,6 +127,22 @@ test("config accepts valid CREATE_ADMIN credentials and normalizes email", async
   );
 });
 
+test("config requires explicit MONGO_URL in non-development runtime", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "production",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      MONGO_URL: undefined,
+    },
+    async () => {
+      await assert.rejects(
+        () => importConfigFresh(),
+        /MONGO_URL must be explicitly configured/
+      );
+    }
+  );
+});
+
 test("config rejects unsupported registration mode", async () => {
   await withEnv(
     {
@@ -169,6 +188,9 @@ test("config accepts valid auth policy environment overrides", async () => {
       DASHBOARD_PUBLIC_LISTING_ENABLED: "true",
       EXECUTION_MODE: "trusted",
       POLICY_EDIT_LOCK: "true",
+      AUTH_LOGIN_MAX_ATTEMPTS: "7",
+      AUTH_LOGIN_WINDOW_SECONDS: "120",
+      AUTH_LOGIN_LOCK_SECONDS: "180",
     },
     async () => {
       const { config } = await importConfigFresh();
@@ -179,6 +201,9 @@ test("config accepts valid auth policy environment overrides", async () => {
       assert.equal(config.dashboardPublicListingEnabled, true);
       assert.equal(config.executionMode, "trusted");
       assert.equal(config.policyEditLock, true);
+      assert.equal(config.authLoginMaxAttempts, 7);
+      assert.equal(config.authLoginWindowSeconds, 120);
+      assert.equal(config.authLoginLockSeconds, 180);
     }
   );
 });

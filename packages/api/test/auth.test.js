@@ -4,7 +4,13 @@ import { test } from "node:test";
 import { createAuthToken, validateAuthToken } from "../src/auth.js";
 
 test("auth token roundtrip preserves _id claim", async () => {
-  const token = createAuthToken("user@example.com", "editor", true, "user-123");
+  const token = createAuthToken(
+    "user@example.com",
+    "editor",
+    true,
+    "user-123",
+    4
+  );
   const payload = await validateAuthToken(token);
 
   assert.equal(payload.email, "user@example.com");
@@ -12,6 +18,7 @@ test("auth token roundtrip preserves _id claim", async () => {
   assert.equal(payload.role, "editor");
   assert.equal(payload.admin, false);
   assert.equal(payload.active, true);
+  assert.equal(payload.sv, 4);
 });
 
 test("validateAuthToken rejects invalid token", async () => {
@@ -27,4 +34,5 @@ test("auth token sets admin compatibility flag from role", async () => {
 
   assert.equal(payload.role, "admin");
   assert.equal(payload.admin, true);
+  assert.equal(payload.sv, 0);
 });

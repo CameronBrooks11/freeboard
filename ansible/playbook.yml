@@ -6,6 +6,11 @@
   vars:
     config_path: /boot/firmware/config.txt
     cmdline_path: /boot/firmware/cmdline.txt
+    docker_arch_map:
+      x86_64: amd64
+      aarch64: arm64
+      armv7l: armhf
+      armv6l: armhf
   tasks:
     - name: Make sure distro package of Docker is absent
       ansible.builtin.apt:
@@ -46,7 +51,14 @@
 
     - name: Set architecture
       ansible.builtin.set_fact:
-        architecture: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}" # changed from 'armhf' to 'arm64' for Raspberry Pi
+        architecture: "{{ docker_arch_map[ansible_architecture] | default('') }}"
+      tags:
+        - docker
+
+    - name: Fail for unsupported architecture
+      ansible.builtin.fail:
+        msg: "Unsupported architecture '{{ ansible_architecture }}' for Docker repo setup."
+      when: architecture == ""
       tags:
         - docker
 
@@ -73,11 +85,9 @@
       tags:
         - docker
 
-    - name: Add user to Docker group (all platforms)
-      ansible.builtin.user:
-        name: "{{ lookup('env', 'USER') }}"
-        group: "{{ lookup('env', 'USER') }}"
-        groups:
+    - name: Build baseline supplemental groups for deploy user
+      ansible.builtin.set_fact:
+        freeboard_user_groups:
           - docker
           - adm
           - sudo
@@ -90,21 +100,9 @@
       tags:
         - docker
 
-    - name: Add user to Docker group (Raspberry Pi)
-      ansible.builtin.user:
-        name: "{{ lookup('env', 'USER') }}"
-        group: "{{ lookup('env', 'USER') }}"
-        groups:
-          - docker
-          - adm
-          - sudo
-          - video
-          - plugdev
-          - users
-          - input
-          - netdev
-          - gpio
-          - dialout
+    - name: Add GPIO group for Raspberry Pi deployments
+      ansible.builtin.set_fact:
+        freeboard_user_groups: "{{ freeboard_user_groups + ['gpio'] }}"
       when: |
         ansible_architecture == "aarch64" or
         ansible_architecture == "armv7l" or
@@ -112,18 +110,25 @@
       tags:
         - docker
 
-    #added
+    - name: Ensure deploy user has required supplemental groups
+      ansible.builtin.user:
+        name: "{{ freeboard_deploy_user }}"
+        groups: "{{ freeboard_user_groups }}"
+        append: true
+      tags:
+        - docker
+
     - name: Ensure MongoDB Docker image is downloaded
       ansible.builtin.get_url:
-        url: https://github.com/themattman/mongodb-raspberrypi-docker/releases/download/r7.0.4-mongodb-raspberrypi-docker-unofficial/mongodb.ce.pi4.r7.0.4-mongodb-raspberrypi-docker-unofficial.tar.gz
-        dest: /tmp/mongodb.ce.pi4.r7.0.4.tar.gz
+        url: "{{ mongo_arm_tar_url }}"
+        dest: "{{ mongo_arm_tar_path }}"
         mode: "0644"
       tags:
         - mongo
 
     - name: Load the MongoDB Docker image
       ansible.builtin.command:
-        cmd: docker load --input /tmp/mongodb.ce.pi4.r7.0.4.tar.gz
+        cmd: docker load --input {{ mongo_arm_tar_path }}
       register: docker_load_output
       changed_when: "'Loaded image' in docker_load_output.stdout"
       tags:
@@ -131,11 +136,10 @@
 
     - name: Remove the MongoDB tarball after loading
       ansible.builtin.file:
-        path: /tmp/mongodb.ce.pi4.r7.0.4.tar.gz
+        path: "{{ mongo_arm_tar_path }}"
         state: absent
       tags:
         - mongo
-    #added
 
     - name: Installs splashscreen dependencies
       ansible.builtin.apt:
@@ -351,6 +355,20 @@
           - feh
           - chromium-browser
         state: present
+      tags:
+        - player
+
+    - name: Verify player script exists in repo directory
+      ansible.builtin.stat:
+        path: "{{ freeboard_repo_dir }}/player.sh"
+      register: player_script_stat
+      tags:
+        - player
+
+    - name: Fail when player script is missing
+      ansible.builtin.fail:
+        msg: "Expected player script at {{ freeboard_repo_dir }}/player.sh. Set freeboard_repo_dir in vars.yml for your environment."
+      when: not player_script_stat.stat.exists
       tags:
         - player
 

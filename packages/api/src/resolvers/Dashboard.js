@@ -60,6 +60,157 @@ const getDashboardVisibility = (dashboard) => {
   return "private";
 };
 
+const toTrimmedString = (value) =>
+  typeof value === "string" ? value.trim() : "";
+
+const normalizeResourceList = (resources) => {
+  if (!Array.isArray(resources)) {
+    return [];
+  }
+  const normalized = resources
+    .map((entry) => {
+      if (typeof entry === "string") {
+        return entry.trim();
+      }
+      if (entry && typeof entry === "object") {
+        if (typeof entry.url === "string") {
+          return entry.url.trim();
+        }
+        if (typeof entry.asset === "string") {
+          return entry.asset.trim();
+        }
+      }
+      return "";
+    })
+    .filter(Boolean);
+  normalized.sort();
+  return normalized;
+};
+
+const hasTrustedDashboardSettings = (settings) => {
+  if (!settings || typeof settings !== "object") {
+    return false;
+  }
+  return Boolean(
+    toTrimmedString(settings.script) ||
+      toTrimmedString(settings.style) ||
+      normalizeResourceList(settings.resources).length > 0
+  );
+};
+
+const trustedDashboardSettingsSignature = (settings) =>
+  JSON.stringify({
+    script: toTrimmedString(settings?.script),
+    style: toTrimmedString(settings?.style),
+    resources: normalizeResourceList(settings?.resources),
+  });
+
+const normalizeWidgetType = (widget) =>
+  String(widget?.typeName || widget?.type || "")
+    .trim()
+    .toLowerCase();
+
+const trustedWidgetPayloadSignatures = (panes) => {
+  if (!Array.isArray(panes)) {
+    return [];
+  }
+
+  const signatures = [];
+  panes.forEach((pane, paneIndex) => {
+    const widgets = Array.isArray(pane?.widgets) ? pane.widgets : [];
+    widgets.forEach((widget, widgetIndex) => {
+      const widgetType = normalizeWidgetType(widget);
+      const widgetSettings =
+        widget?.settings && typeof widget.settings === "object"
+          ? widget.settings
+          : {};
+      const widgetKey = toTrimmedString(widget?.id) || `${paneIndex}:${widgetIndex}`;
+
+      if (widgetType === "html") {
+        const mode = toTrimmedString(widgetSettings.mode).toLowerCase();
+        if (mode === "trusted_html") {
+          signatures.push(`html:${widgetKey}:trusted_html`);
+        }
+      }
+
+      if (widgetType === "base") {
+        const script = toTrimmedString(widgetSettings.script);
+        const resources = normalizeResourceList(widgetSettings.resources);
+        if (script || resources.length > 0) {
+          signatures.push(
+            `base:${widgetKey}:${script}:${JSON.stringify(resources)}`
+          );
+        }
+      }
+    });
+  });
+
+  signatures.sort();
+  return signatures;
+};
+
+const ensureDashboardPayloadAllowedByExecutionMode = async ({
+  inputDashboard,
+  existingDashboard = null,
+}) => {
+  if (!inputDashboard || typeof inputDashboard !== "object") {
+    return;
+  }
+
+  const hasTrustedSettingsInInput =
+    Object.prototype.hasOwnProperty.call(inputDashboard, "settings") &&
+    hasTrustedDashboardSettings(inputDashboard.settings);
+  const inputTrustedWidgetSignatures = Object.prototype.hasOwnProperty.call(
+    inputDashboard,
+    "panes"
+  )
+    ? trustedWidgetPayloadSignatures(inputDashboard.panes)
+    : [];
+
+  if (!hasTrustedSettingsInInput && inputTrustedWidgetSignatures.length === 0) {
+    return;
+  }
+
+  const authPolicy = await getAuthPolicyState();
+  if (authPolicy.executionMode === "trusted") {
+    return;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(inputDashboard, "settings")) {
+    if (
+      hasTrustedSettingsInInput &&
+      trustedDashboardSettingsSignature(inputDashboard.settings) !==
+        trustedDashboardSettingsSignature(existingDashboard?.settings)
+    ) {
+      throw createGraphQLError(
+        "Trusted dashboard settings require execution mode 'trusted'",
+        {
+          extensions: { code: "FORBIDDEN" },
+        }
+      );
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(inputDashboard, "panes")) {
+    if (inputTrustedWidgetSignatures.length > 0) {
+      const existingTrustedWidgetSignatures = trustedWidgetPayloadSignatures(
+        existingDashboard?.panes
+      );
+      if (
+        JSON.stringify(inputTrustedWidgetSignatures) !==
+        JSON.stringify(existingTrustedWidgetSignatures)
+      ) {
+        throw createGraphQLError(
+          "Trusted widget capabilities require execution mode 'trusted'",
+          {
+            extensions: { code: "FORBIDDEN" },
+          }
+        );
+      }
+    }
+  }
+};
+
 const sanitizeDashboardInput = (dashboard = {}) => {
   const sanitized = {};
   for (const [key, value] of Object.entries(dashboard || {})) {
@@ -365,6 +516,9 @@ export default {
       ensureThatUserHasRole(context, ["editor", "admin"]);
 
       const sanitizedInput = sanitizeDashboardInput(dashboard);
+      await ensureDashboardPayloadAllowedByExecutionMode({
+        inputDashboard: sanitizedInput,
+      });
       const visibility = await resolveCreateVisibility(sanitizedInput, context);
       delete sanitizedInput.visibility;
 
@@ -398,6 +552,10 @@ export default {
       ensureDashboardEditable(existing, context);
 
       const sanitizedInput = sanitizeDashboardInput(dashboard);
+      await ensureDashboardPayloadAllowedByExecutionMode({
+        inputDashboard: sanitizedInput,
+        existingDashboard: existing,
+      });
       const updatePayload = { ...sanitizedInput };
 
       if (Object.prototype.hasOwnProperty.call(sanitizedInput, "visibility")) {
@@ -409,9 +567,13 @@ export default {
           nextVisibility,
         });
         updatePayload.visibility = nextVisibility;
+        const shouldExposeExternally =
+          EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES.has(nextVisibility);
+        const shouldRotateShareToken =
+          shouldExposeExternally && previousVisibility === "private";
         if (
-          EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES.has(nextVisibility) &&
-          !existing.shareToken
+          shouldExposeExternally &&
+          (shouldRotateShareToken || !existing.shareToken)
         ) {
           updatePayload.shareToken = generateShareToken();
         }
@@ -475,16 +637,22 @@ export default {
         previousVisibility,
         nextVisibility,
       });
+      const shouldExposeExternally =
+        EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES.has(nextVisibility);
+      const shouldRotateShareToken =
+        shouldExposeExternally && previousVisibility === "private";
+      const shareTokenUpdate =
+        shouldExposeExternally &&
+        (shouldRotateShareToken || !existing.shareToken)
+          ? { shareToken: generateShareToken() }
+          : {};
 
       const updated = await Dashboard.findOneAndUpdate(
         { _id },
         {
           $set: {
             visibility: nextVisibility,
-            ...(EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES.has(nextVisibility) &&
-            !existing.shareToken
-              ? { shareToken: generateShareToken() }
-              : {}),
+            ...shareTokenUpdate,
           },
         },
         { new: true, runValidators: true }

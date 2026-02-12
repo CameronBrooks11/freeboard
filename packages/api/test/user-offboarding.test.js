@@ -46,7 +46,7 @@ test("adminDeleteUser reassigns owned dashboards and removes stale ACL access", 
             _id: "target-user",
             email: "target@example.com",
             role: "editor",
-            active: true,
+            active: false,
           }
         : null
     );
@@ -57,7 +57,7 @@ test("adminDeleteUser reassigns owned dashboards and removes stale ACL access", 
             _id: "target-user",
             email: "target@example.com",
             role: "editor",
-            active: true,
+            active: false,
           }
         : null
     );
@@ -123,6 +123,30 @@ test("adminDeleteUser reassigns owned dashboards and removes stale ACL access", 
   assert.deepEqual(aclOnlyUpdate.update.$set.acl, [
     { userId: "editor-2", accessLevel: "editor" },
   ]);
+});
+
+test("adminDeleteUser rejects permanent deletion for active users", async () => {
+  User.findOne = ({ _id }) =>
+    asLean(
+      _id === "target-user"
+        ? {
+            _id: "target-user",
+            email: "target@example.com",
+            role: "viewer",
+            active: true,
+          }
+        : null
+    );
+
+  await assert.rejects(
+    () =>
+      UserResolvers.Mutation.adminDeleteUser(
+        null,
+        { _id: "target-user" },
+        { user: { _id: "admin-1", role: "admin", active: true } }
+      ),
+    /Deactivate the user account before permanent deletion/
+  );
 });
 
 test("deleteMyUserAccount blocks removal when no fallback admin exists for owned dashboards", async () => {

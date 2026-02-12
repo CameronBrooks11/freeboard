@@ -4,13 +4,14 @@
  */
 
 import { defineStore } from "pinia";
-import renderComponent from "../render";
-import { Dashboard } from "../models/Dashboard";
+import renderComponent from "../render.js";
+import { Dashboard } from "../models/Dashboard.js";
 import router from "../router";
 import { usePreferredColorScheme } from "@vueuse/core";
-import { validateWidgetPlugin } from "../widgets/runtime/plugin";
-import { disposeDashboardAssets } from "../dashboardAssets";
-import { normalizeCreateDashboardPayload } from "../auth/publishPolicy";
+import { validateWidgetPlugin } from "../widgets/runtime/plugin.js";
+import { disposeDashboardAssets } from "../dashboardAssets.js";
+import { normalizeCreateDashboardPayload } from "../auth/publishPolicy.js";
+import { setRuntimeExecutionMode } from "../executionPolicy.js";
 
 const DEFAULT_PUBLIC_AUTH_POLICY = Object.freeze({
   registrationMode: "disabled",
@@ -23,6 +24,29 @@ const DEFAULT_PUBLIC_AUTH_POLICY = Object.freeze({
 });
 
 const EDITOR_ROLES = new Set(["editor", "admin"]);
+const SETTINGS_STORAGE_KEY = "freeboard";
+
+const getSessionStorage = () => {
+  try {
+    if (typeof globalThis.sessionStorage !== "undefined") {
+      return globalThis.sessionStorage;
+    }
+  } catch {
+    // Ignore storage access failures.
+  }
+  return null;
+};
+
+const getLocalStorage = () => {
+  try {
+    if (typeof globalThis.localStorage !== "undefined") {
+      return globalThis.localStorage;
+    }
+  } catch {
+    // Ignore storage access failures.
+  }
+  return null;
+};
 
 const decodeBase64 = (value) => {
   if (typeof globalThis.atob === "function") {
@@ -138,6 +162,7 @@ export const useFreeboardStore = defineStore("freeboard", {
     setPublicAuthPolicy(policy) {
       const previousExecutionMode = this.publicAuthPolicy.executionMode;
       this.publicAuthPolicy = normalizePublicAuthPolicy(policy);
+      setRuntimeExecutionMode(this.publicAuthPolicy.executionMode);
       if (
         previousExecutionMode !== this.publicAuthPolicy.executionMode &&
         this.dashboard
@@ -218,7 +243,12 @@ export const useFreeboardStore = defineStore("freeboard", {
      *
      */
     loadSettingsFromLocalStorage() {
-      const item = localStorage.getItem("freeboard");
+      const sessionStorageRef = getSessionStorage();
+      const localStorageRef = getLocalStorage();
+      const item =
+        sessionStorageRef?.getItem(SETTINGS_STORAGE_KEY) ??
+        localStorageRef?.getItem(SETTINGS_STORAGE_KEY) ??
+        null;
       if (!item) {
         this.token = null;
         this.currentUser = null;
@@ -233,8 +263,19 @@ export const useFreeboardStore = defineStore("freeboard", {
       } catch {
         this.token = null;
         this.currentUser = null;
-        localStorage.removeItem("freeboard");
+        sessionStorageRef?.removeItem(SETTINGS_STORAGE_KEY);
+        localStorageRef?.removeItem(SETTINGS_STORAGE_KEY);
       }
+
+      // Migrate any legacy localStorage session token into sessionStorage.
+      if (sessionStorageRef && localStorageRef) {
+        const legacyItem = localStorageRef.getItem(SETTINGS_STORAGE_KEY);
+        if (legacyItem) {
+          sessionStorageRef.setItem(SETTINGS_STORAGE_KEY, legacyItem);
+          localStorageRef.removeItem(SETTINGS_STORAGE_KEY);
+        }
+      }
+
       this.hydrateSessionFromToken();
       this.syncEditingPermissions();
       // TODO: Sync with local limited, use indexdb
@@ -264,7 +305,12 @@ export const useFreeboardStore = defineStore("freeboard", {
         settings.dashboard = this.dashboard.serialize();
       }
       */
-     localStorage.setItem("freeboard", JSON.stringify(settings));
+      const sessionStorageRef = getSessionStorage();
+      const localStorageRef = getLocalStorage();
+      const serialized = JSON.stringify(settings);
+
+      sessionStorageRef?.setItem(SETTINGS_STORAGE_KEY, serialized);
+      localStorageRef?.removeItem(SETTINGS_STORAGE_KEY);
     },
 
     /**

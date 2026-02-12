@@ -7,6 +7,7 @@ import InviteToken from "../src/models/InviteToken.js";
 import Policy from "../src/models/Policy.js";
 import User from "../src/models/User.js";
 import UserResolvers from "../src/resolvers/User.js";
+import { resetLoginThrottleState } from "../src/loginThrottle.js";
 
 const asLean = (value) => ({
   lean: async () => value,
@@ -17,6 +18,7 @@ const originalMethods = {
   userFindOne: User.findOne,
   userEstimateCount: User.estimatedDocumentCount,
   userCountDocuments: User.countDocuments,
+  userFindOneAndUpdate: User.findOneAndUpdate,
   userPrototypeSave: User.prototype.save,
   inviteFindOne: InviteToken.findOne,
 };
@@ -43,8 +45,10 @@ afterEach(() => {
   User.findOne = originalMethods.userFindOne;
   User.estimatedDocumentCount = originalMethods.userEstimateCount;
   User.countDocuments = originalMethods.userCountDocuments;
+  User.findOneAndUpdate = originalMethods.userFindOneAndUpdate;
   User.prototype.save = originalMethods.userPrototypeSave;
   InviteToken.findOne = originalMethods.inviteFindOne;
+  resetLoginThrottleState();
 });
 
 test("registerUser rejects when registration mode is disabled", async () => {
@@ -117,6 +121,7 @@ test("registerUser respects open mode and default role policy", async () => {
   assert.equal(payload.email, "editor.user@example.com");
   assert.equal(payload.role, "editor");
   assert.equal(payload.admin, false);
+  assert.equal(payload.sv, 0);
 });
 
 test("authUser returns explicit deactivation message for inactive users", async () => {
@@ -192,5 +197,93 @@ test("acceptInvite rejects invalid or expired token", async () => {
         password: "StrongPass123!",
       }),
     /invalid or expired/i
+  );
+});
+
+test("adminUpdateUser increments sessionVersion when role or active changes", async () => {
+  let updatePayload = null;
+  User.findOne = ({ _id }) =>
+    asLean(
+      _id === "user-1"
+        ? {
+            _id: "user-1",
+            email: "editor@example.com",
+            role: "editor",
+            active: true,
+          }
+        : null
+    );
+  User.findOneAndUpdate = (filter, update) => {
+    assert.deepEqual(filter, { _id: "user-1" });
+    updatePayload = update;
+    return asLean({
+      _id: "user-1",
+      email: "editor@example.com",
+      role: "viewer",
+      active: false,
+      sessionVersion: 1,
+    });
+  };
+
+  const result = await UserResolvers.Mutation.adminUpdateUser(
+    null,
+    { _id: "user-1", role: "viewer", active: false },
+    { user: { _id: "admin-1", role: "admin", active: true } }
+  );
+
+  assert.deepEqual(updatePayload, {
+    $set: {
+      role: "viewer",
+      active: false,
+    },
+    $inc: { sessionVersion: 1 },
+  });
+  assert.equal(result.active, false);
+  assert.equal(result.role, "viewer");
+});
+
+test("authUser throttles repeated failed login attempts", async () => {
+  const passwordHash = bcrypt.hashSync("StrongPass123!", 8);
+  User.findOne = () =>
+    asLean({
+      _id: "user-1",
+      email: "user@example.com",
+      role: "viewer",
+      active: true,
+      sessionVersion: 0,
+      password: passwordHash,
+    });
+  User.findOneAndUpdate = () => asLean(null);
+
+  for (let i = 0; i < 5; i += 1) {
+    await assert.rejects(
+      () =>
+        UserResolvers.Mutation.authUser(
+          null,
+          {
+            email: "user@example.com",
+            password: "wrong-pass",
+          },
+          {
+            clientIp: "10.0.0.8",
+          }
+        ),
+      /Invalid credentials/
+    );
+  }
+
+  await assert.rejects(
+    () =>
+      UserResolvers.Mutation.authUser(
+        null,
+        {
+          email: "user@example.com",
+          password: "wrong-pass",
+        },
+        {
+          clientIp: "10.0.0.8",
+        }
+      ),
+    /Too many login attempts/
   );
 });

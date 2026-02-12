@@ -5,12 +5,14 @@ After=docker.service
 
 [Service]
 Type=simple
-User=root
-WorkingDirectory=/home/pi/freeboard
+User={{ freeboard_service_user }}
+WorkingDirectory={{ freeboard_repo_dir }}
 Environment=FREEBOARD_PLAYER_URL={{ freeboard_player_url }}
-Environment=FREEBOARD_USER=root
-ExecStart=/usr/bin/bash player.sh
+Environment=FREEBOARD_USER={{ freeboard_service_user }}
+ExecStart=/usr/bin/bash {{ freeboard_repo_dir }}/player.sh
+NoNewPrivileges=true
 Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

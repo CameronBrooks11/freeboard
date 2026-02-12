@@ -16,9 +16,11 @@ import { MAX_COLUMNS, MIN_COLUMNS } from "./models/Dashboard";
  * @param {string} dashboard.settings.style     - Custom CSS style.
  * @param {string} dashboard.settings.script    - Custom JS script.
  * @param {Array<string>} dashboard.settings.resources - External resource URLs.
+ * @param {boolean} [allowTrustedExecution=true] - Whether trusted script/resource settings are editable.
  * @returns {Array<Object>} Array of settings sections for the UI form.
  */
-export default (dashboard) => [
+export default (dashboard, { allowTrustedExecution = true } = {}) => {
+  const fields = [
   // General settings: title and columns
     {
       label: "form.labelGeneral",
@@ -78,6 +80,13 @@ export default (dashboard) => [
         },
       ],
     },
+  ];
+
+  if (!allowTrustedExecution) {
+    return fields;
+  }
+
+  fields.push(
     // Style settings: custom CSS
     {
       label: "form.labelStyle",
@@ -142,5 +151,8 @@ export default (dashboard) => [
           ],
         },
       ],
-    },
-];
+    }
+  );
+
+  return fields;
+};

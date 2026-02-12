@@ -25,6 +25,7 @@ jobs:
       non_docs: ${{ steps.classify.outputs.non_docs }}
       run_api_tests: ${{ steps.classify.outputs.run_api_tests }}
       run_ui_tests: ${{ steps.classify.outputs.run_ui_tests }}
+      run_proxy_tests: ${{ steps.classify.outputs.run_proxy_tests }}
       run_build_verify: ${{ steps.classify.outputs.run_build_verify }}
     steps:
       - name: Checkout
@@ -95,6 +96,11 @@ jobs:
             run_ui_tests=true
           fi
 
+          run_proxy_tests=false
+          if [[ "$proxy" == "true" || "$shared" == "true" ]]; then
+            run_proxy_tests=true
+          fi
+
           run_build_verify=false
           if [[ "$api" == "true" || "$ui" == "true" || "$proxy" == "true" || "$shared" == "true" ]]; then
             run_build_verify=true
@@ -104,6 +110,7 @@ jobs:
           echo "non_docs=$non_docs" >> "$GITHUB_OUTPUT"
           echo "run_api_tests=$run_api_tests" >> "$GITHUB_OUTPUT"
           echo "run_ui_tests=$run_ui_tests" >> "$GITHUB_OUTPUT"
+          echo "run_proxy_tests=$run_proxy_tests" >> "$GITHUB_OUTPUT"
           echo "run_build_verify=$run_build_verify" >> "$GITHUB_OUTPUT"
 
           echo "CI classification:"
@@ -111,6 +118,7 @@ jobs:
           echo "  non_docs=$non_docs"
           echo "  run_api_tests=$run_api_tests"
           echo "  run_ui_tests=$run_ui_tests"
+          echo "  run_proxy_tests=$run_proxy_tests"
           echo "  run_build_verify=$run_build_verify"
 
   lint:
@@ -170,6 +178,25 @@ jobs:
       - name: Run UI tests
         run: npm run test:ui
 
+  test-proxy:
+    name: Test Proxy
+    needs: changes
+    if: needs.changes.outputs.run_proxy_tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Run proxy tests
+        run: npm run test:proxy
+
   build-verify:
     name: Build verify
     needs: changes
@@ -197,6 +224,7 @@ jobs:
       - lint
       - test-api
       - test-ui
+      - test-proxy
       - build-verify
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -226,6 +254,7 @@ jobs:
           check_required "${{ needs.changes.outputs.non_docs }}" "${{ needs.lint.result }}" "lint"
           check_required "${{ needs.changes.outputs.run_api_tests }}" "${{ needs.test-api.result }}" "test-api"
           check_required "${{ needs.changes.outputs.run_ui_tests }}" "${{ needs.test-ui.result }}" "test-ui"
+          check_required "${{ needs.changes.outputs.run_proxy_tests }}" "${{ needs.test-proxy.result }}" "test-proxy"
           check_required "${{ needs.changes.outputs.run_build_verify }}" "${{ needs.build-verify.result }}" "build-verify"
 
           if [[ "$status" -ne 0 ]]; then

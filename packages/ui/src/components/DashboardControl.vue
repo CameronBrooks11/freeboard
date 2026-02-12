@@ -19,7 +19,12 @@ const freeboardStore = useFreeboardStore();
 const { dashboard } = storeToRefs(freeboardStore);
 
 // Inline settings schema and current values
-const fields = computed(() => createSettings(dashboard.value)[0].fields);
+const fields = computed(
+  () =>
+    createSettings(dashboard.value, {
+      allowTrustedExecution: freeboardStore.isTrustedExecutionMode(),
+    })[0].fields
+);
 const settings = ref({});
 
 // Sync settings when the dashboard object changes

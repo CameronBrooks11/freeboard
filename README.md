@@ -18,8 +18,8 @@ This Freeboard is a fork of [Jim Heising's damn-sexy dashboard app](https://gith
 
 ## Requirements
 
-- Node.js: v18.x (LTS)
-- npm: v8+
+- Node.js: v20.x (LTS)
+- npm: v10+
 - Docker Engine: ≥ 20.10
 - Docker Compose: v2 (`docker compose` CLI)
 - Python: 3.8+ (for Raspberry Pi Ansible playbook)
@@ -30,7 +30,7 @@ This Freeboard is a fork of [Jim Heising's damn-sexy dashboard app](https://gith
 ```bash
 git clone git@github.com:CameronBrooks11/freeboard.git
 cd freeboard
-git checkout dev
+git checkout main
 npm install
 ```
 
@@ -52,6 +52,9 @@ docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
 For containerized production mode, set these in `.env` first:
 - `JWT_SECRET` (API required)
 - `PROXY_ALLOWED_HOSTS` (Proxy required allowlist)
+- `FREEBOARD_MONGO_URL` (API required Mongo connection string)
+- `MONGO_INITDB_ROOT_USERNAME` / `MONGO_INITDB_ROOT_PASSWORD` (Mongo bootstrap)
+- `MONGO_APP_USERNAME` / `MONGO_APP_PASSWORD` (application DB account)
 
 ### Development
 
@@ -98,14 +101,14 @@ npm run build:verify
 ### CI Workflows
 
 - `CI` (`.github/workflows/ci.yml`)
-  - Trigger: pull requests to `dev` (and merge queue/manual dispatch).
+  - Trigger: pull requests to `main` (and merge queue/manual dispatch).
   - Path-aware: docs-only changes skip heavy lint/test/build jobs.
   - Required check job: `Required CI` (stable branch-protection target).
 - `Deploy to GitHub Pages` (`.github/workflows/build-pages.yml`)
-  - Trigger: push to `dev` for docs/demo-relevant paths only.
+  - Trigger: push to `main` for docs/demo-relevant paths only.
   - Uses concurrency cancellation by branch/ref.
 - `Build & publish docker images` (`.github/workflows/build-docker-images.yml`)
-  - Trigger: push to `dev` and manual dispatch.
+  - Trigger: push to `main` and manual dispatch.
   - Matrix builds skip unchanged packages.
   - Concurrency auto-cancel is intentionally disabled to avoid missing publishes during rapid sequential pushes.
 

@@ -66,20 +66,21 @@ Core env values:
 - API and Proxy are hardened for production behavior when `NODE_ENV=production`.
 - Container artifacts default to production mode.
 - Docker Compose startup is fail-fast for missing critical env:
+  - API requires `FREEBOARD_MONGO_URL`
   - API requires `JWT_SECRET`
   - Proxy requires `PROXY_ALLOWED_HOSTS`
 
 ## CI Topology
 
 - Required PR workflow: `.github/workflows/ci.yml`
-  - Jobs: `changes` -> conditional `lint`, `test-api`, `test-ui`, `build-verify` -> always-run `Required CI`.
+  - Jobs: `changes` -> conditional `lint`, `test-api`, `test-ui`, `test-proxy`, `build-verify` -> always-run `Required CI`.
   - Concurrency: cancels superseded PR runs using PR-number/ref keyed group.
   - Required check target for branch protection: `Required CI`.
 - Pages workflow: `.github/workflows/build-pages.yml`
-  - Runs only on docs/demo-relevant path changes on `dev`.
+  - Runs only on docs/demo-relevant path changes on `main`.
   - Concurrency cancellation enabled per ref.
 - Docker publish workflow: `.github/workflows/build-docker-images.yml`
-  - Runs on push to `dev` and manual dispatch.
-  - Per-package diff detection skips unchanged matrix entries.
+  - Runs on push to `main` and manual dispatch.
+  - Per-package diff detection skips unchanged matrix entries while still rebuilding on shared dependency/lockfile changes.
   - Manual dispatch forces full rebuild intentionally.
   - Concurrency cancellation is intentionally disabled to avoid skipped publishes on rapid sequential pushes.

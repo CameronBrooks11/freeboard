@@ -568,7 +568,12 @@ const issueResetToken = async (user) => {
               <button type="button" :disabled="isBusy" @click="issueResetToken(user)">
                 {{ $t("admin.issueResetToken") }}
               </button>
-              <button type="button" :disabled="isBusy" @click="deleteUser(user)">
+              <button
+                type="button"
+                :disabled="isBusy || user.active"
+                :title="user.active ? $t('admin.deactivateBeforeDelete') : ''"
+                @click="deleteUser(user)"
+              >
                 {{ $t("admin.deleteUser") }}
               </button>
             </td>

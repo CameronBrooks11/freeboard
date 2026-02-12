@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     container_name: freeboard-ui
     ports:
-      - 8080:80
+      - 8080:8080
     networks:
       - freeboard
     depends_on:
@@ -16,7 +16,7 @@ services:
     container_name: freeboard-api
     image: ghcr.io/cameronbrooks11/freeboard-api:dev
     environment:
-      - MONGO_URL=${FREEBOARD_MONGO_URL:-mongodb://freeboard:unsecure@freeboard-mongo:27017/freeboard}
+      - MONGO_URL=${FREEBOARD_MONGO_URL:?Set FREEBOARD_MONGO_URL in .env for containerized deployments}
       - NODE_ENV=${FREEBOARD_RUNTIME_ENV:-production}
       - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env for containerized deployments}
       - JWT_TIME_EXPIRATION=${JWT_TIME_EXPIRATION:-2h}

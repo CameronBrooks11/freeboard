@@ -17,13 +17,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - context: ./packages/api
+          - context: .
+            dockerfile: ./packages/api/Dockerfile
+            package_path: packages/api
             image: ghcr.io/CameronBrooks11/freeboard-api
             name: api
-          - context: ./packages/proxy
+          - context: .
+            dockerfile: ./packages/proxy/Dockerfile
+            package_path: packages/proxy
             image: ghcr.io/CameronBrooks11/freeboard-proxy
             name: proxy
-          - context: ./packages/ui
+          - context: .
+            dockerfile: ./packages/ui/Dockerfile
+            package_path: packages/ui
             image: ghcr.io/CameronBrooks11/freeboard-ui
             name: ui
 
@@ -41,10 +47,10 @@ jobs:
         id: changes
         shell: bash
         run: |
-          echo "Checking for changes in ${{ matrix.context }} for event '${{ github.event_name }}'"
+          echo "Checking for changes in ${{ matrix.package_path }} for event '${{ github.event_name }}'"
 
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "Manual dispatch: forcing rebuild for ${{ matrix.context }}"
+            echo "Manual dispatch: forcing rebuild for ${{ matrix.package_path }}"
             echo "changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -63,14 +69,34 @@ jobs:
             fi
           fi
 
-          CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA" -- "${{ matrix.context }}")"
-          if [[ -z "$CHANGED_FILES" ]]; then
-            echo "No changes in ${{ matrix.context }}"
+          mapfile -t CHANGED_FILES < <(git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA")
+          if [[ "${#CHANGED_FILES[@]}" -eq 0 ]]; then
+            echo "No changed files detected."
             echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Changes detected in ${{ matrix.context }}:"
-            echo "$CHANGED_FILES"
+            exit 0
+          fi
+
+          PACKAGE_CHANGED=false
+          for file in "${CHANGED_FILES[@]}"; do
+            if [[ "$file" == "${{ matrix.package_path }}"/* ]]; then
+              PACKAGE_CHANGED=true
+              break
+            fi
+            case "$file" in
+              package.json|package-lock.json|.dockerignore)
+                PACKAGE_CHANGED=true
+                break
+                ;;
+            esac
+          done
+
+          if [[ "$PACKAGE_CHANGED" == "true" ]]; then
+            echo "Changes detected affecting ${{ matrix.package_path }} build."
+            printf '%s\n' "${CHANGED_FILES[@]}"
             echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No relevant changes for ${{ matrix.package_path }}."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Docker
@@ -110,7 +136,7 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
           context: ${{ matrix.context }}
-          file: ${{ matrix.context }}/Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

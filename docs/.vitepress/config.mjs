@@ -28,6 +28,7 @@ export default defineConfig({
             { text: "Manual Home", link: "/manual/" },
             { text: "Installation", link: "/manual/installation" },
             { text: "Usage", link: "/manual/usage" },
+            { text: "Deployment Profiles", link: "/manual/deployment-profiles" },
           ],
         },
         {

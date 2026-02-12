@@ -40,6 +40,7 @@ test("user model accepts valid credentials at schema validation", () => {
   const validationError = user.validateSync();
   assert.equal(validationError, undefined);
   assert.equal(user.role, "viewer");
+  assert.equal(user.sessionVersion, 0);
 });
 
 test("user model rejects unsupported role values", () => {

@@ -1,0 +1,16 @@
+.git
+.github
+.vscode
+
+node_modules
+**/node_modules
+
+docs/.vitepress/dist
+packages/ui/dist
+
+npm-debug.log*
+.DS_Store
+
+.env
+.env.*
+!.env.example

@@ -35,6 +35,12 @@ import {
   normalizeEmail,
 } from "../validators.js";
 import { generateOneTimeToken, hashOneTimeToken } from "../tokenSecurity.js";
+import {
+  buildLoginThrottleKey,
+  clearLoginThrottle,
+  getLoginThrottleState,
+  recordFailedLoginAttempt,
+} from "../loginThrottle.js";
 
 const credentialPolicy = getCredentialPolicyHints();
 const roleSortPriority = Object.freeze({
@@ -269,6 +275,23 @@ const ensureEmailIsValid = (email) => {
   }
 };
 
+const toSessionVersion = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+  return Math.max(0, Math.floor(parsed));
+};
+
+const issueUserAuthToken = (user) =>
+  createAuthToken(
+    user.email,
+    user.role,
+    user.active,
+    user._id,
+    toSessionVersion(user.sessionVersion)
+  );
+
 const findActiveInviteByToken = async (token) => {
   const tokenHash = hashOneTimeToken(token);
   const now = new Date();
@@ -460,7 +483,7 @@ export default /** @type {IResolvers} */ {
       });
 
       return {
-        token: createAuthToken(user.email, user.role, user.active, user._id),
+        token: issueUserAuthToken(user),
       };
     },
 
@@ -524,7 +547,7 @@ export default /** @type {IResolvers} */ {
       });
 
       return {
-        token: createAuthToken(user.email, user.role, user.active, user._id),
+        token: issueUserAuthToken(user),
       };
     },
 
@@ -536,20 +559,66 @@ export default /** @type {IResolvers} */ {
      * @returns {Promise<{ token: string }>} Signed JWT for the authenticated user.
      * @throws {GraphQLError} When credentials are invalid or user not found.
      */
-    authUser: async (parent, { email, password }) => {
+    authUser: async (parent, { email, password }, context) => {
       if (!email || !password) {
         throw createGraphQLError("Invalid credentials");
       }
 
       const normalizedEmail = normalizeEmail(email);
+      const throttleKey = buildLoginThrottleKey(normalizedEmail, context?.clientIp);
+      const throttleState = getLoginThrottleState(throttleKey);
+      if (throttleState.blocked) {
+        const retryAfterSeconds = Math.max(
+          1,
+          Math.ceil(throttleState.retryAfterMs / 1000)
+        );
+        await recordAuditEvent({
+          actorUserId: null,
+          action: "auth.login.blocked",
+          targetType: "user",
+          targetId: null,
+          metadata: {
+            email: normalizedEmail,
+            clientIp: context?.clientIp || null,
+            retryAfterSeconds,
+          },
+        });
+        throw createGraphQLError(
+          `Too many login attempts. Try again in ${retryAfterSeconds} seconds.`,
+          {
+            extensions: { code: "TOO_MANY_REQUESTS" },
+          }
+        );
+      }
+
+      const registerFailure = async () => {
+        const failure = recordFailedLoginAttempt(throttleKey);
+        if (!failure.justLocked) {
+          return;
+        }
+        await recordAuditEvent({
+          actorUserId: null,
+          action: "auth.login.locked",
+          targetType: "user",
+          targetId: null,
+          metadata: {
+            email: normalizedEmail,
+            clientIp: context?.clientIp || null,
+            retryAfterSeconds: Math.max(1, Math.ceil(failure.retryAfterMs / 1000)),
+          },
+        });
+      };
+
       const user = await User.findOne({
         email: normalizedEmail,
       }).lean();
 
       if (!user) {
+        await registerFailure();
         throw createGraphQLError("Invalid credentials");
       }
       if (!user.active) {
+        await registerFailure();
         throw createGraphQLError(
           "Your account is deactivated. Contact an administrator.",
           {
@@ -560,8 +629,11 @@ export default /** @type {IResolvers} */ {
 
       const isCorrectPassword = await bcrypt.compare(password, user.password);
       if (!isCorrectPassword) {
+        await registerFailure();
         throw createGraphQLError("Invalid credentials");
       }
+
+      clearLoginThrottle(throttleKey);
 
       await User.findOneAndUpdate(
         { _id: user._id },
@@ -570,7 +642,7 @@ export default /** @type {IResolvers} */ {
       ).lean();
 
       return {
-        token: createAuthToken(user.email, user.role, user.active, user._id),
+        token: issueUserAuthToken(user),
       };
     },
 
@@ -652,6 +724,7 @@ export default /** @type {IResolvers} */ {
       }
 
       user.password = password;
+      user.sessionVersion = toSessionVersion(user.sessionVersion) + 1;
       await user.save();
 
       await PasswordResetToken.findOneAndUpdate(
@@ -865,6 +938,12 @@ export default /** @type {IResolvers} */ {
         return user;
       }
 
+      const roleChanged =
+        update.role !== undefined && update.role !== String(user.role || "");
+      const activeChanged =
+        update.active !== undefined && update.active !== Boolean(user.active);
+      const shouldRevokeSessions = roleChanged || activeChanged;
+
       if (String(_id) === String(context.user._id) && update.role && update.role !== "admin") {
         throw createGraphQLError("Administrators cannot demote themselves", {
           extensions: { code: "FORBIDDEN" },
@@ -878,9 +957,14 @@ export default /** @type {IResolvers} */ {
         await ensureAtLeastOneActiveAdminWillRemain(user._id);
       }
 
+      const updateDocument = {
+        $set: update,
+        ...(shouldRevokeSessions ? { $inc: { sessionVersion: 1 } } : {}),
+      };
+
       const updatedUser = await User.findOneAndUpdate(
         { _id },
-        { $set: update },
+        updateDocument,
         { new: true, runValidators: true }
       ).lean();
       if (!updatedUser) {
@@ -892,7 +976,10 @@ export default /** @type {IResolvers} */ {
         action: "user.admin_updated",
         targetType: "user",
         targetId: updatedUser._id,
-        metadata: { update },
+        metadata: {
+          update,
+          sessionsRevoked: shouldRevokeSessions,
+        },
       });
 
       return updatedUser;
@@ -919,6 +1006,14 @@ export default /** @type {IResolvers} */ {
       const user = await User.findOne({ _id }).lean();
       if (!user) {
         throw createGraphQLError("User not found or login not allowed");
+      }
+      if (user.active) {
+        throw createGraphQLError(
+          "Deactivate the user account before permanent deletion",
+          {
+            extensions: { code: "FORBIDDEN" },
+          }
+        );
       }
       if (user.role === "admin") {
         await ensureAtLeastOneActiveAdminWillRemain(user._id);

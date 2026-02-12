@@ -34,7 +34,11 @@ const { onClose, onOk } = defineProps({
 });
 
 // Compute tab fields schema from current dashboard settings
-const fields = computed(() => createSettings(dashboard.value));
+const fields = computed(() =>
+  createSettings(dashboard.value, {
+    allowTrustedExecution: freeboardStore.isTrustedExecutionMode(),
+  })
+);
 
 // Reference to the DialogBox for closing the modal programmatically
 const dialog = ref(null);

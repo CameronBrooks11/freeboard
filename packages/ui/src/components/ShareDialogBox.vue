@@ -11,10 +11,14 @@ import { storeToRefs } from "pinia";
 import DialogBox from "./DialogBox.vue";
 import { useFreeboardStore } from "../stores/freeboard";
 import router from "../router";
+import { buildFallbackSharePath } from "../sharePolicy";
 import {
-  buildFallbackSharePath,
-  isDashboardShareable,
-} from "../sharePolicy";
+  applyShareMutationPayloadToDashboard,
+  getCollaboratorInputError,
+  getOwnershipTransferInputError,
+  getShareMutationGuardError,
+  resolveShareDialogPermissions,
+} from "../shareDialogPolicy";
 import {
   DASHBOARD_COLLABORATORS_QUERY,
   DASHBOARD_REVOKE_ACCESS_MUTATION,
@@ -38,14 +42,17 @@ const transferTargetUserId = ref("");
 const statusMessage = ref("");
 const errorMessage = ref("");
 
-const canManageSharing = computed(
-  () => Boolean(dashboard.value?.canManageSharing) || !isSaved.value
-);
-const isShareableDashboard = computed(() =>
-  isDashboardShareable({
+const shareDialogPermissions = computed(() =>
+  resolveShareDialogPermissions({
     isSaved: isSaved.value,
-    dashboardId: dashboard.value?._id,
+    dashboard: dashboard.value,
   })
+);
+const canManageSharing = computed(
+  () => shareDialogPermissions.value.canManageSharing
+);
+const isShareableDashboard = computed(
+  () => shareDialogPermissions.value.isShareableDashboard
 );
 
 const {
@@ -112,35 +119,25 @@ const visibilityToEnum = (visibility) => String(visibility || "private").toUpper
 const accessLevelToEnum = (accessLevel) => String(accessLevel || "viewer").toUpperCase();
 
 const applyDashboardMutationPayload = (payload) => {
-  if (!payload || !dashboard.value) {
+  const applied = applyShareMutationPayloadToDashboard({
+    dashboard: dashboard.value,
+    payload,
+  });
+  if (!applied) {
     return;
   }
-  dashboard.value.visibility = payload.visibility || dashboard.value.visibility;
   visibilityDraft.value = dashboard.value.visibility;
-  dashboard.value.shareToken = payload.shareToken || null;
-  if (payload.canEdit !== undefined) {
-    dashboard.value.canEdit = Boolean(payload.canEdit);
-  }
-  if (payload.canManageSharing !== undefined) {
-    dashboard.value.canManageSharing = Boolean(payload.canManageSharing);
-  }
-  if (payload.user !== undefined) {
-    dashboard.value.user = payload.user;
-  }
-  if (Array.isArray(payload.acl)) {
-    dashboard.value.acl = payload.acl;
-  }
   freeboardStore.syncEditingPermissions();
 };
 
 const saveVisibility = async () => {
   clearMessages();
-  if (!isShareableDashboard.value) {
-    errorMessage.value = "Save the dashboard before configuring sharing.";
-    return;
-  }
-  if (!canManageSharing.value) {
-    errorMessage.value = "You do not have permission to manage sharing.";
+  const guardError = getShareMutationGuardError({
+    isShareableDashboard: isShareableDashboard.value,
+    canManageSharing: canManageSharing.value,
+  });
+  if (guardError) {
+    errorMessage.value = guardError;
     return;
   }
 
@@ -226,11 +223,19 @@ const copyShareLink = async () => {
 
 const addCollaborator = async () => {
   clearMessages();
-  if (!isShareableDashboard.value || !canManageSharing.value) {
+  const guardError = getShareMutationGuardError({
+    isShareableDashboard: isShareableDashboard.value,
+    canManageSharing: canManageSharing.value,
+  });
+  if (guardError) {
+    errorMessage.value = guardError;
     return;
   }
-  if (!collaboratorEmail.value) {
-    errorMessage.value = "Collaborator email is required.";
+  const inputError = getCollaboratorInputError({
+    collaboratorEmail: collaboratorEmail.value,
+  });
+  if (inputError) {
+    errorMessage.value = inputError;
     return;
   }
 
@@ -252,7 +257,12 @@ const addCollaborator = async () => {
 
 const removeCollaborator = async (userId) => {
   clearMessages();
-  if (!isShareableDashboard.value || !canManageSharing.value) {
+  const guardError = getShareMutationGuardError({
+    isShareableDashboard: isShareableDashboard.value,
+    canManageSharing: canManageSharing.value,
+  });
+  if (guardError) {
+    errorMessage.value = guardError;
     return;
   }
 
@@ -271,11 +281,19 @@ const removeCollaborator = async (userId) => {
 
 const transferOwnership = async () => {
   clearMessages();
-  if (!isShareableDashboard.value || !canManageSharing.value) {
+  const guardError = getShareMutationGuardError({
+    isShareableDashboard: isShareableDashboard.value,
+    canManageSharing: canManageSharing.value,
+  });
+  if (guardError) {
+    errorMessage.value = guardError;
     return;
   }
-  if (!transferTargetUserId.value) {
-    errorMessage.value = "Select a transfer target first.";
+  const inputError = getOwnershipTransferInputError({
+    transferTargetUserId: transferTargetUserId.value,
+  });
+  if (inputError) {
+    errorMessage.value = inputError;
     return;
   }
 

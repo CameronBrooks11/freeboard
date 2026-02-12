@@ -397,6 +397,81 @@ test("createDashboard falls back to private when default visibility is external 
   assert.equal(result.visibility, "private");
 });
 
+test("createDashboard rejects trusted dashboard settings while execution mode is safe", async () => {
+  stubPolicyValues({
+    "app.execution.mode": "safe",
+  });
+
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Mutation.createDashboard(
+        null,
+        {
+          dashboard: {
+            title: "Ops",
+            version: "1",
+            settings: {
+              script: "window.alert('x')",
+            },
+          },
+        },
+        { user: { _id: "editor-1", role: "editor" } }
+      ),
+    /Trusted dashboard settings require execution mode 'trusted'/
+  );
+});
+
+test("updateDashboard rejects trusted widget capability changes while execution mode is safe", async () => {
+  stubPolicyValues({
+    "app.execution.mode": "safe",
+  });
+  const existing = buildDashboardDoc({
+    _id: "dash-1",
+    user: "owner-1",
+    panes: [
+      {
+        widgets: [
+          {
+            id: "w-html",
+            type: "html",
+            settings: {
+              mode: "text",
+            },
+          },
+        ],
+      },
+    ],
+  });
+  Dashboard.findOne = () => asLean(existing);
+
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Mutation.updateDashboard(
+        null,
+        {
+          _id: "dash-1",
+          dashboard: {
+            panes: [
+              {
+                widgets: [
+                  {
+                    id: "w-html",
+                    type: "html",
+                    settings: {
+                      mode: "trusted_html",
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        { user: { _id: "owner-1", role: "editor" } }
+      ),
+    /Trusted widget capabilities require execution mode 'trusted'/
+  );
+});
+
 test("dashboards query includes public dashboards only when listing policy enabled", async () => {
   stubPolicyValues({
     "dashboard.listing.public.enabled": true,
@@ -425,6 +500,37 @@ test("dashboards query includes public dashboards only when listing policy enabl
   assert.equal(result.length, 2);
   assert.equal(result[0].visibility, "private");
   assert.equal(result[1].visibility, "public");
+});
+
+test("setDashboardVisibility rotates existing share token when re-exposing from private", async () => {
+  stubPolicyValues({
+    "auth.publish.editorCanPublish": true,
+  });
+  let dashboardState = buildDashboardDoc({
+    _id: "dash-1",
+    user: "owner-1",
+    visibility: "private",
+    shareToken: "legacy-share-token",
+  });
+  Dashboard.findOne = () => asLean(dashboardState);
+  Dashboard.findOneAndUpdate = (filter, update) => {
+    assert.deepEqual(filter, { _id: "dash-1" });
+    dashboardState = {
+      ...dashboardState,
+      ...update.$set,
+    };
+    return asLean(dashboardState);
+  };
+
+  const result = await DashboardResolvers.Mutation.setDashboardVisibility(
+    null,
+    { _id: "dash-1", visibility: "link" },
+    { user: { _id: "owner-1", role: "editor" } }
+  );
+
+  assert.equal(result.visibility, "link");
+  assert.ok(result.shareToken);
+  assert.notEqual(result.shareToken, "legacy-share-token");
 });
 
 test("transferDashboardOwnership assigns previous owner editor ACL", async () => {

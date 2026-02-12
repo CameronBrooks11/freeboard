@@ -9,9 +9,10 @@ Use this manual in two tracks:
 
 1. [Installation](/manual/installation)
 2. [Usage](/manual/usage)
-3. [Datasource Reference](/manual/datasource-reference)
-4. [Widget Reference](/manual/widget-reference)
-5. [Widget Examples](/manual/widget-examples/)
+3. [Deployment Profiles](/manual/deployment-profiles)
+4. [Datasource Reference](/manual/datasource-reference)
+5. [Widget Reference](/manual/widget-reference)
+6. [Widget Examples](/manual/widget-examples/)
 
 ## Build Custom Widgets
 

@@ -197,6 +197,7 @@ export const en = {
     saveUser: "Save",
     issueResetToken: "Issue Reset Token",
     deleteUser: "Delete",
+    deactivateBeforeDelete: "Deactivate the account before permanent deletion.",
   },
 
   share: {

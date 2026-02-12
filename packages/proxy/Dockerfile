@@ -1,22 +1,21 @@
-# Dockerfile for HTTP proxy service
+# syntax=docker/dockerfile:1.7
 
-# Use Node.js 18 Alpine image for lightweight container
-FROM node:18-alpine
+FROM node:20.11.1-alpine3.20 AS deps
+WORKDIR /app
 
-# Default secure runtime mode (can be overridden by environment)
+COPY package.json package-lock.json ./
+COPY packages/proxy/package.json packages/proxy/package.json
+RUN npm ci --omit=dev --workspace=packages/proxy --include-workspace-root=false \
+  && npm cache clean --force
+
+FROM node:20.11.1-alpine3.20 AS runtime
 ENV NODE_ENV=production
+WORKDIR /app
 
-# Set working directory inside the container
-WORKDIR /usr/app
+COPY --from=deps /app/node_modules ./node_modules
+COPY packages/proxy ./packages/proxy
+RUN chown -R node:node /app
 
-# Copy source files into the container
-COPY ./ /usr/app
-
-# Install dependencies
-RUN npm install
-
-# Expose OAuth proxy HTTP port
+USER node
 EXPOSE 8001
-
-# Command to start the OAuth proxy service
-CMD [ "npm", "run", "start" ]
+CMD ["node", "packages/proxy/src/index.js"]

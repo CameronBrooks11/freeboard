@@ -1,1 +1,6 @@
 freeboard_player_url: http://localhost:8080
+freeboard_deploy_user: "{{ lookup('env', 'FREEBOARD_DEPLOY_USER') | default(lookup('env', 'USER'), true) }}"
+freeboard_service_user: "{{ lookup('env', 'FREEBOARD_SERVICE_USER') | default(freeboard_deploy_user, true) }}"
+freeboard_repo_dir: "{{ lookup('env', 'FREEBOARD_REPO_DIR') | default('/home/' ~ freeboard_deploy_user ~ '/freeboard', true) }}"
+mongo_arm_tar_url: "https://github.com/themattman/mongodb-raspberrypi-docker/releases/download/r7.0.4-mongodb-raspberrypi-docker-unofficial/mongodb.ce.pi4.r7.0.4-mongodb-raspberrypi-docker-unofficial.tar.gz"
+mongo_arm_tar_path: "/tmp/mongodb.ce.pi4.r7.0.4.tar.gz"

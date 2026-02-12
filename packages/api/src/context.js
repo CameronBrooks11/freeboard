@@ -45,12 +45,21 @@ import Dashboard from "./models/Dashboard.js";
  * @returns {Promise<Context>}       The context object passed to all resolvers.
  */
 export const setContext = async ({ req }) => {
+  const forwardedForHeader = req?.headers?.["x-forwarded-for"];
+  const forwardedFor =
+    typeof forwardedForHeader === "string"
+      ? forwardedForHeader.split(",")[0]?.trim() || null
+      : null;
+  const clientIp =
+    forwardedFor || req?.socket?.remoteAddress || req?.ip || null;
+
   const context = {
     pubsub: createPubSub(),
     models: {
       Dashboard,
       User,
     },
+    clientIp,
   };
 
   // Extract the Authorization header
@@ -72,6 +81,13 @@ export const setContext = async ({ req }) => {
       if (!persistedUser) {
         return context;
       }
+      const persistedSessionVersion = Number(
+        persistedUser.sessionVersion === undefined ? 0 : persistedUser.sessionVersion
+      );
+      const tokenSessionVersion = Number(user?.sv === undefined ? 0 : user.sv);
+      if (persistedSessionVersion !== tokenSessionVersion) {
+        return context;
+      }
       const normalizedRole =
         typeof persistedUser?.role === "string"
           ? persistedUser.role.toLowerCase()
@@ -85,6 +101,7 @@ export const setContext = async ({ req }) => {
         active: persistedUser.active,
         role: normalizedRole,
         admin: normalizedRole === "admin",
+        sessionVersion: persistedSessionVersion,
       };
     } catch (e) {
       // Invalid token: log and continue without user

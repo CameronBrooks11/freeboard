@@ -1,22 +1,21 @@
-# Dockerfile for Freeboard API service
+# syntax=docker/dockerfile:1.7
 
-# Use official Node.js 18 Alpine image for a lightweight runtime
-FROM node:18-alpine
+FROM node:20.11.1-alpine3.20 AS deps
+WORKDIR /app
 
-# Default secure runtime mode (can be overridden by environment)
+COPY package.json package-lock.json ./
+COPY packages/api/package.json packages/api/package.json
+RUN npm ci --omit=dev --workspace=packages/api --include-workspace-root=false \
+  && npm cache clean --force
+
+FROM node:20.11.1-alpine3.20 AS runtime
 ENV NODE_ENV=production
+WORKDIR /app
 
-# Set working directory inside the container
-WORKDIR /usr/app
+COPY --from=deps /app/node_modules ./node_modules
+COPY packages/api ./packages/api
+RUN chown -R node:node /app
 
-# Copy all source files into the working directory
-COPY ./ /usr/app
-
-# Install project dependencies
-RUN npm install
-
-# Expose the port the API listens on
+USER node
 EXPOSE 4001
-
-# Default command to start the API server
-CMD [ "npm", "run", "start" ]
+CMD ["node", "packages/api/src/index.js"]

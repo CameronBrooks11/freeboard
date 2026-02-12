@@ -108,7 +108,7 @@ const run = async () => {
   }
 
   console.log(
-    `[phase3-cutover] dashboards=${dashboards.length} pending_updates=${changed} apply=${options.apply}`
+    `[dashboard-visibility-migrate] dashboards=${dashboards.length} pending_updates=${changed} apply=${options.apply}`
   );
 
   if (options.apply) {
@@ -121,16 +121,21 @@ const run = async () => {
         { strict: false }
       );
     }
-    console.log("[phase3-cutover] updates applied successfully");
+    console.log("[dashboard-visibility-migrate] updates applied successfully");
   } else {
-    console.log("[phase3-cutover] dry run only. Re-run with --apply to persist.");
+    console.log(
+      "[dashboard-visibility-migrate] dry run only. Re-run with --apply to persist."
+    );
   }
 
   await mongoose.disconnect();
 };
 
 run().catch(async (error) => {
-  console.error("[phase3-cutover] failed:", error?.message || error);
+  console.error(
+    "[dashboard-visibility-migrate] failed:",
+    error?.message || error
+  );
   try {
     await mongoose.disconnect();
   } catch {

@@ -107,9 +107,16 @@ export const getUser = async (context) => {
  * @param {string} role        - User role.
  * @param {boolean} active     - Whether the user account is active.
  * @param {string} _id         - User document _id.
+ * @param {number} [sessionVersion=0] - Session version for revocation checks.
  * @returns {string}           Signed JWT token.
  */
-export const createAuthToken = (email, role, active, _id) => {
+export const createAuthToken = (
+  email,
+  role,
+  active,
+  _id,
+  sessionVersion = 0
+) => {
   const normalizedRole = String(role || "").toLowerCase();
   return jwt.sign(
     {
@@ -118,6 +125,9 @@ export const createAuthToken = (email, role, active, _id) => {
       admin: normalizedRole === "admin",
       active,
       _id,
+      sv: Number.isFinite(Number(sessionVersion))
+        ? Math.max(0, Math.floor(Number(sessionVersion)))
+        : 0,
     },
     config.jwtSecret,
     {

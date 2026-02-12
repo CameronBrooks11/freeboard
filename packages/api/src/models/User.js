@@ -43,6 +43,7 @@ ObjectId.prototype.valueOf = function () {
  * @property {string} password        - Hashed user password.
  * @property {string} role            - User role (`viewer|editor|admin`).
  * @property {boolean} active         - Whether the user account is active.
+ * @property {number} sessionVersion  - Incrementing auth session version for token revocation.
  * @property {Date} registrationDate  - Date when the user registered.
  * @property {Date} lastLogin         - Timestamp of last login.
  * @property {Date} createdAt         - Auto-generated document creation timestamp.
@@ -98,6 +99,12 @@ const UserSchema = new Schema(
       type: Boolean,
       required: true,
       default: true,   // Accounts are active by default
+    },
+    sessionVersion: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
     },
     registrationDate: {
       type: Date,

@@ -16,13 +16,18 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
   - `port` (HTTP port)
   - `jwtSecret`, `jwtTimeExpiration`
   - `userLimit`, `adminEmail`, `adminPassword`, `createAdmin`
+  - auth/runtime policy defaults (`registrationMode`, `editorCanPublish`, `executionMode`, etc.)
+  - login abuse controls (`authLoginMaxAttempts`, `authLoginWindowSeconds`, `authLoginLockSeconds`)
 
 ## Request Context (`context.js`)
 
 - `setContext({ req })` returns a context object containing:
   - `pubsub` (created via `createPubSub`)
   - `models` (`Dashboard`, `User`)
+  - `clientIp` (for auth throttling/audit context)
   - `user` (if a valid `Authorization: Bearer <token>` header is present)
+
+Token auth is validated against persisted user state (`active` + `sessionVersion`) so revoked tokens become invalid server-side.
 
 ## GraphQL Schema (`gql.js`)
 
@@ -35,26 +40,28 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
 
 - **Dashboard** (`models/Dashboard.js`):
   - Uses `nanoid` for string `_id`
-  - Fields: `user`, `version`, `title`, `published`, `image`, `datasources`, `columns`, `width`, `panes`, `authProviders`, `settings`
+  - Fields include: `user`, `version`, `title`, `visibility`, `shareToken`, `acl`, `image`, `datasources`, `columns`, `width`, `panes`, `authProviders`, `settings`
   - Timestamps enabled
 - **User** (`models/User.js`):
   - `_id` via `nanoid`
-  - Fields: `email`, `password`, `admin`, `active`, `registrationDate`, `lastLogin`
+  - Fields: `email`, `password`, `role`, `active`, `sessionVersion`, `registrationDate`, `lastLogin`
   - Pre-save hook hashes `password` with `bcrypt`
   - Model-level validators enforce email and password policy (defense in depth)
 
 ## Resolvers
 
 - **Dashboard Resolvers** (`resolvers/Dashboard.js`):
-  - `Query.dashboard(_id)` and `Query.dashboards()`
+  - `Query.dashboard(_id)`, `dashboardByShareToken`, `dashboards`, `dashboardCollaborators`
+  - Visibility/share/collaboration mutations (`setDashboardVisibility`, `rotateDashboardShareToken`, ACL, ownership transfer)
   - `Mutation.createDashboard`, `updateDashboard`, `deleteDashboard`
   - `Subscription.dashboard(_id)`
-  - Helper `getDashboard` applies access rules and calls `transformDashboard`
+  - Access policy and safe/trusted payload enforcement are server-side validated
 - **User Resolvers** (`resolvers/User.js`):
-  - `Query.listAllUsers()`
-  - `Mutation.registerUser(email, password)`
-  - `Mutation.authUser(email, password)`
-  - `Mutation.deleteMyUserAccount()`
+  - `Query.listAllUsers()`, `me`, invite listing
+  - Registration/invite flows + password reset flows
+  - Login throttling with audit events
+  - Admin lifecycle flows (create/update/deactivate/delete, invites, reset issuance)
+  - Session revocation paths on role/active/password transitions
 - **Merge Utility** (`resolvers/merge.js`):
   - `transformDashboard(u)` converts Mongoose doc to GraphQL object
 

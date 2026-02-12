@@ -65,17 +65,19 @@ const run = async () => {
   }
 
   console.log(
-    `[phase3-reset-private] dashboards=${dashboards.length} pending_updates=${changed} apply=${options.apply} rotate_tokens=${options.rotateTokens}`
+    `[dashboard-visibility-enforce-private] dashboards=${dashboards.length} pending_updates=${changed} apply=${options.apply} rotate_tokens=${options.rotateTokens}`
   );
 
   if (options.apply) {
     for (const update of updates) {
       await Dashboard.updateOne({ _id: update._id }, { $set: update.set });
     }
-    console.log("[phase3-reset-private] updates applied successfully");
+    console.log(
+      "[dashboard-visibility-enforce-private] updates applied successfully"
+    );
   } else {
     console.log(
-      "[phase3-reset-private] dry run only. Re-run with --apply to persist."
+      "[dashboard-visibility-enforce-private] dry run only. Re-run with --apply to persist."
     );
   }
 
@@ -83,7 +85,10 @@ const run = async () => {
 };
 
 run().catch(async (error) => {
-  console.error("[phase3-reset-private] failed:", error?.message || error);
+  console.error(
+    "[dashboard-visibility-enforce-private] failed:",
+    error?.message || error
+  );
   try {
     await mongoose.disconnect();
   } catch {

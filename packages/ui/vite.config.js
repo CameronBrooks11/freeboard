@@ -110,5 +110,10 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+
+    build: {
+      // Monaco workers are intentionally bundled and exceed Vite's default 500 kB warning threshold.
+      chunkSizeWarningLimit: 7000,
+    },
   };
 });

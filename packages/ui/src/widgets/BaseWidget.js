@@ -2,7 +2,8 @@
  * @module widgets/BaseWidget
  * @description Default widget rendering HTML/CSS/JS templates in an iframe for Freeboard UI.
  */
-import { normalizeDatasourceValue } from "./runtime/bindings";
+import { normalizeDatasourceValue } from "./runtime/bindings.js";
+import { isTrustedExecutionEnabled } from "../executionPolicy.js";
 
 export class BaseWidget {
   /**
@@ -28,87 +29,106 @@ export class BaseWidget {
    * @param {Object} general - General field group schema.
    * @returns {Array<Object>} Array of field group objects.
    */
-  static fields = (widget, dashboard, general) => [
-    general,
-    {
-      label: "form.labelStyle",
-      icon: "hi-beaker",
-      name: "style",
-      settings: {
-        style: widget?.settings.style,
-      },
-      fields: [
-        {
-          name: "style",
-          label: "form.labelStyle",
-          type: "code",
-          language: "css",
+  static fields = (widget, dashboard, general) => {
+    const trustedExecution = isTrustedExecutionEnabled();
+    const fields = [
+      general,
+      {
+        label: "form.labelStyle",
+        icon: "hi-beaker",
+        name: "style",
+        settings: {
+          style: widget?.settings.style,
         },
-      ],
-    },
-    {
-      label: "form.labelScript",
-      icon: "hi-variable",
-      name: "script",
-      settings: {
-        script: widget?.settings.script,
+        fields: [
+          {
+            name: "style",
+            label: "form.labelStyle",
+            type: "code",
+            language: "css",
+          },
+        ],
       },
-      fields: [
+      {
+        label: "form.labelHTML",
+        icon: "hi-code",
+        name: "html",
+        settings: {
+          html: widget?.settings.html,
+        },
+        fields: [
+          {
+            name: "html",
+            label: "form.labelHTML",
+            type: "code",
+            language: "html",
+          },
+        ],
+      },
+    ];
+
+    if (trustedExecution) {
+      fields.push(
         {
-          name: "script",
           label: "form.labelScript",
-          type: "code",
-          language: "javascript",
-        },
-      ],
-    },
-    {
-      label: "form.labelHTML",
-      icon: "hi-code",
-      name: "html",
-      settings: {
-        html: widget?.settings.html,
-      },
-      fields: [
-        {
-          name: "html",
-          label: "form.labelHTML",
-          type: "code",
-          language: "html",
-        },
-      ],
-    },
-    {
-      label: "form.labelResources",
-      icon: "hi-archive",
-      name: "resources",
-      settings: {
-        resources: widget?.settings.resources,
-      },
-      fields: [
-        {
-          name: "resources",
-          label: "form.labelResources",
-          type: "array",
-          settings: [
+          icon: "hi-variable",
+          name: "script",
+          settings: {
+            script: widget?.settings.script,
+          },
+          fields: [
             {
-              name: "asset",
-              label: "form.labelAsset",
-              type: "list",
-              options: fetch("https://api.cdnjs.com/libraries/")
-                .then((r) => r.json())
-                .then((data) =>
-                  data.results.map((r) => ({
-                    value: r.latest,
-                    label: r.name,
-                  }))
-                ),
+              name: "script",
+              label: "form.labelScript",
+              type: "code",
+              language: "javascript",
             },
           ],
         },
-      ],
-    },
-  ];
+        {
+          label: "form.labelResources",
+          icon: "hi-archive",
+          name: "resources",
+          settings: {
+            resources: widget?.settings.resources,
+          },
+          fields: [
+            {
+              name: "resources",
+              label: "form.labelResources",
+              type: "array",
+              settings: [
+                {
+                  name: "asset",
+                  label: "form.labelAsset",
+                  type: "list",
+                  options: fetch("https://api.cdnjs.com/libraries/")
+                    .then((r) => r.json())
+                    .then((data) =>
+                      data.results.map((r) => ({
+                        value: r.latest,
+                        label: r.name,
+                      }))
+                    ),
+                },
+              ],
+            },
+          ],
+        }
+      );
+    }
+
+    return fields;
+  };
+
+  static sanitizeHtmlAttribute(value) {
+    return String(value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+  }
 
   /**
    * Generate the full HTML template including embedded resources, style, and script.
@@ -118,18 +138,33 @@ export class BaseWidget {
    * @returns {string} HTML document string for iframe srcdoc.
    */
   static template({style, script, html, resources}) {
-    const res = resources?.map((r) => `<script src="${r.asset}"></script>`) || [];
+    const trustedExecution = isTrustedExecutionEnabled();
+    const resourceTags = trustedExecution
+      ? resources
+          ?.map((resource) => {
+            const src = BaseWidget.sanitizeHtmlAttribute(resource?.asset);
+            if (!src) {
+              return "";
+            }
+            return `<script src="${src}"></script>`;
+          })
+          .filter(Boolean) || []
+      : [];
+    const scriptTag =
+      trustedExecution && typeof script === "string" && script.trim().length > 0
+        ? `<script>${script}</script>`
+        : "";
     return `
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    ${res.join("")}
+    ${resourceTags.join("")}
     <style>${style}</style>
     <meta charset="utf-8" />
   </head>
   <body>
     ${html}
-    <script>${script}</script>
+    ${scriptTag}
   </body>
 </html>
     `;
@@ -176,7 +211,7 @@ export class BaseWidget {
     this.iframeElement = document.createElement("iframe");
     this.iframeElement.style.width = "100%";
     this.iframeElement.style.height = "100%";
-    this.iframeElement.allow = "camera *;microphone *;display-capture *";
+    this.iframeElement.referrerPolicy = "no-referrer";
 
     this.widgetElement.appendChild(this.iframeElement);
     this.onSettingsChanged(settings);
@@ -202,6 +237,9 @@ export class BaseWidget {
    */
   onSettingsChanged(newSettings) {
     this.currentSettings = newSettings;
+    this.iframeElement.sandbox = isTrustedExecutionEnabled()
+      ? "allow-scripts allow-forms allow-modals allow-popups"
+      : "allow-forms";
     this.iframeElement.srcdoc = BaseWidget.template(this.currentSettings);
   }
 

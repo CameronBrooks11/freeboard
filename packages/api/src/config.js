@@ -86,8 +86,22 @@ const bool = (v, fallback = false) => {
   return fallback;
 };
 
+const positiveInteger = (v, fallback) => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) {
+    return fallback;
+  }
+  const normalized = Math.floor(n);
+  if (normalized < 1) {
+    return fallback;
+  }
+  return normalized;
+};
+
 const environment = String(process.env.NODE_ENV || "development").toLowerCase();
 const isNonDevRuntime = !["development", "test"].includes(environment);
+const hasExplicitMongoUrl =
+  typeof process.env.MONGO_URL === "string" && process.env.MONGO_URL.trim() !== "";
 
 const isWeakJwtSecret = (secret) => {
   if (!secret || typeof secret !== "string") {
@@ -137,6 +151,9 @@ const warnAndThrow = (message) => {
  * @property {boolean} dashboardPublicListingEnabled - Whether public dashboards can appear in listings.
  * @property {string} executionMode   - Runtime execution mode (`safe|trusted`).
  * @property {boolean} policyEditLock   - Whether runtime policy mutations are blocked.
+ * @property {number} authLoginMaxAttempts - Failed login attempts before lockout.
+ * @property {number} authLoginWindowSeconds - Rolling window for failed login attempts.
+ * @property {number} authLoginLockSeconds - Temporary lockout duration after threshold is reached.
  */
 
 /**
@@ -149,7 +166,7 @@ export const config = Object.freeze({
   port: num(process.env.PORT, 4001), // Port with sensible fallback
   mongoUrl:
     process.env.MONGO_URL ||
-    "mongodb://freeboard:unsecure@127.0.0.1:27017/freeboard", // Prefer IPv4 literal and include a DB name to be explicit
+    "mongodb://127.0.0.1:27017/freeboard", // Local-only default for development/test
   jwtSecret: process.env.JWT_SECRET || "freeboard-dev-insecure-local-only",
   jwtTimeExpiration: process.env.JWT_TIME_EXPIRATION || "2h",
   userLimit: num(process.env.USER_LIMIT, 0),
@@ -178,11 +195,20 @@ export const config = Object.freeze({
     .trim()
     .toLowerCase(),
   policyEditLock: bool(process.env.POLICY_EDIT_LOCK, false),
+  authLoginMaxAttempts: positiveInteger(process.env.AUTH_LOGIN_MAX_ATTEMPTS, 5),
+  authLoginWindowSeconds: positiveInteger(process.env.AUTH_LOGIN_WINDOW_SECONDS, 300),
+  authLoginLockSeconds: positiveInteger(process.env.AUTH_LOGIN_LOCK_SECONDS, 300),
 });
 
 if (isNonDevRuntime && isWeakJwtSecret(config.jwtSecret)) {
   throw new Error(
     "JWT_SECRET is missing or too weak for non-development runtime. Provide a strong secret (>=32 chars)."
+  );
+}
+
+if (isNonDevRuntime && !hasExplicitMongoUrl) {
+  throw new Error(
+    "MONGO_URL must be explicitly configured for non-development runtime."
   );
 }
 
@@ -222,4 +248,14 @@ try {
   normalizeExecutionMode(config.executionMode);
 } catch (error) {
   warnAndThrow(error.message);
+}
+
+if (config.authLoginMaxAttempts < 1) {
+  warnAndThrow("AUTH_LOGIN_MAX_ATTEMPTS must be >= 1");
+}
+if (config.authLoginWindowSeconds < 1) {
+  warnAndThrow("AUTH_LOGIN_WINDOW_SECONDS must be >= 1");
+}
+if (config.authLoginLockSeconds < 1) {
+  warnAndThrow("AUTH_LOGIN_LOCK_SECONDS must be >= 1");
 }

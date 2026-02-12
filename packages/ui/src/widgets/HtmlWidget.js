@@ -3,7 +3,8 @@
  * @description HTML widget with explicit trust mode.
  */
 
-import { ReactiveWidget } from "./runtime/ReactiveWidget";
+import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+import { isTrustedExecutionEnabled } from "../executionPolicy.js";
 
 export class HtmlWidget extends ReactiveWidget {
   static typeName = "html";
@@ -28,10 +29,13 @@ export class HtmlWidget extends ReactiveWidget {
           label: "Render Mode",
           type: "option",
           default: "text",
-          options: [
-            { label: "Plain Text (Safe)", value: "text" },
-            { label: "Trusted HTML", value: "trusted_html" },
-          ],
+          options: (() => {
+            const options = [{ label: "Plain Text (Safe)", value: "text" }];
+            if (isTrustedExecutionEnabled()) {
+              options.push({ label: "Trusted HTML", value: "trusted_html" });
+            }
+            return options;
+          })(),
         },
         {
           name: "heightRows",
@@ -109,7 +113,10 @@ export class HtmlWidget extends ReactiveWidget {
       ? ""
       : String(inputs.content);
 
-    if (this.currentSettings?.mode === "trusted_html") {
+    if (
+      this.currentSettings?.mode === "trusted_html" &&
+      isTrustedExecutionEnabled()
+    ) {
       this.contentElement.innerHTML = content;
     } else {
       this.contentElement.textContent = content;
