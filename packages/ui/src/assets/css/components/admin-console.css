@@ -1,122 +1,341 @@
 .admin-console {
-  max-width: 1024px;
-  margin: 0 auto;
+  min-height: 100%;
+  box-sizing: border-box;
+  background: var(--color-background);
+  color: var(--color-foreground);
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
+}
+
+.admin-console__header,
+.admin-console__alerts,
+.admin-console__section {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
 }
 
 .admin-console__header {
+  border: 1px solid var(--color-shade-4);
+  background: var(--color-shade-2);
+  box-shadow: 0 2px 8px var(--color-shadow);
+  padding: 14px 16px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.admin-console__header-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-console__title {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: var(--color-shade-10);
+}
+
+.admin-console__subtitle {
+  margin: 0;
+  color: var(--color-shade-8);
+  font-size: 0.9rem;
+}
+
+.admin-console__subtitle strong {
+  color: var(--color-primary);
 }
 
 .admin-console__back {
-  color: var(--color-primary);
   text-decoration: none;
-  font-weight: 600;
-}
-
-.admin-console__section {
-  border: 1px solid var(--color-shade-3);
-  border-radius: 8px;
-  padding: 14px;
+  text-transform: uppercase;
+  color: var(--color-shade-10);
+  border: 1px solid var(--color-shade-4);
   background: var(--color-shade-1);
-}
-
-.admin-console__form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.admin-console__form-grid label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.95rem;
-}
-
-.admin-console__form-grid input,
-.admin-console__form-grid select {
-  border: 1px solid var(--color-shade-4);
-  border-radius: 6px;
-  padding: 8px 10px;
-  background: var(--color-shade-0);
-  color: var(--color-shade-8);
-}
-
-.admin-console__checkbox {
-  align-items: flex-start;
-  justify-content: center;
-}
-
-.admin-console__checkbox input {
-  margin-right: 6px;
-}
-
-.admin-console button {
-  border: 1px solid var(--color-shade-4);
-  border-radius: 6px;
   padding: 6px 10px;
-  background: var(--color-shade-0);
-  color: var(--color-shade-8);
-  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
-.admin-console button:hover:not(:disabled) {
+.admin-console__back:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
 
-.admin-console button:disabled {
-  opacity: 0.6;
+.admin-console__alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-console__message {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--color-shade-5);
+  background: var(--color-shade-1);
+  color: var(--color-shade-10);
+}
+
+.admin-console__message--status {
+  border-left-color: var(--color-primary);
+}
+
+.admin-console__message--error {
+  border-left-color: var(--color-error);
+}
+
+.admin-console__section {
+  border: 1px solid var(--color-shade-4);
+  background: var(--color-shade-1);
+  box-shadow: 0 2px 8px var(--color-shadow);
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-console__section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--color-shade-4);
+  padding-bottom: 10px;
+}
+
+.admin-console__section-header h2 {
+  margin: 0;
+  color: var(--color-shade-10);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-console__form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.admin-console__form-grid--policy {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.admin-console__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--color-shade-9);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-console__input,
+.admin-console__select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--color-shade-4);
+  background: var(--color-shade-0);
+  color: var(--color-foreground);
+  padding: 8px 10px;
+  min-height: 36px;
+}
+
+.admin-console__input:focus,
+.admin-console__select:focus {
+  outline: none;
+  border-color: var(--color-highlight);
+  box-shadow: 0 0 0 2px var(--color-shadow);
+}
+
+.admin-console__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--color-shade-4);
+  background: var(--color-shade-0);
+  padding: 8px 10px;
+  min-height: 36px;
+  box-sizing: border-box;
+  color: var(--color-shade-9);
+  font-weight: 600;
+  font-size: 0.84rem;
+  line-height: 1.25;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.admin-console__checkbox span {
+  color: var(--color-foreground);
+}
+
+.admin-console__checkbox-input {
+  all: revert;
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.admin-console__button {
+  border: 1px solid var(--color-shade-4);
+  background: var(--color-shade-2);
+  color: var(--color-foreground);
+  cursor: pointer;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 7px 12px;
+}
+
+.admin-console__button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.admin-console__button:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
+}
+
+.admin-console__button--primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-shade-0);
+}
+
+.admin-console__button--primary:hover:not(:disabled) {
+  background: var(--color-shade-0);
+}
+
+.admin-console__button--danger {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.admin-console__button--small {
+  padding: 5px 10px;
+}
+
+.admin-console__loading,
+.admin-console__empty {
+  color: var(--color-shade-8);
+  font-style: italic;
+}
+
+.admin-console__empty {
+  text-align: center;
+}
+
+.admin-console__table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-shade-4);
+  background: var(--color-shade-0);
 }
 
 .admin-console__table {
   width: 100%;
+  min-width: 680px;
   border-collapse: collapse;
 }
 
-.admin-console__table th,
-.admin-console__table td {
-  border-bottom: 1px solid var(--color-shade-3);
-  padding: 8px;
+.admin-console__table thead th {
   text-align: left;
+  background: var(--color-shade-3);
+  color: var(--color-shade-10);
+  padding: 8px 10px;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.admin-console__table tbody td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-shade-3);
+  color: var(--color-foreground);
+  vertical-align: middle;
+}
+
+.admin-console__table tbody tr:nth-child(even) {
+  background: var(--color-shade-1);
 }
 
 .admin-console__actions {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
 .admin-console__hint {
-  font-size: 0.9rem;
-  color: var(--color-shade-6);
-}
-
-.admin-console__status {
-  color: #1c7f43;
-}
-
-.admin-console__error {
-  color: #b63333;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-shade-8);
 }
 
 .admin-console__token-card {
-  margin-top: 12px;
   border: 1px dashed var(--color-shade-4);
-  border-radius: 6px;
+  background: var(--color-shade-0);
   padding: 10px;
-  font-family: monospace;
-  font-size: 0.85rem;
-  word-break: break-all;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+}
+
+.admin-console__token-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--color-foreground);
+}
+
+.admin-console__mono {
+  display: inline-block;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.8rem;
+}
+
+@media screen and (max-width: 900px) {
+  .admin-console {
+    padding: 14px;
+  }
+
+  .admin-console__section {
+    padding: 12px;
+  }
+}
+
+@media screen and (max-width: 680px) {
+  .admin-console__header,
+  .admin-console__section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-console__back,
+  .admin-console__section-header .admin-console__button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .admin-console__checkbox {
+    min-height: 36px;
+  }
+
+  .admin-console__table {
+    min-width: 560px;
+  }
 }

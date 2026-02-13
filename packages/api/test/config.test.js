@@ -132,7 +132,9 @@ test("config requires explicit MONGO_URL in non-development runtime", async () =
     {
       NODE_ENV: "production",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
-      MONGO_URL: undefined,
+      CREATE_ADMIN: "false",
+      // Keep key present but blank so repo-root .env cannot repopulate it during config import.
+      MONGO_URL: "",
     },
     async () => {
       await assert.rejects(

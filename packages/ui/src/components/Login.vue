@@ -345,6 +345,17 @@ const helperTextKey = computed(() => {
       :ok-disabled="isBusy"
       @ok="onDialogBoxOk"
     >
+      <template #footer>
+        <button
+          v-if="actionMode === MODES.login"
+          class="login__footer-action"
+          type="button"
+          @click="switchMode(MODES.requestReset)"
+        >
+          {{ $t("login.buttonForgotPassword") }}
+        </button>
+      </template>
+
       <Form ref="form" :fields="fields" :settings="formSettings" />
       <p v-if="helperTextKey" class="login__hint">{{ $t(helperTextKey) }}</p>
       <p v-if="infoMessageKey" class="login__info">{{ $t(infoMessageKey) }}</p>
@@ -366,14 +377,6 @@ const helperTextKey = computed(() => {
           @click="switchMode(MODES.invite)"
         >
           {{ $t("login.buttonAcceptInvite") }}
-        </button>
-        <button
-          v-if="actionMode === MODES.login"
-          class="login__switch-mode"
-          type="button"
-          @click="switchMode(MODES.requestReset)"
-        >
-          {{ $t("login.buttonForgotPassword") }}
         </button>
         <button
           v-if="actionMode === MODES.requestReset"

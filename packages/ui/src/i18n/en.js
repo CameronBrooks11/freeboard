@@ -190,6 +190,7 @@ export const en = {
     createUserTitle: "Create User",
     createUserButton: "Create User",
     usersTitle: "Users",
+    noUsers: "No users found.",
     loadingUsers: "Loading users...",
     role: "Role",
     active: "Active",

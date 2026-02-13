@@ -29,6 +29,22 @@
   text-decoration: underline;
 }
 
+.login__footer-action {
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 15px;
+  line-height: 40px;
+  float: left;
+}
+
+.login__footer-action:hover {
+  text-decoration: underline;
+}
+
 .login__error {
   color: #c53b3b;
   margin-top: 0.75rem;
