@@ -60,7 +60,7 @@ jobs:
       - name: Run tokei (JSON + Text)
         run: |
           set -euo pipefail
-          EXCLUDES=".git,node_modules,dist,build"
+          EXCLUDES=".git,node_modules,dist,build,package-lock.json"
 
           tokei --exclude $EXCLUDES --output json > metrics/tokei.json
           tokei --exclude $EXCLUDES > metrics/tokei.txt
@@ -73,6 +73,7 @@ jobs:
           set -euo pipefail
           cloc . \
             --exclude-dir=.git,node_modules,dist,build \
+            --exclude-list-file=.clocignore \
             --json \
             --out=metrics/cloc.json
 
