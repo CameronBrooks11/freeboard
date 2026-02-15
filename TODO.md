@@ -26,11 +26,11 @@
 
 ## Misc Tasks
 
-- [ ] npm deprecication warnings investigation/fixes
+- [x] Review the archived `oauth` branch to look at the oauth package and determine if any of that work can be salvaged or should be reimplemented from scratch with learnings from the phased model implementation
+- [x] npm deprecication warnings investigation/fixes (addressed in node 24.x and npm 11.x baseline pinning)
 - [ ] Formatting review and clean up (should have package.json commands for this where relevant)
 - [ ] Unicode or latex or some kind of support such that gauge units can have proper degree symbol (\deg C, °\deg F) instead of hardcoding (°C, °F)
 - [ ] Add tokei + misc (workflow from `anolis`) to track codebase stats and health over time
-- [x] Review the archived `oauth` branch to look at the oauth package and determine if any of that work can be salvaged or should be reimplemented from scratch with learnings from the phased model implementation
 
 ## Longer-Term Tasks
 
