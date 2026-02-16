@@ -158,7 +158,7 @@ kiosk_boot_config_lines:
   - gpu_mem_1024=196
   - dtoverlay=vc4-kms-v3d
 kiosk_boot_remove_config_regexes:
-  - '^dtoverlay=vc4-fkms-v3d$'
+  - "^dtoverlay=vc4-fkms-v3d$"
 kiosk_boot_cmdline_required_tokens:
   - splash
   - vt.global_cursor_default=0

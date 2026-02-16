@@ -4,12 +4,12 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'ansible/**'
-      - 'player.sh'
-      - 'requirements.txt'
-      - '.ansible-lint'
-      - 'docs/manual/ansible.md'
-      - 'docs/manual/deployment-profiles.md'
+      - "ansible/**"
+      - "player.sh"
+      - "requirements.txt"
+      - ".ansible-lint"
+      - "docs/manual/ansible.md"
+      - "docs/manual/deployment-profiles.md"
   merge_group:
     branches: [main]
   workflow_dispatch:
@@ -30,7 +30,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install Ansible tooling
         run: pip install -r requirements.txt

@@ -74,9 +74,11 @@ cp ansible/inventory.ini.example ansible/inventory.ini
 Then choose one pattern:
 
 1. Control-node pattern (recommended for production):
+
 - Set one or more remote hosts under `[kiosk]` (with `ansible_host` and `ansible_user`).
 
 2. Self-provision pattern (single-device bootstrap):
+
 - Use localhost with local connection:
   - `localhost ansible_connection=local`
 
@@ -108,6 +110,7 @@ ANSIBLE_CONFIG=ansible/ansible.cfg .venv/bin/ansible-playbook -i localhost, -c l
 ```
 
 Notes:
+
 - `freeboard_target_group=all` is required in localhost mode because `localhost,` is not in the default `kiosk` group.
 - Reboot is usually not required for `player_only`; use `sudo systemctl restart freeboard-kiosk.service` after config changes if needed.
 

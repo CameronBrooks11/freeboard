@@ -27,13 +27,16 @@ And the optional Ansible Mongo preload role defaults to the matching `r7.0.28` t
 ## Operator Matrix
 
 1. Pi 4 and you need quickest path to working Mongo for Freeboard:
+
 - Use `.env.pi` fallback image and treat it as community-supported.
 
 2. Pi 5 or newer arm64 target and you can validate official compatibility:
+
 - Prefer official MongoDB-supported path first.
 - Keep `.env.pi` fallback as contingency only.
 
 3. Internet-exposed or strict compliance production:
+
 - Avoid unmanaged community dependencies unless you own the risk explicitly.
 - Consider managed/remote Mongo where platform support is clearer.
 
