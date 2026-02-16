@@ -150,7 +150,7 @@ const main = async () => {
   console.log("Development services:");
   console.log("- UI:    http://localhost:5173/");
   console.log("- API:   http://127.0.0.1:4001/graphql");
-  console.log("- Proxy: http://127.0.0.1:8001/");
+  console.log("- Gateway: http://127.0.0.1:8001/");
   console.log("- Mongo: mongodb://freeboard:unsecure@127.0.0.1:27017/freeboard");
   console.log("");
 

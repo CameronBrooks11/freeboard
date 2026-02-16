@@ -6,7 +6,7 @@
   "source": {
     "include": [
       "packages/api/src",
-      "packages/proxy/src"
+      "packages/gateway/src"
     ],
     "includePattern": "\\.(js|mjs|cjs)$",
     "excludePattern": "(node_modules/|docs/|\\.vue$)"

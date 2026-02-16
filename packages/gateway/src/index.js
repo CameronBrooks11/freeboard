@@ -1,5 +1,5 @@
 /**
- * @module proxy/index
+ * @module gateway/index
  * @description Datasource gateway service with SSRF controls and API-backed intent introspection.
  */
 
@@ -592,28 +592,17 @@ export const createGatewayFetchHandler = ({
   };
 
 /**
- * Backward export alias used by existing tests.
- */
-export const createProxyHandler = createGatewayFetchHandler;
-
-/**
  * Create and configure the gateway Express app.
  *
  * @param {{lookup?: Function}} [options]
  * @returns {import('express').Express}
  */
-export const createProxyApp = ({ lookup = dns.promises.lookup } = {}) => {
+export const createGatewayApp = ({ lookup = dns.promises.lookup } = {}) => {
   const app = express();
   app.use(express.json({ limit: "256kb" }));
 
   const handler = createGatewayFetchHandler({ lookup });
   app.post("/gateway/http/fetch", handler);
-
-  app.use("/proxy", (_req, res) => {
-    res.status(410).json({
-      error: "Legacy /proxy endpoint is removed. Use /gateway/http/fetch.",
-    });
-  });
 
   return app;
 };
@@ -624,12 +613,12 @@ export const createProxyApp = ({ lookup = dns.promises.lookup } = {}) => {
  * @param {{port?: number, host?: string, lookup?: Function}} [options]
  * @returns {import('http').Server}
  */
-export const startProxyServer = ({
+export const startGatewayServer = ({
   port = PORT,
   host = HOST,
   lookup = dns.promises.lookup,
 } = {}) => {
-  const app = createProxyApp({ lookup });
+  const app = createGatewayApp({ lookup });
   const server = app.listen(port, host, () => {
     const printableHost = host === "0.0.0.0" || host === "::" ? "127.0.0.1" : host;
     console.log(`Gateway listening on http://${printableHost}:${port}`);
@@ -640,5 +629,5 @@ export const startProxyServer = ({
 const currentModulePath = fileURLToPath(import.meta.url);
 const currentProcessEntry = process.argv[1] ? path.resolve(process.argv[1]) : "";
 if (currentProcessEntry && currentProcessEntry === currentModulePath) {
-  startProxyServer();
+  startGatewayServer();
 }

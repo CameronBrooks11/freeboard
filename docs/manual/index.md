@@ -24,7 +24,7 @@ Use this manual in two tracks:
 - [Architecture](/manual/architecture)
 - [API](/manual/api)
 - [UI](/manual/ui)
-- [HTTP Datasource Gateway](/manual/proxy)
+- [HTTP Datasource Gateway](/manual/gateway)
 - [Ansible](/manual/ansible)
 - [Documentation Site Setup](/manual/docs-site-setup)
 - [Development Misc](/manual/dev-misc)

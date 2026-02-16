@@ -25,7 +25,7 @@ jobs:
       non_docs: ${{ steps.classify.outputs.non_docs }}
       run_api_tests: ${{ steps.classify.outputs.run_api_tests }}
       run_ui_tests: ${{ steps.classify.outputs.run_ui_tests }}
-      run_proxy_tests: ${{ steps.classify.outputs.run_proxy_tests }}
+      run_gateway_tests: ${{ steps.classify.outputs.run_gateway_tests }}
       run_build_verify: ${{ steps.classify.outputs.run_build_verify }}
     steps:
       - name: Checkout
@@ -53,10 +53,10 @@ jobs:
               - 'packages/ui/vite.config.js'
               - 'packages/ui/index.html'
               - 'packages/ui/eslint.config.js'
-            proxy:
-              - 'packages/proxy/src/**'
-              - 'packages/proxy/package.json'
-              - 'packages/proxy/Dockerfile'
+            gateway:
+              - 'packages/gateway/src/**'
+              - 'packages/gateway/package.json'
+              - 'packages/gateway/Dockerfile'
             shared:
               - 'package.json'
               - 'package-lock.json'
@@ -74,11 +74,11 @@ jobs:
           docs="${{ steps.filter.outputs.docs }}"
           api="${{ steps.filter.outputs.api }}"
           ui="${{ steps.filter.outputs.ui }}"
-          proxy="${{ steps.filter.outputs.proxy }}"
+          gateway="${{ steps.filter.outputs.gateway }}"
           shared="${{ steps.filter.outputs.shared }}"
 
           non_docs=false
-          if [[ "$api" == "true" || "$ui" == "true" || "$proxy" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$shared" == "true" ]]; then
             non_docs=true
           fi
 
@@ -97,13 +97,13 @@ jobs:
             run_ui_tests=true
           fi
 
-          run_proxy_tests=false
-          if [[ "$proxy" == "true" || "$shared" == "true" ]]; then
-            run_proxy_tests=true
+          run_gateway_tests=false
+          if [[ "$gateway" == "true" || "$shared" == "true" ]]; then
+            run_gateway_tests=true
           fi
 
           run_build_verify=false
-          if [[ "$api" == "true" || "$ui" == "true" || "$proxy" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$shared" == "true" ]]; then
             run_build_verify=true
           fi
 
@@ -111,7 +111,7 @@ jobs:
           echo "non_docs=$non_docs" >> "$GITHUB_OUTPUT"
           echo "run_api_tests=$run_api_tests" >> "$GITHUB_OUTPUT"
           echo "run_ui_tests=$run_ui_tests" >> "$GITHUB_OUTPUT"
-          echo "run_proxy_tests=$run_proxy_tests" >> "$GITHUB_OUTPUT"
+          echo "run_gateway_tests=$run_gateway_tests" >> "$GITHUB_OUTPUT"
           echo "run_build_verify=$run_build_verify" >> "$GITHUB_OUTPUT"
 
           echo "CI classification:"
@@ -119,7 +119,7 @@ jobs:
           echo "  non_docs=$non_docs"
           echo "  run_api_tests=$run_api_tests"
           echo "  run_ui_tests=$run_ui_tests"
-          echo "  run_proxy_tests=$run_proxy_tests"
+          echo "  run_gateway_tests=$run_gateway_tests"
           echo "  run_build_verify=$run_build_verify"
 
   lint:
@@ -179,10 +179,10 @@ jobs:
       - name: Run UI tests
         run: npm run test:ui
 
-  test-proxy:
-    name: Test Proxy
+  test-gateway:
+    name: Test Gateway
     needs: changes
-    if: needs.changes.outputs.run_proxy_tests == 'true'
+    if: needs.changes.outputs.run_gateway_tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -195,8 +195,8 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci
-      - name: Run proxy tests
-        run: npm run test:proxy
+      - name: Run gateway tests
+        run: npm run test:gateway
 
   build-verify:
     name: Build verify
@@ -225,7 +225,7 @@ jobs:
       - lint
       - test-api
       - test-ui
-      - test-proxy
+      - test-gateway
       - build-verify
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -255,7 +255,7 @@ jobs:
           check_required "${{ needs.changes.outputs.non_docs }}" "${{ needs.lint.result }}" "lint"
           check_required "${{ needs.changes.outputs.run_api_tests }}" "${{ needs.test-api.result }}" "test-api"
           check_required "${{ needs.changes.outputs.run_ui_tests }}" "${{ needs.test-ui.result }}" "test-ui"
-          check_required "${{ needs.changes.outputs.run_proxy_tests }}" "${{ needs.test-proxy.result }}" "test-proxy"
+          check_required "${{ needs.changes.outputs.run_gateway_tests }}" "${{ needs.test-gateway.result }}" "test-gateway"
           check_required "${{ needs.changes.outputs.run_build_verify }}" "${{ needs.build-verify.result }}" "build-verify"
 
           if [[ "$status" -ne 0 ]]; then

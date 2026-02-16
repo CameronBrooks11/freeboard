@@ -23,10 +23,10 @@ jobs:
             image: ghcr.io/CameronBrooks11/freeboard-api
             name: api
           - context: .
-            dockerfile: ./packages/proxy/Dockerfile
-            package_path: packages/proxy
-            image: ghcr.io/CameronBrooks11/freeboard-proxy
-            name: proxy
+            dockerfile: ./packages/gateway/Dockerfile
+            package_path: packages/gateway
+            image: ghcr.io/CameronBrooks11/freeboard-gateway
+            name: gateway
           - context: .
             dockerfile: ./packages/ui/Dockerfile
             package_path: packages/ui

@@ -6,7 +6,7 @@ Freeboard is a monorepo with three runtime services and one shared data store.
 
 - UI (`packages/ui`): Vue 3 + Vite SPA
 - API (`packages/api`): GraphQL Yoga + Mongoose
-- Gateway (`packages/proxy`): HTTP datasource execution gateway with token/introspection trust flow
+- Gateway (`packages/gateway`): HTTP datasource execution gateway with token/introspection trust flow
 - MongoDB: persistence for users and dashboards
 
 ## Runtime Data Flow
@@ -79,7 +79,7 @@ Core env values:
 ## CI Topology
 
 - Required PR workflow: `.github/workflows/ci.yml`
-  - Jobs: `changes` -> conditional `lint`, `test-api`, `test-ui`, `test-proxy`, `build-verify` -> always-run `Required CI`.
+  - Jobs: `changes` -> conditional `lint`, `test-api`, `test-ui`, `test-gateway`, `build-verify` -> always-run `Required CI`.
   - Concurrency: cancels superseded PR runs using PR-number/ref keyed group.
   - Required check target for branch protection: `Required CI`.
 - Pages workflow: `.github/workflows/build-pages.yml`

@@ -17,7 +17,7 @@ on:
       - "packages/ui/vite.config.js"
       - "packages/ui/package.json"
       - "packages/api/src/**"
-      - "packages/proxy/src/**"
+      - "packages/gateway/src/**"
   workflow_dispatch:
 
 # Avoid concurrent publishes from the same ref

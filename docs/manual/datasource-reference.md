@@ -16,7 +16,7 @@ Gateway/security notes:
 - For production deployments, outbound destinations must be in `EGRESS_ALLOWED_HOSTS`.
 - Direct browser mode is disabled by default; enable only for local development with `VITE_ALLOW_DIRECT_HTTP_DATASOURCE=true`.
 - Gateway mode is required for any datasource using credential profiles.
-- See [HTTP Datasource Gateway](/manual/proxy) for egress and token flow behavior.
+- See [HTTP Datasource Gateway](/manual/gateway) for egress and token flow behavior.
 
 Typical settings:
 

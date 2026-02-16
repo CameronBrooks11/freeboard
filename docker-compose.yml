@@ -9,7 +9,7 @@ services:
       - freeboard
     depends_on:
       - freeboard-api
-      - freeboard-proxy
+      - freeboard-gateway
 
   freeboard-api:
     restart: unless-stopped
@@ -35,10 +35,10 @@ services:
       - GATEWAY_INTROSPECTION_RATE_LIMIT_PER_MIN=${GATEWAY_INTROSPECTION_RATE_LIMIT_PER_MIN:-600}
     networks:
       - freeboard
-  freeboard-proxy:
+  freeboard-gateway:
     restart: unless-stopped
-    container_name: freeboard-proxy
-    image: ghcr.io/cameronbrooks11/freeboard-proxy:dev
+    container_name: freeboard-gateway
+    image: ghcr.io/cameronbrooks11/freeboard-gateway:dev
     environment:
       - NODE_ENV=${FREEBOARD_RUNTIME_ENV:-production}
       - EGRESS_ALLOWED_HOSTS=${EGRESS_ALLOWED_HOSTS:?Set EGRESS_ALLOWED_HOSTS in .env for containerized deployments}

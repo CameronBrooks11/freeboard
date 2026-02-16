@@ -47,7 +47,7 @@ export default defineConfig({
             { text: "Widget Runtime", link: "/manual/widget-runtime" },
             { text: "API", link: "/manual/api" },
             { text: "UI", link: "/manual/ui" },
-            { text: "Proxy", link: "/manual/proxy" },
+            { text: "Gateway", link: "/manual/gateway" },
             { text: "Ansible", link: "/manual/ansible" },
             { text: "Docs Site Setup", link: "/manual/docs-site-setup" },
             { text: "Development Misc", link: "/manual/dev-misc" },

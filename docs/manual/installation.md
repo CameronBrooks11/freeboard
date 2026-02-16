@@ -81,7 +81,7 @@ Services:
 
 - UI: `http://localhost:8080`
 - API (via UI reverse proxy): `http://localhost:8080/graphql` (internal: `freeboard-api:4001`)
-- Gateway (via UI reverse proxy): `http://localhost:8080/gateway/http/fetch` (internal: `freeboard-proxy:8001`)
+- Gateway (via UI reverse proxy): `http://localhost:8080/gateway/http/fetch` (internal: `freeboard-gateway:8001`)
 
 ## Security checks before go-live
 
