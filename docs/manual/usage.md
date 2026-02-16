@@ -5,6 +5,7 @@
 - Use `ADMIN_EMAIL` and `ADMIN_PASSWORD` from API env config.
 - For bootstrap only, set `CREATE_ADMIN=true`, log in once, then set `CREATE_ADMIN=false`.
 - Password policy requires 12+ chars with upper/lower/number/symbol.
+- Secret bootstrap/rotation guidance: [Secrets Operations Runbook](/manual/secrets-operations).
 
 ## Core workflow
 

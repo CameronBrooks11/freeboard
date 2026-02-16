@@ -44,6 +44,7 @@ export default defineConfig({
           text: "Developer Reference",
           items: [
             { text: "Architecture", link: "/manual/architecture" },
+            { text: "Secrets Operations", link: "/manual/secrets-operations" },
             { text: "Widget Runtime", link: "/manual/widget-runtime" },
             { text: "API", link: "/manual/api" },
             { text: "UI", link: "/manual/ui" },

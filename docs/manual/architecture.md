@@ -108,6 +108,8 @@ Core env values:
 - `EGRESS_ALLOWED_HOSTS` (required for containerized gateway startup)
 - `REALTIME_*` (required to tune realtime policy, limits, and protocol toggles)
 
+Secret setup/rotation workflow is centralized in [Secrets Operations Runbook](/manual/secrets-operations).
+
 ## Security Defaults
 
 - API and gateway are hardened for production behavior when `NODE_ENV=production`.

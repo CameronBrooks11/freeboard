@@ -65,6 +65,8 @@ For containerized production mode, set these in `.env` first:
 - `MONGO_APP_USERNAME` / `MONGO_APP_PASSWORD` (application DB account)
 - `FREEBOARD_UI_IMAGE_TAG` / `FREEBOARD_API_IMAGE_TAG` / `FREEBOARD_GATEWAY_IMAGE_TAG` (optional service image pinning, default `latest`)
 
+For secret setup/rotation/incident workflow, follow `docs/manual/secrets-operations.md`.
+
 Version tags published by CI:
 
 - `latest`
@@ -154,6 +156,7 @@ Related docs:
 - Datasource configuration: `docs/manual/datasource-reference.md`
 - Gateway contract/policy: `docs/manual/gateway.md`
 - Realtime operator runbook: `docs/manual/realtime-operations.md`
+- Secrets operations runbook: `docs/manual/secrets-operations.md`
 
 ### CI Workflows
 

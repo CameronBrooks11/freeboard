@@ -52,6 +52,10 @@ MONGO_APP_PASSWORD=replace-with-strong-app-password
 EGRESS_ALLOWED_HOSTS=api.open-meteo.com,api.coingecko.com
 ```
 
+Secret storage/rotation patterns and incident response are documented in:
+
+- [Secrets Operations Runbook](/manual/secrets-operations)
+
 ### Optional local bootstrap admin
 
 ```bash
@@ -115,4 +119,4 @@ Services:
 - Set strict `EGRESS_ALLOWED_HOSTS`
 - Keep `CREATE_ADMIN=false` after bootstrap
 - Use non-default Mongo credentials
-- Follow [Credential Key Rotation](/manual/credential-key-rotation) for planned secret rotation
+- Follow [Secrets Operations Runbook](/manual/secrets-operations) for setup/rotation/incident workflow

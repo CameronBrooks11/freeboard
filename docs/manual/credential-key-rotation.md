@@ -2,6 +2,10 @@
 
 Use this runbook to rotate `CREDENTIAL_ENCRYPTION_KEY` without losing stored datasource credential profiles.
 
+For the complete secret lifecycle workflow (setup, bootstrap, non-key rotations, incident response), use:
+
+- [Secrets Operations Runbook](/manual/secrets-operations)
+
 ## Scope
 
 - Affects encrypted `CredentialProfile.secret` records in MongoDB.

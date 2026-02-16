@@ -16,6 +16,7 @@ This runbook covers day-2 operations for Phase 6 realtime datasources (`sse`, `w
   - `GATEWAY_SERVICE_TOKEN`
 - Gateway can reach API (`GATEWAY_API_BASE_URL`).
 - Realtime is enabled (`REALTIME_ENABLED=true`).
+- Secret setup/rotation process is managed via [Secrets Operations Runbook](/manual/secrets-operations).
 
 ## Baseline Validation (Local)
 
@@ -107,3 +108,4 @@ MQTT policy:
 - Set MQTT allowlists (global and/or broker-level) before enabling MQTT broadly.
 - Keep protocol toggles off for unused transports.
 - Validate `REALTIME_TRUST_PROXY_HOPS` for reverse-proxy deployments.
+- Use [Secrets Operations Runbook](/manual/secrets-operations) for token/key rotation windows.

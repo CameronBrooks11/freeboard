@@ -149,6 +149,6 @@ Realtime protocol toggles:
 - Keep `EGRESS_ALLOW_INSECURE_TLS=false` in production.
 - Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false` unless on a trusted local-only network.
 - Review `EGRESS_ALLOWED_HOSTS` as part of deployment change control.
-- Rotate `JWT_GATEWAY_SECRET` and `GATEWAY_SERVICE_TOKEN` during controlled maintenance windows.
-- Rotate credential encryption keys using the [Credential Key Rotation Runbook](/manual/credential-key-rotation).
+- Use the [Secrets Operations Runbook](/manual/secrets-operations) for `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`, and Mongo credential lifecycle operations.
+- Rotate credential encryption keys with the dedicated [Credential Key Rotation Runbook](/manual/credential-key-rotation).
 - In production, configure MQTT allowlists (`REALTIME_MQTT_ALLOWED_TOPICS` and/or broker `topicAllowlist`) before enabling MQTT datasources.

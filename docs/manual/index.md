@@ -22,6 +22,7 @@ Use this manual in two tracks:
 ## Developer/Operator Path
 
 - [Architecture](/manual/architecture)
+- [Secrets Operations Runbook](/manual/secrets-operations)
 - [API](/manual/api)
 - [UI](/manual/ui)
 - [Datasource Gateway](/manual/gateway)
