@@ -14,6 +14,9 @@ import { MapWidget } from "../widgets/MapWidget.js";
 import { PictureWidget } from "../widgets/PictureWidget.js";
 import { PointerWidget } from "../widgets/PointerWidget.js";
 import { SparklineWidget } from "../widgets/SparklineWidget.js";
+import { BarChartWidget } from "../widgets/BarChartWidget.js";
+import { StatusListWidget } from "../widgets/StatusListWidget.js";
+import { TableWidget } from "../widgets/TableWidget.js";
 import { TextWidget } from "../widgets/TextWidget.js";
 
 export const usePluginRegistryStore = defineStore("pluginRegistry", {
@@ -60,6 +63,9 @@ export const usePluginRegistryStore = defineStore("pluginRegistry", {
         PictureWidget,
         HtmlWidget,
         SparklineWidget,
+        BarChartWidget,
+        StatusListWidget,
+        TableWidget,
         MapWidget,
       ].forEach((plugin) => {
         this.registerWidgetPlugin(plugin);

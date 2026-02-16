@@ -38,6 +38,7 @@ export default defineConfig({
             { text: "Widget Reference", link: "/manual/widget-reference" },
             { text: "Widget Examples", link: "/manual/widget-examples/" },
             { text: "Base Widget Guide", link: "/manual/widget-base-guide" },
+            { text: "Widget Developer Guide", link: "/manual/widget-developer-guide" },
           ],
         },
         {

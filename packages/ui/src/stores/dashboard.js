@@ -1,9 +1,23 @@
 import { defineStore } from "pinia";
-import { Dashboard } from "../models/Dashboard.js";
+import { Dashboard, normalizeDashboardTheme } from "../models/Dashboard.js";
 import { usePreferredColorScheme } from "@vueuse/core";
 import { disposeDashboardAssets } from "../dashboardAssets.js";
 import { normalizeCreateDashboardPayload } from "../auth/publishPolicy.js";
 import { useAuthStore } from "./auth.js";
+
+const MOBILE_EDIT_MAX_WIDTH_PX = 640;
+
+const isMobileViewport = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  if (typeof window.matchMedia === "function") {
+    return window.matchMedia(`(max-width: ${MOBILE_EDIT_MAX_WIDTH_PX}px)`).matches;
+  }
+
+  return Number(window.innerWidth) > 0 && Number(window.innerWidth) <= MOBILE_EDIT_MAX_WIDTH_PX;
+};
 
 const createAsset = (type, value, inline) => {
   let node = null;
@@ -60,12 +74,41 @@ export const useDashboardStore = defineStore("dashboard", {
   },
 
   actions: {
+    isMobileEditLocked() {
+      const dashboard = this.dashboard;
+      if (!dashboard) {
+        return false;
+      }
+
+      const isSmallLayout = dashboard.width === "sm";
+      const allowMobileEdit = dashboard.settings?.allowMobileEdit === true;
+      return isSmallLayout && !allowMobileEdit && isMobileViewport();
+    },
+
     syncEditingPermissions() {
-      if (!this.allowEdit) {
+      if (!this.allowEdit || this.isMobileEditLocked()) {
         this.isEditing = false;
       } else if (!this.isEditing) {
         this.isEditing = true;
       }
+    },
+
+    setEditing(nextValue) {
+      if (!nextValue) {
+        this.isEditing = false;
+        return;
+      }
+
+      if (!this.allowEdit || this.isMobileEditLocked()) {
+        this.isEditing = false;
+        return;
+      }
+
+      this.isEditing = true;
+    },
+
+    toggleEditing() {
+      this.setEditing(!this.isEditing);
     },
 
     async saveDashboard(id, dashboard, createDashboard, updateDashboard) {
@@ -151,14 +194,13 @@ export const useDashboardStore = defineStore("dashboard", {
     },
 
     loadDashboardTheme() {
+      const selectedTheme = normalizeDashboardTheme(this.dashboard.settings?.theme);
       let cssClass;
-      if (this.dashboard.settings.theme === "auto") {
+      if (selectedTheme === "auto") {
         const colorScheme = usePreferredColorScheme();
         cssClass = colorScheme.value === "dark" ? "dark" : "light";
-      } else if (this.dashboard.settings.theme === "dark") {
-        cssClass = "dark";
       } else {
-        cssClass = "light";
+        cssClass = selectedTheme;
       }
       document.body.className = cssClass;
     },

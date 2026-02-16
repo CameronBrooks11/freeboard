@@ -1,0 +1,24 @@
+body.colorblind {
+  --color-primary: #0072b2;
+  --color-accent: #e69f00;
+  --color-secondary: #009e73;
+  --color-error: #d55e00;
+  --color-foreground: #e5eef5;
+  --color-background: #0f172a;
+
+  --color-shade-0: #0a1020;
+  --color-shade-1: #0f172a;
+  --color-shade-2: #1e293b;
+  --color-shade-3: #273449;
+  --color-shade-4: #314158;
+  --color-shade-5: #425774;
+  --color-shade-6: #5a7398;
+  --color-shade-7: #7491b7;
+  --color-shade-8: #9bb4ce;
+  --color-shade-9: #c9d6e5;
+  --color-shade-10: #f1f5f9;
+
+  --color-overlay: rgba(2, 6, 23, 0.86);
+  --color-shadow: rgba(15, 23, 42, 0.45);
+  --color-highlight: rgba(230, 159, 0, 0.42);
+}

@@ -3,7 +3,12 @@
  * @description Generates configuration schema for dashboard settings forms.
  */
 
-import { MAX_COLUMNS, MIN_COLUMNS } from "./models/Dashboard.js";
+import {
+  DASHBOARD_THEME_PRESETS,
+  MAX_COLUMNS,
+  MIN_COLUMNS,
+  normalizeDashboardTheme,
+} from "./models/Dashboard.js";
 
 /**
  * Build settings panels and fields for the dashboard editor.
@@ -20,6 +25,8 @@ import { MAX_COLUMNS, MIN_COLUMNS } from "./models/Dashboard.js";
  * @returns {Array<Object>} Array of settings sections for the UI form.
  */
 export default (dashboard, { allowTrustedExecution = true } = {}) => {
+  const dashboardSettings = dashboard.settings || {};
+
   const fields = [
     // General settings: title and columns
     {
@@ -48,13 +55,13 @@ export default (dashboard, { allowTrustedExecution = true } = {}) => {
         },
       ],
     },
-    // Theme settings: auto, light, dark
+    // Theme settings
     {
       label: "form.labelTheme",
       icon: "hi-pencil-alt",
       name: "theme",
       settings: {
-        theme: dashboard.settings.theme,
+        theme: normalizeDashboardTheme(dashboardSettings.theme),
       },
       fields: [
         {
@@ -63,20 +70,37 @@ export default (dashboard, { allowTrustedExecution = true } = {}) => {
           type: "option",
           default: "auto",
           required: true,
-          options: [
-            {
-              label: "form.labelThemeAuto",
-              value: "auto",
-            },
-            {
-              label: "form.labelThemeLight",
-              value: "light",
-            },
-            {
-              label: "form.labelThemeDark",
-              value: "dark",
-            },
-          ],
+          options: DASHBOARD_THEME_PRESETS.map((themeValue) => ({
+            value: themeValue,
+            label:
+              {
+                auto: "form.labelThemeAuto",
+                light: "form.labelThemeLight",
+                dark: "form.labelThemeDark",
+                professional: "form.labelThemeProfessional",
+                "high-contrast": "form.labelThemeHighContrast",
+                colorblind: "form.labelThemeColorblind",
+                warm: "form.labelThemeWarm",
+                cool: "form.labelThemeCool",
+              }[themeValue] || "form.labelThemeAuto",
+          })),
+        },
+      ],
+    },
+    {
+      label: "form.labelMobile",
+      icon: "hi-solid-chevron-down",
+      name: "mobile",
+      settings: {
+        allowMobileEdit: dashboardSettings.allowMobileEdit ?? false,
+      },
+      fields: [
+        {
+          name: "allowMobileEdit",
+          label: "form.labelAllowMobileEdit",
+          type: "boolean",
+          default: false,
+          description: "form.descriptionAllowMobileEdit",
         },
       ],
     },
@@ -93,7 +117,7 @@ export default (dashboard, { allowTrustedExecution = true } = {}) => {
       icon: "hi-beaker",
       name: "style",
       settings: {
-        style: dashboard.settings.style,
+        style: dashboardSettings.style,
       },
       fields: [
         {
@@ -110,7 +134,7 @@ export default (dashboard, { allowTrustedExecution = true } = {}) => {
       icon: "hi-variable",
       name: "script",
       settings: {
-        script: dashboard.settings.script,
+        script: dashboardSettings.script,
       },
       fields: [
         {
@@ -127,7 +151,7 @@ export default (dashboard, { allowTrustedExecution = true } = {}) => {
       icon: "hi-archive",
       name: "resources",
       settings: {
-        resources: dashboard.settings.resources,
+        resources: dashboardSettings.resources,
       },
       fields: [
         {

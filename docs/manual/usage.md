@@ -34,6 +34,20 @@ In private -> external (`link/public`) transitions, share tokens are rotated.
 - `safe` (default): trusted script/resource capabilities are blocked.
 - `trusted`: advanced script/resource features enabled for trusted environments.
 
+## Mobile (`sm`) layout behavior
+
+- Dashboard width preset `sm` renders panes as a forced single-column stack.
+- Use the width toolbar in edit mode to switch `md -> sm` for mobile-oriented layouts.
+- On mobile-size viewports, `sm` defaults to view-only mode.
+- Advanced override: enable `Allow Mobile Edit (Advanced)` in dashboard settings when in-device editing is required.
+- If mobile editing is not required, keep `Allow Mobile Edit (Advanced)` disabled.
+
+## Theme packs
+
+- Dashboard settings include: `auto`, `light`, `dark`, `professional`, `high-contrast`, `colorblind`, `warm`, `cool`.
+- `auto` follows the browser/system color scheme and resolves to `light` or `dark`.
+- Theme previews are available in the settings dialog so dashboards can be tuned quickly per environment (operator console, kiosk, control-room display).
+
 ## Common commands
 
 - Full dev stack: `npm run dev`

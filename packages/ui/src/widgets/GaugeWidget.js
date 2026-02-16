@@ -101,6 +101,7 @@ export class GaugeWidget extends ReactiveWidget {
 
     this.radius = 54;
     this.circumference = 2 * Math.PI * this.radius;
+    this.isNarrow = false;
 
     this.widgetElement.style.display = "flex";
     this.widgetElement.style.flexDirection = "column";
@@ -115,10 +116,10 @@ export class GaugeWidget extends ReactiveWidget {
     this.headerElement.style.textTransform = "uppercase";
     this.headerElement.style.letterSpacing = "0.04em";
 
-    const gaugeWrap = document.createElement("div");
-    gaugeWrap.style.position = "relative";
-    gaugeWrap.style.width = "140px";
-    gaugeWrap.style.height = "140px";
+    this.gaugeWrap = document.createElement("div");
+    this.gaugeWrap.style.position = "relative";
+    this.gaugeWrap.style.width = "140px";
+    this.gaugeWrap.style.height = "140px";
 
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 140 140");
@@ -166,10 +167,31 @@ export class GaugeWidget extends ReactiveWidget {
     labelWrap.append(this.valueElement, this.unitElement);
 
     svg.append(track, this.progress);
-    gaugeWrap.append(svg, labelWrap);
-    this.widgetElement.append(this.headerElement, gaugeWrap);
+    this.gaugeWrap.append(svg, labelWrap);
+    this.widgetElement.append(this.headerElement, this.gaugeWrap);
 
     this.onSettingsChanged(settings);
+  }
+
+  applyResponsiveSizing(size = {}) {
+    const width = Number(size.width);
+    const isNarrow = Number.isFinite(width) && width > 0 && width < 260;
+    this.isNarrow = isNarrow;
+
+    const preferredSize = Number.isFinite(width) && width > 0 ? width - 24 : 140;
+    const gaugeSize = Math.max(96, Math.min(170, preferredSize));
+
+    this.gaugeWrap.style.width = `${Math.round(gaugeSize)}px`;
+    this.gaugeWrap.style.height = `${Math.round(gaugeSize)}px`;
+    this.headerElement.style.fontSize = isNarrow ? "11px" : "12px";
+    this.headerElement.style.marginBottom = isNarrow ? "6px" : "8px";
+    this.valueElement.style.fontSize = isNarrow ? "22px" : "28px";
+    this.unitElement.style.fontSize = isNarrow ? "11px" : "13px";
+  }
+
+  onSettingsChanged(newSettings) {
+    super.onSettingsChanged(newSettings);
+    this.applyResponsiveSizing();
   }
 
   resolveInputs() {
@@ -224,5 +246,9 @@ export class GaugeWidget extends ReactiveWidget {
     this.valueElement.textContent = this.formatValue(clamped);
     this.progress.setAttribute("stroke-dashoffset", String(offset));
     this.progress.setAttribute("stroke", `hsl(${hue} 70% 45%)`);
+  }
+
+  onResize(size = {}) {
+    this.applyResponsiveSizing(size);
   }
 }

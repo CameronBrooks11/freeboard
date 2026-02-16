@@ -17,6 +17,7 @@ Use this manual in two tracks:
 ## Build Custom Widgets
 
 - [Base Widget Guide](/manual/widget-base-guide)
+- [Widget Developer Guide](/manual/widget-developer-guide)
 - [Widget Runtime](/manual/widget-runtime)
 
 ## Developer/Operator Path

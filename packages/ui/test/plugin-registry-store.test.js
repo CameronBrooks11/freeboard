@@ -24,6 +24,7 @@ test("plugin registry registers all core datasource and widget plugins idempoten
   ]);
 
   assert.deepEqual(Object.keys(store.widgetPlugins).sort(), [
+    "bar-chart",
     "base",
     "gauge",
     "html",
@@ -32,6 +33,8 @@ test("plugin registry registers all core datasource and widget plugins idempoten
     "picture",
     "pointer",
     "sparkline",
+    "status-list",
+    "table",
     "text",
   ]);
 });

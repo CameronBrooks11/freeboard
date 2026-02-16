@@ -30,6 +30,88 @@ export const MIN_COLUMNS = 3;
 export const MAX_COLUMNS = 12;
 
 /**
+ * Supported dashboard width presets.
+ * @constant {readonly string[]}
+ */
+export const DASHBOARD_WIDTH_PRESETS = Object.freeze(["sm", "md", "lg", "xl"]);
+
+/**
+ * Default dashboard width preset.
+ * @constant {string}
+ */
+export const DEFAULT_DASHBOARD_WIDTH = "md";
+
+/**
+ * Normalize dashboard width values from persisted payloads/settings.
+ *
+ * @param {string} value
+ * @returns {"sm"|"md"|"lg"|"xl"}
+ */
+export const normalizeDashboardWidth = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (DASHBOARD_WIDTH_PRESETS.includes(normalized)) {
+    return normalized;
+  }
+  return DEFAULT_DASHBOARD_WIDTH;
+};
+
+/**
+ * Supported dashboard theme presets.
+ * @constant {readonly string[]}
+ */
+export const DASHBOARD_THEME_PRESETS = Object.freeze([
+  "auto",
+  "light",
+  "dark",
+  "professional",
+  "high-contrast",
+  "colorblind",
+  "warm",
+  "cool",
+]);
+
+/**
+ * Default dashboard theme preset.
+ * @constant {string}
+ */
+export const DEFAULT_DASHBOARD_THEME = "auto";
+
+/**
+ * Normalize dashboard theme values from persisted payloads/settings.
+ *
+ * @param {string} value
+ * @returns {"auto"|"light"|"dark"|"professional"|"high-contrast"|"colorblind"|"warm"|"cool"}
+ */
+export const normalizeDashboardTheme = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (DASHBOARD_THEME_PRESETS.includes(normalized)) {
+    return normalized;
+  }
+  return DEFAULT_DASHBOARD_THEME;
+};
+
+const normalizeBooleanSetting = (value, fallback = false) => {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  if (typeof value === "boolean") {
+    return value;
+  }
+  const normalized = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+};
+
+/**
  * Represents a Freeboard dashboard with layout, content, and settings.
  *
  * @class Dashboard
@@ -52,14 +134,15 @@ export class Dashboard {
   /** @type {number} Number of columns in layout. */
   columns = MIN_COLUMNS;
   /** @type {string} Layout width specifier. */
-  width = "md";
+  width = DEFAULT_DASHBOARD_WIDTH;
   /** @type {Array} Collection of datasource instances. */
   datasources = [];
   /** @type {Array} Collection of pane instances. */
   panes = [];
   /** @type {Object} Dashboard settings (theme, style, etc.). */
   settings = {
-    theme: "auto",
+    theme: DEFAULT_DASHBOARD_THEME,
+    allowMobileEdit: false,
   };
   /** @type {boolean} Whether the current user is the owner. */
   isOwner = true;
@@ -93,28 +176,22 @@ export class Dashboard {
    * Decrease the dashboard's maximum width setting.
    */
   decreaseMaxWidth() {
-    if (this.width === "md") {
+    const index = DASHBOARD_WIDTH_PRESETS.indexOf(normalizeDashboardWidth(this.width));
+    if (index <= 0) {
       return;
     }
-    if (this.width === "lg") {
-      this.width = "md";
-    } else {
-      this.width = "lg";
-    }
+    this.width = DASHBOARD_WIDTH_PRESETS[index - 1];
   }
 
   /**
    * Increase the dashboard's maximum width setting.
    */
   increaseMaxWidth() {
-    if (this.width === "xl") {
+    const index = DASHBOARD_WIDTH_PRESETS.indexOf(normalizeDashboardWidth(this.width));
+    if (index >= DASHBOARD_WIDTH_PRESETS.length - 1) {
       return;
     }
-    if (this.width === "lg") {
-      this.width = "xl";
-    } else {
-      this.width = "lg";
-    }
+    this.width = DASHBOARD_WIDTH_PRESETS[index + 1];
   }
 
   /**
@@ -137,14 +214,20 @@ export class Dashboard {
     this.title = object.title;
     this.columns = object.columns;
     this.image = object.image;
-    this.width = object.width;
+    this.width = normalizeDashboardWidth(object.width);
     this.visibility = typeof object.visibility === "string" ? object.visibility : "private";
     this.shareToken = object.shareToken || null;
     this.shareTokenVersion = Number.isFinite(Number(object.shareTokenVersion))
       ? Math.max(0, Math.floor(Number(object.shareTokenVersion)))
       : 0;
     this.acl = Array.isArray(object.acl) ? object.acl : [];
-    this.settings = object.settings || {};
+    const rawSettings =
+      object.settings && typeof object.settings === "object" ? object.settings : {};
+    this.settings = {
+      ...rawSettings,
+      theme: normalizeDashboardTheme(rawSettings.theme),
+      allowMobileEdit: normalizeBooleanSetting(rawSettings.allowMobileEdit, false),
+    };
     this.isOwner = resolveDashboardIsOwner(object);
     this.canEdit = object.canEdit === undefined ? this.isOwner : Boolean(object.canEdit);
     this.canManageSharing =

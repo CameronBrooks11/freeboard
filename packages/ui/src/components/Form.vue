@@ -64,6 +64,20 @@ const storeComponentRef = (name, el) => {
   components.value[name] = el;
 };
 
+/**
+ * Programmatically set a field value by name.
+ *
+ * @param {string} name
+ * @param {any} value
+ */
+const setFieldValue = (name, value) => {
+  const field = formFields.value.find((entry) => entry.name === name);
+  if (!field) {
+    return;
+  }
+  field.model = value;
+};
+
 // Track validation errors keyed by field name
 const errors = ref({});
 
@@ -234,6 +248,7 @@ const fieldToFormElement = (field) => {
 defineExpose({
   getValue,
   hasErrors,
+  setFieldValue,
 });
 
 // Reactive reference for processed fields

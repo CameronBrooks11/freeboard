@@ -15,7 +15,7 @@ const { isEditing } = storeToRefs(dashboardStore);
 
 <template>
   <!-- Toggle between edit and view modes by clicking -->
-  <div class="toggle-header-button" @click="() => (isEditing = !isEditing)">
+  <div class="toggle-header-button" @click="() => dashboardStore.toggleEditing()">
     <i class="toggle-header-button__icon">
       <v-icon
         class="toggle-header-button__icon__svg"

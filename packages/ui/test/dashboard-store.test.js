@@ -204,3 +204,48 @@ test("dashboard store saveDashboard enforces publish policy on create", async ()
   assert.equal(dashboardStore.dashboard._id, "dash-1");
   assert.equal(savedDashboardId, "dash-1");
 });
+
+test("dashboard store blocks mobile editing for sm width unless allowMobileEdit is enabled", async () => {
+  const { useDashboardStore } = await import("../src/stores/dashboard.js");
+
+  const authStore = useAuthStore();
+  const dashboardStore = useDashboardStore();
+
+  authStore.login(
+    encodeToken({
+      _id: "editor-mobile-1",
+      email: "editor@example.com",
+      role: "editor",
+      active: true,
+    }),
+  );
+
+  globalThis.window.matchMedia = () => ({ matches: true });
+
+  dashboardStore.dashboard.width = "sm";
+  dashboardStore.dashboard.settings.allowMobileEdit = false;
+
+  dashboardStore.setEditing(true);
+  assert.equal(dashboardStore.isEditing, false);
+
+  dashboardStore.dashboard.settings.allowMobileEdit = true;
+  dashboardStore.setEditing(true);
+  assert.equal(dashboardStore.isEditing, true);
+});
+
+test("dashboard store applies curated and fallback themes to document body class", async () => {
+  const { useDashboardStore } = await import("../src/stores/dashboard.js");
+  const dashboardStore = useDashboardStore();
+
+  dashboardStore.dashboard.settings.theme = "professional";
+  dashboardStore.loadDashboardTheme();
+  assert.equal(globalThis.document.body.className, "professional");
+
+  dashboardStore.dashboard.settings.theme = "high-contrast";
+  dashboardStore.loadDashboardTheme();
+  assert.equal(globalThis.document.body.className, "high-contrast");
+
+  dashboardStore.dashboard.settings.theme = "invalid-theme";
+  dashboardStore.loadDashboardTheme();
+  assert.match(globalThis.document.body.className, /^(light|dark)$/);
+});

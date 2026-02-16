@@ -80,6 +80,7 @@ export class PointerWidget extends ReactiveWidget {
 
   constructor(settings) {
     super(settings);
+    this.isNarrow = false;
 
     this.widgetElement.style.display = "flex";
     this.widgetElement.style.flexDirection = "column";
@@ -150,6 +151,23 @@ export class PointerWidget extends ReactiveWidget {
       this.valueElement,
       this.unitElement,
     );
+
+    this.applyResponsiveSizing();
+  }
+
+  applyResponsiveSizing(size = {}) {
+    const width = Number(size.width);
+    this.isNarrow = Number.isFinite(width) && width > 0 && width < 280;
+
+    const preferredWidth = Number.isFinite(width) && width > 0 ? width - 24 : 180;
+    const dialWidth = Math.max(120, Math.min(220, preferredWidth));
+
+    this.dialWrap.style.maxWidth = `${Math.round(dialWidth)}px`;
+    this.valueElement.style.fontSize = this.isNarrow ? "20px" : "24px";
+    this.valueElement.style.marginTop = this.isNarrow ? "6px" : "8px";
+    this.unitElement.style.fontSize = this.isNarrow ? "11px" : "12px";
+    this.headerElement.style.fontSize = this.isNarrow ? "11px" : "12px";
+    this.headerElement.style.marginBottom = this.isNarrow ? "6px" : "8px";
   }
 
   resolveInputs() {
@@ -190,5 +208,9 @@ export class PointerWidget extends ReactiveWidget {
 
   getPreferredRows() {
     return PointerWidget.preferredRows;
+  }
+
+  onResize(size = {}) {
+    this.applyResponsiveSizing(size);
   }
 }

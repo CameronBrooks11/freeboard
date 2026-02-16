@@ -6,7 +6,7 @@
 defineOptions({ name: "Header" });
 
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, watch } from "vue";
 import { useAuthStore } from "../stores/auth.js";
 import { useDashboardStore } from "../stores/dashboard.js";
 // Admin controls and toggles
@@ -19,8 +19,38 @@ import { RouterLink } from "vue-router";
 // Retrieve editing flags and dashboard instance
 const authStore = useAuthStore();
 const dashboardStore = useDashboardStore();
-const { allowEdit, isEditing } = storeToRefs(dashboardStore);
+const { allowEdit, isEditing, dashboard } = storeToRefs(dashboardStore);
 const showAdminButton = computed(() => authStore.isAdmin());
+
+const onViewportResize = () => {
+  dashboardStore.syncEditingPermissions();
+};
+
+onMounted(() => {
+  if (typeof window !== "undefined") {
+    window.addEventListener("resize", onViewportResize);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (typeof window !== "undefined") {
+    window.removeEventListener("resize", onViewportResize);
+  }
+});
+
+watch(
+  () => dashboard.value?.width,
+  () => {
+    dashboardStore.syncEditingPermissions();
+  },
+);
+
+watch(
+  () => dashboard.value?.settings?.allowMobileEdit,
+  () => {
+    dashboardStore.syncEditingPermissions();
+  },
+);
 </script>
 
 <template>

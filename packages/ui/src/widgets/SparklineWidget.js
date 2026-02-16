@@ -114,6 +114,7 @@ export class SparklineWidget extends ReactiveWidget {
     super(settings);
     this.seriesHistory = [];
     this.latestSeriesCount = 1;
+    this.isNarrow = false;
 
     this.widgetElement.style.display = "flex";
     this.widgetElement.style.flexDirection = "column";
@@ -143,6 +144,7 @@ export class SparklineWidget extends ReactiveWidget {
     this.legendElement.style.opacity = "0.95";
 
     this.widgetElement.append(this.headerElement, this.canvasWrap, this.legendElement);
+    this.applyResponsiveSizing();
   }
 
   resolveInputs() {
@@ -177,8 +179,17 @@ export class SparklineWidget extends ReactiveWidget {
     this.draw();
   }
 
-  onResize() {
+  onResize(size = {}) {
+    this.applyResponsiveSizing(size);
     this.draw();
+  }
+
+  applyResponsiveSizing(size = {}) {
+    const width = Number(size.width);
+    this.isNarrow = Number.isFinite(width) && width > 0 && width < 320;
+    this.headerElement.style.fontSize = this.isNarrow ? "11px" : "12px";
+    this.headerElement.style.marginBottom = this.isNarrow ? "6px" : "8px";
+    this.legendElement.style.fontSize = this.isNarrow ? "10px" : "11px";
   }
 
   pushSeriesValues(values) {
@@ -236,7 +247,10 @@ export class SparklineWidget extends ReactiveWidget {
       return;
     }
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr =
+      typeof window !== "undefined" && Number(window.devicePixelRatio) > 0
+        ? Number(window.devicePixelRatio)
+        : 1;
     this.canvas.width = Math.floor(width * dpr);
     this.canvas.height = Math.floor(height * dpr);
     const context = this.canvas.getContext("2d");
@@ -305,9 +319,15 @@ export class SparklineWidget extends ReactiveWidget {
       item.style.display = "inline-flex";
       item.style.alignItems = "center";
       item.style.gap = "4px";
-      item.innerHTML = `<span style="color:${DEFAULT_COLORS[index % DEFAULT_COLORS.length]}">●</span>${
-        labels[index] || `Series ${index + 1}`
-      }`;
+
+      const marker = document.createElement("span");
+      marker.textContent = "●";
+      marker.style.color = DEFAULT_COLORS[index % DEFAULT_COLORS.length];
+
+      const label = document.createElement("span");
+      label.textContent = labels[index] || `Series ${index + 1}`;
+
+      item.append(marker, label);
       this.legendElement.append(item);
     }
   }

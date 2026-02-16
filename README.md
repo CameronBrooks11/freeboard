@@ -8,7 +8,7 @@ This Freeboard is a fork of [Jim Heising's damn-sexy dashboard app](https://gith
 - Modern **Vue.js** v3 frontend
 - Gateway-backed **HTTP datasource runtime** with egress controls
 - Gateway-backed realtime datasource runtime (**SSE**, **WebSocket**, **MQTT**)
-- Built-in widget set: **Base, Text, Indicator, Gauge, Pointer, Picture, HTML, Sparkline, Map**
+- Built-in widget set: **Base, Text, Indicator, Gauge, Pointer, Picture, HTML, Sparkline, Table, Bar Chart, Status List, Map**
 - **Monorepo** through `npm` workspaces
 - **Commit-Hooks** with `pre-commit`
 - **CSS-Variables** for all colors
@@ -183,6 +183,10 @@ python -m venv .venv
 ## Acknowledgement
 
 Continues the work of [artificialhoney/freeboard](https://github.com/artificialhoney/freeboard) which is an archived prototype branch derived from the once-popular but long-unmaintained [Freeboard/freeboard](https://github.com/Freeboard/freeboard).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for PR expectations, widget proposal flow, and quality/security checklists.
 
 ## Copyright
 

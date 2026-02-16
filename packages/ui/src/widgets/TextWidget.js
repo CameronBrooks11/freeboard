@@ -7,6 +7,19 @@ import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
 const isFiniteNumber = (v) => typeof v === "number" && Number.isFinite(v);
 
+const nowMs = () =>
+  typeof performance !== "undefined" && typeof performance.now === "function"
+    ? performance.now()
+    : Date.now();
+
+const requestFrame =
+  typeof requestAnimationFrame === "function"
+    ? requestAnimationFrame
+    : (callback) => setTimeout(() => callback(nowMs()), 16);
+
+const cancelFrame =
+  typeof cancelAnimationFrame === "function" ? cancelAnimationFrame : (id) => clearTimeout(id);
+
 /**
  * Text widget implementation.
  */
@@ -106,6 +119,7 @@ export class TextWidget extends ReactiveWidget {
 
   constructor(settings) {
     super(settings);
+    this.isNarrow = false;
 
     this.widgetElement.style.display = "flex";
     this.widgetElement.style.flexDirection = "column";
@@ -143,8 +157,22 @@ export class TextWidget extends ReactiveWidget {
   onSettingsChanged(newSettings) {
     super.onSettingsChanged(newSettings);
 
+    this.applyResponsiveSizing();
+  }
+
+  applyResponsiveSizing() {
     const isBig = this.currentSettings?.size === "big";
-    this.valueElement.style.fontSize = isBig ? "56px" : "32px";
+    this.valueElement.style.fontSize = this.isNarrow
+      ? isBig
+        ? "40px"
+        : "26px"
+      : isBig
+        ? "56px"
+        : "32px";
+    this.unitElement.style.fontSize = this.isNarrow ? "13px" : "16px";
+    this.unitElement.style.paddingBottom = this.isNarrow ? "2px" : "4px";
+    this.headerElement.style.fontSize = this.isNarrow ? "11px" : "12px";
+    this.headerElement.style.marginBottom = this.isNarrow ? "4px" : "6px";
   }
 
   resolveInputs() {
@@ -186,13 +214,13 @@ export class TextWidget extends ReactiveWidget {
     }
 
     if (this.animationFrame) {
-      cancelAnimationFrame(this.animationFrame);
+      cancelFrame(this.animationFrame);
     }
 
     const from = this.currentNumericValue;
     const to = nextValue;
     const duration = 220;
-    const startedAt = performance.now();
+    const startedAt = nowMs();
 
     const step = (now) => {
       const elapsed = now - startedAt;
@@ -201,13 +229,13 @@ export class TextWidget extends ReactiveWidget {
       this.valueElement.textContent = this.formatValue(current);
 
       if (t < 1) {
-        this.animationFrame = requestAnimationFrame(step);
+        this.animationFrame = requestFrame(step);
       } else {
         this.currentNumericValue = to;
       }
     };
 
-    this.animationFrame = requestAnimationFrame(step);
+    this.animationFrame = requestFrame(step);
   }
 
   onInputsChanged(inputs) {
@@ -228,9 +256,15 @@ export class TextWidget extends ReactiveWidget {
 
   onDispose() {
     if (this.animationFrame) {
-      cancelAnimationFrame(this.animationFrame);
+      cancelFrame(this.animationFrame);
     }
 
     super.onDispose();
+  }
+
+  onResize(size = {}) {
+    const width = Number(size.width);
+    this.isNarrow = Number.isFinite(width) && width > 0 && width < 260;
+    this.applyResponsiveSizing();
   }
 }

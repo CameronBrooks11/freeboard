@@ -10,6 +10,9 @@ Use these pages to quickly test each built-in widget against real public APIs.
 - [Picture Widget Examples](/manual/widget-examples/picture)
 - [HTML Widget Examples](/manual/widget-examples/html)
 - [Sparkline Widget Examples](/manual/widget-examples/sparkline)
+- [Table Widget Examples](/manual/widget-examples/table)
+- [Bar Chart Widget Examples](/manual/widget-examples/bar-chart)
+- [Status List Widget Examples](/manual/widget-examples/status-list)
 - [Map Widget Examples](/manual/widget-examples/map)
 
 All HTTP datasource examples below assume:

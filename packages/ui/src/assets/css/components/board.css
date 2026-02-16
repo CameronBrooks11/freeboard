@@ -21,6 +21,10 @@
   max-width: 960px;
 }
 
+.board .board__grid--sm {
+  max-width: 640px;
+}
+
 .board .board__grid--lg {
   max-width: 1280px;
 }
@@ -29,11 +33,25 @@
   max-width: 1536px;
 }
 
+.board .board__stack {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.board .board__stack-item {
+  width: 100%;
+}
+
 @media screen and (max-width: 640px) {
-  .board .board__grid {
-    height: 100% !important;
-    gap: 20px;
-    display: flex;
-    flex-direction: column;
+  .board {
+    padding-inline: 8px;
   }
 }

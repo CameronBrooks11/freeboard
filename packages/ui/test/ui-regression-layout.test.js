@@ -59,3 +59,23 @@ test("Nginx gateway location forwards websocket upgrade headers", () => {
     /location\s+\/gateway\s*\{[\s\S]*proxy_http_version\s+1\.1;[\s\S]*proxy_set_header\s+Upgrade\s+\$http_upgrade;[\s\S]*proxy_set_header\s+Connection\s+"upgrade";/,
   );
 });
+
+test("Board includes explicit sm single-column stack rendering path", () => {
+  const boardSource = readProjectFile("../src/components/Board.vue");
+  const boardCss = readProjectFile("../src/assets/css/components/board.css");
+
+  assert.match(
+    boardSource,
+    /const isSmallLayout = computed\(\(\) => dashboard\.value\?\.width === "sm"\)/,
+  );
+  assert.match(boardSource, /<div v-if="isSmallLayout" class="board__stack">/);
+  assert.match(boardCss, /\.board\s+\.board__stack\s*\{/);
+});
+
+test("UI entrypoint viewport meta includes viewport-fit for mobile layout stability", () => {
+  const indexHtmlSource = readProjectFile("../index.html");
+  assert.match(
+    indexHtmlSource,
+    /<meta name="viewport" content="width=device-width, initial-scale=1\.0, viewport-fit=cover" \/>/,
+  );
+});

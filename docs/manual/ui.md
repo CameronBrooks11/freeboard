@@ -68,6 +68,7 @@ User-facing docs:
 - [Widget Reference](/manual/widget-reference)
 - [Widget Examples](/manual/widget-examples/)
 - [Base Widget Guide](/manual/widget-base-guide)
+- [Widget Developer Guide](/manual/widget-developer-guide)
 
 ## Developer Commands
 

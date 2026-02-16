@@ -1,0 +1,24 @@
+body.high-contrast {
+  --color-primary: #ffffff;
+  --color-accent: #ffff00;
+  --color-secondary: #00ffff;
+  --color-error: #ff3b30;
+  --color-foreground: #ffffff;
+  --color-background: #000000;
+
+  --color-shade-0: #000000;
+  --color-shade-1: #0d0d0d;
+  --color-shade-2: #1a1a1a;
+  --color-shade-3: #262626;
+  --color-shade-4: #333333;
+  --color-shade-5: #4d4d4d;
+  --color-shade-6: #666666;
+  --color-shade-7: #808080;
+  --color-shade-8: #b3b3b3;
+  --color-shade-9: #d9d9d9;
+  --color-shade-10: #ffffff;
+
+  --color-overlay: rgba(0, 0, 0, 0.92);
+  --color-shadow: rgba(0, 0, 0, 0.7);
+  --color-highlight: rgba(255, 255, 0, 0.45);
+}
