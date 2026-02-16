@@ -8,7 +8,7 @@ defineOptions({ name: 'FreeboardControl' });
 import { storeToRefs } from "pinia";
 import { useDashboardStore } from "../stores/dashboard.js";
 import { useMutation } from "@vue/apollo-composable";
-import { DASHBOARD_CREATE_MUTATION, DASHBOARD_UPDATE_MUTATION } from "../gql";
+import { DASHBOARD_CREATE_MUTATION, DASHBOARD_UPDATE_MUTATION } from "../gql.js";
 import { getCurrentInstance } from "vue";
 import { useRouter } from "vue-router";
 import SavedDashboardsDialogBox from "./SavedDashboardsDialogBox.vue";

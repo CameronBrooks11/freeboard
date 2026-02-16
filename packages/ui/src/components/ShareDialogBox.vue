@@ -26,7 +26,7 @@ import {
   DASHBOARD_SET_VISIBILITY_MUTATION,
   DASHBOARD_TRANSFER_OWNERSHIP_MUTATION,
   DASHBOARD_UPSERT_ACCESS_MUTATION,
-} from "../gql";
+} from "../gql.js";
 
 const { onClose } = defineProps({
   onClose: Function,

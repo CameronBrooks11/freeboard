@@ -16,7 +16,7 @@ import { useQuery } from "@vue/apollo-composable";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import DialogBox from "./DialogBox.vue";
-import { DASHBOARDS_LIST_QUERY, DASHBOARD_READ_QUERY } from "../gql";
+import { DASHBOARDS_LIST_QUERY, DASHBOARD_READ_QUERY } from "../gql.js";
 import { useDashboardStore } from "../stores/dashboard.js";
 
 // ===== Props =====

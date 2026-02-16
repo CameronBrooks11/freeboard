@@ -22,7 +22,7 @@ import {
   BROKER_PROFILES_QUERY,
   CREDENTIAL_PROFILES_QUERY,
   PUBLIC_AUTH_POLICY_QUERY,
-} from "../gql";
+} from "../gql.js";
 import router from "../router";
 import { storeToRefs } from "pinia";
 import Preloader from "./Preloader.vue";

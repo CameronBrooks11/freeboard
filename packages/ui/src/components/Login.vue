@@ -24,7 +24,7 @@ import {
   RESET_PASSWORD_MUTATION,
   USER_AUTH_MUTATION,
   USER_REGISTER_MUTATION,
-} from "../gql";
+} from "../gql.js";
 
 const MODES = LOGIN_ACTION_MODES;
 
