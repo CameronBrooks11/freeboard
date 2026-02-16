@@ -5,8 +5,16 @@
 
 import { ensureThatUserIsAdministrator } from "../auth.js";
 import Dashboard from "../models/Dashboard.js";
+import BrokerProfile from "../models/BrokerProfile.js";
 
-const ALLOWED_DATASOURCE_TYPES = new Set(["http", "clock", "static"]);
+const ALLOWED_DATASOURCE_TYPES = new Set([
+  "http",
+  "clock",
+  "static",
+  "sse",
+  "websocket",
+  "mqtt",
+]);
 const EXTERNAL_VISIBILITIES = new Set(["link", "public"]);
 
 const normalizeType = (value) => {
@@ -24,6 +32,37 @@ export default {
       const dashboards = await Dashboard.find({})
         .select("_id visibility datasources")
         .lean();
+
+      const brokerProfileIds = new Set();
+      dashboards.forEach((dashboard) => {
+        const datasources = Array.isArray(dashboard?.datasources)
+          ? dashboard.datasources
+          : [];
+        datasources.forEach((datasource) => {
+          const type = normalizeType(datasource?.type);
+          if (type !== "mqtt") {
+            return;
+          }
+          const brokerProfileId = String(
+            datasource?.settings?.brokerProfileId || ""
+          ).trim();
+          if (brokerProfileId) {
+            brokerProfileIds.add(brokerProfileId);
+          }
+        });
+      });
+
+      const brokerProfiles = await BrokerProfile.find({
+        _id: { $in: [...brokerProfileIds] },
+      })
+        .select("_id credentialProfileId")
+        .lean();
+      const brokerCredentialMap = new Map(
+        brokerProfiles.map((profile) => [
+          String(profile._id),
+          String(profile.credentialProfileId || "").trim(),
+        ])
+      );
 
       let totalDatasources = 0;
       let credentialBoundDatasources = 0;
@@ -51,8 +90,16 @@ export default {
           const credentialProfileId = String(
             datasource?.settings?.credentialProfileId || ""
           ).trim();
-          if (type === "http" && credentialProfileId) {
+          if (["http", "sse", "websocket"].includes(type) && credentialProfileId) {
             credentialBoundDatasources += 1;
+          }
+          if (type === "mqtt") {
+            const brokerProfileId = String(
+              datasource?.settings?.brokerProfileId || ""
+            ).trim();
+            if (brokerProfileId && brokerCredentialMap.get(brokerProfileId)) {
+              credentialBoundDatasources += 1;
+            }
           }
 
           if (EXTERNAL_VISIBILITIES.has(visibility)) {

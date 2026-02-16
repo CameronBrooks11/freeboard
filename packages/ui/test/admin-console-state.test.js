@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  toBrokerProfileDraft,
   toPolicyDraft,
   toUserDraft,
 } from "../src/admin/adminConsoleState.js";
@@ -52,4 +53,18 @@ test("toUserDraft normalizes user role values and preserves activation state", (
     role: "viewer",
     active: false,
   });
+});
+
+test("toBrokerProfileDraft normalizes protocol and topic allowlist", () => {
+  const draft = toBrokerProfileDraft({
+    protocol: "MQTT",
+    topicAllowlist: ["factory/#", "line/+/status"],
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+
+  assert.equal(draft.protocol, "mqtt");
+  assert.equal(draft.topicAllowlist, "factory/#, line/+/status");
+  assert.equal(draft.tlsRejectUnauthorized, false);
 });

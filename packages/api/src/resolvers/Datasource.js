@@ -135,7 +135,7 @@ export default {
           shareToken,
         });
 
-        const minted = mintDatasourceSessionToken({
+        const minted = await mintDatasourceSessionToken({
           dashboard,
           datasourceId,
           user: context.user || null,

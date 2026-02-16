@@ -4,6 +4,7 @@ import test from "node:test";
 import { config } from "../src/config.js";
 import {
   buildCanonicalDatasourceIntent,
+  buildCanonicalStreamingIntent,
   hashDatasourceIntent,
   resolveGatewayIntrospection,
 } from "../src/datasourceGateway.js";
@@ -72,6 +73,7 @@ test("resolveGatewayIntrospection rejects stale public share token version", asy
 
   const tokenClaims = {
     sub: "public",
+    scope: "datasource:fetch",
     intentHash: hashDatasourceIntent(canonicalIntent),
     shareTokenVersion: 6,
   };
@@ -116,6 +118,7 @@ test("resolveGatewayIntrospection returns canonical gateway intent for valid pub
 
   const tokenClaims = {
     sub: "public",
+    scope: "datasource:fetch",
     intentHash: hashDatasourceIntent(canonicalIntent),
     shareTokenVersion: 11,
   };
@@ -136,4 +139,48 @@ test("resolveGatewayIntrospection returns canonical gateway intent for valid pub
   assert.equal(resolved.intent.timeoutMs, 2500);
   assert.equal(resolved.intent.headers["X-Client"], "freeboard");
   assert.equal(resolved.intent.body, "{\"from\":\"phase5\"}");
+});
+
+test("resolveGatewayIntrospection returns streaming intent for websocket datasource", async () => {
+  const dashboard = buildDashboard({
+    visibility: "public",
+    shareTokenVersion: 5,
+    datasources: [
+      {
+        id: "ds-ws-1",
+        type: "websocket",
+        settings: {
+          url: "wss://example.com/stream",
+          parser: "json",
+          authPlacement: "header",
+          headers: {
+            "X-Client": "freeboard",
+          },
+        },
+      },
+    ],
+  });
+
+  const canonicalIntent = await buildCanonicalStreamingIntent({
+    dashboard,
+    datasourceId: "ds-ws-1",
+  });
+  const tokenClaims = {
+    sub: "public",
+    scope: "datasource:stream",
+    intentHash: hashDatasourceIntent(canonicalIntent),
+    shareTokenVersion: 5,
+  };
+
+  const resolved = await resolveGatewayIntrospection({
+    dashboard,
+    datasourceId: "ds-ws-1",
+    tokenClaims,
+    decryptSecret: () => ({}),
+  });
+
+  assert.equal(resolved.scope, "datasource:stream");
+  assert.equal(resolved.intent.protocol, "websocket");
+  assert.equal(resolved.intent.url, "wss://example.com/stream");
+  assert.equal(resolved.intent.headers["X-Client"], "freeboard");
 });

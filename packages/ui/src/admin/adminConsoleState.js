@@ -15,6 +15,7 @@ export const CREDENTIAL_PROFILE_TYPE_OPTIONS = Object.freeze([
   "bearer",
   "basic",
 ]);
+export const BROKER_PROFILE_PROTOCOL_OPTIONS = Object.freeze(["mqtt"]);
 
 const normalizeOptionValue = (value, allowed, fallback) => {
   const normalized = String(value || "")
@@ -40,6 +41,9 @@ export const normalizeExecutionModeValue = (value) =>
 
 export const normalizeCredentialProfileTypeValue = (value) =>
   normalizeOptionValue(value, CREDENTIAL_PROFILE_TYPE_OPTIONS, "none");
+
+export const normalizeBrokerProfileProtocolValue = (value) =>
+  normalizeOptionValue(value, BROKER_PROFILE_PROTOCOL_OPTIONS, "mqtt");
 
 export const toUserDraft = (user = {}) => ({
   role: normalizeRoleValue(user.role),
@@ -70,4 +74,20 @@ export const toCredentialProfileDraft = (profile = {}) => ({
   secretUsername: "",
   secretPassword: "",
   secretHeaderValue: "",
+});
+
+export const toBrokerProfileDraft = (profile = {}) => ({
+  name: String(profile.name || ""),
+  description: String(profile.description || ""),
+  protocol: normalizeBrokerProfileProtocolValue(profile.protocol),
+  brokerUrl: String(profile.brokerUrl || ""),
+  credentialProfileId: String(profile.credentialProfileId || ""),
+  allowPublicUse: Boolean(profile.allowPublicUse),
+  topicAllowlist: Array.isArray(profile.topicAllowlist)
+    ? profile.topicAllowlist.join(", ")
+    : "",
+  tlsRejectUnauthorized:
+    profile.tls?.rejectUnauthorized === undefined
+      ? true
+      : Boolean(profile.tls.rejectUnauthorized),
 });

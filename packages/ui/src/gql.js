@@ -339,6 +339,85 @@ export const ADMIN_DELETE_CREDENTIAL_PROFILE_MUTATION = gql`
 `;
 
 /**
+ * Broker profile list for MQTT datasource configuration.
+ * @constant {import('graphql').DocumentNode} BROKER_PROFILES_QUERY
+ */
+export const BROKER_PROFILES_QUERY = gql`
+  query BrokerProfiles {
+    brokerProfiles {
+      _id
+      name
+      description
+      protocol
+      brokerUrl
+      tls
+      credentialProfileId
+      allowPublicUse
+      topicAllowlist
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+/**
+ * Admin mutation to create a broker profile.
+ * @constant {import('graphql').DocumentNode} ADMIN_CREATE_BROKER_PROFILE_MUTATION
+ */
+export const ADMIN_CREATE_BROKER_PROFILE_MUTATION = gql`
+  mutation AdminCreateBrokerProfile($input: BrokerProfileCreateInput!) {
+    adminCreateBrokerProfile(input: $input) {
+      _id
+      name
+      description
+      protocol
+      brokerUrl
+      tls
+      credentialProfileId
+      allowPublicUse
+      topicAllowlist
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+/**
+ * Admin mutation to update a broker profile.
+ * @constant {import('graphql').DocumentNode} ADMIN_UPDATE_BROKER_PROFILE_MUTATION
+ */
+export const ADMIN_UPDATE_BROKER_PROFILE_MUTATION = gql`
+  mutation AdminUpdateBrokerProfile($id: ID!, $input: BrokerProfileUpdateInput!) {
+    adminUpdateBrokerProfile(_id: $id, input: $input) {
+      _id
+      name
+      description
+      protocol
+      brokerUrl
+      tls
+      credentialProfileId
+      allowPublicUse
+      topicAllowlist
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+/**
+ * Admin mutation to delete a broker profile.
+ * @constant {import('graphql').DocumentNode} ADMIN_DELETE_BROKER_PROFILE_MUTATION
+ */
+export const ADMIN_DELETE_BROKER_PROFILE_MUTATION = gql`
+  mutation AdminDeleteBrokerProfile($id: ID!) {
+    adminDeleteBrokerProfile(_id: $id) {
+      _id
+      name
+    }
+  }
+`;
+
+/**
  * Admin mutation for creating users.
  * @constant {import('graphql').DocumentNode} ADMIN_CREATE_USER_MUTATION
  */

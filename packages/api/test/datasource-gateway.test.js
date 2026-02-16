@@ -49,10 +49,10 @@ test("hashDatasourceIntent is deterministic for canonical intent", () => {
   assert.equal(first, second);
 });
 
-test("mintDatasourceSessionToken rejects link/public token mint without share token", () => {
+test("mintDatasourceSessionToken rejects link/public token mint without share token", async () => {
   const dashboard = buildDashboard({ visibility: "link" });
 
-  assert.throws(
+  await assert.rejects(
     () =>
       mintDatasourceSessionToken({
         dashboard,
@@ -63,10 +63,10 @@ test("mintDatasourceSessionToken rejects link/public token mint without share to
   );
 });
 
-test("mintDatasourceSessionToken for public flow embeds shareTokenVersion", () => {
+test("mintDatasourceSessionToken for public flow embeds shareTokenVersion", async () => {
   const dashboard = buildDashboard({ visibility: "public", shareTokenVersion: 7 });
 
-  const minted = mintDatasourceSessionToken({
+  const minted = await mintDatasourceSessionToken({
     dashboard,
     datasourceId: "ds-1",
     user: null,
@@ -78,4 +78,30 @@ test("mintDatasourceSessionToken for public flow embeds shareTokenVersion", () =
   assert.equal(claims.shareTokenVersion, 7);
   assert.equal(claims.dashboardId, "dash-1");
   assert.equal(claims.datasourceId, "ds-1");
+});
+
+test("mintDatasourceSessionToken sets datasource:stream scope for websocket datasource", async () => {
+  const dashboard = buildDashboard({
+    visibility: "public",
+    datasources: [
+      {
+        id: "ds-ws-1",
+        type: "websocket",
+        settings: {
+          url: "wss://example.com/stream",
+          parser: "json",
+        },
+      },
+    ],
+  });
+
+  const minted = await mintDatasourceSessionToken({
+    dashboard,
+    datasourceId: "ds-ws-1",
+    user: null,
+  });
+
+  const claims = validateDatasourceSessionToken(minted.token);
+  assert.equal(claims.scope, "datasource:stream");
+  assert.equal(claims.datasourceId, "ds-ws-1");
 });

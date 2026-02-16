@@ -1,0 +1,73 @@
+services:
+  realtime-sse-server:
+    build:
+      context: ./fixtures/realtime
+    command: ["node", "/app/sse-server.mjs"]
+    container_name: freeboard-realtime-sse
+    ports:
+      - "18081:18081"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:18081/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  realtime-ws-server:
+    build:
+      context: ./fixtures/realtime
+    command: ["node", "/app/ws-server.mjs"]
+    container_name: freeboard-realtime-ws
+    ports:
+      - "18082:18082"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:18082/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  realtime-mqtt-broker:
+    image: eclipse-mosquitto:2
+    container_name: freeboard-realtime-mqtt
+    command: ["/usr/sbin/mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
+    volumes:
+      - ./fixtures/realtime/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    ports:
+      - "1884:1883"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mosquitto_pub -h 127.0.0.1 -p 1883 -t healthcheck -m ok >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  realtime-mqtt-publisher:
+    build:
+      context: ./fixtures/realtime
+    command: ["node", "/app/mqtt-publisher.mjs"]
+    container_name: freeboard-realtime-mqtt-publisher
+    environment:
+      - BROKER_URL=mqtt://realtime-mqtt-broker:1883
+      - TOPIC=factory/line1/status
+      - INTERVAL_MS=1000
+    depends_on:
+      realtime-mqtt-broker:
+        condition: service_healthy
+    restart: unless-stopped

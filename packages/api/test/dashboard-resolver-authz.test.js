@@ -229,6 +229,63 @@ test("updateDashboard rejects http datasource without URL", async () => {
   );
 });
 
+test("updateDashboard rejects websocket query auth without queryParamName", async () => {
+  Dashboard.findOne = () => asLean(buildDashboardDoc());
+
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Mutation.updateDashboard(
+        null,
+        {
+          _id: "dash-1",
+          dashboard: {
+            datasources: [
+              {
+                id: "ds-ws-1",
+                type: "websocket",
+                settings: {
+                  url: "wss://example.com/stream",
+                  parser: "json",
+                  authPlacement: "query",
+                },
+              },
+            ],
+          },
+        },
+        { user: { _id: "owner-1", role: "editor" } }
+      ),
+    /requires settings\.queryParamName/
+  );
+});
+
+test("updateDashboard rejects mqtt datasource without brokerProfileId", async () => {
+  Dashboard.findOne = () => asLean(buildDashboardDoc());
+
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Mutation.updateDashboard(
+        null,
+        {
+          _id: "dash-1",
+          dashboard: {
+            datasources: [
+              {
+                id: "ds-mqtt-1",
+                type: "mqtt",
+                settings: {
+                  topic: "devices/temp",
+                  qos: 1,
+                },
+              },
+            ],
+          },
+        },
+        { user: { _id: "owner-1", role: "editor" } }
+      ),
+    /requires a non-empty settings\.brokerProfileId/
+  );
+});
+
 test("deleteDashboard allows acl editor collaborator", async () => {
   Dashboard.findOne = () =>
     asLean(

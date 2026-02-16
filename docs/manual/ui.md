@@ -7,7 +7,7 @@ The UI is a Vue 3 SPA (`packages/ui`) that lets users:
 - authenticate against GraphQL API
 - configure datasources and widgets
 - save/load dashboards
-- render real-time updates through SSE subscriptions
+- render realtime dashboard data through gateway-backed datasource transports (`http`, `sse`, `websocket`, `mqtt`)
 
 Core stack:
 
@@ -32,7 +32,9 @@ Core stack:
 
 1. UI authenticates and stores token in local storage.
 2. Dashboard data is fetched from GraphQL.
-3. Datasources emit updates.
+3. Datasources emit updates:
+   - GraphQL dashboard subscriptions use SSE.
+   - Realtime datasource plugins share a dashboard-level `StreamingManager` socket to `/gateway/realtime`.
 4. Dashboard snapshot is normalized.
 5. Widget runtime resolves bindings/templates per widget.
 6. Widget errors are isolated to avoid global dashboard failure.

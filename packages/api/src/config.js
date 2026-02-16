@@ -259,9 +259,25 @@ export const config = Object.freeze({
     process.env.DATASOURCE_TOKEN_MINT_RATE_LIMIT_SHARE_TOKEN_PER_MIN,
     60
   ),
+  datasourceSessionTtlSeconds: positiveInteger(
+    process.env.DATASOURCE_SESSION_TTL_SECONDS,
+    300
+  ),
   gatewayIntrospectionRateLimitPerMin: positiveInteger(
     process.env.GATEWAY_INTROSPECTION_RATE_LIMIT_PER_MIN,
     600
+  ),
+  gatewayRevokedTokensRateLimitPerMin: positiveInteger(
+    process.env.GATEWAY_REVOKED_TOKENS_RATE_LIMIT_PER_MIN,
+    600
+  ),
+  gatewayRevokedTokensMaxBatch: positiveInteger(
+    process.env.GATEWAY_REVOKED_TOKENS_MAX_BATCH,
+    500
+  ),
+  realtimeRevokeEventRetentionSeconds: positiveInteger(
+    process.env.REALTIME_REVOKE_EVENT_RETENTION_SECONDS,
+    86_400
   ),
 });
 

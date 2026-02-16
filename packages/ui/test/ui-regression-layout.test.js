@@ -38,3 +38,40 @@ test("Admin checkbox input style restores native checkbox control rendering", ()
     /\.admin-console__checkbox-input\s*\{[\s\S]*accent-color:\s*var\(--color-primary\);/
   );
 });
+
+test("Datasource dialog exposes MQTT broker-profile quick-create path", () => {
+  const datasourceDialogSource = readProjectFile(
+    "../src/components/DatasourceDialogBox.vue"
+  );
+
+  assert.match(
+    datasourceDialogSource,
+    /showBrokerProfileQuickCreate[\s\S]*typeRef\.value === "mqtt"[\s\S]*brokerProfiles\.value\.length === 0/
+  );
+  assert.match(
+    datasourceDialogSource,
+    /datasourceDialogBox\.noBrokerProfilesHint/
+  );
+  assert.match(
+    datasourceDialogSource,
+    /datasourceDialogBox\.openAdminBrokerProfiles/
+  );
+});
+
+test("Vite dev proxy enables websocket upgrades for /gateway realtime channel", () => {
+  const viteConfigSource = readProjectFile("../vite.config.js");
+
+  assert.match(
+    viteConfigSource,
+    /"\/gateway"[\s\S]*target:[\s\S]*changeOrigin:\s*true,[\s\S]*ws:\s*true/
+  );
+});
+
+test("Nginx gateway location forwards websocket upgrade headers", () => {
+  const nginxConfigSource = readProjectFile("../nginx.conf");
+
+  assert.match(
+    nginxConfigSource,
+    /location\s+\/gateway\s*\{[\s\S]*proxy_http_version\s+1\.1;[\s\S]*proxy_set_header\s+Upgrade\s+\$http_upgrade;[\s\S]*proxy_set_header\s+Connection\s+"upgrade";/
+  );
+});

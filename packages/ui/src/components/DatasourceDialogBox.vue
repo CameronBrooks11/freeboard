@@ -16,10 +16,12 @@ import { useFreeboardStore } from "../stores/freeboard";
 import { storeToRefs } from "pinia";
 import TabNavigator from "./TabNavigator.vue";
 import TypeSelect from "./TypeSelect.vue";
+import router from "../router";
 
 const freeboardStore = useFreeboardStore();
 // Retrieve available datasource plugins and dashboard instance from store
-const { datasourcePlugins, dashboard, credentialProfiles } = storeToRefs(freeboardStore);
+const { datasourcePlugins, dashboard, credentialProfiles, brokerProfiles } =
+  storeToRefs(freeboardStore);
 
 // Define props passed into this dialog
 const { header, onClose, onOk, datasource } = defineProps({
@@ -62,7 +64,7 @@ const validateUniqueDatasourceTitle = (value) => {
 
 // Rebuild fields schema whenever the selected type changes
 watch(
-  [typeRef, credentialProfiles],
+  [typeRef, credentialProfiles, brokerProfiles],
   ([newValue]) => {
     if (!newValue) {
       fields.value = [];
@@ -96,6 +98,7 @@ watch(
       },
       {
         credentialProfiles: credentialProfiles.value,
+        brokerProfiles: brokerProfiles.value,
       }
     );
   },
@@ -109,6 +112,17 @@ const datasourcePluginsOptions = computed(() =>
     label: datasourcePlugins.value[key].label,
   }))
 );
+
+const showBrokerProfileQuickCreate = computed(
+  () => typeRef.value === "mqtt" && brokerProfiles.value.length === 0
+);
+const adminBrokerProfilesHref = computed(
+  () => router.resolve({ path: "/admin" }).href
+);
+
+const openAdminBrokerProfiles = () => {
+  window.open(adminBrokerProfilesHref.value, "_blank", "noopener");
+};
 
 /**
  * Confirm dialog: validate fields, assemble new config, invoke onOk, close modal.
@@ -149,6 +163,22 @@ const onDialogBoxOk = () => {
         <Form :ref="(el) => storeComponentRef(field.name, el)" :settings="field.settings" :fields="field.fields" />
       </template>
     </TabNavigator>
+
+    <div
+      v-if="showBrokerProfileQuickCreate"
+      class="datasource-dialog-box__broker-hint"
+    >
+      <p class="datasource-dialog-box__broker-hint-copy">
+        {{ $t("datasourceDialogBox.noBrokerProfilesHint") }}
+      </p>
+      <button
+        type="button"
+        class="datasource-dialog-box__broker-hint-action"
+        @click="openAdminBrokerProfiles"
+      >
+        {{ $t("datasourceDialogBox.openAdminBrokerProfiles") }}
+      </button>
+    </div>
   </DialogBox>
 </template>
 

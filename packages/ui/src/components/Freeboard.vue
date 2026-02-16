@@ -8,7 +8,7 @@
  */
 defineOptions({ name: 'Freeboard' });
 
-import { reactive, watch, computed } from "vue";
+import { reactive, watch, computed, onUnmounted } from "vue";
 import Header from "./Header.vue";
 import Board from "./Board.vue";
 import { useFreeboardStore } from "../stores/freeboard";
@@ -17,6 +17,7 @@ import {
   DASHBOARD_READ_QUERY,
   DASHBOARD_READ_BY_SHARE_TOKEN_QUERY,
   DASHBOARD_UPDATE_SUBSCRIPTION,
+  BROKER_PROFILES_QUERY,
   CREDENTIAL_PROFILES_QUERY,
   PUBLIC_AUTH_POLICY_QUERY,
 } from "../gql";
@@ -25,7 +26,14 @@ import { storeToRefs } from "pinia";
 import Preloader from "./Preloader.vue";
 import { ClockDatasource } from "../datasources/ClockDatasource";
 import { HTTPDatasource } from "../datasources/HTTPDatasource";
+import { MQTTDatasource } from "../datasources/MQTTDatasource";
+import { SSEDatasource } from "../datasources/SSEDatasource";
 import { StaticDatasource } from "../datasources/StaticDatasource";
+import { WebSocketDatasource } from "../datasources/WebSocketDatasource";
+import {
+  disposeAllStreamingManagers,
+  disposeStreamingManager,
+} from "../datasources/runtime/StreamingManager";
 import { usePreferredColorScheme } from "@vueuse/core";
 import { BaseWidget } from "../widgets/BaseWidget";
 import { TextWidget } from "../widgets/TextWidget";
@@ -111,6 +119,13 @@ const {
   fetchPolicy: "network-only",
   enabled: credentialProfilesQueryEnabled,
 });
+const {
+  result: brokerProfilesResult,
+  error: brokerProfilesError,
+} = useQuery(BROKER_PROFILES_QUERY, {}, {
+  fetchPolicy: "network-only",
+  enabled: credentialProfilesQueryEnabled,
+});
 
 watch(publicPolicyResult, () => {
   const policy = publicPolicyResult.value?.publicAuthPolicy;
@@ -124,16 +139,45 @@ watch(credentialProfilesResult, () => {
   freeboardStore.setCredentialProfiles(Array.isArray(profiles) ? profiles : []);
 });
 
+watch(brokerProfilesResult, () => {
+  const profiles = brokerProfilesResult.value?.brokerProfiles;
+  freeboardStore.setBrokerProfiles(Array.isArray(profiles) ? profiles : []);
+});
+
 watch(credentialProfilesError, () => {
   if (credentialProfilesError.value) {
     freeboardStore.setCredentialProfiles([]);
   }
 });
 
+watch(brokerProfilesError, () => {
+  if (brokerProfilesError.value) {
+    freeboardStore.setBrokerProfiles([]);
+  }
+});
+
 watch(credentialProfilesQueryEnabled, (enabled) => {
   if (!enabled) {
     freeboardStore.setCredentialProfiles([]);
+    freeboardStore.setBrokerProfiles([]);
   }
+});
+
+watch(
+  () => dashboard.value?._id || null,
+  (nextDashboardId, previousDashboardId) => {
+    if (
+      previousDashboardId &&
+      nextDashboardId &&
+      previousDashboardId !== nextDashboardId
+    ) {
+      disposeStreamingManager(previousDashboardId);
+    }
+  }
+);
+
+onUnmounted(() => {
+  disposeAllStreamingManagers();
 });
 
 // Redirect to home on query error (e.g., not found/unauthorized)
@@ -200,6 +244,9 @@ freeboardStore.loadDashboardTheme();
 freeboardStore.loadDatasourcePlugin(HTTPDatasource);
 freeboardStore.loadDatasourcePlugin(ClockDatasource);
 freeboardStore.loadDatasourcePlugin(StaticDatasource);
+freeboardStore.loadDatasourcePlugin(SSEDatasource);
+freeboardStore.loadDatasourcePlugin(WebSocketDatasource);
+freeboardStore.loadDatasourcePlugin(MQTTDatasource);
 freeboardStore.loadWidgetPlugin(BaseWidget);
 freeboardStore.loadWidgetPlugin(TextWidget);
 freeboardStore.loadWidgetPlugin(IndicatorWidget);

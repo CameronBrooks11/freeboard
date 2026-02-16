@@ -19,6 +19,7 @@ import {
 } from "../policy.js";
 import { isValidEmail, normalizeEmail } from "../validators.js";
 import { transformDashboard } from "./merge.js";
+import { recordShareTokenRevocationEvent } from "../shareTokenRevocationFeed.js";
 
 const pubSub = createPubSub();
 
@@ -35,9 +36,18 @@ const DASHBOARD_MUTABLE_FIELDS = new Set([
 ]);
 
 const EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES = new Set(["link", "public"]);
-const ALLOWED_DATASOURCE_TYPES = new Set(["http", "clock", "static"]);
+const ALLOWED_DATASOURCE_TYPES = new Set([
+  "http",
+  "clock",
+  "static",
+  "sse",
+  "websocket",
+  "mqtt",
+]);
 const ALLOWED_HTTP_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 const ALLOWED_HTTP_PARSERS = new Set(["json", "text", "csv"]);
+const ALLOWED_STREAM_PARSERS = new Set(["json", "text"]);
+const ALLOWED_STREAM_AUTH_PLACEMENTS = new Set(["header", "query"]);
 
 const generateShareToken = () => crypto.randomBytes(24).toString("base64url");
 
@@ -249,12 +259,8 @@ const validateDashboardDatasources = (datasources) => {
       .toLowerCase();
     if (!ALLOWED_DATASOURCE_TYPES.has(type)) {
       throw createBadInputError(
-        `Datasource type '${type || "unknown"}' is not supported. Allowed: http, clock, static.`
+        `Datasource type '${type || "unknown"}' is not supported. Allowed: http, clock, static, sse, websocket, mqtt.`
       );
-    }
-
-    if (type !== "http") {
-      return;
     }
 
     const settings =
@@ -264,42 +270,157 @@ const validateDashboardDatasources = (datasources) => {
         ? datasource.settings
         : {};
 
-    const targetUrl = String(settings.url || "").trim();
-    if (!targetUrl) {
-      throw createBadInputError(
-        `HTTP datasource at index ${index} requires a non-empty settings.url`
-      );
+    if (type === "http") {
+      const targetUrl = String(settings.url || "").trim();
+      if (!targetUrl) {
+        throw createBadInputError(
+          `HTTP datasource at index ${index} requires a non-empty settings.url`
+        );
+      }
+
+      if (
+        settings.method !== undefined &&
+        settings.method !== null &&
+        !ALLOWED_HTTP_METHODS.has(String(settings.method).trim().toUpperCase())
+      ) {
+        throw createBadInputError(
+          `HTTP datasource at index ${index} uses an unsupported method`
+        );
+      }
+
+      if (
+        settings.parser !== undefined &&
+        settings.parser !== null &&
+        !ALLOWED_HTTP_PARSERS.has(String(settings.parser).trim().toLowerCase())
+      ) {
+        throw createBadInputError(
+          `HTTP datasource at index ${index} uses an unsupported parser`
+        );
+      }
+
+      if (
+        settings.credentialProfileId !== undefined &&
+        settings.credentialProfileId !== null &&
+        String(settings.credentialProfileId).trim() === ""
+      ) {
+        throw createBadInputError(
+          `HTTP datasource at index ${index} has an invalid credentialProfileId`
+        );
+      }
+      return;
     }
 
-    if (
-      settings.method !== undefined &&
-      settings.method !== null &&
-      !ALLOWED_HTTP_METHODS.has(String(settings.method).trim().toUpperCase())
-    ) {
-      throw createBadInputError(
-        `HTTP datasource at index ${index} uses an unsupported method`
-      );
+    if (type === "sse" || type === "websocket") {
+      const targetUrl = String(settings.url || "").trim();
+      if (!targetUrl) {
+        throw createBadInputError(
+          `${type.toUpperCase()} datasource at index ${index} requires a non-empty settings.url`
+        );
+      }
+
+      if (
+        settings.parser !== undefined &&
+        settings.parser !== null &&
+        !ALLOWED_STREAM_PARSERS.has(String(settings.parser).trim().toLowerCase())
+      ) {
+        throw createBadInputError(
+          `${type.toUpperCase()} datasource at index ${index} uses an unsupported parser`
+        );
+      }
+
+      if (
+        settings.authPlacement !== undefined &&
+        settings.authPlacement !== null &&
+        !ALLOWED_STREAM_AUTH_PLACEMENTS.has(
+          String(settings.authPlacement).trim().toLowerCase()
+        )
+      ) {
+        throw createBadInputError(
+          `${type.toUpperCase()} datasource at index ${index} uses an unsupported authPlacement`
+        );
+      }
+
+      if (
+        String(settings.authPlacement || "header").trim().toLowerCase() === "query" &&
+        String(settings.queryParamName || "").trim() === ""
+      ) {
+        throw createBadInputError(
+          `${type.toUpperCase()} datasource at index ${index} requires settings.queryParamName for query auth placement`
+        );
+      }
+
+      if (
+        settings.credentialProfileId !== undefined &&
+        settings.credentialProfileId !== null &&
+        String(settings.credentialProfileId).trim() === ""
+      ) {
+        throw createBadInputError(
+          `${type.toUpperCase()} datasource at index ${index} has an invalid credentialProfileId`
+        );
+      }
+
+      if (type === "websocket" && settings.protocols !== undefined) {
+        const isStringProtocols = typeof settings.protocols === "string";
+        const isArrayProtocols = Array.isArray(settings.protocols);
+        if (!isStringProtocols && !isArrayProtocols) {
+          throw createBadInputError(
+            `WEBSOCKET datasource at index ${index} requires settings.protocols to be a comma-separated string or string array`
+          );
+        }
+      }
+      return;
     }
 
-    if (
-      settings.parser !== undefined &&
-      settings.parser !== null &&
-      !ALLOWED_HTTP_PARSERS.has(String(settings.parser).trim().toLowerCase())
-    ) {
-      throw createBadInputError(
-        `HTTP datasource at index ${index} uses an unsupported parser`
-      );
+    if (type === "mqtt") {
+      if (String(settings.brokerProfileId || "").trim() === "") {
+        throw createBadInputError(
+          `MQTT datasource at index ${index} requires a non-empty settings.brokerProfileId`
+        );
+      }
+      if (String(settings.topic || "").trim() === "") {
+        throw createBadInputError(
+          `MQTT datasource at index ${index} requires a non-empty settings.topic`
+        );
+      }
+
+      if (
+        settings.parser !== undefined &&
+        settings.parser !== null &&
+        !ALLOWED_STREAM_PARSERS.has(String(settings.parser).trim().toLowerCase())
+      ) {
+        throw createBadInputError(
+          `MQTT datasource at index ${index} uses an unsupported parser`
+        );
+      }
+
+      if (settings.qos !== undefined && settings.qos !== null) {
+        const qos = Number(settings.qos);
+        if (!Number.isFinite(qos) || qos < 0 || qos > 1) {
+          throw createBadInputError(
+            `MQTT datasource at index ${index} requires settings.qos between 0 and 1`
+          );
+        }
+      }
+
+      if (
+        settings.keepaliveSeconds !== undefined &&
+        settings.keepaliveSeconds !== null
+      ) {
+        const keepaliveSeconds = Number(settings.keepaliveSeconds);
+        if (
+          !Number.isFinite(keepaliveSeconds) ||
+          keepaliveSeconds < 5 ||
+          keepaliveSeconds > 3600
+        ) {
+          throw createBadInputError(
+            `MQTT datasource at index ${index} requires settings.keepaliveSeconds between 5 and 3600`
+          );
+        }
+      }
+      return;
     }
 
-    if (
-      settings.credentialProfileId !== undefined &&
-      settings.credentialProfileId !== null &&
-      String(settings.credentialProfileId).trim() === ""
-    ) {
-      throw createBadInputError(
-        `HTTP datasource at index ${index} has an invalid credentialProfileId`
-      );
-    }
+    // clock/static are validated by plugin/runtime contracts only.
   });
 };
 
@@ -522,6 +643,23 @@ const buildCollaboratorView = async (dashboard) => {
   return collaborators;
 };
 
+const recordShareTokenRevocation = async ({
+  dashboardId,
+  shareTokenVersion,
+}) => {
+  const normalizedDashboardId = toComparableId(dashboardId);
+  const normalizedVersion = Math.floor(Number(shareTokenVersion));
+  if (!normalizedDashboardId || !Number.isFinite(normalizedVersion)) {
+    return;
+  }
+
+  await recordShareTokenRevocationEvent({
+    dashboardId: normalizedDashboardId,
+    shareTokenVersion: Math.max(0, normalizedVersion),
+    revokedAt: new Date(),
+  });
+};
+
 export default {
   DashboardVisibility: {
     PRIVATE: "private",
@@ -641,6 +779,7 @@ export default {
         existingDashboard: existing,
       });
       const updatePayload = { ...sanitizedInput };
+      let nextShareTokenVersion = null;
 
       if (Object.prototype.hasOwnProperty.call(sanitizedInput, "visibility")) {
         const previousVisibility = getDashboardVisibility(existing);
@@ -663,8 +802,9 @@ export default {
           updatePayload.shareToken = generateShareToken();
         }
         if (visibilityChanged) {
-          updatePayload.shareTokenVersion =
+          nextShareTokenVersion =
             Math.max(0, Number(existing.shareTokenVersion) || 0) + 1;
+          updatePayload.shareTokenVersion = nextShareTokenVersion;
         }
       }
 
@@ -675,6 +815,13 @@ export default {
       ).lean();
       if (!updated) {
         throw createGraphQLError("Dashboard not found");
+      }
+
+      if (nextShareTokenVersion !== null) {
+        await recordShareTokenRevocation({
+          dashboardId: updated._id,
+          shareTokenVersion: nextShareTokenVersion,
+        });
       }
 
       await recordAuditEvent({
@@ -736,12 +883,13 @@ export default {
         (shouldRotateShareToken || !existing.shareToken)
           ? { shareToken: generateShareToken() }
           : {};
-      const shareTokenVersionUpdate = visibilityChanged
-        ? {
-            shareTokenVersion:
-              Math.max(0, Number(existing.shareTokenVersion) || 0) + 1,
-          }
-        : {};
+      const nextShareTokenVersion = visibilityChanged
+        ? Math.max(0, Number(existing.shareTokenVersion) || 0) + 1
+        : null;
+      const shareTokenVersionUpdate =
+        nextShareTokenVersion === null
+          ? {}
+          : { shareTokenVersion: nextShareTokenVersion };
 
       const updated = await Dashboard.findOneAndUpdate(
         { _id },
@@ -756,6 +904,13 @@ export default {
       ).lean();
       if (!updated) {
         throw createGraphQLError("Dashboard not found");
+      }
+
+      if (nextShareTokenVersion !== null) {
+        await recordShareTokenRevocation({
+          dashboardId: updated._id,
+          shareTokenVersion: nextShareTokenVersion,
+        });
       }
 
       await recordAuditEvent({
@@ -779,14 +934,15 @@ export default {
       ensureThatUserHasRole(context, ["editor", "admin"]);
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardShareManageable(existing, context);
+      const nextShareTokenVersion =
+        Math.max(0, Number(existing.shareTokenVersion) || 0) + 1;
 
       const updated = await Dashboard.findOneAndUpdate(
         { _id },
         {
           $set: {
             shareToken: generateShareToken(),
-            shareTokenVersion:
-              Math.max(0, Number(existing.shareTokenVersion) || 0) + 1,
+            shareTokenVersion: nextShareTokenVersion,
           },
         },
         { new: true, runValidators: true }
@@ -794,6 +950,11 @@ export default {
       if (!updated) {
         throw createGraphQLError("Dashboard not found");
       }
+
+      await recordShareTokenRevocation({
+        dashboardId: updated._id,
+        shareTokenVersion: nextShareTokenVersion,
+      });
 
       await recordAuditEvent({
         actorUserId: context.user._id,

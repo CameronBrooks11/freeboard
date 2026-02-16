@@ -107,6 +107,7 @@ export default defineConfig(({ mode }) => {
         "/gateway": {
           target: `http://${GATEWAY_HOST}:${GATEWAY_PORT}`,
           changeOrigin: true,
+          ws: true,
         },
       },
     },

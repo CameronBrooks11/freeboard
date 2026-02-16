@@ -141,7 +141,8 @@ export const useFreeboardStore = defineStore("freeboard", {
  *   currentUser: Object|null,
  *   publicAuthPolicy: Object,
  *   runtimeShareToken: string|null,
- *   credentialProfiles: Array<any>
+ *   credentialProfiles: Array<any>,
+ *   brokerProfiles: Array<any>
  * }}
  */
   state: () => ({
@@ -158,6 +159,7 @@ export const useFreeboardStore = defineStore("freeboard", {
     publicAuthPolicy: { ...DEFAULT_PUBLIC_AUTH_POLICY },
     runtimeShareToken: null,
     credentialProfiles: [],
+    brokerProfiles: [],
   }),
 
   actions: {
@@ -193,6 +195,10 @@ export const useFreeboardStore = defineStore("freeboard", {
 
     setCredentialProfiles(profiles) {
       this.credentialProfiles = Array.isArray(profiles) ? profiles : [];
+    },
+
+    setBrokerProfiles(profiles) {
+      this.brokerProfiles = Array.isArray(profiles) ? profiles : [];
     },
 
     hydrateSessionFromToken() {
@@ -325,6 +331,8 @@ export const useFreeboardStore = defineStore("freeboard", {
     logout() {
       this.token = null;
       this.currentUser = null;
+      this.credentialProfiles = [];
+      this.brokerProfiles = [];
       this.syncEditingPermissions();
       this.saveSettingsToLocalStorage();
     },

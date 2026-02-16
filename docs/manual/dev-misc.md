@@ -11,6 +11,10 @@
 - Run all tests: `npm run test`
 - Verify build/syntax: `npm run build:verify`
 - Full local CI pass: `npm run ci`
+- Start realtime fixture stack: `npm run demo:realtime:up`
+- Stop realtime fixture stack: `npm run demo:realtime:down`
+- Realtime fixture smoke test: `npm run demo:realtime:smoke`
+- Realtime integration loop (up + smoke + down): `npm run test:realtime:integration`
 
 ## Pre-PR Checklist
 

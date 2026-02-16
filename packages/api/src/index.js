@@ -26,6 +26,7 @@ import {
 import { decryptCredentialSecret } from "./credentialEncryption.js";
 import { consumeRateLimit } from "./rateLimit.js";
 import { recordAuditEvent } from "./audit.js";
+import { queryShareTokenRevocationFeed } from "./shareTokenRevocationFeed.js";
 
 import dns from "dns";
 
@@ -97,6 +98,7 @@ const yoga = createYoga({
 
 const INTERNAL_GATEWAY_INTROSPECTION_PATH =
   "/internal/gateway/datasource-introspect";
+const INTERNAL_GATEWAY_REVOKED_TOKENS_PATH = "/internal/gateway/revoked-tokens";
 
 const getClientIp = (req) => {
   const forwardedForHeader = req.headers["x-forwarded-for"];
@@ -224,6 +226,71 @@ const handleGatewayIntrospection = async (req, res) => {
   }
 };
 
+const handleGatewayRevokedTokens = async (req, res) => {
+  if (req.method !== "POST") {
+    sendJson(res, 405, { error: "Method not allowed" });
+    return;
+  }
+
+  const clientIp = getClientIp(req);
+  const rateLimit = consumeRateLimit(
+    `gateway-revoked-tokens:${clientIp}`,
+    config.gatewayRevokedTokensRateLimitPerMin
+  );
+  if (!rateLimit.allowed) {
+    await recordAuditEvent({
+      actorUserId: null,
+      action: "gateway.revoked_tokens.rate_limited",
+      targetType: "gateway",
+      metadata: {
+        clientIp,
+        retryAfterMs: rateLimit.retryAfterMs,
+      },
+    });
+    sendJson(res, 429, { error: "Too many revoked token polling requests" });
+    return;
+  }
+
+  const authHeader = String(req.headers.authorization || "");
+  const serviceToken = authHeader.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length).trim()
+    : "";
+  if (!serviceToken || serviceToken !== config.gatewayServiceToken) {
+    sendJson(res, 401, { error: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const body = await readJsonBody(req);
+    const requestedLimit = Number(body?.limit);
+    const safeLimit = Number.isFinite(requestedLimit)
+      ? Math.max(
+          1,
+          Math.min(
+            Math.floor(requestedLimit),
+            config.gatewayRevokedTokensMaxBatch
+          )
+        )
+      : config.gatewayRevokedTokensMaxBatch;
+
+    const feed = await queryShareTokenRevocationFeed({
+      sinceCursor:
+        body?.sinceCursor === undefined
+          ? null
+          : String(body.sinceCursor || "").trim() || null,
+      limit: safeLimit,
+      retentionSeconds: config.realtimeRevokeEventRetentionSeconds,
+    });
+
+    sendJson(res, 200, feed);
+  } catch (error) {
+    const statusCode = Number(error?.statusCode) || 500;
+    const message =
+      statusCode >= 500 ? "Revoked token feed request failed" : error.message;
+    sendJson(res, statusCode, { error: message });
+  }
+};
+
 /**
  * HTTP server wrapping GraphQL Yoga instance plus internal gateway endpoints.
  * @type {HTTPServer}
@@ -232,6 +299,10 @@ const server = createServer((req, res) => {
   const requestUrl = new URL(req.url || "/", "http://localhost");
   if (requestUrl.pathname === INTERNAL_GATEWAY_INTROSPECTION_PATH) {
     handleGatewayIntrospection(req, res);
+    return;
+  }
+  if (requestUrl.pathname === INTERNAL_GATEWAY_REVOKED_TOKENS_PATH) {
+    handleGatewayRevokedTokens(req, res);
     return;
   }
   yoga(req, res);

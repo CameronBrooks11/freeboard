@@ -20,6 +20,7 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
   - auth/runtime policy defaults (`registrationMode`, `editorCanPublish`, `executionMode`, etc.)
   - login abuse controls (`authLoginMaxAttempts`, `authLoginWindowSeconds`, `authLoginLockSeconds`)
   - datasource token/introspection controls (`datasourceTokenMintRateLimit*`, `gatewayIntrospectionRateLimitPerMin`)
+  - datasource session/revocation controls (`datasourceSessionTtlSeconds`, `gatewayRevokedTokens*`, `realtimeRevokeEventRetentionSeconds`)
 
 ## Request Context (`context.js`)
 
@@ -47,6 +48,11 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
 - **CredentialProfile** (`models/CredentialProfile.js`):
   - Server-managed datasource credential profile metadata + encrypted secret payload
   - Supports type-specific secret resolution for gateway execution
+- **BrokerProfile** (`models/BrokerProfile.js`):
+  - Admin-managed broker metadata for realtime transports (`mqtt`)
+  - Holds broker endpoint/policy data and references optional credential profile
+- **ShareTokenRevocationEvent** (`models/ShareTokenRevocationEvent.js`):
+  - Durable event feed used by gateway for public/link stream revocation polling
 - **User** (`models/User.js`):
   - `_id` via `nanoid`
   - Fields: `email`, `password`, `role`, `active`, `sessionVersion`, `registrationDate`, `lastLogin`
@@ -72,10 +78,14 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
 - **Credential Profile Resolvers** (`resolvers/CredentialProfile.js`):
   - Admin CRUD for credential profiles
   - Redacted secret metadata only in API responses
+- **Broker Profile Resolvers** (`resolvers/BrokerProfile.js`):
+  - Admin CRUD for broker profiles
+  - Editor/admin read access for datasource configuration
 - **Datasource Resolvers** (`resolvers/Datasource.js`):
   - Session token minting for datasource runtime (`mintDatasourceSessionToken`)
 - **Datasource Diagnostics Resolvers** (`resolvers/DatasourceDiagnostics.js`):
   - Admin-only datasource configuration/health rollup (`adminDatasourceDiagnostics`)
+  - Includes Phase 6 datasource types (`http`, `clock`, `static`, `sse`, `websocket`, `mqtt`)
 
 ## Input Validation (`validators.js`)
 
@@ -98,6 +108,8 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
   - `schema`, `context`, `useGraphQLSSE` plugin
 - Exposes internal service-auth introspection endpoint for gateway:
   - `POST /internal/gateway/datasource-introspect`
+- Exposes internal service-auth revocation feed endpoint for gateway:
+  - `POST /internal/gateway/revoked-tokens`
 - Listens on `config.port` (`0.0.0.0`)
 
 ## Running & Docs

@@ -7,6 +7,7 @@ This Freeboard is a fork of [Jim Heising's damn-sexy dashboard app](https://gith
 - Distributable through **docker compose**
 - Modern **Vue.js** v3 frontend
 - Gateway-backed **HTTP datasource runtime** with egress controls
+- Gateway-backed realtime datasource runtime (**SSE**, **WebSocket**, **MQTT**)
 - Built-in widget set: **Base, Text, Indicator, Gauge, Pointer, Picture, HTML, Sparkline, Map**
 - **Monorepo** through `npm` workspaces
 - **Commit-Hooks** with `pre-commit`
@@ -102,6 +103,25 @@ npm run lint
 npm run test
 npm run build:verify
 ```
+
+### Realtime Demo Fixtures
+
+```bash
+npm run demo:realtime:up
+npm run demo:realtime:smoke
+npm run demo:realtime:down
+```
+
+One-shot integration run:
+
+```bash
+npm run test:realtime:integration
+```
+
+Related docs:
+- Datasource configuration: `docs/manual/datasource-reference.md`
+- Gateway contract/policy: `docs/manual/gateway.md`
+- Realtime operator runbook: `docs/manual/realtime-operations.md`
 
 ### CI Workflows
 

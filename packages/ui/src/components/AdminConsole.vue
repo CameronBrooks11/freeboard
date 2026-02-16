@@ -10,6 +10,7 @@ import { useMutation, useQuery } from "@vue/apollo-composable";
 import { RouterLink } from "vue-router";
 import { useFreeboardStore } from "../stores/freeboard";
 import {
+  BROKER_PROFILE_PROTOCOL_OPTIONS,
   CREDENTIAL_PROFILE_TYPE_OPTIONS,
   DASHBOARD_VISIBILITY_OPTIONS,
   EXECUTION_MODE_OPTIONS,
@@ -18,22 +19,27 @@ import {
   REGISTRATION_DEFAULT_ROLE_OPTIONS,
   REGISTRATION_MODE_OPTIONS,
   ROLE_OPTIONS,
+  toBrokerProfileDraft,
   toCredentialProfileDraft,
   toPolicyDraft,
   toUserDraft,
 } from "../admin/adminConsoleState";
 import {
+  ADMIN_CREATE_BROKER_PROFILE_MUTATION,
   ADMIN_CREATE_CREDENTIAL_PROFILE_MUTATION,
   ADMIN_CREATE_INVITE_MUTATION,
   ADMIN_CREATE_USER_MUTATION,
+  ADMIN_DELETE_BROKER_PROFILE_MUTATION,
   ADMIN_DELETE_CREDENTIAL_PROFILE_MUTATION,
   ADMIN_DELETE_USER_MUTATION,
   ADMIN_ISSUE_PASSWORD_RESET_MUTATION,
   ADMIN_PENDING_INVITES_QUERY,
   ADMIN_REVOKE_INVITE_MUTATION,
   ADMIN_DATASOURCE_DIAGNOSTICS_QUERY,
+  ADMIN_UPDATE_BROKER_PROFILE_MUTATION,
   ADMIN_UPDATE_CREDENTIAL_PROFILE_MUTATION,
   ADMIN_UPDATE_USER_MUTATION,
+  BROKER_PROFILES_QUERY,
   ADMIN_USERS_QUERY,
   AUTH_POLICY_QUERY,
   CREDENTIAL_PROFILES_QUERY,
@@ -47,6 +53,8 @@ const dashboardVisibilityToEnum = (visibility) =>
 const executionModeToEnum = (mode) => String(mode || "safe").toUpperCase();
 const credentialProfileTypeToEnum = (type) =>
   String(type || "none").toUpperCase();
+const brokerProfileProtocolToEnum = (protocol) =>
+  String(protocol || "mqtt").toUpperCase();
 
 const freeboardStore = useFreeboardStore();
 const appBaseUrl = `${window.location.origin}${window.location.pathname.replace(/\/admin\/?$/, "/")}`;
@@ -55,6 +63,7 @@ const statusMessage = ref("");
 const actionError = ref("");
 const userDrafts = ref({});
 const credentialProfileDrafts = ref({});
+const brokerProfileDrafts = ref({});
 const issuedInvite = ref(null);
 const issuedResetByUser = ref({});
 
@@ -70,6 +79,7 @@ const createInviteInput = ref({
   expiresInHours: 72,
 });
 const createCredentialProfileInput = ref(toCredentialProfileDraft());
+const createBrokerProfileInput = ref(toBrokerProfileDraft());
 const policyDraft = ref(toPolicyDraft());
 
 const {
@@ -96,6 +106,12 @@ const {
   error: credentialProfilesError,
   refetch: refetchCredentialProfiles,
 } = useQuery(CREDENTIAL_PROFILES_QUERY, {}, { fetchPolicy: "network-only" });
+const {
+  result: brokerProfilesResult,
+  loading: brokerProfilesLoading,
+  error: brokerProfilesError,
+  refetch: refetchBrokerProfiles,
+} = useQuery(BROKER_PROFILES_QUERY, {}, { fetchPolicy: "network-only" });
 const {
   result: datasourceDiagnosticsResult,
   loading: datasourceDiagnosticsLoading,
@@ -135,6 +151,18 @@ const {
   mutate: adminDeleteCredentialProfile,
   loading: deleteCredentialProfileLoading,
 } = useMutation(ADMIN_DELETE_CREDENTIAL_PROFILE_MUTATION);
+const {
+  mutate: adminCreateBrokerProfile,
+  loading: createBrokerProfileLoading,
+} = useMutation(ADMIN_CREATE_BROKER_PROFILE_MUTATION);
+const {
+  mutate: adminUpdateBrokerProfile,
+  loading: updateBrokerProfileLoading,
+} = useMutation(ADMIN_UPDATE_BROKER_PROFILE_MUTATION);
+const {
+  mutate: adminDeleteBrokerProfile,
+  loading: deleteBrokerProfileLoading,
+} = useMutation(ADMIN_DELETE_BROKER_PROFILE_MUTATION);
 
 const users = computed(() => usersResult.value?.listAllUsers || []);
 const pendingInvites = computed(() => pendingInvitesResult.value?.listPendingInvites || []);
@@ -142,6 +170,7 @@ const policy = computed(() => policyResult.value?.authPolicy || null);
 const credentialProfiles = computed(
   () => credentialProfilesResult.value?.credentialProfiles || []
 );
+const brokerProfiles = computed(() => brokerProfilesResult.value?.brokerProfiles || []);
 const datasourceDiagnostics = computed(
   () => datasourceDiagnosticsResult.value?.adminDatasourceDiagnostics || null
 );
@@ -167,9 +196,13 @@ const isBusy = computed(
     revokeInviteLoading.value ||
     issueResetLoading.value ||
     credentialProfilesLoading.value ||
+    brokerProfilesLoading.value ||
     createCredentialProfileLoading.value ||
     updateCredentialProfileLoading.value ||
-    deleteCredentialProfileLoading.value
+    deleteCredentialProfileLoading.value ||
+    createBrokerProfileLoading.value ||
+    updateBrokerProfileLoading.value ||
+    deleteBrokerProfileLoading.value
 );
 const isPolicyLocked = computed(() => policyDraft.value.policyEditLock === true);
 const hasLoadError = computed(
@@ -178,6 +211,7 @@ const hasLoadError = computed(
     policyError.value ||
     pendingInvitesError.value ||
     credentialProfilesError.value ||
+    brokerProfilesError.value ||
     datasourceDiagnosticsError.value
 );
 
@@ -205,6 +239,22 @@ watch(credentialProfilesResult, () => {
   });
   credentialProfileDrafts.value = nextDrafts;
   freeboardStore.setCredentialProfiles(profiles);
+});
+
+watch(brokerProfilesResult, () => {
+  const profiles = brokerProfiles.value;
+  const nextDrafts = {};
+  profiles.forEach((profile) => {
+    nextDrafts[profile._id] = toBrokerProfileDraft(profile);
+  });
+  brokerProfileDrafts.value = nextDrafts;
+  freeboardStore.setBrokerProfiles(profiles);
+});
+
+watch(brokerProfilesError, () => {
+  if (brokerProfilesError.value) {
+    freeboardStore.setBrokerProfiles([]);
+  }
 });
 
 const buildCredentialProfileMutationInput = (draft, { includeSecrets = true } = {}) => {
@@ -250,6 +300,27 @@ const buildCredentialProfileMutationInput = (draft, { includeSecrets = true } = 
   }
 
   return input;
+};
+
+const buildBrokerProfileMutationInput = (draft) => {
+  const protocol = String(draft.protocol || "mqtt").toLowerCase();
+  const allowlist = String(draft.topicAllowlist || "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  return {
+    name: String(draft.name || "").trim(),
+    description: String(draft.description || "").trim(),
+    protocol: brokerProfileProtocolToEnum(protocol),
+    brokerUrl: String(draft.brokerUrl || "").trim(),
+    credentialProfileId: String(draft.credentialProfileId || "").trim() || null,
+    allowPublicUse: Boolean(draft.allowPublicUse),
+    topicAllowlist: allowlist,
+    tls: {
+      rejectUnauthorized: Boolean(draft.tlsRejectUnauthorized),
+    },
+  };
 };
 
 const clearMessages = () => {
@@ -494,6 +565,62 @@ const deleteCredentialProfile = async (profile) => {
     statusMessage.value = "Credential profile deleted.";
   } catch (error) {
     setErrorMessage(error, "Could not delete credential profile.");
+  }
+};
+
+const createBrokerProfile = async () => {
+  clearMessages();
+  try {
+    const input = buildBrokerProfileMutationInput(createBrokerProfileInput.value);
+    await adminCreateBrokerProfile({
+      input,
+    });
+    createBrokerProfileInput.value = toBrokerProfileDraft();
+    await refetchBrokerProfiles();
+    freeboardStore.setBrokerProfiles(brokerProfiles.value);
+    statusMessage.value = "Broker profile created.";
+  } catch (error) {
+    setErrorMessage(error, "Could not create broker profile.");
+  }
+};
+
+const saveBrokerProfile = async (profileId) => {
+  clearMessages();
+  const draft = brokerProfileDrafts.value[profileId];
+  if (!draft) {
+    return;
+  }
+
+  try {
+    const input = buildBrokerProfileMutationInput(draft);
+    await adminUpdateBrokerProfile({
+      id: profileId,
+      input,
+    });
+    await refetchBrokerProfiles();
+    freeboardStore.setBrokerProfiles(brokerProfiles.value);
+    statusMessage.value = "Broker profile updated.";
+  } catch (error) {
+    setErrorMessage(error, "Could not update broker profile.");
+  }
+};
+
+const deleteBrokerProfile = async (profile) => {
+  clearMessages();
+  const accepted = window.confirm(`Delete broker profile '${profile.name}'?`);
+  if (!accepted) {
+    return;
+  }
+
+  try {
+    await adminDeleteBrokerProfile({
+      id: profile._id,
+    });
+    await refetchBrokerProfiles();
+    freeboardStore.setBrokerProfiles(brokerProfiles.value);
+    statusMessage.value = "Broker profile deleted.";
+  } catch (error) {
+    setErrorMessage(error, "Could not delete broker profile.");
   }
 };
 </script>
@@ -989,6 +1116,219 @@ const deleteCredentialProfile = async (profile) => {
             <tr v-if="credentialProfiles.length === 0">
               <td colspan="5" class="admin-console__empty">
                 {{ $t("admin.noCredentialProfiles") }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-console__section">
+      <div class="admin-console__section-header">
+        <h2>{{ $t("admin.brokerProfilesTitle") }}</h2>
+        <button
+          type="button"
+          class="admin-console__button admin-console__button--primary"
+          :disabled="isBusy"
+          @click="createBrokerProfile"
+        >
+          {{ $t("admin.createBrokerProfileButton") }}
+        </button>
+      </div>
+      <div class="admin-console__form-grid">
+        <label class="admin-console__field">
+          {{ $t("form.labelName") }}
+          <input
+            v-model="createBrokerProfileInput.name"
+            class="admin-console__input"
+            type="text"
+            :disabled="isBusy"
+          />
+        </label>
+        <label class="admin-console__field">
+          {{ $t("form.labelType") }}
+          <select
+            v-model="createBrokerProfileInput.protocol"
+            class="admin-console__select"
+            :disabled="isBusy"
+          >
+            <option
+              v-for="protocol in BROKER_PROFILE_PROTOCOL_OPTIONS"
+              :key="`broker-protocol-${protocol}`"
+              :value="protocol"
+            >
+              {{ protocol }}
+            </option>
+          </select>
+        </label>
+        <label class="admin-console__field">
+          {{ $t("form.labelBrokerUrl") }}
+          <input
+            v-model="createBrokerProfileInput.brokerUrl"
+            class="admin-console__input"
+            type="text"
+            placeholder="mqtt://broker.example.com:1883"
+            :disabled="isBusy"
+          />
+        </label>
+        <label class="admin-console__field">
+          {{ $t("form.labelCredentialProfile") }}
+          <select
+            v-model="createBrokerProfileInput.credentialProfileId"
+            class="admin-console__select"
+            :disabled="isBusy"
+          >
+            <option value="">{{ $t("form.optionCredentialProfileNone") }}</option>
+            <option
+              v-for="profile in credentialProfiles.filter((item) => item.type === 'basic')"
+              :key="`broker-create-credential-${profile._id}`"
+              :value="profile._id"
+            >
+              {{ profile.name }}
+            </option>
+          </select>
+        </label>
+        <label class="admin-console__checkbox">
+          <input
+            class="admin-console__checkbox-input"
+            type="checkbox"
+            v-model="createBrokerProfileInput.allowPublicUse"
+            :disabled="isBusy"
+          />
+          <span>{{ $t("admin.allowPublicUse") }}</span>
+        </label>
+        <label class="admin-console__checkbox">
+          <input
+            class="admin-console__checkbox-input"
+            type="checkbox"
+            v-model="createBrokerProfileInput.tlsRejectUnauthorized"
+            :disabled="isBusy"
+          />
+          <span>{{ $t("admin.tlsRejectUnauthorized") }}</span>
+        </label>
+        <label class="admin-console__field admin-console__field--full">
+          {{ $t("admin.topicAllowlist") }}
+          <input
+            v-model="createBrokerProfileInput.topicAllowlist"
+            class="admin-console__input"
+            type="text"
+            :disabled="isBusy"
+            :placeholder="$t('admin.topicAllowlistPlaceholder')"
+          />
+        </label>
+        <label class="admin-console__field admin-console__field--full">
+          {{ $t("admin.description") }}
+          <input
+            v-model="createBrokerProfileInput.description"
+            class="admin-console__input"
+            type="text"
+            :disabled="isBusy"
+          />
+        </label>
+      </div>
+
+      <div v-if="brokerProfilesLoading" class="admin-console__loading">
+        {{ $t("admin.loadingBrokerProfiles") }}
+      </div>
+      <div v-else class="admin-console__table-wrap">
+        <table class="admin-console__table">
+          <thead>
+            <tr>
+              <th>{{ $t("form.labelName") }}</th>
+              <th>{{ $t("form.labelBrokerUrl") }}</th>
+              <th>{{ $t("form.labelCredentialProfile") }}</th>
+              <th>{{ $t("admin.topicAllowlist") }}</th>
+              <th>{{ $t("admin.tlsRejectUnauthorized") }}</th>
+              <th>{{ $t("admin.allowPublicUse") }}</th>
+              <th>{{ $t("admin.actions") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="profile in brokerProfiles" :key="profile._id">
+              <td>
+                <input
+                  v-if="brokerProfileDrafts[profile._id]"
+                  v-model="brokerProfileDrafts[profile._id].name"
+                  class="admin-console__input"
+                  type="text"
+                  :disabled="isBusy"
+                />
+              </td>
+              <td>
+                <input
+                  v-if="brokerProfileDrafts[profile._id]"
+                  v-model="brokerProfileDrafts[profile._id].brokerUrl"
+                  class="admin-console__input"
+                  type="text"
+                  :disabled="isBusy"
+                />
+              </td>
+              <td>
+                <select
+                  v-if="brokerProfileDrafts[profile._id]"
+                  v-model="brokerProfileDrafts[profile._id].credentialProfileId"
+                  class="admin-console__select"
+                  :disabled="isBusy"
+                >
+                  <option value="">{{ $t("form.optionCredentialProfileNone") }}</option>
+                  <option
+                    v-for="credential in credentialProfiles.filter((item) => item.type === 'basic')"
+                    :key="`broker-credential-${profile._id}-${credential._id}`"
+                    :value="credential._id"
+                  >
+                    {{ credential.name }}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <input
+                  v-if="brokerProfileDrafts[profile._id]"
+                  v-model="brokerProfileDrafts[profile._id].topicAllowlist"
+                  class="admin-console__input"
+                  type="text"
+                  :disabled="isBusy"
+                />
+              </td>
+              <td>
+                <input
+                  v-if="brokerProfileDrafts[profile._id]"
+                  class="admin-console__checkbox-input"
+                  type="checkbox"
+                  v-model="brokerProfileDrafts[profile._id].tlsRejectUnauthorized"
+                  :disabled="isBusy"
+                />
+              </td>
+              <td>
+                <input
+                  v-if="brokerProfileDrafts[profile._id]"
+                  class="admin-console__checkbox-input"
+                  type="checkbox"
+                  v-model="brokerProfileDrafts[profile._id].allowPublicUse"
+                  :disabled="isBusy"
+                />
+              </td>
+              <td class="admin-console__actions">
+                <button
+                  type="button"
+                  class="admin-console__button admin-console__button--primary admin-console__button--small"
+                  :disabled="isBusy || !brokerProfileDrafts[profile._id]"
+                  @click="saveBrokerProfile(profile._id)"
+                >
+                  {{ $t("admin.saveBrokerProfile") }}
+                </button>
+                <button
+                  type="button"
+                  class="admin-console__button admin-console__button--danger admin-console__button--small"
+                  :disabled="isBusy"
+                  @click="deleteBrokerProfile(profile)"
+                >
+                  {{ $t("admin.deleteBrokerProfile") }}
+                </button>
+              </td>
+            </tr>
+            <tr v-if="brokerProfiles.length === 0">
+              <td colspan="7" class="admin-console__empty">
+                {{ $t("admin.noBrokerProfiles") }}
               </td>
             </tr>
           </tbody>
