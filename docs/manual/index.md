@@ -25,6 +25,7 @@ Use this manual in two tracks:
 - [API](/manual/api)
 - [UI](/manual/ui)
 - [HTTP Datasource Gateway](/manual/gateway)
+- [Credential Key Rotation](/manual/credential-key-rotation)
 - [Ansible](/manual/ansible)
 - [Documentation Site Setup](/manual/docs-site-setup)
 - [Development Misc](/manual/dev-misc)

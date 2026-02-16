@@ -289,17 +289,6 @@ export const useFreeboardStore = defineStore("freeboard", {
 
       this.hydrateSessionFromToken();
       this.syncEditingPermissions();
-      // TODO: Sync with local limited, use indexdb
-      /*
-      if (dashboard && settings.dashboard) {
-        this.dashboard = new Dashboard();
-        this.dashboard.deserialize(settings.dashboard);
-      } else if (settings.dashboard) {
-        const d = new Dashboard()
-        d.deserialize(settings.dashboard);
-        this.dashboard.settings = d.settings;
-      }
-        */
     },
 
     /**
@@ -310,12 +299,6 @@ export const useFreeboardStore = defineStore("freeboard", {
       if (this.token) {
         settings.token = this.token;
       }
-      // TODO Sync - s.a.
-      /*
-      if (this.dashboard) {
-        settings.dashboard = this.dashboard.serialize();
-      }
-      */
       const sessionStorageRef = getSessionStorage();
       const localStorageRef = getLocalStorage();
       const serialized = JSON.stringify(settings);

@@ -26,6 +26,51 @@ The gateway executes outbound HTTP datasource requests with API-issued session t
 - Header: `Authorization: Bearer <datasource-session-token>`
 - In default compose deployment, gateway is reached via UI reverse proxy at `http://<host>:8080/gateway/http/fetch`.
 
+## HTTP Fetch Contract
+
+`POST /gateway/http/fetch` is the only Phase 5 fetch route exposed for datasource execution.
+
+Request headers:
+
+- `authorization: Bearer <datasource-session-token>`
+- `content-type: application/json`
+
+Request body:
+
+```json
+{
+  "dashboardId": "<dashboard-id>",
+  "datasourceId": "<datasource-id>"
+}
+```
+
+Behavior:
+
+- Browser clients submit only dashboard/datasource identifiers plus token.
+- Raw upstream intent (URL, method, headers, parser, timeout) is never accepted from browser clients.
+- Gateway resolves canonical intent through API introspection before egress.
+
+Success response:
+
+```json
+{
+  "dashboardId": "<dashboard-id>",
+  "datasourceId": "<datasource-id>",
+  "data": "<parsed-payload>",
+  "fetchedAt": "2026-02-15T20:11:34.122Z"
+}
+```
+
+Failure response:
+
+```json
+{
+  "error": "Gateway request failed"
+}
+```
+
+Error responses are sanitized and do not include decrypted credentials or internal stack traces.
+
 ## Key Environment Variables
 
 - `EGRESS_ALLOWED_HOSTS` (required in production)
@@ -45,3 +90,4 @@ The gateway executes outbound HTTP datasource requests with API-issued session t
 - Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false` unless on a trusted local-only network.
 - Review `EGRESS_ALLOWED_HOSTS` as part of deployment change control.
 - Rotate `JWT_GATEWAY_SECRET` and `GATEWAY_SERVICE_TOKEN` during controlled maintenance windows.
+- Rotate credential encryption keys using the [Credential Key Rotation Runbook](/manual/credential-key-rotation).

@@ -48,6 +48,7 @@ export default defineConfig({
             { text: "API", link: "/manual/api" },
             { text: "UI", link: "/manual/ui" },
             { text: "Gateway", link: "/manual/gateway" },
+            { text: "Credential Key Rotation", link: "/manual/credential-key-rotation" },
             { text: "Ansible", link: "/manual/ansible" },
             { text: "Docs Site Setup", link: "/manual/docs-site-setup" },
             { text: "Development Misc", link: "/manual/dev-misc" },

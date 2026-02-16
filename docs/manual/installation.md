@@ -94,3 +94,4 @@ Services:
 - Set strict `EGRESS_ALLOWED_HOSTS`
 - Keep `CREATE_ADMIN=false` after bootstrap
 - Use non-default Mongo credentials
+- Follow [Credential Key Rotation](/manual/credential-key-rotation) for planned secret rotation
