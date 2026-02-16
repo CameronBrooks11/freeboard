@@ -14,6 +14,15 @@ const normalizeAngle = (value) => {
   return normalized < 0 ? normalized + 360 : normalized;
 };
 
+const POINTER_DEFAULT_ANGLE_UNIT = "°";
+
+const resolveAngleUnit = (value) => {
+  if (value === null || value === undefined) {
+    return POINTER_DEFAULT_ANGLE_UNIT;
+  }
+  return String(value);
+};
+
 export class PointerWidget extends ReactiveWidget {
   static typeName = "pointer";
   static label = "Pointer";
@@ -28,11 +37,13 @@ export class PointerWidget extends ReactiveWidget {
       settings: {
         headerText: widget?.settings?.headerText ?? widget?.title ?? "",
         unitText: widget?.settings?.unitText ?? "",
+        angleUnitText: widget?.settings?.angleUnitText ?? POINTER_DEFAULT_ANGLE_UNIT,
         valueText: widget?.settings?.valueText ?? "",
       },
       fields: [
         { name: "headerText", label: "Header Text", type: "text" },
         { name: "unitText", label: "Unit Text", type: "text" },
+        { name: "angleUnitText", label: "Angle Unit Text", type: "text" },
         { name: "valueText", label: "Value Text", type: "text" },
       ],
     },
@@ -45,6 +56,7 @@ export class PointerWidget extends ReactiveWidget {
         valueTextPath: widget?.settings?.valueTextPath,
         headerPath: widget?.settings?.headerPath,
         unitPath: widget?.settings?.unitPath,
+        angleUnitPath: widget?.settings?.angleUnitPath,
       },
       fields: [
         {
@@ -57,6 +69,7 @@ export class PointerWidget extends ReactiveWidget {
         { name: "valueTextPath", label: "Value Text Path", type: "text" },
         { name: "headerPath", label: "Header Path", type: "text" },
         { name: "unitPath", label: "Unit Path", type: "text" },
+        { name: "angleUnitPath", label: "Angle Unit Path", type: "text" },
       ],
     },
   ];
@@ -144,6 +157,8 @@ export class PointerWidget extends ReactiveWidget {
       header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
       unit: this.getBinding(this.currentSettings?.unitPath) ?? this.currentSettings?.unitText,
       angle: this.getBinding(this.currentSettings?.anglePath),
+      angleUnit:
+        this.getBinding(this.currentSettings?.angleUnitPath) ?? this.currentSettings?.angleUnitText,
       valueText:
         this.getBinding(this.currentSettings?.valueTextPath) ?? this.currentSettings?.valueText,
     };
@@ -169,7 +184,7 @@ export class PointerWidget extends ReactiveWidget {
     if (inputs.valueText !== null && inputs.valueText !== undefined && inputs.valueText !== "") {
       this.valueElement.textContent = String(inputs.valueText);
     } else {
-      this.valueElement.textContent = `${Math.round(angle)}°`;
+      this.valueElement.textContent = `${Math.round(angle)}${resolveAngleUnit(inputs.angleUnit)}`;
     }
   }
 

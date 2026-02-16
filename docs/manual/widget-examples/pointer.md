@@ -17,9 +17,9 @@
 2. Set `Type = Pointer`.
 3. Set `Title = Berlin Wind Dir`.
 4. Set `Header Text = Berlin`.
-5. Set `Unit Text = °`.
-6. Set `Angle Path = berlinWind.current_weather.winddirection`.
-7. Set `Value Text Path = berlinWind.current_weather.winddirection`.
+5. Set `Angle Path = berlinWind.current_weather.winddirection`.
+6. Set `Value Text Path = berlinWind.current_weather.winddirection`.
+7. (Optional) Set `Angle Unit Text = deg` if you do not want the default `°`.
 8. Save.
 
 Expected output: compass pointer rotates to current wind direction.
@@ -41,9 +41,9 @@ Expected output: compass pointer rotates to current wind direction.
 2. Set `Type = Pointer`.
 3. Set `Title = Sydney Wind Dir`.
 4. Set `Header Text = Sydney`.
-5. Set `Unit Text = °`.
-6. Set `Angle Path = sydneyWind.current_weather.winddirection`.
-7. Set `Value Text Path = sydneyWind.current_weather.winddirection`.
+5. Set `Angle Path = sydneyWind.current_weather.winddirection`.
+6. Set `Value Text Path = sydneyWind.current_weather.winddirection`.
+7. (Optional) Set `Angle Unit Text = deg` if you do not want the default `°`.
 8. Save.
 
 Expected output: live directional pointer for Sydney wind heading.

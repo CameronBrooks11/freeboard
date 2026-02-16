@@ -39,7 +39,8 @@ This page is for dashboard users configuring built-in widgets.
 
 - Purpose: directional/angle visualization
 - Required binding: `anglePath`
-- Optional bindings: `valueTextPath`, `headerPath`, `unitPath`
+- Key settings: `valueText`, `unitText`, `angleUnitText` (default `°`)
+- Optional bindings: `valueTextPath`, `headerPath`, `unitPath`, `angleUnitPath`
 - Examples: [Pointer Widget Examples](/manual/widget-examples/pointer)
 
 ## Picture
