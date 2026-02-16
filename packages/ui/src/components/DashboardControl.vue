@@ -10,7 +10,6 @@ import { useFreeboardStore } from "../stores/freeboard";
 import Form from "./Form.vue";
 import { computed, getCurrentInstance, ref, watch } from "vue";
 import DatasourcesDialogBox from "./DatasourcesDialogBox.vue";
-import AuthProvidersDialogBox from "./AuthProvidersDialogBox.vue";
 import SettingsDialogBox from "./SettingsDialogBox.vue";
 import ShareDialogBox from "./ShareDialogBox.vue";
 import createSettings from "../settings";
@@ -60,11 +59,6 @@ const openDatasourcesDialogBox = () => {
   freeboardStore.createComponent(DatasourcesDialogBox, instance.appContext);
 };
 
-/** Open the auth providers management dialog */
-const openAuthProvidersDialogBox = () => {
-  freeboardStore.createComponent(AuthProvidersDialogBox, instance.appContext);
-};
-
 /** Open the dashboard share/collaboration dialog */
 const openShareDialogBox = () => {
   freeboardStore.createComponent(ShareDialogBox, instance.appContext);
@@ -96,12 +90,6 @@ const instance = getCurrentInstance();
         <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-database" /></i><label
           class="dashboard-control__board-toolbar__item__label">{{
             $t("dashboardControl.labelDatasources")
-          }}</label>
-      </li>
-      <li @click="() => openAuthProvidersDialogBox()" class="dashboard-control__board-toolbar__item">
-        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-eye" /></i><label
-          class="dashboard-control__board-toolbar__item__label">{{
-            $t("dashboardControl.labelAuth")
           }}</label>
       </li>
       <li @click="() => openShareDialogBox()" class="dashboard-control__board-toolbar__item">

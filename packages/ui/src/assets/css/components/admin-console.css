@@ -125,6 +125,33 @@
   gap: 12px;
 }
 
+.admin-console__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.admin-console__stat-card {
+  border: 1px solid var(--color-shade-4);
+  background: var(--color-shade-0);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-console__stat-label {
+  color: var(--color-shade-8);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-console__stat-value {
+  color: var(--color-shade-10);
+  font-size: 1rem;
+}
+
 .admin-console__form-grid--policy {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
@@ -138,6 +165,10 @@
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.admin-console__field--full {
+  grid-column: 1 / -1;
 }
 
 .admin-console__input,

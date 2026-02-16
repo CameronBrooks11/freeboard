@@ -9,6 +9,12 @@ export const INVITE_ROLE_OPTIONS = Object.freeze(["viewer", "editor"]);
 export const REGISTRATION_MODE_OPTIONS = Object.freeze(["disabled", "invite", "open"]);
 export const DASHBOARD_VISIBILITY_OPTIONS = Object.freeze(["private", "link", "public"]);
 export const EXECUTION_MODE_OPTIONS = Object.freeze(["safe", "trusted"]);
+export const CREDENTIAL_PROFILE_TYPE_OPTIONS = Object.freeze([
+  "none",
+  "header",
+  "bearer",
+  "basic",
+]);
 
 const normalizeOptionValue = (value, allowed, fallback) => {
   const normalized = String(value || "")
@@ -32,6 +38,9 @@ export const normalizeDashboardVisibilityValue = (value) =>
 export const normalizeExecutionModeValue = (value) =>
   normalizeOptionValue(value, EXECUTION_MODE_OPTIONS, "safe");
 
+export const normalizeCredentialProfileTypeValue = (value) =>
+  normalizeOptionValue(value, CREDENTIAL_PROFILE_TYPE_OPTIONS, "none");
+
 export const toUserDraft = (user = {}) => ({
   role: normalizeRoleValue(user.role),
   active: Boolean(user.active),
@@ -49,4 +58,16 @@ export const toPolicyDraft = (policy = {}) => ({
   dashboardPublicListingEnabled: Boolean(policy.dashboardPublicListingEnabled),
   executionMode: normalizeExecutionModeValue(policy.executionMode),
   policyEditLock: Boolean(policy.policyEditLock),
+});
+
+export const toCredentialProfileDraft = (profile = {}) => ({
+  name: String(profile.name || ""),
+  description: String(profile.description || ""),
+  type: normalizeCredentialProfileTypeValue(profile.type),
+  allowPublicUse: Boolean(profile.allowPublicUse),
+  metadataHeaderName: String(profile.metadata?.headerName || ""),
+  secretToken: "",
+  secretUsername: "",
+  secretPassword: "",
+  secretHeaderValue: "",
 });

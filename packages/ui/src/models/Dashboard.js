@@ -1,9 +1,8 @@
 /**
  * @module models/Dashboard
- * @description Client-side model for Freeboard Dashboard, managing panes, datasources, auth providers, and serialization.
+ * @description Client-side model for Freeboard Dashboard, managing panes, datasources, and serialization.
  */
 
-import { AuthProvider } from "./AuthProvider";
 import { Datasource } from "./Datasource";
 import { Pane } from "./Pane";
 import {
@@ -44,6 +43,8 @@ export class Dashboard {
   visibility = "private";
   /** @type {string|null} Opaque share token for link access. */
   shareToken = null;
+  /** @type {number} Monotonic share token version for public/link revoke semantics. */
+  shareTokenVersion = 0;
   /** @type {Array<{userId: string, accessLevel: string}>} Dashboard ACL entries. */
   acl = [];
   /** @type {string|null} Optional image URL. */
@@ -56,8 +57,6 @@ export class Dashboard {
   datasources = [];
   /** @type {Array} Collection of pane instances. */
   panes = [];
-  /** @type {Array} Collection of auth provider instances. */
-  authProviders = [];
   /** @type {Object} Dashboard settings (theme, style, etc.). */
   settings = {
     theme: "auto",
@@ -144,6 +143,9 @@ export class Dashboard {
         ? object.visibility
         : "private";
     this.shareToken = object.shareToken || null;
+    this.shareTokenVersion = Number.isFinite(Number(object.shareTokenVersion))
+      ? Math.max(0, Math.floor(Number(object.shareTokenVersion)))
+      : 0;
     this.acl = Array.isArray(object.acl) ? object.acl : [];
     this.settings = object.settings || {};
     this.isOwner = resolveDashboardIsOwner(object);
@@ -153,12 +155,6 @@ export class Dashboard {
       object.canManageSharing === undefined
         ? this.isOwner
         : Boolean(object.canManageSharing);
-
-    object.authProviders?.forEach((providerConfig) => {
-      const authProvider = new AuthProvider();
-      authProvider.deserialize(providerConfig);
-      this.addAuthProvider(authProvider);
-    });
 
     object.datasources?.forEach((datasourceConfig) => {
       const datasource = new Datasource();
@@ -185,26 +181,6 @@ export class Dashboard {
 
     this.panes?.forEach((pane) => {
       pane.widgets?.forEach((widget) => widget.processDatasourceUpdate(null, context));
-    });
-  }
-
-  /**
-   * Add an authentication provider to the dashboard.
-   *
-   * @param {AuthProvider} authProvider - Provider instance to add.
-   */
-  addAuthProvider(authProvider) {
-    this.authProviders = [...this.authProviders, authProvider];
-  }
-
-  /**
-   * Remove an authentication provider from the dashboard.
-   *
-   * @param {AuthProvider} authProvider - Provider instance to remove.
-   */
-  deleteAuthProvider(authProvider) {
-    this.authProviders = this.authProviders.filter((item) => {
-      return item !== authProvider;
     });
   }
 
@@ -451,17 +427,6 @@ export class Dashboard {
     }
 
     pane.layout.i = normalizedCurrentId;
-  }
-
-  /**
-   * Retrieve an auth provider instance by its title.
-   *
-   * @param {string} title - Title of the auth provider.
-   * @returns {any} The auth provider instance or undefined.
-   */
-  getAuthProviderByName(title) {
-    return this.authProviders.find((a) => a.title === title)
-      ?.authProviderInstance;
   }
 
   /**

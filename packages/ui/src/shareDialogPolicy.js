@@ -85,6 +85,11 @@ export const applyShareMutationPayloadToDashboard = ({ dashboard, payload }) => 
 
   dashboard.visibility = payload.visibility || dashboard.visibility;
   dashboard.shareToken = payload.shareToken || null;
+  if (payload.shareTokenVersion !== undefined) {
+    dashboard.shareTokenVersion = Number.isFinite(Number(payload.shareTokenVersion))
+      ? Math.max(0, Math.floor(Number(payload.shareTokenVersion)))
+      : dashboard.shareTokenVersion;
+  }
 
   if (payload.canEdit !== undefined) {
     dashboard.canEdit = Boolean(payload.canEdit);

@@ -30,6 +30,9 @@ Copy `.env.example` to `.env` and set real secrets.
 # API runtime
 FREEBOARD_RUNTIME_ENV=production
 JWT_SECRET=replace-with-a-long-random-secret-at-least-32-chars
+JWT_GATEWAY_SECRET=replace-with-a-long-random-gateway-secret-at-least-32-chars
+GATEWAY_SERVICE_TOKEN=replace-with-a-long-random-gateway-service-token-at-least-32-chars
+CREDENTIAL_ENCRYPTION_KEY=replace-with-base64-32-byte-key
 
 # Mongo for API
 FREEBOARD_MONGO_URL=mongodb://freeboard_app:replace-with-strong-app-password@freeboard-mongo:27017/freeboard
@@ -40,8 +43,8 @@ MONGO_INITDB_ROOT_PASSWORD=replace-with-strong-root-password
 MONGO_APP_USERNAME=freeboard_app
 MONGO_APP_PASSWORD=replace-with-strong-app-password
 
-# Proxy allowlist (required in production)
-PROXY_ALLOWED_HOSTS=api.open-meteo.com,api.coingecko.com
+# Gateway egress allowlist (required in production)
+EGRESS_ALLOWED_HOSTS=api.open-meteo.com,api.coingecko.com
 ```
 
 ### Optional local bootstrap admin
@@ -78,14 +81,16 @@ Services:
 
 - UI: `http://localhost:8080`
 - API (via UI reverse proxy): `http://localhost:8080/graphql` (internal: `freeboard-api:4001`)
-- Proxy (via UI reverse proxy): `http://localhost:8080/proxy` (internal: `freeboard-proxy:8001`)
+- Gateway (via UI reverse proxy): `http://localhost:8080/gateway/http/fetch` (internal: `freeboard-proxy:8001`)
 
 ## Security checks before go-live
 
 - Keep `FREEBOARD_RUNTIME_ENV=production`
 - Use strong `JWT_SECRET` (32+ chars)
-- Keep `PROXY_ALLOW_INSECURE_TLS=false`
-- Keep `PROXY_ALLOW_PRIVATE_DESTINATIONS=false`
-- Set strict `PROXY_ALLOWED_HOSTS`
+- Use strong `JWT_GATEWAY_SECRET` and `GATEWAY_SERVICE_TOKEN`
+- Set valid `CREDENTIAL_ENCRYPTION_KEY` (base64 32-byte key)
+- Keep `EGRESS_ALLOW_INSECURE_TLS=false`
+- Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false`
+- Set strict `EGRESS_ALLOWED_HOSTS`
 - Keep `CREATE_ADMIN=false` after bootstrap
 - Use non-default Mongo credentials

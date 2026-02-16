@@ -12,10 +12,10 @@ Use these pages to quickly test each built-in widget against real public APIs.
 - [Sparkline Widget Examples](/manual/widget-examples/sparkline)
 - [Map Widget Examples](/manual/widget-examples/map)
 
-All JSON datasource examples below assume:
+All HTTP datasource examples below assume:
 
-- `Use Proxy = true`
+- `Use Gateway = true`
 - `Method = GET`
 - `Enabled = true`
 
-For containerized production deployments, each upstream host used in these examples must be listed in `PROXY_ALLOWED_HOSTS`.
+For containerized production deployments, each upstream host used in these examples must be listed in `EGRESS_ALLOWED_HOSTS`.

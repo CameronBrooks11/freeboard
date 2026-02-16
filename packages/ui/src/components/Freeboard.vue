@@ -17,15 +17,15 @@ import {
   DASHBOARD_READ_QUERY,
   DASHBOARD_READ_BY_SHARE_TOKEN_QUERY,
   DASHBOARD_UPDATE_SUBSCRIPTION,
+  CREDENTIAL_PROFILES_QUERY,
   PUBLIC_AUTH_POLICY_QUERY,
 } from "../gql";
 import router from "../router";
 import { storeToRefs } from "pinia";
 import Preloader from "./Preloader.vue";
 import { ClockDatasource } from "../datasources/ClockDatasource";
-import { JSONDatasource } from "../datasources/JSONDatasource";
-import { HeaderAuthProvider } from "../auth/HeaderAuthProvider";
-import { OAuth2PasswordGrantProvider } from "../auth/OAuth2PasswordGrantProvider";
+import { HTTPDatasource } from "../datasources/HTTPDatasource";
+import { StaticDatasource } from "../datasources/StaticDatasource";
 import { usePreferredColorScheme } from "@vueuse/core";
 import { BaseWidget } from "../widgets/BaseWidget";
 import { TextWidget } from "../widgets/TextWidget";
@@ -101,10 +101,38 @@ const { result: publicPolicyResult } = useQuery(PUBLIC_AUTH_POLICY_QUERY, {}, {
   fetchPolicy: "network-only",
 });
 
+const credentialProfilesQueryEnabled = computed(
+  () => freeboardStore.isLoggedIn() && freeboardStore.canEditDashboards()
+);
+const {
+  result: credentialProfilesResult,
+  error: credentialProfilesError,
+} = useQuery(CREDENTIAL_PROFILES_QUERY, {}, {
+  fetchPolicy: "network-only",
+  enabled: credentialProfilesQueryEnabled,
+});
+
 watch(publicPolicyResult, () => {
   const policy = publicPolicyResult.value?.publicAuthPolicy;
   if (policy) {
     freeboardStore.setPublicAuthPolicy(policy);
+  }
+});
+
+watch(credentialProfilesResult, () => {
+  const profiles = credentialProfilesResult.value?.credentialProfiles;
+  freeboardStore.setCredentialProfiles(Array.isArray(profiles) ? profiles : []);
+});
+
+watch(credentialProfilesError, () => {
+  if (credentialProfilesError.value) {
+    freeboardStore.setCredentialProfiles([]);
+  }
+});
+
+watch(credentialProfilesQueryEnabled, (enabled) => {
+  if (!enabled) {
+    freeboardStore.setCredentialProfiles([]);
   }
 });
 
@@ -122,6 +150,7 @@ watch([loadingById, loadingByShareToken], ([idLoading, shareLoading]) => {
 
 // Show loader when the route id changes (before the query returns)
 watch([routeId, routeShareToken], ([id, shareToken]) => {
+  freeboardStore.setRuntimeShareToken(shareToken || null);
   if (id || shareToken) {
     showLoadingIndicator.value = true;
   }
@@ -168,10 +197,9 @@ watch(d, () => freeboardStore.saveSettingsToLocalStorage());
 freeboardStore.loadSettingsFromLocalStorage();
 freeboardStore.loadDashboardAssets();
 freeboardStore.loadDashboardTheme();
-freeboardStore.loadAuthPlugin(HeaderAuthProvider);
-freeboardStore.loadAuthPlugin(OAuth2PasswordGrantProvider);
-freeboardStore.loadDatasourcePlugin(JSONDatasource);
+freeboardStore.loadDatasourcePlugin(HTTPDatasource);
 freeboardStore.loadDatasourcePlugin(ClockDatasource);
+freeboardStore.loadDatasourcePlugin(StaticDatasource);
 freeboardStore.loadWidgetPlugin(BaseWidget);
 freeboardStore.loadWidgetPlugin(TextWidget);
 freeboardStore.loadWidgetPlugin(IndicatorWidget);

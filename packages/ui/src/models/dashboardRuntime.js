@@ -222,11 +222,6 @@ export const serializeDashboardState = (dashboard, version) => {
     datasources.push(datasource.serialize());
   });
 
-  const authProviders = [];
-  dashboard.authProviders.forEach((authProvider) => {
-    authProviders.push(authProvider.serialize());
-  });
-
   return {
     version,
     _id: dashboard._id,
@@ -237,7 +232,6 @@ export const serializeDashboardState = (dashboard, version) => {
     width: dashboard.width,
     datasources,
     panes,
-    authProviders,
     settings: dashboard.settings,
   };
 };

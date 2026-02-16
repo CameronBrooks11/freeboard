@@ -1,14 +1,14 @@
 /**
  * @module proxy/index
- * @description HTTP proxy service with SSRF-oriented safeguards and DNS-pinned upstream connections.
+ * @description Datasource gateway service with SSRF controls and API-backed intent introspection.
  */
 
 import "dotenv/config";
 import * as http from "http";
 import * as https from "https";
-import bodyParser from "body-parser";
 import dns from "dns";
 import express from "express";
+import jwt from "jsonwebtoken";
 import net from "net";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -20,29 +20,73 @@ const PORT = Number(process.env.PORT || 8001);
 const HOST = process.env.HOST || "0.0.0.0";
 const NODE_ENV = String(process.env.NODE_ENV || "development").toLowerCase();
 const IS_PRODUCTION = NODE_ENV === "production";
-const ALLOW_INSECURE_TLS = process.env.PROXY_ALLOW_INSECURE_TLS === "true";
+
+const ALLOW_INSECURE_TLS = process.env.EGRESS_ALLOW_INSECURE_TLS === "true";
 const ALLOW_PRIVATE_DESTINATIONS =
-  process.env.PROXY_ALLOW_PRIVATE_DESTINATIONS === "true";
-const REQUEST_TIMEOUT_MS = Number(process.env.PROXY_TIMEOUT_MS || 15000);
+  process.env.EGRESS_ALLOW_PRIVATE_DESTINATIONS === "true";
+const REQUEST_TIMEOUT_MS = Number(process.env.FETCH_TIMEOUT_MS || 15000);
 const MAX_RESPONSE_BYTES = Number(
-  process.env.PROXY_MAX_RESPONSE_BYTES || 5 * 1024 * 1024
+  process.env.FETCH_MAX_RESPONSE_BYTES || 5 * 1024 * 1024
 );
-const ALLOWED_HOST_PATTERNS = String(process.env.PROXY_ALLOWED_HOSTS || "")
+const INTROSPECTION_TIMEOUT_MS = Number(
+  process.env.GATEWAY_INTROSPECTION_TIMEOUT_MS || 5000
+);
+const ALLOWED_HOST_PATTERNS = String(process.env.EGRESS_ALLOWED_HOSTS || "")
   .split(",")
   .map((value) => value.trim().toLowerCase())
   .filter(Boolean);
-const ALLOWED_PORTS = String(process.env.PROXY_ALLOWED_PORTS || "80,443")
+const ALLOWED_PORTS = String(process.env.EGRESS_ALLOWED_PORTS || "80,443")
   .split(",")
   .map((value) => Number(value.trim()))
   .filter((value) => Number.isInteger(value) && value >= 1 && value <= 65535);
+const JWT_GATEWAY_SECRET =
+  process.env.JWT_GATEWAY_SECRET || "freeboard-gateway-dev-insecure-local-only-secret-32";
+const GATEWAY_SERVICE_TOKEN =
+  process.env.GATEWAY_SERVICE_TOKEN ||
+  "freeboard-gateway-service-dev-token-local-only-32";
+const GATEWAY_API_BASE_URL =
+  process.env.GATEWAY_API_BASE_URL || "http://127.0.0.1:4001";
+const GATEWAY_INTROSPECTION_URL = `${GATEWAY_API_BASE_URL.replace(/\/$/, "")}/internal/gateway/datasource-introspect`;
+
+const isWeakSecret = (secret) => {
+  if (!secret || typeof secret !== "string") {
+    return true;
+  }
+  const normalized = secret.trim().toLowerCase();
+  if (normalized.length < 32) {
+    return true;
+  }
+  if (
+    normalized.includes("replace-with") ||
+    normalized.includes("example") ||
+    normalized.includes("local-only")
+  ) {
+    return true;
+  }
+  return ["freeboard", "changeme", "default", "secret", "password"].includes(
+    normalized
+  );
+};
 
 if (IS_PRODUCTION && ALLOW_INSECURE_TLS) {
-  throw new Error("PROXY_ALLOW_INSECURE_TLS=true is not allowed in production.");
+  throw new Error("EGRESS_ALLOW_INSECURE_TLS=true is not allowed in production.");
 }
 
 if (IS_PRODUCTION && ALLOWED_HOST_PATTERNS.length === 0) {
   throw new Error(
-    "PROXY_ALLOWED_HOSTS must be configured in production (comma-separated host allowlist)."
+    "EGRESS_ALLOWED_HOSTS must be configured in production (comma-separated host allowlist)."
+  );
+}
+
+if (IS_PRODUCTION && isWeakSecret(JWT_GATEWAY_SECRET)) {
+  throw new Error(
+    "JWT_GATEWAY_SECRET is missing or too weak for production runtime."
+  );
+}
+
+if (IS_PRODUCTION && isWeakSecret(GATEWAY_SERVICE_TOKEN)) {
+  throw new Error(
+    "GATEWAY_SERVICE_TOKEN is missing or too weak for production runtime."
   );
 }
 
@@ -71,9 +115,9 @@ const createClientError = (statusCode, message) => {
 
 const writeError = (clientRes, error) => {
   const statusCode = error?.statusCode || 500;
-  const message = error?.message || "Proxy request failed";
+  const message = statusCode >= 500 ? "Gateway request failed" : error?.message;
   if (!clientRes.headersSent) {
-    clientRes.status(statusCode).json({ error: message });
+    clientRes.status(statusCode).json({ error: message || "Gateway request failed" });
   } else {
     clientRes.end();
   }
@@ -174,19 +218,14 @@ const isAllowedHost = (hostname) => {
 const hasAllowedPort = (port) => ALLOWED_PORTS.includes(port);
 
 /**
- * Parse and validate target URL from proxy request.
+ * Parse and validate target URL.
  *
- * @param {import('express').Request} clientReq
+ * @param {string} rawTarget
  * @returns {{target: URL, port: number, hostname: string}}
  */
-export const parseTargetUrl = (clientReq) => {
-  const requestUrl = new URL(
-    clientReq.url || "",
-    `http://${clientReq.headers.host || "localhost"}`
-  );
-  const rawTarget = requestUrl.searchParams.get("url");
-  if (!rawTarget) {
-    throw createClientError(400, "Missing required query parameter: url");
+export const parseTargetUrl = (rawTarget) => {
+  if (!rawTarget || typeof rawTarget !== "string") {
+    throw createClientError(400, "Target URL is required");
   }
 
   let target;
@@ -252,6 +291,24 @@ export const ensureResolvedDestinationIsAllowed = async (
   };
 };
 
+const normalizeRequestHeaders = (headers = {}) => {
+  const normalized = {};
+  for (const [rawKey, rawValue] of Object.entries(headers || {})) {
+    const key = String(rawKey || "").trim();
+    if (!key) {
+      continue;
+    }
+
+    const lowered = key.toLowerCase();
+    if (["host", "content-length", "connection"].includes(lowered)) {
+      continue;
+    }
+
+    normalized[key] = String(rawValue ?? "");
+  }
+  return normalized;
+};
+
 const buildHostHeader = ({ hostname, port, isHttps }) => {
   const defaultPort = isHttps ? 443 : 80;
   if (port === defaultPort) {
@@ -260,152 +317,309 @@ const buildHostHeader = ({ hostname, port, isHttps }) => {
   return `${hostname}:${port}`;
 };
 
-const buildOutgoingHeaders = ({ clientReq, bodyText, hostHeader }) => {
-  const headers = {
-    accept: clientReq.headers.accept || "*/*",
-    "user-agent": "freeboard-proxy/secure",
+const createUpstreamRequestOptions = ({
+  target,
+  port,
+  hostname,
+  resolvedDestination,
+  bodyText,
+  headers,
+  timeoutMs,
+}) => {
+  const isHttps = target.protocol === "https:";
+  const hostHeader = buildHostHeader({ hostname, port, isHttps });
+  const outgoingHeaders = {
+    accept: "*/*",
+    "user-agent": "freeboard-gateway/http",
     host: hostHeader,
+    ...normalizeRequestHeaders(headers),
   };
 
-  const contentType = clientReq.headers["content-type"];
-  if (contentType && typeof contentType === "string") {
-    headers["content-type"] = contentType;
-  }
-
   if (bodyText) {
-    headers["content-length"] = String(Buffer.byteLength(bodyText));
+    outgoingHeaders["content-length"] = String(Buffer.byteLength(bodyText));
+    if (!outgoingHeaders["content-type"]) {
+      outgoingHeaders["content-type"] = "application/json";
+    }
   }
 
-  return headers;
+  const options = {
+    protocol: target.protocol,
+    hostname: resolvedDestination.address,
+    family: resolvedDestination.family,
+    lookup: (_unusedHostname, _unusedOptions, callback) => {
+      callback(null, resolvedDestination.address, resolvedDestination.family);
+    },
+    port,
+    path: `${target.pathname}${target.search}`,
+    method: "GET",
+    headers: outgoingHeaders,
+    timeout: timeoutMs,
+  };
+
+  if (isHttps) {
+    options.agent = new https.Agent({
+      rejectUnauthorized: !ALLOW_INSECURE_TLS,
+      servername: hostname,
+    });
+  }
+
+  return options;
 };
 
-const forwardRequestBody = (clientReq, proxyReq) => {
-  if (!["POST", "PUT", "PATCH", "DELETE"].includes(String(clientReq.method).toUpperCase())) {
-    return;
+const parseCsv = (csvText) => {
+  const lines = String(csvText || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    return [];
   }
 
-  const bodyText = typeof clientReq.body === "string" ? clientReq.body : "";
-  if (bodyText) {
-    proxyReq.write(bodyText);
+  const headers = lines[0].split(",").map((part) => part.trim());
+  return lines.slice(1).map((line) => {
+    const values = line.split(",").map((part) => part.trim());
+    const item = {};
+    headers.forEach((header, index) => {
+      if (!header) {
+        return;
+      }
+      item[header] = values[index] ?? "";
+    });
+    return item;
+  });
+};
+
+const parseGatewayResponse = ({ parser, payload }) => {
+  const normalizedParser = String(parser || "json").toLowerCase();
+  if (normalizedParser === "text") {
+    return payload;
   }
+  if (normalizedParser === "csv") {
+    return parseCsv(payload);
+  }
+
+  try {
+    return JSON.parse(payload);
+  } catch {
+    throw createClientError(502, "Upstream response is not valid JSON");
+  }
+};
+
+const executeIntentFetch = async ({ intent, lookup, httpRequest, httpsRequest }) => {
+  const { target, port, hostname } = parseTargetUrl(intent.url);
+  const resolvedDestination = await ensureResolvedDestinationIsAllowed(hostname, {
+    lookup,
+  });
+  const bodyText =
+    intent.body === null || intent.body === undefined ? "" : String(intent.body);
+  const timeoutMs = Number(intent.timeoutMs) > 0 ? Number(intent.timeoutMs) : REQUEST_TIMEOUT_MS;
+
+  const options = createUpstreamRequestOptions({
+    target,
+    port,
+    hostname,
+    resolvedDestination,
+    bodyText,
+    headers: intent.headers,
+    timeoutMs,
+  });
+  options.method = String(intent.method || "GET").toUpperCase();
+
+  const requestFn = target.protocol === "https:" ? httpsRequest : httpRequest;
+
+  const payload = await new Promise((resolve, reject) => {
+    const upstream = requestFn(options, (upstreamRes) => {
+      const upstreamStatusCode = Number(upstreamRes.statusCode) || 0;
+      let totalBytes = 0;
+      const chunks = [];
+
+      upstreamRes.on("data", (chunk) => {
+        totalBytes += chunk.length;
+        if (totalBytes > MAX_RESPONSE_BYTES) {
+          upstreamRes.destroy(
+            createClientError(502, "Response exceeded fetch size limit")
+          );
+          return;
+        }
+        chunks.push(chunk);
+      });
+
+      upstreamRes.on("end", () => {
+        if (upstreamStatusCode < 200 || upstreamStatusCode >= 300) {
+          reject(createClientError(502, `Upstream request failed (${upstreamStatusCode})`));
+          return;
+        }
+        resolve(Buffer.concat(chunks).toString("utf8"));
+      });
+
+      upstreamRes.on("error", (error) => {
+        reject(error);
+      });
+    });
+
+    upstream.on("timeout", () => {
+      upstream.destroy(createClientError(504, "Upstream request timed out"));
+    });
+
+    upstream.on("error", (error) => {
+      reject(error);
+    });
+
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(options.method) && bodyText) {
+      upstream.write(bodyText);
+    }
+    upstream.end();
+  });
+
+  return parseGatewayResponse({
+    parser: intent.parser,
+    payload,
+  });
+};
+
+const validateSessionToken = (token) => {
+  try {
+    return jwt.verify(token, JWT_GATEWAY_SECRET, {
+      algorithms: ["HS256"],
+      audience: "freeboard-gateway",
+      issuer: "freeboard-api",
+    });
+  } catch {
+    throw createClientError(401, "Invalid datasource session token");
+  }
+};
+
+const fetchIntrospection = async ({ sessionToken, dashboardId, datasourceId, fetchFn = fetch }) => {
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => {
+    abortController.abort();
+  }, Math.max(500, INTROSPECTION_TIMEOUT_MS));
+
+  let response;
+  try {
+    response = await fetchFn(GATEWAY_INTROSPECTION_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${GATEWAY_SERVICE_TOKEN}`,
+      },
+      body: JSON.stringify({
+        sessionToken,
+        dashboardId,
+        datasourceId,
+      }),
+      signal: abortController.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw createClientError(504, "Introspection request timed out");
+    }
+    throw createClientError(502, "Introspection request failed");
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw createClientError(response.status, payload?.error || "Introspection failed");
+  }
+
+  return payload;
 };
 
 /**
- * Build proxy request handler.
+ * Build gateway fetch request handler.
  *
- * @param {{lookup?: Function, httpRequest?: Function, httpsRequest?: Function}} [options]
+ * @param {{lookup?: Function, httpRequest?: Function, httpsRequest?: Function, fetchFn?: Function}} [options]
  * @returns {import('express').RequestHandler}
  */
-export const createProxyHandler = ({
+export const createGatewayFetchHandler = ({
   lookup = dns.promises.lookup,
   httpRequest = http.request,
   httpsRequest = https.request,
+  fetchFn = fetch,
 } = {}) =>
   async (clientReq, clientRes) => {
     try {
-      const { target, port, hostname } = parseTargetUrl(clientReq);
-      const resolvedDestination = await ensureResolvedDestinationIsAllowed(
-        hostname,
-        { lookup }
-      );
-      const isHttps = target.protocol === "https:";
-      const bodyText = typeof clientReq.body === "string" ? clientReq.body : "";
-      const hostHeader = buildHostHeader({ hostname, port, isHttps });
-      const headers = buildOutgoingHeaders({
-        clientReq,
-        bodyText,
-        hostHeader,
-      });
-
-      const options = {
-        protocol: target.protocol,
-        hostname: resolvedDestination.address,
-        family: resolvedDestination.family,
-        lookup: (_unusedHostname, _unusedOptions, callback) => {
-          callback(
-            null,
-            resolvedDestination.address,
-            resolvedDestination.family
-          );
-        },
-        port,
-        path: `${target.pathname}${target.search}`,
-        method: clientReq.method,
-        headers,
-        timeout: REQUEST_TIMEOUT_MS,
-      };
-
-      if (isHttps) {
-        options.agent = new https.Agent({
-          rejectUnauthorized: !ALLOW_INSECURE_TLS,
-          servername: hostname,
-        });
+      const authHeader = String(clientReq.headers.authorization || "");
+      const sessionToken = authHeader.startsWith("Bearer ")
+        ? authHeader.slice("Bearer ".length).trim()
+        : "";
+      if (!sessionToken) {
+        throw createClientError(401, "Missing datasource session token");
       }
 
-      const requestFn = isHttps ? httpsRequest : httpRequest;
-      const upstream = requestFn(options, (upstreamRes) => {
-        const responseHeaders = { ...upstreamRes.headers };
-        delete responseHeaders["set-cookie"];
-        delete responseHeaders["set-cookie2"];
+      const tokenClaims = validateSessionToken(sessionToken);
+      const dashboardId = String(clientReq.body?.dashboardId || tokenClaims.dashboardId || "").trim();
+      const datasourceId = String(clientReq.body?.datasourceId || tokenClaims.datasourceId || "").trim();
+      if (!dashboardId || !datasourceId) {
+        throw createClientError(400, "dashboardId and datasourceId are required");
+      }
 
-        clientRes.writeHead(upstreamRes.statusCode || 502, responseHeaders);
+      if (dashboardId !== String(tokenClaims.dashboardId || "") || datasourceId !== String(tokenClaims.datasourceId || "")) {
+        throw createClientError(403, "Datasource identifiers do not match token claims");
+      }
 
-        let totalBytes = 0;
-        upstreamRes.on("data", (chunk) => {
-          totalBytes += chunk.length;
-          if (totalBytes > MAX_RESPONSE_BYTES) {
-            upstreamRes.destroy(
-              createClientError(502, "Response exceeded proxy size limit")
-            );
-            return;
-          }
-          clientRes.write(chunk);
-        });
-
-        upstreamRes.on("end", () => {
-          if (!clientRes.writableEnded) {
-            clientRes.end();
-          }
-        });
-
-        upstreamRes.on("error", (error) => {
-          writeError(clientRes, error);
-        });
+      const introspection = await fetchIntrospection({
+        sessionToken,
+        dashboardId,
+        datasourceId,
+        fetchFn,
       });
 
-      upstream.on("timeout", () => {
-        upstream.destroy(createClientError(504, "Upstream request timed out"));
+      const intent = introspection?.intent;
+      if (!intent || typeof intent !== "object") {
+        throw createClientError(502, "Introspection payload is invalid");
+      }
+
+      const data = await executeIntentFetch({
+        intent,
+        lookup,
+        httpRequest,
+        httpsRequest,
       });
 
-      upstream.on("error", (error) => {
-        writeError(clientRes, error);
+      clientRes.status(200).json({
+        dashboardId,
+        datasourceId,
+        data,
+        fetchedAt: new Date().toISOString(),
       });
-
-      forwardRequestBody(clientReq, upstream);
-      upstream.end();
     } catch (error) {
       writeError(clientRes, error);
     }
   };
 
 /**
- * Create and configure the proxy Express app.
+ * Backward export alias used by existing tests.
+ */
+export const createProxyHandler = createGatewayFetchHandler;
+
+/**
+ * Create and configure the gateway Express app.
  *
  * @param {{lookup?: Function}} [options]
  * @returns {import('express').Express}
  */
 export const createProxyApp = ({ lookup = dns.promises.lookup } = {}) => {
   const app = express();
-  app.use(bodyParser.text({ type: "*/*" }));
+  app.use(express.json({ limit: "256kb" }));
 
-  const handler = createProxyHandler({ lookup });
-  app.post("/proxy", handler);
-  app.get("/proxy", handler);
+  const handler = createGatewayFetchHandler({ lookup });
+  app.post("/gateway/http/fetch", handler);
+
+  app.use("/proxy", (_req, res) => {
+    res.status(410).json({
+      error: "Legacy /proxy endpoint is removed. Use /gateway/http/fetch.",
+    });
+  });
+
   return app;
 };
 
 /**
- * Start proxy HTTP server.
+ * Start gateway HTTP server.
  *
  * @param {{port?: number, host?: string, lookup?: Function}} [options]
  * @returns {import('http').Server}
@@ -418,7 +632,7 @@ export const startProxyServer = ({
   const app = createProxyApp({ lookup });
   const server = app.listen(port, host, () => {
     const printableHost = host === "0.0.0.0" || host === "::" ? "127.0.0.1" : host;
-    console.log(`Proxy listening on http://${printableHost}:${port}`);
+    console.log(`Gateway listening on http://${printableHost}:${port}`);
   });
   return server;
 };

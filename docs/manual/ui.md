@@ -43,7 +43,7 @@ See [Widget Runtime](/manual/widget-runtime) for lifecycle details.
 
 - Vite dev proxy routes:
   - `/graphql` -> API (`localhost:4001`)
-  - `/proxy` -> Proxy (`localhost:8001`)
+  - `/gateway` -> Gateway (`localhost:8001`)
 - Static build mode:
   - `FREEBOARD_STATIC=1` and `FREEBOARD_BASE_PATH` for static deployments (e.g. GitHub Pages)
 
@@ -51,7 +51,6 @@ See [Widget Runtime](/manual/widget-runtime) for lifecycle details.
 
 - New datasources: `packages/ui/src/datasources/`
 - New widgets: `packages/ui/src/widgets/`
-- New auth providers: `packages/ui/src/auth/`
 
 User-facing docs:
 

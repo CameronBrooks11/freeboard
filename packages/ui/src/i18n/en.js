@@ -13,21 +13,6 @@ export const en = {
     buttonAdd: "Add",
   },
 
-  // Labels for authentication provider dialog
-  authProviderDialogBox: {
-    labelType: "Type",
-    placeholderType: "Select an auth type...",
-  },
-
-  // Titles and buttons for the list of auth providers
-  authProvidersList: {
-    titleAdd: "Add auth provider",
-    titleEdit: "Edit auth provider",
-    titleDelete: "Delete auth provider",
-    buttonAdd: "Add",
-    labelName: "Name",
-  },
-
   // Descriptions for the code editor form element
   codeEditor: {
     buttonClose: "Close",
@@ -42,7 +27,6 @@ export const en = {
   dashboardControl: {
     labelSettings: "Settings",
     labelShare: "Share",
-    labelAuth: "Auth",
     labelDatasources: "Datasources",
     labelAddPane: "Add Pane",
   },
@@ -61,6 +45,7 @@ export const en = {
     buttonAdd: "Add",
     labelName: "Name",
     labelLastUpdated: "Last Updated",
+    labelStatus: "Status",
   },
 
   // Generic dialog box button labels
@@ -122,20 +107,28 @@ export const en = {
     labelRefresh: "Refresh interval",
     labelTemplate: "Template",
     labelUrl: "URL",
-    labelUseProxy: "Use Proxy",
+    labelUseGateway: "Use Gateway",
     labelMethod: "Method",
     labelMethodGET: "GET",
     labelMethodPOST: "POST",
     labelMethodPUT: "PUT",
     labelMethodDELETE: "DELETE",
     labelBody: "Body",
-    labelAuthProvider: "Auth provider",
+    labelParser: "Parser",
+    labelTimeoutMs: "Timeout (ms)",
+    labelHeadersJson: "Headers (JSON)",
+    labelCredentials: "Credentials",
+    labelCredentialProfile: "Credential Profile",
+    labelDatasourceStaleAfterSeconds: "Mark stale after",
+    labelStatic: "Static",
+    labelStaticValue: "Static Value",
     labelTheme: "Theme",
     labelThemeAuto: "Auto",
     labelThemeDark: "Dark",
     labelThemeLight: "Light",
     suffixRefresh: "seconds",
-    placeholderAuthProvider: "Select an auth provider",
+    placeholderCredentialProfile: "Select a credential profile",
+    optionCredentialProfileNone: "None",
     placeholderList: "Search...",
   },
 
@@ -168,6 +161,15 @@ export const en = {
     title: "Admin",
     backToDashboard: "Back To Dashboard",
     loadError: "Could not load admin data.",
+    datasourceDiagnosticsTitle: "Datasource Diagnostics",
+    loadingDatasourceDiagnostics: "Loading datasource diagnostics...",
+    totalDashboards: "Dashboards",
+    totalDatasources: "Datasources",
+    credentialBoundDatasources: "Credential-Bound Datasources",
+    externalDashboardDatasources: "External Dashboard Datasources",
+    invalidDatasources: "Invalid Datasources",
+    count: "Count",
+    noDatasourceDiagnostics: "No datasource diagnostics available.",
     policyTitle: "Auth Policy",
     registrationMode: "Registration Mode",
     registrationDefaultRole: "Registration Default Role",
@@ -199,6 +201,20 @@ export const en = {
     issueResetToken: "Issue Reset Token",
     deleteUser: "Delete",
     deactivateBeforeDelete: "Deactivate the account before permanent deletion.",
+    credentialProfilesTitle: "Credential Profiles",
+    createCredentialProfileButton: "Create Profile",
+    saveCredentialProfile: "Save Profile",
+    deleteCredentialProfile: "Delete Profile",
+    loadingCredentialProfiles: "Loading credential profiles...",
+    noCredentialProfiles: "No credential profiles found.",
+    allowPublicUse: "Allow Public Use",
+    description: "Description",
+    headerName: "Header Name",
+    headerValue: "Header Value",
+    tokenSecret: "Token Secret",
+    usernameSecret: "Username Secret",
+    passwordSecret: "Password Secret",
+    secretShape: "Secret Fields",
   },
 
   share: {

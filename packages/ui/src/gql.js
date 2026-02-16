@@ -16,12 +16,12 @@ export const DASHBOARD_CREATE_MUTATION = gql`
       title
       visibility
       shareToken
+      shareTokenVersion
       image
       datasources
       columns
       width
       panes
-      authProviders
       settings
       acl {
         userId
@@ -45,12 +45,12 @@ export const DASHBOARD_UPDATE_MUTATION = gql`
       title
       visibility
       shareToken
+      shareTokenVersion
       image
       datasources
       columns
       width
       panes
-      authProviders
       settings
       acl {
         userId
@@ -74,12 +74,12 @@ export const DASHBOARD_READ_QUERY = gql`
       title
       visibility
       shareToken
+      shareTokenVersion
       image
       datasources
       columns
       width
       panes
-      authProviders
       settings
       user
       acl {
@@ -104,12 +104,12 @@ export const DASHBOARD_READ_BY_SHARE_TOKEN_QUERY = gql`
       title
       visibility
       shareToken
+      shareTokenVersion
       image
       datasources
       columns
       width
       panes
-      authProviders
       settings
       user
       acl {
@@ -134,12 +134,12 @@ export const DASHBOARD_UPDATE_SUBSCRIPTION = gql`
       title
       visibility
       shareToken
+      shareTokenVersion
       image
       datasources
       columns
       width
       panes
-      authProviders
       settings
       user
       acl {
@@ -241,6 +241,99 @@ export const AUTH_POLICY_QUERY = gql`
       dashboardPublicListingEnabled
       executionMode
       policyEditLock
+    }
+  }
+`;
+
+/**
+ * Admin query for datasource diagnostics rollup.
+ * @constant {import('graphql').DocumentNode} ADMIN_DATASOURCE_DIAGNOSTICS_QUERY
+ */
+export const ADMIN_DATASOURCE_DIAGNOSTICS_QUERY = gql`
+  query AdminDatasourceDiagnostics {
+    adminDatasourceDiagnostics {
+      totalDashboards
+      totalDatasources
+      credentialBoundDatasources
+      externalDashboardDatasources
+      invalidDatasources
+      typeCounts {
+        type
+        count
+      }
+    }
+  }
+`;
+
+/**
+ * Credential profile list for datasource configuration.
+ * @constant {import('graphql').DocumentNode} CREDENTIAL_PROFILES_QUERY
+ */
+export const CREDENTIAL_PROFILES_QUERY = gql`
+  query CredentialProfiles {
+    credentialProfiles {
+      _id
+      name
+      description
+      type
+      allowPublicUse
+      metadata
+      secretShape
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+/**
+ * Admin mutation to create a credential profile.
+ * @constant {import('graphql').DocumentNode} ADMIN_CREATE_CREDENTIAL_PROFILE_MUTATION
+ */
+export const ADMIN_CREATE_CREDENTIAL_PROFILE_MUTATION = gql`
+  mutation AdminCreateCredentialProfile($input: CredentialProfileCreateInput!) {
+    adminCreateCredentialProfile(input: $input) {
+      _id
+      name
+      description
+      type
+      allowPublicUse
+      metadata
+      secretShape
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+/**
+ * Admin mutation to update a credential profile.
+ * @constant {import('graphql').DocumentNode} ADMIN_UPDATE_CREDENTIAL_PROFILE_MUTATION
+ */
+export const ADMIN_UPDATE_CREDENTIAL_PROFILE_MUTATION = gql`
+  mutation AdminUpdateCredentialProfile($id: ID!, $input: CredentialProfileUpdateInput!) {
+    adminUpdateCredentialProfile(_id: $id, input: $input) {
+      _id
+      name
+      description
+      type
+      allowPublicUse
+      metadata
+      secretShape
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+/**
+ * Admin mutation to delete a credential profile.
+ * @constant {import('graphql').DocumentNode} ADMIN_DELETE_CREDENTIAL_PROFILE_MUTATION
+ */
+export const ADMIN_DELETE_CREDENTIAL_PROFILE_MUTATION = gql`
+  mutation AdminDeleteCredentialProfile($id: ID!) {
+    adminDeleteCredentialProfile(_id: $id) {
+      _id
+      name
     }
   }
 `;
@@ -460,6 +553,7 @@ export const DASHBOARD_SET_VISIBILITY_MUTATION = gql`
       _id
       visibility
       shareToken
+      shareTokenVersion
       isOwner
       canEdit
       canManageSharing
@@ -477,6 +571,7 @@ export const DASHBOARD_ROTATE_SHARE_TOKEN_MUTATION = gql`
       _id
       visibility
       shareToken
+      shareTokenVersion
       isOwner
       canManageSharing
     }

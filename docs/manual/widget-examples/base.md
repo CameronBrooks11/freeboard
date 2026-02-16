@@ -163,7 +163,7 @@ window.addEventListener("message", (event) => {
 - Title: `randomFact`
 - Enabled: `true`
 - URL: `https://uselessfacts.jsph.pl/api/v2/facts/random?language=en`
-- Use proxy: `true`
+- Use gateway: `true`
 - Refresh: `15s`
 
 ### Widget CSS
@@ -245,7 +245,7 @@ window.addEventListener("message", (event) => {
 - Enabled: `true`
 - URL:
   `https://api.open-meteo.com/v1/forecast?latitude=42.9837&longitude=-81.2497&hourly=temperature_2m&current_weather=true`
-- Use proxy: `true`
+- Use gateway: `true`
 - Refresh: `60s`
 
 ### Widget CSS

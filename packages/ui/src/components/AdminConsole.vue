@@ -10,25 +10,33 @@ import { useMutation, useQuery } from "@vue/apollo-composable";
 import { RouterLink } from "vue-router";
 import { useFreeboardStore } from "../stores/freeboard";
 import {
+  CREDENTIAL_PROFILE_TYPE_OPTIONS,
   DASHBOARD_VISIBILITY_OPTIONS,
   EXECUTION_MODE_OPTIONS,
   INVITE_ROLE_OPTIONS,
+  normalizeCredentialProfileTypeValue,
   REGISTRATION_DEFAULT_ROLE_OPTIONS,
   REGISTRATION_MODE_OPTIONS,
   ROLE_OPTIONS,
+  toCredentialProfileDraft,
   toPolicyDraft,
   toUserDraft,
 } from "../admin/adminConsoleState";
 import {
+  ADMIN_CREATE_CREDENTIAL_PROFILE_MUTATION,
   ADMIN_CREATE_INVITE_MUTATION,
   ADMIN_CREATE_USER_MUTATION,
+  ADMIN_DELETE_CREDENTIAL_PROFILE_MUTATION,
   ADMIN_DELETE_USER_MUTATION,
   ADMIN_ISSUE_PASSWORD_RESET_MUTATION,
   ADMIN_PENDING_INVITES_QUERY,
   ADMIN_REVOKE_INVITE_MUTATION,
+  ADMIN_DATASOURCE_DIAGNOSTICS_QUERY,
+  ADMIN_UPDATE_CREDENTIAL_PROFILE_MUTATION,
   ADMIN_UPDATE_USER_MUTATION,
   ADMIN_USERS_QUERY,
   AUTH_POLICY_QUERY,
+  CREDENTIAL_PROFILES_QUERY,
   SET_AUTH_POLICY_MUTATION,
 } from "../gql";
 
@@ -37,6 +45,8 @@ const registrationModeToEnum = (mode) => String(mode || "disabled").toUpperCase(
 const dashboardVisibilityToEnum = (visibility) =>
   String(visibility || "private").toUpperCase();
 const executionModeToEnum = (mode) => String(mode || "safe").toUpperCase();
+const credentialProfileTypeToEnum = (type) =>
+  String(type || "none").toUpperCase();
 
 const freeboardStore = useFreeboardStore();
 const appBaseUrl = `${window.location.origin}${window.location.pathname.replace(/\/admin\/?$/, "/")}`;
@@ -44,6 +54,7 @@ const appBaseUrl = `${window.location.origin}${window.location.pathname.replace(
 const statusMessage = ref("");
 const actionError = ref("");
 const userDrafts = ref({});
+const credentialProfileDrafts = ref({});
 const issuedInvite = ref(null);
 const issuedResetByUser = ref({});
 
@@ -58,6 +69,7 @@ const createInviteInput = ref({
   role: "viewer",
   expiresInHours: 72,
 });
+const createCredentialProfileInput = ref(toCredentialProfileDraft());
 const policyDraft = ref(toPolicyDraft());
 
 const {
@@ -78,6 +90,17 @@ const {
   error: pendingInvitesError,
   refetch: refetchPendingInvites,
 } = useQuery(ADMIN_PENDING_INVITES_QUERY, {}, { fetchPolicy: "network-only" });
+const {
+  result: credentialProfilesResult,
+  loading: credentialProfilesLoading,
+  error: credentialProfilesError,
+  refetch: refetchCredentialProfiles,
+} = useQuery(CREDENTIAL_PROFILES_QUERY, {}, { fetchPolicy: "network-only" });
+const {
+  result: datasourceDiagnosticsResult,
+  loading: datasourceDiagnosticsLoading,
+  error: datasourceDiagnosticsError,
+} = useQuery(ADMIN_DATASOURCE_DIAGNOSTICS_QUERY, {}, { fetchPolicy: "network-only" });
 
 const { mutate: adminCreateUser, loading: createUserLoading } = useMutation(
   ADMIN_CREATE_USER_MUTATION
@@ -100,10 +123,28 @@ const { mutate: adminRevokeInvite, loading: revokeInviteLoading } = useMutation(
 const { mutate: adminIssuePasswordReset, loading: issueResetLoading } = useMutation(
   ADMIN_ISSUE_PASSWORD_RESET_MUTATION
 );
+const {
+  mutate: adminCreateCredentialProfile,
+  loading: createCredentialProfileLoading,
+} = useMutation(ADMIN_CREATE_CREDENTIAL_PROFILE_MUTATION);
+const {
+  mutate: adminUpdateCredentialProfile,
+  loading: updateCredentialProfileLoading,
+} = useMutation(ADMIN_UPDATE_CREDENTIAL_PROFILE_MUTATION);
+const {
+  mutate: adminDeleteCredentialProfile,
+  loading: deleteCredentialProfileLoading,
+} = useMutation(ADMIN_DELETE_CREDENTIAL_PROFILE_MUTATION);
 
 const users = computed(() => usersResult.value?.listAllUsers || []);
 const pendingInvites = computed(() => pendingInvitesResult.value?.listPendingInvites || []);
 const policy = computed(() => policyResult.value?.authPolicy || null);
+const credentialProfiles = computed(
+  () => credentialProfilesResult.value?.credentialProfiles || []
+);
+const datasourceDiagnostics = computed(
+  () => datasourceDiagnosticsResult.value?.adminDatasourceDiagnostics || null
+);
 const issuedResetEntries = computed(() =>
   users.value
     .filter((user) => Boolean(issuedResetByUser.value[user._id]))
@@ -124,11 +165,20 @@ const isBusy = computed(
     setPolicyLoading.value ||
     createInviteLoading.value ||
     revokeInviteLoading.value ||
-    issueResetLoading.value
+    issueResetLoading.value ||
+    credentialProfilesLoading.value ||
+    createCredentialProfileLoading.value ||
+    updateCredentialProfileLoading.value ||
+    deleteCredentialProfileLoading.value
 );
 const isPolicyLocked = computed(() => policyDraft.value.policyEditLock === true);
 const hasLoadError = computed(
-  () => usersError.value || policyError.value || pendingInvitesError.value
+  () =>
+    usersError.value ||
+    policyError.value ||
+    pendingInvitesError.value ||
+    credentialProfilesError.value ||
+    datasourceDiagnosticsError.value
 );
 
 watch(usersResult, () => {
@@ -146,6 +196,61 @@ watch(policyResult, () => {
   policyDraft.value = toPolicyDraft(policy.value);
   freeboardStore.setPublicAuthPolicy(policy.value);
 });
+
+watch(credentialProfilesResult, () => {
+  const profiles = credentialProfiles.value;
+  const nextDrafts = {};
+  profiles.forEach((profile) => {
+    nextDrafts[profile._id] = toCredentialProfileDraft(profile);
+  });
+  credentialProfileDrafts.value = nextDrafts;
+  freeboardStore.setCredentialProfiles(profiles);
+});
+
+const buildCredentialProfileMutationInput = (draft, { includeSecrets = true } = {}) => {
+  const type = normalizeCredentialProfileTypeValue(draft.type);
+  const input = {
+    name: String(draft.name || "").trim(),
+    description: String(draft.description || "").trim(),
+    type: credentialProfileTypeToEnum(type),
+    allowPublicUse: Boolean(draft.allowPublicUse),
+    metadata: {},
+  };
+
+  if (type === "header") {
+    input.metadata = {
+      headerName: String(draft.metadataHeaderName || "").trim(),
+    };
+  }
+
+  if (!includeSecrets) {
+    return input;
+  }
+
+  const secret = {};
+  if (type === "bearer") {
+    if (draft.secretToken) {
+      secret.token = String(draft.secretToken);
+    }
+  } else if (type === "basic") {
+    if (draft.secretUsername) {
+      secret.username = String(draft.secretUsername);
+    }
+    if (draft.secretPassword) {
+      secret.password = String(draft.secretPassword);
+    }
+  } else if (type === "header") {
+    if (draft.secretHeaderValue) {
+      secret.headerValue = String(draft.secretHeaderValue);
+    }
+  }
+
+  if (Object.keys(secret).length > 0 || type === "none") {
+    input.secret = secret;
+  }
+
+  return input;
+};
 
 const clearMessages = () => {
   statusMessage.value = "";
@@ -329,6 +434,68 @@ const issueResetToken = async (user) => {
     setErrorMessage(error, "Could not issue password reset token.");
   }
 };
+
+const createCredentialProfile = async () => {
+  clearMessages();
+  try {
+    const input = buildCredentialProfileMutationInput(createCredentialProfileInput.value);
+    await adminCreateCredentialProfile({
+      input,
+    });
+    createCredentialProfileInput.value = toCredentialProfileDraft();
+    await refetchCredentialProfiles();
+    statusMessage.value = "Credential profile created.";
+  } catch (error) {
+    setErrorMessage(error, "Could not create credential profile.");
+  }
+};
+
+const saveCredentialProfile = async (profileId) => {
+  clearMessages();
+  const draft = credentialProfileDrafts.value[profileId];
+  if (!draft) {
+    return;
+  }
+
+  try {
+    const input = buildCredentialProfileMutationInput(draft);
+    const type = normalizeCredentialProfileTypeValue(draft.type);
+    const shouldSendSecret =
+      (type === "bearer" && draft.secretToken) ||
+      (type === "basic" && (draft.secretUsername || draft.secretPassword)) ||
+      (type === "header" && draft.secretHeaderValue) ||
+      type === "none";
+    if (!shouldSendSecret) {
+      delete input.secret;
+    }
+    await adminUpdateCredentialProfile({
+      id: profileId,
+      input,
+    });
+    await refetchCredentialProfiles();
+    statusMessage.value = "Credential profile updated.";
+  } catch (error) {
+    setErrorMessage(error, "Could not update credential profile.");
+  }
+};
+
+const deleteCredentialProfile = async (profile) => {
+  clearMessages();
+  const accepted = window.confirm(`Delete credential profile '${profile.name}'?`);
+  if (!accepted) {
+    return;
+  }
+
+  try {
+    await adminDeleteCredentialProfile({
+      id: profile._id,
+    });
+    await refetchCredentialProfiles();
+    statusMessage.value = "Credential profile deleted.";
+  } catch (error) {
+    setErrorMessage(error, "Could not delete credential profile.");
+  }
+};
 </script>
 
 <template>
@@ -357,6 +524,77 @@ const issueResetToken = async (user) => {
         {{ $t("admin.loadError") }}
       </p>
     </div>
+
+    <section class="admin-console__section">
+      <div class="admin-console__section-header">
+        <h2>{{ $t("admin.datasourceDiagnosticsTitle") }}</h2>
+      </div>
+      <div v-if="datasourceDiagnosticsLoading" class="admin-console__loading">
+        {{ $t("admin.loadingDatasourceDiagnostics") }}
+      </div>
+      <template v-else-if="datasourceDiagnostics">
+        <div class="admin-console__stats-grid">
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">{{ $t("admin.totalDashboards") }}</span>
+            <strong class="admin-console__stat-value">
+              {{ datasourceDiagnostics.totalDashboards }}
+            </strong>
+          </article>
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">{{ $t("admin.totalDatasources") }}</span>
+            <strong class="admin-console__stat-value">
+              {{ datasourceDiagnostics.totalDatasources }}
+            </strong>
+          </article>
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">
+              {{ $t("admin.credentialBoundDatasources") }}
+            </span>
+            <strong class="admin-console__stat-value">
+              {{ datasourceDiagnostics.credentialBoundDatasources }}
+            </strong>
+          </article>
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">
+              {{ $t("admin.externalDashboardDatasources") }}
+            </span>
+            <strong class="admin-console__stat-value">
+              {{ datasourceDiagnostics.externalDashboardDatasources }}
+            </strong>
+          </article>
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">{{ $t("admin.invalidDatasources") }}</span>
+            <strong class="admin-console__stat-value">
+              {{ datasourceDiagnostics.invalidDatasources }}
+            </strong>
+          </article>
+        </div>
+        <div class="admin-console__table-wrap">
+          <table class="admin-console__table">
+            <thead>
+              <tr>
+                <th>{{ $t("form.labelType") }}</th>
+                <th>{{ $t("admin.count") }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="entry in datasourceDiagnostics.typeCounts"
+                :key="`datasource-type-count-${entry.type}`"
+              >
+                <td>{{ entry.type }}</td>
+                <td>{{ entry.count }}</td>
+              </tr>
+              <tr v-if="datasourceDiagnostics.typeCounts.length === 0">
+                <td colspan="2" class="admin-console__empty">
+                  {{ $t("admin.noDatasourceDiagnostics") }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
+    </section>
 
     <section class="admin-console__section">
       <div class="admin-console__section-header">
@@ -549,6 +787,208 @@ const issueResetToken = async (user) => {
             <tr v-if="pendingInvites.length === 0">
               <td colspan="4" class="admin-console__empty">
                 {{ $t("admin.noPendingInvites") }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-console__section">
+      <div class="admin-console__section-header">
+        <h2>{{ $t("admin.credentialProfilesTitle") }}</h2>
+        <button
+          type="button"
+          class="admin-console__button admin-console__button--primary"
+          :disabled="isBusy"
+          @click="createCredentialProfile"
+        >
+          {{ $t("admin.createCredentialProfileButton") }}
+        </button>
+      </div>
+      <div class="admin-console__form-grid">
+        <label class="admin-console__field">
+          {{ $t("form.labelName") }}
+          <input
+            v-model="createCredentialProfileInput.name"
+            class="admin-console__input"
+            type="text"
+            :disabled="isBusy"
+          />
+        </label>
+        <label class="admin-console__field">
+          {{ $t("form.labelType") }}
+          <select
+            v-model="createCredentialProfileInput.type"
+            class="admin-console__select"
+            :disabled="isBusy"
+          >
+            <option
+              v-for="type in CREDENTIAL_PROFILE_TYPE_OPTIONS"
+              :key="`create-credential-type-${type}`"
+              :value="type"
+            >
+              {{ type }}
+            </option>
+          </select>
+        </label>
+        <label class="admin-console__checkbox">
+          <input
+            class="admin-console__checkbox-input"
+            type="checkbox"
+            v-model="createCredentialProfileInput.allowPublicUse"
+            :disabled="isBusy"
+          />
+          <span>{{ $t("admin.allowPublicUse") }}</span>
+        </label>
+        <label class="admin-console__field admin-console__field--full">
+          {{ $t("admin.description") }}
+          <input
+            v-model="createCredentialProfileInput.description"
+            class="admin-console__input"
+            type="text"
+            :disabled="isBusy"
+          />
+        </label>
+        <label
+          v-if="createCredentialProfileInput.type === 'header'"
+          class="admin-console__field"
+        >
+          {{ $t("admin.headerName") }}
+          <input
+            v-model="createCredentialProfileInput.metadataHeaderName"
+            class="admin-console__input"
+            type="text"
+            :disabled="isBusy"
+          />
+        </label>
+        <label
+          v-if="createCredentialProfileInput.type === 'header'"
+          class="admin-console__field"
+        >
+          {{ $t("admin.headerValue") }}
+          <input
+            v-model="createCredentialProfileInput.secretHeaderValue"
+            class="admin-console__input"
+            type="password"
+            :disabled="isBusy"
+          />
+        </label>
+        <label
+          v-if="createCredentialProfileInput.type === 'bearer'"
+          class="admin-console__field admin-console__field--full"
+        >
+          {{ $t("admin.tokenSecret") }}
+          <input
+            v-model="createCredentialProfileInput.secretToken"
+            class="admin-console__input"
+            type="password"
+            :disabled="isBusy"
+          />
+        </label>
+        <label
+          v-if="createCredentialProfileInput.type === 'basic'"
+          class="admin-console__field"
+        >
+          {{ $t("admin.usernameSecret") }}
+          <input
+            v-model="createCredentialProfileInput.secretUsername"
+            class="admin-console__input"
+            type="text"
+            :disabled="isBusy"
+          />
+        </label>
+        <label
+          v-if="createCredentialProfileInput.type === 'basic'"
+          class="admin-console__field"
+        >
+          {{ $t("admin.passwordSecret") }}
+          <input
+            v-model="createCredentialProfileInput.secretPassword"
+            class="admin-console__input"
+            type="password"
+            :disabled="isBusy"
+          />
+        </label>
+      </div>
+
+      <div v-if="credentialProfilesLoading" class="admin-console__loading">
+        {{ $t("admin.loadingCredentialProfiles") }}
+      </div>
+      <div v-else class="admin-console__table-wrap">
+        <table class="admin-console__table">
+          <thead>
+            <tr>
+              <th>{{ $t("form.labelName") }}</th>
+              <th>{{ $t("form.labelType") }}</th>
+              <th>{{ $t("admin.allowPublicUse") }}</th>
+              <th>{{ $t("admin.secretShape") }}</th>
+              <th>{{ $t("admin.actions") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="profile in credentialProfiles" :key="profile._id">
+              <td>
+                <input
+                  v-if="credentialProfileDrafts[profile._id]"
+                  v-model="credentialProfileDrafts[profile._id].name"
+                  class="admin-console__input"
+                  type="text"
+                  :disabled="isBusy"
+                />
+              </td>
+              <td>
+                <select
+                  v-if="credentialProfileDrafts[profile._id]"
+                  v-model="credentialProfileDrafts[profile._id].type"
+                  class="admin-console__select"
+                  :disabled="isBusy"
+                >
+                  <option
+                    v-for="type in CREDENTIAL_PROFILE_TYPE_OPTIONS"
+                    :key="`${profile._id}-${type}`"
+                    :value="type"
+                  >
+                    {{ type }}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <input
+                  v-if="credentialProfileDrafts[profile._id]"
+                  class="admin-console__checkbox-input"
+                  type="checkbox"
+                  v-model="credentialProfileDrafts[profile._id].allowPublicUse"
+                  :disabled="isBusy"
+                />
+              </td>
+              <td>
+                <code class="admin-console__mono">{{
+                  JSON.stringify(profile.secretShape || {})
+                }}</code>
+              </td>
+              <td class="admin-console__actions">
+                <button
+                  type="button"
+                  class="admin-console__button admin-console__button--primary admin-console__button--small"
+                  :disabled="isBusy || !credentialProfileDrafts[profile._id]"
+                  @click="saveCredentialProfile(profile._id)"
+                >
+                  {{ $t("admin.saveCredentialProfile") }}
+                </button>
+                <button
+                  type="button"
+                  class="admin-console__button admin-console__button--danger admin-console__button--small"
+                  :disabled="isBusy"
+                  @click="deleteCredentialProfile(profile)"
+                >
+                  {{ $t("admin.deleteCredentialProfile") }}
+                </button>
+              </td>
+            </tr>
+            <tr v-if="credentialProfiles.length === 0">
+              <td colspan="5" class="admin-console__empty">
+                {{ $t("admin.noCredentialProfiles") }}
               </td>
             </tr>
           </tbody>

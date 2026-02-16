@@ -4,6 +4,7 @@
  */
 
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
@@ -98,6 +99,25 @@ const positiveInteger = (v, fallback) => {
   return normalized;
 };
 
+const decodeBase64 = (value) => {
+  try {
+    return Buffer.from(String(value || ""), "base64");
+  } catch {
+    return null;
+  }
+};
+
+const parseBase64Key = (value, expectedLength) => {
+  if (typeof value !== "string" || value.trim() === "") {
+    return null;
+  }
+  const decoded = decodeBase64(value.trim());
+  if (!decoded || decoded.length !== expectedLength) {
+    return null;
+  }
+  return decoded;
+};
+
 const environment = String(process.env.NODE_ENV || "development").toLowerCase();
 const isNonDevRuntime = !["development", "test"].includes(environment);
 const hasExplicitMongoUrl =
@@ -132,6 +152,25 @@ const warnAndThrow = (message) => {
   console.warn(`Configuration warning: ${message}`);
   throw new Error(message);
 };
+
+const gatewaySecretDefault = "freeboard-gateway-dev-insecure-local-only-secret-32";
+const gatewayServiceTokenDefault =
+  "freeboard-gateway-service-dev-token-local-only-32";
+const credentialEncryptionKeyFromEnv = parseBase64Key(
+  process.env.CREDENTIAL_ENCRYPTION_KEY,
+  32
+);
+const credentialEncryptionKey =
+  credentialEncryptionKeyFromEnv ||
+  (isNonDevRuntime
+    ? null
+    : (() => {
+        const generated = crypto.randomBytes(32);
+        console.warn(
+          "Configuration warning: CREDENTIAL_ENCRYPTION_KEY is missing/invalid in development. Generated ephemeral key; encrypted credentials will be unreadable after restart."
+        );
+        return generated;
+      })());
 
 /**
  * @typedef {Object} Config
@@ -198,6 +237,32 @@ export const config = Object.freeze({
   authLoginMaxAttempts: positiveInteger(process.env.AUTH_LOGIN_MAX_ATTEMPTS, 5),
   authLoginWindowSeconds: positiveInteger(process.env.AUTH_LOGIN_WINDOW_SECONDS, 300),
   authLoginLockSeconds: positiveInteger(process.env.AUTH_LOGIN_LOCK_SECONDS, 300),
+  jwtGatewaySecret:
+    process.env.JWT_GATEWAY_SECRET || gatewaySecretDefault,
+  gatewayServiceToken:
+    process.env.GATEWAY_SERVICE_TOKEN || gatewayServiceTokenDefault,
+  credentialEncryptionKey,
+  fetchTimeoutMs: positiveInteger(process.env.FETCH_TIMEOUT_MS, 15000),
+  fetchMaxResponseBytes: positiveInteger(
+    process.env.FETCH_MAX_RESPONSE_BYTES,
+    5 * 1024 * 1024
+  ),
+  datasourceTokenMintRateLimitUserPerMin: positiveInteger(
+    process.env.DATASOURCE_TOKEN_MINT_RATE_LIMIT_USER_PER_MIN,
+    60
+  ),
+  datasourceTokenMintRateLimitPublicIpPerMin: positiveInteger(
+    process.env.DATASOURCE_TOKEN_MINT_RATE_LIMIT_PUBLIC_IP_PER_MIN,
+    30
+  ),
+  datasourceTokenMintRateLimitShareTokenPerMin: positiveInteger(
+    process.env.DATASOURCE_TOKEN_MINT_RATE_LIMIT_SHARE_TOKEN_PER_MIN,
+    60
+  ),
+  gatewayIntrospectionRateLimitPerMin: positiveInteger(
+    process.env.GATEWAY_INTROSPECTION_RATE_LIMIT_PER_MIN,
+    600
+  ),
 });
 
 if (isNonDevRuntime && isWeakJwtSecret(config.jwtSecret)) {
@@ -209,6 +274,24 @@ if (isNonDevRuntime && isWeakJwtSecret(config.jwtSecret)) {
 if (isNonDevRuntime && !hasExplicitMongoUrl) {
   throw new Error(
     "MONGO_URL must be explicitly configured for non-development runtime."
+  );
+}
+
+if (isNonDevRuntime && isWeakJwtSecret(config.jwtGatewaySecret)) {
+  throw new Error(
+    "JWT_GATEWAY_SECRET is missing or too weak for non-development runtime. Provide a strong secret (>=32 chars)."
+  );
+}
+
+if (isNonDevRuntime && isWeakJwtSecret(config.gatewayServiceToken)) {
+  throw new Error(
+    "GATEWAY_SERVICE_TOKEN is missing or too weak for non-development runtime. Provide a strong token (>=32 chars)."
+  );
+}
+
+if (isNonDevRuntime && !credentialEncryptionKey) {
+  throw new Error(
+    "CREDENTIAL_ENCRYPTION_KEY must be set to a valid base64-encoded 32-byte key in non-development runtime."
   );
 }
 

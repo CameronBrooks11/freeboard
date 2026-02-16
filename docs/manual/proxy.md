@@ -1,41 +1,47 @@
-# HTTP Proxy Service
+# HTTP Datasource Gateway
 
 ## Purpose
 
-The proxy forwards selected datasource calls to avoid browser CORS limits while enforcing outbound security policy.
+The gateway executes outbound HTTP datasource requests with API-issued session tokens and strict egress policy enforcement.
 
-## Security controls
+## Security Controls
 
-- Allows only `http` and `https` targets
-- Rejects URL credentials (`user:pass@host`)
-- Enforces host allowlist in production (`PROXY_ALLOWED_HOSTS`)
-- Enforces port allowlist (`PROXY_ALLOWED_PORTS`)
-- Blocks private/internal hostnames and resolved IP ranges by default
-- Uses DNS-pinned upstream routing:
+- Allows only `http` and `https` targets.
+- Rejects URL credentials (`user:pass@host`).
+- Enforces host allowlist in production (`EGRESS_ALLOWED_HOSTS`).
+- Enforces port allowlist (`EGRESS_ALLOWED_PORTS`).
+- Blocks private/internal hostnames and resolved IP ranges by default.
+- Uses DNS-pinned outbound routing:
   - resolve once
   - validate resolved destination
   - connect by pinned IP
   - preserve original host header and TLS SNI
-- Drops upstream `set-cookie` headers
-- Enforces request timeout and max response size
+- Requires datasource session token (`JWT_GATEWAY_SECRET` trust contract).
+- Requires API introspection service-auth (`GATEWAY_SERVICE_TOKEN`).
 
 ## Endpoint
 
-- `GET /proxy?url=<encoded-url>`
-- `POST /proxy?url=<encoded-url>`
-- In default compose deployment, proxy is reached via UI reverse proxy at `http://<host>:8080/proxy`.
+- `POST /gateway/http/fetch`
+- Request body: `{ "dashboardId": "...", "datasourceId": "..." }`
+- Header: `Authorization: Bearer <datasource-session-token>`
+- In default compose deployment, gateway is reached via UI reverse proxy at `http://<host>:8080/gateway/http/fetch`.
 
-## Key environment variables
+## Key Environment Variables
 
-- `PROXY_ALLOWED_HOSTS` (required in production)
-- `PROXY_ALLOWED_PORTS` (default: `80,443`)
-- `PROXY_TIMEOUT_MS` (default: `15000`)
-- `PROXY_MAX_RESPONSE_BYTES` (default: `5242880`)
-- `PROXY_ALLOW_PRIVATE_DESTINATIONS` (default: `false`)
-- `PROXY_ALLOW_INSECURE_TLS` (default: `false`)
+- `EGRESS_ALLOWED_HOSTS` (required in production)
+- `EGRESS_ALLOWED_PORTS` (default: `80,443`)
+- `EGRESS_ALLOW_PRIVATE_DESTINATIONS` (default: `false`)
+- `EGRESS_ALLOW_INSECURE_TLS` (default: `false`)
+- `FETCH_TIMEOUT_MS` (default: `15000`)
+- `FETCH_MAX_RESPONSE_BYTES` (default: `5242880`)
+- `GATEWAY_INTROSPECTION_TIMEOUT_MS` (default: `5000`)
+- `JWT_GATEWAY_SECRET` (required shared key)
+- `GATEWAY_SERVICE_TOKEN` (required internal API service token)
+- `GATEWAY_API_BASE_URL` (default: `http://127.0.0.1:4001`)
 
-## Operational notes
+## Operational Notes
 
-- Keep `PROXY_ALLOW_INSECURE_TLS=false` in production.
-- Keep `PROXY_ALLOW_PRIVATE_DESTINATIONS=false` unless on a trusted local-only network.
-- Review `PROXY_ALLOWED_HOSTS` as part of deployment change control.
+- Keep `EGRESS_ALLOW_INSECURE_TLS=false` in production.
+- Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false` unless on a trusted local-only network.
+- Review `EGRESS_ALLOWED_HOSTS` as part of deployment change control.
+- Rotate `JWT_GATEWAY_SECRET` and `GATEWAY_SERVICE_TOKEN` during controlled maintenance windows.

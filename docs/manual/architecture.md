@@ -6,7 +6,7 @@ Freeboard is a monorepo with three runtime services and one shared data store.
 
 - UI (`packages/ui`): Vue 3 + Vite SPA
 - API (`packages/api`): GraphQL Yoga + Mongoose
-- Proxy (`packages/proxy`): HTTP fetch proxy for CORS-restricted upstreams
+- Gateway (`packages/proxy`): HTTP datasource execution gateway with token/introspection trust flow
 - MongoDB: persistence for users and dashboards
 
 ## Runtime Data Flow
@@ -14,8 +14,10 @@ Freeboard is a monorepo with three runtime services and one shared data store.
 1. UI authenticates with API (`/graphql`) and stores JWT token in local storage.
 2. UI queries/mutates dashboards through GraphQL.
 3. API persists dashboards/users in MongoDB.
-4. Datasource plugins in UI produce updates.
-5. Dashboard model normalizes datasource state and pushes updates to widgets.
+4. UI mints short-lived datasource session tokens from API.
+5. Datasource runtimes call gateway fetch endpoint (`/gateway/http/fetch`) with token + datasource identifiers.
+6. Gateway validates token, introspects canonical intent from API, enforces egress policy, then fetches upstream.
+7. Dashboard model normalizes datasource state and pushes updates to widgets.
 
 ## Widget Runtime Flow
 
@@ -33,7 +35,7 @@ See: [Widget Runtime](/manual/widget-runtime)
 ## Key UI Models
 
 - `Dashboard` (`packages/ui/src/models/Dashboard.js`)
-  - owns panes, datasources, auth providers
+  - owns panes and datasources
   - handles serialization/deserialization
   - propagates datasource updates to widgets
 - `Datasource` (`packages/ui/src/models/Datasource.js`)
@@ -45,7 +47,7 @@ See: [Widget Runtime](/manual/widget-runtime)
 
 - UI: `5173`
 - API: `4001`
-- Proxy: `8001`
+- Gateway: `8001`
 - MongoDB: `27017`
 
 ## Configuration
@@ -54,21 +56,25 @@ Core env values:
 
 - `MONGO_URL` (API local development)
 - `FREEBOARD_MONGO_URL` (containerized API)
-- `PORT` (API/proxy workspace process port)
+- `PORT` (API/gateway workspace process port)
 - `FREEBOARD_MONGO_IMAGE` (Mongo image tag for dev compose)
 - `FREEBOARD_STATIC` (static UI build mode; only enable for static deploy builds)
 - `FREEBOARD_RUNTIME_ENV` (`production` for containerized runtime defaults)
 - `JWT_SECRET` (required for containerized API startup)
-- `PROXY_ALLOWED_HOSTS` (required for containerized proxy startup)
+- `JWT_GATEWAY_SECRET` (required API+gateway datasource session signing key)
+- `GATEWAY_SERVICE_TOKEN` (required gateway introspection auth token)
+- `CREDENTIAL_ENCRYPTION_KEY` (required API credential profile encryption key)
+- `EGRESS_ALLOWED_HOSTS` (required for containerized gateway startup)
 
 ## Security Defaults
 
-- API and Proxy are hardened for production behavior when `NODE_ENV=production`.
+- API and gateway are hardened for production behavior when `NODE_ENV=production`.
 - Container artifacts default to production mode.
 - Docker Compose startup is fail-fast for missing critical env:
   - API requires `FREEBOARD_MONGO_URL`
   - API requires `JWT_SECRET`
-  - Proxy requires `PROXY_ALLOWED_HOSTS`
+  - API requires `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`, `CREDENTIAL_ENCRYPTION_KEY`
+  - Gateway requires `EGRESS_ALLOWED_HOSTS`, `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`
 
 ## CI Topology
 

@@ -9,13 +9,13 @@ const buildDoc = (overrides = {}) => ({
   title: "Main",
   visibility: "private",
   shareToken: "share-token-1",
+  shareTokenVersion: 0,
   acl: [],
   image: null,
   datasources: [],
   columns: 3,
   width: "md",
   panes: [],
-  authProviders: [],
   settings: {},
   user: { toString: () => "owner-1" },
   createdAt: new Date("2026-01-01T00:00:00.000Z"),
@@ -45,6 +45,7 @@ test("transformDashboard derives isOwner from viewer context", () => {
   assert.equal(ownerView.isOwner, true);
   assert.equal(ownerView.canEdit, true);
   assert.equal(ownerView.shareToken, "share-token-1");
+  assert.equal(ownerView.shareTokenVersion, 0);
   assert.equal(otherView.isOwner, false);
   assert.equal(otherView.canEdit, false);
   assert.equal(otherView.shareToken, null);

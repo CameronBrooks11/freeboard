@@ -31,11 +31,13 @@ const DASHBOARD_MUTABLE_FIELDS = new Set([
   "columns",
   "width",
   "panes",
-  "authProviders",
   "settings",
 ]);
 
 const EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES = new Set(["link", "public"]);
+const ALLOWED_DATASOURCE_TYPES = new Set(["http", "clock", "static"]);
+const ALLOWED_HTTP_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
+const ALLOWED_HTTP_PARSERS = new Set(["json", "text", "csv"]);
 
 const generateShareToken = () => crypto.randomBytes(24).toString("base64url");
 
@@ -219,6 +221,86 @@ const sanitizeDashboardInput = (dashboard = {}) => {
     }
   }
   return sanitized;
+};
+
+const createBadInputError = (message) =>
+  createGraphQLError(message, {
+    extensions: { code: "BAD_USER_INPUT" },
+  });
+
+const validateDashboardDatasources = (datasources) => {
+  if (datasources === undefined) {
+    return;
+  }
+
+  if (!Array.isArray(datasources)) {
+    throw createBadInputError("Dashboard datasources must be an array");
+  }
+
+  datasources.forEach((datasource, index) => {
+    if (!datasource || typeof datasource !== "object" || Array.isArray(datasource)) {
+      throw createBadInputError(
+        `Dashboard datasource at index ${index} must be an object`
+      );
+    }
+
+    const type = String(datasource.type || "")
+      .trim()
+      .toLowerCase();
+    if (!ALLOWED_DATASOURCE_TYPES.has(type)) {
+      throw createBadInputError(
+        `Datasource type '${type || "unknown"}' is not supported. Allowed: http, clock, static.`
+      );
+    }
+
+    if (type !== "http") {
+      return;
+    }
+
+    const settings =
+      datasource.settings &&
+      typeof datasource.settings === "object" &&
+      !Array.isArray(datasource.settings)
+        ? datasource.settings
+        : {};
+
+    const targetUrl = String(settings.url || "").trim();
+    if (!targetUrl) {
+      throw createBadInputError(
+        `HTTP datasource at index ${index} requires a non-empty settings.url`
+      );
+    }
+
+    if (
+      settings.method !== undefined &&
+      settings.method !== null &&
+      !ALLOWED_HTTP_METHODS.has(String(settings.method).trim().toUpperCase())
+    ) {
+      throw createBadInputError(
+        `HTTP datasource at index ${index} uses an unsupported method`
+      );
+    }
+
+    if (
+      settings.parser !== undefined &&
+      settings.parser !== null &&
+      !ALLOWED_HTTP_PARSERS.has(String(settings.parser).trim().toLowerCase())
+    ) {
+      throw createBadInputError(
+        `HTTP datasource at index ${index} uses an unsupported parser`
+      );
+    }
+
+    if (
+      settings.credentialProfileId !== undefined &&
+      settings.credentialProfileId !== null &&
+      String(settings.credentialProfileId).trim() === ""
+    ) {
+      throw createBadInputError(
+        `HTTP datasource at index ${index} has an invalid credentialProfileId`
+      );
+    }
+  });
 };
 
 const getAclEntry = (dashboard, userId) => {
@@ -516,6 +598,7 @@ export default {
       ensureThatUserHasRole(context, ["editor", "admin"]);
 
       const sanitizedInput = sanitizeDashboardInput(dashboard);
+      validateDashboardDatasources(sanitizedInput.datasources);
       await ensureDashboardPayloadAllowedByExecutionMode({
         inputDashboard: sanitizedInput,
       });
@@ -552,6 +635,7 @@ export default {
       ensureDashboardEditable(existing, context);
 
       const sanitizedInput = sanitizeDashboardInput(dashboard);
+      validateDashboardDatasources(sanitizedInput.datasources);
       await ensureDashboardPayloadAllowedByExecutionMode({
         inputDashboard: sanitizedInput,
         existingDashboard: existing,
@@ -571,11 +655,16 @@ export default {
           EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES.has(nextVisibility);
         const shouldRotateShareToken =
           shouldExposeExternally && previousVisibility === "private";
+        const visibilityChanged = nextVisibility !== previousVisibility;
         if (
           shouldExposeExternally &&
           (shouldRotateShareToken || !existing.shareToken)
         ) {
           updatePayload.shareToken = generateShareToken();
+        }
+        if (visibilityChanged) {
+          updatePayload.shareTokenVersion =
+            Math.max(0, Number(existing.shareTokenVersion) || 0) + 1;
         }
       }
 
@@ -641,11 +730,18 @@ export default {
         EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES.has(nextVisibility);
       const shouldRotateShareToken =
         shouldExposeExternally && previousVisibility === "private";
+      const visibilityChanged = nextVisibility !== previousVisibility;
       const shareTokenUpdate =
         shouldExposeExternally &&
         (shouldRotateShareToken || !existing.shareToken)
           ? { shareToken: generateShareToken() }
           : {};
+      const shareTokenVersionUpdate = visibilityChanged
+        ? {
+            shareTokenVersion:
+              Math.max(0, Number(existing.shareTokenVersion) || 0) + 1,
+          }
+        : {};
 
       const updated = await Dashboard.findOneAndUpdate(
         { _id },
@@ -653,6 +749,7 @@ export default {
           $set: {
             visibility: nextVisibility,
             ...shareTokenUpdate,
+            ...shareTokenVersionUpdate,
           },
         },
         { new: true, runValidators: true }
@@ -685,7 +782,13 @@ export default {
 
       const updated = await Dashboard.findOneAndUpdate(
         { _id },
-        { $set: { shareToken: generateShareToken() } },
+        {
+          $set: {
+            shareToken: generateShareToken(),
+            shareTokenVersion:
+              Math.max(0, Number(existing.shareTokenVersion) || 0) + 1,
+          },
+        },
         { new: true, runValidators: true }
       ).lean();
       if (!updated) {

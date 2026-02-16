@@ -34,12 +34,12 @@ export default `
     version: String!
     visibility: DashboardVisibility!
     shareToken: String
+    shareTokenVersion: Int!
     image: String
     datasources: [Object]
     columns: Int
     width: String
     panes: [Object]
-    authProviders: [Object]
     settings: Object
     user: String
     acl: [DashboardAclEntry!]!
@@ -109,7 +109,6 @@ export default `
     columns: Int
     width: String
     panes: [Object]
-    authProviders: [Object]
     settings: Object
   }
 
@@ -123,7 +122,6 @@ export default `
     columns: Int
     width: String
     panes: [Object]
-    authProviders: [Object]
     settings: Object
   }
 `;

@@ -19,6 +19,15 @@ const CONFIG_ENV_KEYS = [
   "AUTH_LOGIN_MAX_ATTEMPTS",
   "AUTH_LOGIN_WINDOW_SECONDS",
   "AUTH_LOGIN_LOCK_SECONDS",
+  "JWT_GATEWAY_SECRET",
+  "GATEWAY_SERVICE_TOKEN",
+  "CREDENTIAL_ENCRYPTION_KEY",
+  "FETCH_TIMEOUT_MS",
+  "FETCH_MAX_RESPONSE_BYTES",
+  "DATASOURCE_TOKEN_MINT_RATE_LIMIT_USER_PER_MIN",
+  "DATASOURCE_TOKEN_MINT_RATE_LIMIT_PUBLIC_IP_PER_MIN",
+  "DATASOURCE_TOKEN_MINT_RATE_LIMIT_SHARE_TOKEN_PER_MIN",
+  "GATEWAY_INTROSPECTION_RATE_LIMIT_PER_MIN",
 ];
 
 const withEnv = async (overrides, run) => {
@@ -54,6 +63,8 @@ const withEnv = async (overrides, run) => {
 const importConfigFresh = async () =>
   import(`../src/config.js?case=${Date.now()}-${Math.random()}`);
 
+const TEST_CREDENTIAL_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
+
 test("config rejects weak JWT secret in non-development runtime", async () => {
   await withEnv(
     {
@@ -64,6 +75,9 @@ test("config rejects weak JWT secret in non-development runtime", async () => {
       ADMIN_PASSWORD: "StrongPass123!",
       MONGO_URL: "mongodb://127.0.0.1:27017/freeboard",
       PORT: "4001",
+      JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
+      GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
+      CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
     },
     async () => {
       await assert.rejects(
@@ -135,6 +149,9 @@ test("config requires explicit MONGO_URL in non-development runtime", async () =
       CREATE_ADMIN: "false",
       // Keep key present but blank so repo-root .env cannot repopulate it during config import.
       MONGO_URL: "",
+      JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
+      GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
+      CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
     },
     async () => {
       await assert.rejects(

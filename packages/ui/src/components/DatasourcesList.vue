@@ -20,6 +20,17 @@ const { t } = useI18n();
 const freeboardStore = useFreeboardStore();
 const { dashboard } = storeToRefs(freeboardStore);
 
+const formatDateTime = (value) => {
+  if (!value) {
+    return "—";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "—";
+  }
+  return parsed.toLocaleString();
+};
+
 // Open dialog to edit an existing datasource
 const openDatasourceEditDialogBox = (datasource) => {
   freeboardStore.createComponent(DatasourceDialogBox, instance.appContext, {
@@ -81,6 +92,9 @@ const instance = getCurrentInstance();
           <th class="datasources-list__table__head__row__cell">
             {{ t("datasourcesList.labelLastUpdated") }}
           </th>
+          <th class="datasources-list__table__head__row__cell">
+            {{ t("datasourcesList.labelStatus") }}
+          </th>
           <th class="datasources-list__table__head__row__cell">&nbsp;</th>
         </tr>
       </thead>
@@ -90,7 +104,15 @@ const instance = getCurrentInstance();
             <TextButton @click="() => openDatasourceEditDialogBox(datasource)">{{ datasource.title }}</TextButton>
           </td>
           <td class="datasources-list__table__body__row__cell">
-            {{ datasource.lastUpdated }}
+            {{ formatDateTime(datasource.lastUpdated) }}
+          </td>
+          <td class="datasources-list__table__body__row__cell">
+            <span
+              class="datasources-list__status"
+              :class="`datasources-list__status--${String(datasource.status || 'idle')}`"
+            >
+              {{ datasource.status || "idle" }}
+            </span>
           </td>
           <td class="datasources-list__table__body__row__cell">
             <ul class="datasources-list__table__body__row__cell__board-toolbar">

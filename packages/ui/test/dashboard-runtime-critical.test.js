@@ -70,9 +70,8 @@ test("serializeDashboardState includes versioned payload and serialized child mo
       width: "lg",
       settings: { theme: "dark" },
       datasources: [
-        { serialize: () => ({ id: "ds1", title: "Weather", type: "json" }) },
+        { serialize: () => ({ id: "ds1", title: "Weather", type: "http" }) },
       ],
-      authProviders: [{ serialize: () => ({ id: "ap1", type: "header" }) }],
       panes: [
         {
           serialize: () => ({
@@ -94,9 +93,8 @@ test("serializeDashboardState includes versioned payload and serialized child mo
   assert.equal(serialized.width, "lg");
   assert.deepEqual(serialized.settings, { theme: "dark" });
   assert.deepEqual(serialized.datasources, [
-    { id: "ds1", title: "Weather", type: "json" },
+    { id: "ds1", title: "Weather", type: "http" },
   ]);
-  assert.deepEqual(serialized.authProviders, [{ id: "ap1", type: "header" }]);
   assert.deepEqual(serialized.panes, [
     {
       title: "Pane 1",

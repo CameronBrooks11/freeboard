@@ -15,9 +15,11 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
   - `mongoUrl` (MongoDB connection string)
   - `port` (HTTP port)
   - `jwtSecret`, `jwtTimeExpiration`
+  - `jwtGatewaySecret`, `gatewayServiceToken`, `credentialEncryptionKey`
   - `userLimit`, `adminEmail`, `adminPassword`, `createAdmin`
   - auth/runtime policy defaults (`registrationMode`, `editorCanPublish`, `executionMode`, etc.)
   - login abuse controls (`authLoginMaxAttempts`, `authLoginWindowSeconds`, `authLoginLockSeconds`)
+  - datasource token/introspection controls (`datasourceTokenMintRateLimit*`, `gatewayIntrospectionRateLimitPerMin`)
 
 ## Request Context (`context.js`)
 
@@ -40,8 +42,11 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
 
 - **Dashboard** (`models/Dashboard.js`):
   - Uses `nanoid` for string `_id`
-  - Fields include: `user`, `version`, `title`, `visibility`, `shareToken`, `acl`, `image`, `datasources`, `columns`, `width`, `panes`, `authProviders`, `settings`
+  - Fields include: `user`, `version`, `title`, `visibility`, `shareToken`, `shareTokenVersion`, `acl`, `image`, `datasources`, `columns`, `width`, `panes`, `settings`
   - Timestamps enabled
+- **CredentialProfile** (`models/CredentialProfile.js`):
+  - Server-managed datasource credential profile metadata + encrypted secret payload
+  - Supports type-specific secret resolution for gateway execution
 - **User** (`models/User.js`):
   - `_id` via `nanoid`
   - Fields: `email`, `password`, `role`, `active`, `sessionVersion`, `registrationDate`, `lastLogin`
@@ -64,6 +69,13 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
   - Session revocation paths on role/active/password transitions
 - **Merge Utility** (`resolvers/merge.js`):
   - `transformDashboard(u)` converts Mongoose doc to GraphQL object
+- **Credential Profile Resolvers** (`resolvers/CredentialProfile.js`):
+  - Admin CRUD for credential profiles
+  - Redacted secret metadata only in API responses
+- **Datasource Resolvers** (`resolvers/Datasource.js`):
+  - Session token minting for datasource runtime (`mintDatasourceSessionToken`)
+- **Datasource Diagnostics Resolvers** (`resolvers/DatasourceDiagnostics.js`):
+  - Admin-only datasource configuration/health rollup (`adminDatasourceDiagnostics`)
 
 ## Input Validation (`validators.js`)
 
@@ -84,6 +96,8 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
 - Sets up HTTP server with `createYoga`:
   - `landingPage: false`
   - `schema`, `context`, `useGraphQLSSE` plugin
+- Exposes internal service-auth introspection endpoint for gateway:
+  - `POST /internal/gateway/datasource-introspect`
 - Listens on `config.port` (`0.0.0.0`)
 
 ## Running & Docs

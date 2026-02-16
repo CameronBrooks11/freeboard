@@ -19,7 +19,7 @@ import TypeSelect from "./TypeSelect.vue";
 
 const freeboardStore = useFreeboardStore();
 // Retrieve available datasource plugins and dashboard instance from store
-const { datasourcePlugins, dashboard } = storeToRefs(freeboardStore);
+const { datasourcePlugins, dashboard, credentialProfiles } = storeToRefs(freeboardStore);
 
 // Define props passed into this dialog
 const { header, onClose, onOk, datasource } = defineProps({
@@ -62,8 +62,8 @@ const validateUniqueDatasourceTitle = (value) => {
 
 // Rebuild fields schema whenever the selected type changes
 watch(
-  typeRef,
-  (newValue) => {
+  [typeRef, credentialProfiles],
+  ([newValue]) => {
     if (!newValue) {
       fields.value = [];
       return;
@@ -93,6 +93,9 @@ watch(
             type: "boolean",
           },
         ],
+      },
+      {
+        credentialProfiles: credentialProfiles.value,
       }
     );
   },

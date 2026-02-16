@@ -38,12 +38,14 @@ export const transformDashboard = (
     title: dashboard.title,
     visibility: dashboard.visibility || "private",
     shareToken: canManageSharing ? dashboard.shareToken || null : null,
+    shareTokenVersion: Number.isFinite(Number(dashboard.shareTokenVersion))
+      ? Math.max(0, Math.floor(Number(dashboard.shareTokenVersion)))
+      : 0,
     image: dashboard.image,
     datasources: dashboard.datasources,
     columns: dashboard.columns,
     panes: dashboard.panes,
     width: dashboard.width,
-    authProviders: dashboard.authProviders,
     settings: dashboard.settings,
     user: ownerId,
     acl: Array.isArray(dashboard.acl)

@@ -27,13 +27,13 @@ const buildDashboardDoc = (overrides = {}) => ({
   title: "Main",
   visibility: "private",
   shareToken: "share-token-1",
+  shareTokenVersion: 0,
   acl: [],
   image: null,
   datasources: [],
   columns: 3,
   width: "md",
   panes: [],
-  authProviders: [],
   settings: {},
   user: "owner-1",
   createdAt: new Date("2026-01-01T00:00:00.000Z"),
@@ -173,6 +173,60 @@ test("updateDashboard allows acl editor and strips immutable fields", async () =
   assert.equal(result.title, "Updated");
   assert.equal(result.canEdit, true);
   assert.equal(result.isOwner, false);
+});
+
+test("createDashboard rejects legacy json datasource type", async () => {
+  stubPolicyValues();
+
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Mutation.createDashboard(
+        null,
+        {
+          dashboard: {
+            title: "Invalid",
+            version: "1",
+            datasources: [
+              {
+                id: "ds-1",
+                title: "Legacy",
+                type: "json",
+                settings: { url: "https://example.com/data.json" },
+              },
+            ],
+          },
+        },
+        { user: { _id: "owner-1", role: "editor" } }
+      ),
+    /Datasource type 'json' is not supported/
+  );
+});
+
+test("updateDashboard rejects http datasource without URL", async () => {
+  Dashboard.findOne = () => asLean(buildDashboardDoc());
+
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Mutation.updateDashboard(
+        null,
+        {
+          _id: "dash-1",
+          dashboard: {
+            datasources: [
+              {
+                id: "ds-1",
+                type: "http",
+                settings: {
+                  method: "GET",
+                },
+              },
+            ],
+          },
+        },
+        { user: { _id: "owner-1", role: "editor" } }
+      ),
+    /requires a non-empty settings\.url/
+  );
 });
 
 test("deleteDashboard allows acl editor collaborator", async () => {

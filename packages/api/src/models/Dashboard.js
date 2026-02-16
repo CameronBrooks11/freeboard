@@ -46,7 +46,7 @@ ObjectId.prototype.valueOf = function () {
  * @property {number} [columns]         - Number of layout columns.
  * @property {string} [width='md']      - Layout width specifier (default: 'md').
  * @property {Object[]} [panes]         - Pane configurations.
- * @property {Object[]} [authProviders] - Authentication provider settings.
+ * @property {number} [shareTokenVersion] - Monotonic share token version for immediate revoke.
  * @property {Object} [settings]        - Miscellaneous dashboard settings.
  * @property {Date} createdAt           - Creation timestamp.
  * @property {Date} updatedAt           - Last update timestamp.
@@ -90,6 +90,12 @@ const DashboardSchema = new Schema(
       unique: true,
       index: true,
       default: generateShareToken,
+    },
+    shareTokenVersion: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0,
     },
     acl: {
       type: [
@@ -136,10 +142,6 @@ const DashboardSchema = new Schema(
       default: "md",
     },
     panes: {
-      type: [Object],
-      required: false,
-    },
-    authProviders: {
       type: [Object],
       required: false,
     },

@@ -6,7 +6,7 @@ This Freeboard is a fork of [Jim Heising's damn-sexy dashboard app](https://gith
 - **GraphQL** API backend
 - Distributable through **docker compose**
 - Modern **Vue.js** v3 frontend
-- Extendable **HTTP-Proxy** to bypass CORS
+- Gateway-backed **HTTP datasource runtime** with egress controls
 - Built-in widget set: **Base, Text, Indicator, Gauge, Pointer, Picture, HTML, Sparkline, Map**
 - **Monorepo** through `npm` workspaces
 - **Commit-Hooks** with `pre-commit`
@@ -53,7 +53,10 @@ docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
 
 For containerized production mode, set these in `.env` first:
 - `JWT_SECRET` (API required)
-- `PROXY_ALLOWED_HOSTS` (Proxy required allowlist)
+- `JWT_GATEWAY_SECRET` (API+gateway shared datasource-session signing key)
+- `GATEWAY_SERVICE_TOKEN` (gateway -> API introspection auth token)
+- `CREDENTIAL_ENCRYPTION_KEY` (API credential-profile encryption key)
+- `EGRESS_ALLOWED_HOSTS` (gateway required allowlist)
 - `FREEBOARD_MONGO_URL` (API required Mongo connection string)
 - `MONGO_INITDB_ROOT_USERNAME` / `MONGO_INITDB_ROOT_PASSWORD` (Mongo bootstrap)
 - `MONGO_APP_USERNAME` / `MONGO_APP_PASSWORD` (application DB account)
@@ -67,8 +70,8 @@ npm run dev
 `npm run dev` now:
 
 - Starts Mongo in Docker and waits for healthy status.
-- Starts UI/API/Proxy (without coupling Mongo log streaming into the process group).
-- On Ctrl+C, stops UI/API/Proxy and keeps Mongo running.
+- Starts UI/API/Gateway (without coupling Mongo log streaming into the process group).
+- On Ctrl+C, stops UI/API/Gateway and keeps Mongo running.
 
 API env loading order is deterministic:
 1. existing process env (shell/CI)

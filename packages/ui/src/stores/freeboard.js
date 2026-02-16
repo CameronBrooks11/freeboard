@@ -132,17 +132,18 @@ export const useFreeboardStore = defineStore("freeboard", {
    *   isSaved: boolean,
    *   allowEdit: boolean,
    *   isEditing: boolean,
-   *   showLoadingIndicator: boolean,
-   *   datasourcePlugins: Object<string, any>,
-   *   widgetPlugins: Object<string, any>,
-   *   authPlugins: Object<string, any>,
-   *   dashboard: Dashboard,
-   *   assets: Object<string, any>,
-   *   token: string|null,
-   *   currentUser: Object|null,
-   *   publicAuthPolicy: Object
-   * }}
-   */
+ *   showLoadingIndicator: boolean,
+ *   datasourcePlugins: Object<string, any>,
+ *   widgetPlugins: Object<string, any>,
+ *   dashboard: Dashboard,
+ *   assets: Object<string, any>,
+ *   token: string|null,
+ *   currentUser: Object|null,
+ *   publicAuthPolicy: Object,
+ *   runtimeShareToken: string|null,
+ *   credentialProfiles: Array<any>
+ * }}
+ */
   state: () => ({
     isSaved: false,
     allowEdit: false,
@@ -150,12 +151,13 @@ export const useFreeboardStore = defineStore("freeboard", {
     showLoadingIndicator: true,
     datasourcePlugins: {},
     widgetPlugins: {},
-    authPlugins: {},
     dashboard: new Dashboard(),
     assets: {},
     token: null,
     currentUser: null,
     publicAuthPolicy: { ...DEFAULT_PUBLIC_AUTH_POLICY },
+    runtimeShareToken: null,
+    credentialProfiles: [],
   }),
 
   actions: {
@@ -182,6 +184,15 @@ export const useFreeboardStore = defineStore("freeboard", {
         role: normalizeRole(user.role),
         active: user.active !== false,
       };
+    },
+
+    setRuntimeShareToken(shareToken) {
+      const normalized = String(shareToken || "").trim();
+      this.runtimeShareToken = normalized || null;
+    },
+
+    setCredentialProfiles(profiles) {
+      this.credentialProfiles = Array.isArray(profiles) ? profiles : [];
     },
 
     hydrateSessionFromToken() {
@@ -345,19 +356,6 @@ export const useFreeboardStore = defineStore("freeboard", {
     },
 
     /**
-     * Register an authentication provider plugin.
-     *
-     * @param {Object} plugin - Plugin class with typeName and optional label.
-     */
-    loadAuthPlugin(plugin) {
-      if (plugin.label === undefined) {
-        plugin.label = plugin.typeName;
-      }
-
-      this.authPlugins[plugin.typeName] = plugin;
-    },
-
-    /**
      * Register a datasource plugin.
      *
      * @param {Object} plugin - Plugin class with typeName and optional label.
@@ -398,6 +396,11 @@ export const useFreeboardStore = defineStore("freeboard", {
         if (updated) {
           this.dashboard.visibility = updated.visibility;
           this.dashboard.shareToken = updated.shareToken || null;
+          this.dashboard.shareTokenVersion = Number.isFinite(
+            Number(updated.shareTokenVersion)
+          )
+            ? Math.max(0, Math.floor(Number(updated.shareTokenVersion)))
+            : this.dashboard.shareTokenVersion;
           this.dashboard.canEdit = updated.canEdit !== false;
           this.dashboard.canManageSharing = updated.canManageSharing === true;
         }
@@ -412,6 +415,11 @@ export const useFreeboardStore = defineStore("freeboard", {
         this.dashboard._id = created._id;
         this.dashboard.visibility = created.visibility;
         this.dashboard.shareToken = created.shareToken || null;
+        this.dashboard.shareTokenVersion = Number.isFinite(
+          Number(created.shareTokenVersion)
+        )
+          ? Math.max(0, Math.floor(Number(created.shareTokenVersion)))
+          : 0;
         this.dashboard.canEdit = created.canEdit !== false;
         this.dashboard.canManageSharing = created.canManageSharing === true;
         router.push(`/${created._id}`);
@@ -622,21 +630,6 @@ export const useFreeboardStore = defineStore("freeboard", {
           },
         },
       });
-    },
-
-    /**
-     * Retrieve field definitions for an auth provider plugin instance.
-     *
-     * @param {Object} authProvider - Auth provider instance.
-     * @returns {Array|Object} Field schema or array for the provider.
-     */
-    getAuthPluginFields(authProvider) {
-      const a = this.authPlugins[authProvider.typeName];
-      if (typeof a.fields === "function") {
-        return a.fields(authProvider, this.dashboard);
-      } else {
-        return a.fields;
-      }
     },
 
     /**
