@@ -3,9 +3,8 @@
  * @description Client-side model for dashboard widgets, managing lifecycle, rendering, and data updates.
  */
 
-import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
-import { generateModelId } from "./id";
+import { generateModelId } from "./id.js";
+import { getWidgetPlugin } from "../runtime/runtimeContext.js";
 
 const toPositiveInteger = (value, fallback = 1) => {
   const parsed = Number(value);
@@ -59,9 +58,7 @@ export class Widget {
       return;
     }
 
-    const freeboardStore = useFreeboardStore();
-    const { widgetPlugins } = storeToRefs(freeboardStore);
-    const widgetType = widgetPlugins.value[this._type];
+    const widgetType = getWidgetPlugin(this._type);
 
     if (!widgetType || typeof widgetType.newInstance !== "function") {
       return;
@@ -320,8 +317,7 @@ export class Widget {
       return 1;
     }
 
-    const freeboardStore = useFreeboardStore();
-    const plugin = freeboardStore.widgetPlugins[this.type];
+    const plugin = getWidgetPlugin(this.type);
     return toPositiveInteger(plugin?.preferredRows ?? plugin?.minRows ?? 1);
   }
 }

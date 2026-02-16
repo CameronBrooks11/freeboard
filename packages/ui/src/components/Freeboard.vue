@@ -1,17 +1,19 @@
 <script setup lang="js">
 /**
  * @component Freeboard
- * @description Root component that initializes plugins, fetches/subscribes to dashboard data,
+ * @description Root component that fetches/subscribes to dashboard data,
  *              and renders header + board. Reacts to route `/:id` changes without remounting.
  *
  * @prop {string} id - Optional dashboard ID to load (provided by vue-router via props).
  */
 defineOptions({ name: 'Freeboard' });
 
-import { reactive, watch, computed, onUnmounted } from "vue";
+import { computed, onUnmounted, watch } from "vue";
 import Header from "./Header.vue";
 import Board from "./Board.vue";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useAuthStore } from "../stores/auth.js";
+import { useDashboardStore } from "../stores/dashboard.js";
+import { useProfileCatalogStore } from "../stores/profileCatalog.js";
 import { useQuery, useSubscription } from "@vue/apollo-composable";
 import {
   DASHBOARD_READ_QUERY,
@@ -24,37 +26,25 @@ import {
 import router from "../router";
 import { storeToRefs } from "pinia";
 import Preloader from "./Preloader.vue";
-import { ClockDatasource } from "../datasources/ClockDatasource";
-import { HTTPDatasource } from "../datasources/HTTPDatasource";
-import { MQTTDatasource } from "../datasources/MQTTDatasource";
-import { SSEDatasource } from "../datasources/SSEDatasource";
-import { StaticDatasource } from "../datasources/StaticDatasource";
-import { WebSocketDatasource } from "../datasources/WebSocketDatasource";
 import {
   disposeAllStreamingManagers,
   disposeStreamingManager,
 } from "../datasources/runtime/StreamingManager";
 import { usePreferredColorScheme } from "@vueuse/core";
-import { BaseWidget } from "../widgets/BaseWidget";
-import { TextWidget } from "../widgets/TextWidget";
-import { IndicatorWidget } from "../widgets/IndicatorWidget";
-import { GaugeWidget } from "../widgets/GaugeWidget";
-import { PointerWidget } from "../widgets/PointerWidget";
-import { PictureWidget } from "../widgets/PictureWidget";
-import { HtmlWidget } from "../widgets/HtmlWidget";
-import { SparklineWidget } from "../widgets/SparklineWidget";
-import { MapWidget } from "../widgets/MapWidget";
 
 // ----------------------------------------------------------------------------
 // Store & theming
 // ----------------------------------------------------------------------------
-const freeboardStore = useFreeboardStore();
-const { showLoadingIndicator, isSaved, dashboard } =
-  storeToRefs(freeboardStore);
+const authStore = useAuthStore();
+const dashboardStore = useDashboardStore();
+const profileCatalogStore = useProfileCatalogStore();
+const { showLoadingIndicator, isSaved, dashboard } = storeToRefs(dashboardStore);
 
 // React to system color scheme changes
-const cssClass = usePreferredColorScheme();
-watch(cssClass, () => freeboardStore.loadDashboardTheme(), { immediate: true });
+const preferredColorScheme = usePreferredColorScheme();
+watch(preferredColorScheme, () => dashboardStore.loadDashboardTheme(), {
+  immediate: true,
+});
 
 // ----------------------------------------------------------------------------
 // Props & reactive route id
@@ -110,7 +100,7 @@ const { result: publicPolicyResult } = useQuery(PUBLIC_AUTH_POLICY_QUERY, {}, {
 });
 
 const credentialProfilesQueryEnabled = computed(
-  () => freeboardStore.isLoggedIn() && freeboardStore.canEditDashboards()
+  () => authStore.isLoggedIn() && authStore.canEditDashboards()
 );
 const {
   result: credentialProfilesResult,
@@ -130,36 +120,40 @@ const {
 watch(publicPolicyResult, () => {
   const policy = publicPolicyResult.value?.publicAuthPolicy;
   if (policy) {
-    freeboardStore.setPublicAuthPolicy(policy);
+    const executionModeChanged = authStore.setPublicAuthPolicy(policy);
+    if (executionModeChanged) {
+      dashboardStore.loadDashboardAssets();
+    }
+    dashboardStore.syncEditingPermissions();
   }
 });
 
 watch(credentialProfilesResult, () => {
   const profiles = credentialProfilesResult.value?.credentialProfiles;
-  freeboardStore.setCredentialProfiles(Array.isArray(profiles) ? profiles : []);
+  profileCatalogStore.setCredentialProfiles(Array.isArray(profiles) ? profiles : []);
 });
 
 watch(brokerProfilesResult, () => {
   const profiles = brokerProfilesResult.value?.brokerProfiles;
-  freeboardStore.setBrokerProfiles(Array.isArray(profiles) ? profiles : []);
+  profileCatalogStore.setBrokerProfiles(Array.isArray(profiles) ? profiles : []);
 });
 
 watch(credentialProfilesError, () => {
   if (credentialProfilesError.value) {
-    freeboardStore.setCredentialProfiles([]);
+    profileCatalogStore.clearCredentialProfiles();
   }
 });
 
 watch(brokerProfilesError, () => {
   if (brokerProfilesError.value) {
-    freeboardStore.setBrokerProfiles([]);
+    profileCatalogStore.clearBrokerProfiles();
   }
 });
 
 watch(credentialProfilesQueryEnabled, (enabled) => {
   if (!enabled) {
-    freeboardStore.setCredentialProfiles([]);
-    freeboardStore.setBrokerProfiles([]);
+    profileCatalogStore.clearCredentialProfiles();
+    profileCatalogStore.clearBrokerProfiles();
   }
 });
 
@@ -194,11 +188,11 @@ watch([loadingById, loadingByShareToken], ([idLoading, shareLoading]) => {
 
 // Show loader when the route id changes (before the query returns)
 watch([routeId, routeShareToken], ([id, shareToken]) => {
-  freeboardStore.setRuntimeShareToken(shareToken || null);
+  authStore.setRuntimeShareToken(shareToken || null);
   if (id || shareToken) {
     showLoadingIndicator.value = true;
   }
-});
+}, { immediate: true });
 
 /**
  * Handle incoming dashboard data (initial or subscription).
@@ -210,7 +204,7 @@ const applyResult = (data) => {
 
   if (!dash && (routeId.value || routeShareToken.value)) {
     // Dashboard not found, go to create new
-    freeboardStore.syncEditingPermissions();
+    dashboardStore.syncEditingPermissions();
     router.push("/");
     return;
   }
@@ -218,8 +212,8 @@ const applyResult = (data) => {
   if (dash) {
     // Mark as saved before loading so permission sync can use dashboard-level ACL flags.
     isSaved.value = true;
-    freeboardStore.loadDashboard(dash);
-    freeboardStore.syncEditingPermissions();
+    dashboardStore.loadDashboard(dash);
+    dashboardStore.syncEditingPermissions();
   }
 };
 
@@ -228,35 +222,6 @@ watch(resultById, () => applyResult(resultById.value));
 watch(resultByShareToken, () => applyResult(resultByShareToken.value));
 // React to subscription updates
 onSubResult(({ data }) => applyResult(data));
-
-// ----------------------------------------------------------------------------
-// Persist settings on dashboard mutation
-// ----------------------------------------------------------------------------
-const d = reactive(dashboard.value);
-watch(d, () => freeboardStore.saveSettingsToLocalStorage());
-
-// ----------------------------------------------------------------------------
-// Initial plugin registration and baseline UI state
-// ----------------------------------------------------------------------------
-freeboardStore.loadSettingsFromLocalStorage();
-freeboardStore.loadDashboardAssets();
-freeboardStore.loadDashboardTheme();
-freeboardStore.loadDatasourcePlugin(HTTPDatasource);
-freeboardStore.loadDatasourcePlugin(ClockDatasource);
-freeboardStore.loadDatasourcePlugin(StaticDatasource);
-freeboardStore.loadDatasourcePlugin(SSEDatasource);
-freeboardStore.loadDatasourcePlugin(WebSocketDatasource);
-freeboardStore.loadDatasourcePlugin(MQTTDatasource);
-freeboardStore.loadWidgetPlugin(BaseWidget);
-freeboardStore.loadWidgetPlugin(TextWidget);
-freeboardStore.loadWidgetPlugin(IndicatorWidget);
-freeboardStore.loadWidgetPlugin(GaugeWidget);
-freeboardStore.loadWidgetPlugin(PointerWidget);
-freeboardStore.loadWidgetPlugin(PictureWidget);
-freeboardStore.loadWidgetPlugin(HtmlWidget);
-freeboardStore.loadWidgetPlugin(SparklineWidget);
-freeboardStore.loadWidgetPlugin(MapWidget);
-freeboardStore.syncEditingPermissions();
 
 // Hide loader after baseline setup (query watcher will override as needed)
 showLoadingIndicator.value = false;

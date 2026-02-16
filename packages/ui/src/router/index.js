@@ -7,8 +7,8 @@ import { createRouter, createWebHistory } from "vue-router";
 import Freeboard from "../components/Freeboard.vue";
 import Login from "../components/Login.vue";
 import AdminConsole from "../components/AdminConsole.vue";
-import { useFreeboardStore } from "../stores/freeboard";
-import { resolveNavigationGuard } from "./authGuard";
+import { useAuthStore } from "../stores/auth.js";
+import { resolveNavigationGuard } from "./authGuard.js";
 
 /** @type {import('vue-router').Router} */
 let router;
@@ -111,13 +111,12 @@ if (__FREEBOARD_STATIC__) {
    * - Redirect authenticated users away from Login to Home.
    */
   router.beforeEach(async (to) => {
-    const freeboardStore = useFreeboardStore();
-    freeboardStore.loadSettingsFromLocalStorage();
+    const authStore = useAuthStore();
 
     const redirect = resolveNavigationGuard({
       to,
-      isLoggedIn: freeboardStore.isLoggedIn(),
-      isAdmin: freeboardStore.isAdmin(),
+      isLoggedIn: authStore.isLoggedIn(),
+      isAdmin: authStore.isAdmin(),
     });
     if (redirect) {
       return redirect;

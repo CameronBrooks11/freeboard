@@ -17,14 +17,14 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import DialogBox from "./DialogBox.vue";
 import { DASHBOARDS_LIST_QUERY, DASHBOARD_READ_QUERY } from "../gql";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
 
 // ===== Props =====
 const { onClose } = defineProps({ onClose: Function });
 
 // ===== Store & Router =====
 const router = useRouter();
-const freeboardStore = useFreeboardStore();
+const dashboardStore = useDashboardStore();
 
 // ===== Queries =====
 // List all dashboards
@@ -63,7 +63,7 @@ const openDashboard = async (id) => {
     const { onResult } = useQuery(DASHBOARD_READ_QUERY, { id });
     await new Promise((resolve) => {
       onResult(({ data }) => {
-        if (data?.dashboard) freeboardStore.loadDashboard(data.dashboard);
+        if (data?.dashboard) dashboardStore.loadDashboard(data.dashboard);
         resolve();
       });
     });

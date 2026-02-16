@@ -7,13 +7,13 @@ defineOptions({ name: 'Board' });
 
 import { storeToRefs } from "pinia";
 import { GridLayout, GridItem } from "vue-grid-layout-v3";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
 import { watch } from "vue";
 import Pane from "./Pane.vue";
 
 // Access dashboard state and editing flag from the store
-const freeboardStore = useFreeboardStore();
-const { dashboard, isEditing } = storeToRefs(freeboardStore);
+const dashboardStore = useDashboardStore();
+const { dashboard, isEditing } = storeToRefs(dashboardStore);
 
 watch(
   () =>

@@ -19,9 +19,16 @@ Core stack:
 
 ## Key Paths
 
-- Entry/bootstrap: `packages/ui/src/main.js`
+- Entry/bootstrap: `packages/ui/src/main.js`, `packages/ui/src/bootstrap/appBootstrap.js`
 - Router: `packages/ui/src/router/index.js`
-- Global store: `packages/ui/src/stores/freeboard.js`
+- Stores:
+  - `packages/ui/src/stores/auth.js`
+  - `packages/ui/src/stores/dashboard.js`
+  - `packages/ui/src/stores/pluginRegistry.js`
+  - `packages/ui/src/stores/profileCatalog.js`
+- Runtime context and UI services:
+  - `packages/ui/src/runtime/runtimeContext.js`
+  - `packages/ui/src/ui/modalHost.js`
 - Models: `packages/ui/src/models/*`
 - Datasources: `packages/ui/src/datasources/*`
 - Widgets: `packages/ui/src/widgets/*`
@@ -30,7 +37,8 @@ Core stack:
 
 ## Runtime Behavior
 
-1. UI authenticates and stores token in local storage.
+1. UI authenticates and stores token in session storage.
+   - Session token is persisted in `sessionStorage` (legacy localStorage entries are migrated).
 2. Dashboard data is fetched from GraphQL.
 3. Datasources emit updates:
    - GraphQL dashboard subscriptions use SSE.
@@ -68,6 +76,7 @@ npm run dev --workspace=packages/ui
 npm run build --workspace=packages/ui
 npm run lint:ui
 npm run test:ui
+npm run check:ui:store-boundaries
 ```
 
 UI runtime tests live in `packages/ui/test/*.test.js` and target binding resolution, plugin validation, and reactive widget runtime behavior.

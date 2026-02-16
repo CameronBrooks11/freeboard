@@ -8,7 +8,7 @@
 defineOptions({ name: 'Widget' });
 
 import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
 import WidgetDialogBox from "./WidgetDialogBox.vue";
 import {
   computed,
@@ -20,14 +20,15 @@ import {
 } from "vue";
 import ConfirmDialogBox from "./ConfirmDialogBox.vue";
 import { useI18n } from "vue-i18n";
+import { openModal } from "../ui/modalHost.js";
 
 const { t } = useI18n();
 
 // Widget instance passed from parent
 const { widget } = defineProps({ widget: Object });
 
-const freeboardStore = useFreeboardStore();
-const { isEditing, dashboard } = storeToRefs(freeboardStore);
+const dashboardStore = useDashboardStore();
+const { isEditing, dashboard } = storeToRefs(dashboardStore);
 
 // Reference to the DOM element where the widget will render
 const widgetRef = ref(null);
@@ -54,7 +55,7 @@ const widgetErrorMessage = computed(() => {
  * Open dialog to edit widget settings.
  */
 const openWidgetEditDialogBox = () => {
-  freeboardStore.createComponent(WidgetDialogBox, instance.appContext, {
+  openModal(WidgetDialogBox, instance.appContext, {
     header: t("widget.titleEdit"),
     widget,
     onOk: (newSettings) => {
@@ -77,7 +78,7 @@ const openWidgetEditDialogBox = () => {
  * Open confirmation dialog to delete widget from its pane.
  */
 const openWidgetDeleteDialogBox = () => {
-  freeboardStore.createComponent(ConfirmDialogBox, instance.appContext, {
+  openModal(ConfirmDialogBox, instance.appContext, {
     title: t("widget.titleDelete"),
     onOk: () => {
       dashboard.value.deleteWidget(widget.pane, widget);

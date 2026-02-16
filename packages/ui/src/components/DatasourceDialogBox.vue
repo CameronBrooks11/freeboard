@@ -12,16 +12,21 @@ defineOptions({ name: 'DatasourceDialogBox' });
 import { computed, ref, watch } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
+import { usePluginRegistryStore } from "../stores/pluginRegistry.js";
+import { useProfileCatalogStore } from "../stores/profileCatalog.js";
 import { storeToRefs } from "pinia";
 import TabNavigator from "./TabNavigator.vue";
 import TypeSelect from "./TypeSelect.vue";
 import router from "../router";
 
-const freeboardStore = useFreeboardStore();
+const dashboardStore = useDashboardStore();
+const pluginRegistryStore = usePluginRegistryStore();
+const profileCatalogStore = useProfileCatalogStore();
 // Retrieve available datasource plugins and dashboard instance from store
-const { datasourcePlugins, dashboard, credentialProfiles, brokerProfiles } =
-  storeToRefs(freeboardStore);
+const { dashboard } = storeToRefs(dashboardStore);
+const { datasourcePlugins } = storeToRefs(pluginRegistryStore);
+const { credentialProfiles, brokerProfiles } = storeToRefs(profileCatalogStore);
 
 // Define props passed into this dialog
 const { header, onClose, onOk, datasource } = defineProps({
@@ -66,11 +71,12 @@ const validateUniqueDatasourceTitle = (value) => {
 watch(
   [typeRef, credentialProfiles, brokerProfiles],
   ([newValue]) => {
-    if (!newValue) {
+    const plugin = datasourcePlugins.value[newValue];
+    if (!newValue || !plugin || typeof plugin.fields !== "function") {
       fields.value = [];
       return;
     }
-    fields.value = datasourcePlugins.value[newValue].fields(
+    fields.value = plugin.fields(
       datasource,
       dashboard.value,
       {

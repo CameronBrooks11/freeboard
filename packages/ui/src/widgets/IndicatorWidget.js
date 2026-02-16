@@ -3,7 +3,7 @@
  * @description Binary indicator widget with configurable labels and colors.
  */
 
-import { ReactiveWidget } from "./runtime/ReactiveWidget";
+import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
 /**
  * Indicator widget implementation.

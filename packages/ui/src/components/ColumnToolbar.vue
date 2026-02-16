@@ -6,11 +6,11 @@
 defineOptions({ name: 'ColumnToolbar' });
 
 import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
 
 // Access dashboard state from the store
-const freeboardStore = useFreeboardStore();
-const { dashboard } = storeToRefs(freeboardStore);
+const dashboardStore = useDashboardStore();
+const { dashboard } = storeToRefs(dashboardStore);
 </script>
 
 <template>

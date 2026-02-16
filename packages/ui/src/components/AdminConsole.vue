@@ -8,7 +8,9 @@ defineOptions({ name: "AdminConsole" });
 import { computed, ref, watch } from "vue";
 import { useMutation, useQuery } from "@vue/apollo-composable";
 import { RouterLink } from "vue-router";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useAuthStore } from "../stores/auth.js";
+import { useDashboardStore } from "../stores/dashboard.js";
+import { useProfileCatalogStore } from "../stores/profileCatalog.js";
 import {
   BROKER_PROFILE_PROTOCOL_OPTIONS,
   CREDENTIAL_PROFILE_TYPE_OPTIONS,
@@ -56,7 +58,9 @@ const credentialProfileTypeToEnum = (type) =>
 const brokerProfileProtocolToEnum = (protocol) =>
   String(protocol || "mqtt").toUpperCase();
 
-const freeboardStore = useFreeboardStore();
+const authStore = useAuthStore();
+const dashboardStore = useDashboardStore();
+const profileCatalogStore = useProfileCatalogStore();
 const appBaseUrl = `${window.location.origin}${window.location.pathname.replace(/\/admin\/?$/, "/")}`;
 
 const statusMessage = ref("");
@@ -228,7 +232,10 @@ watch(policyResult, () => {
     return;
   }
   policyDraft.value = toPolicyDraft(policy.value);
-  freeboardStore.setPublicAuthPolicy(policy.value);
+  const executionModeChanged = authStore.setPublicAuthPolicy(policy.value);
+  if (executionModeChanged) {
+    dashboardStore.loadDashboardAssets();
+  }
 });
 
 watch(credentialProfilesResult, () => {
@@ -238,7 +245,7 @@ watch(credentialProfilesResult, () => {
     nextDrafts[profile._id] = toCredentialProfileDraft(profile);
   });
   credentialProfileDrafts.value = nextDrafts;
-  freeboardStore.setCredentialProfiles(profiles);
+  profileCatalogStore.setCredentialProfiles(profiles);
 });
 
 watch(brokerProfilesResult, () => {
@@ -248,12 +255,18 @@ watch(brokerProfilesResult, () => {
     nextDrafts[profile._id] = toBrokerProfileDraft(profile);
   });
   brokerProfileDrafts.value = nextDrafts;
-  freeboardStore.setBrokerProfiles(profiles);
+  profileCatalogStore.setBrokerProfiles(profiles);
 });
 
 watch(brokerProfilesError, () => {
   if (brokerProfilesError.value) {
-    freeboardStore.setBrokerProfiles([]);
+    profileCatalogStore.clearBrokerProfiles();
+  }
+});
+
+watch(credentialProfilesError, () => {
+  if (credentialProfilesError.value) {
+    profileCatalogStore.clearCredentialProfiles();
   }
 });
 
@@ -367,7 +380,10 @@ const savePolicy = async () => {
     const updatedPolicy = result.data?.setAuthPolicy;
     if (updatedPolicy) {
       policyDraft.value = toPolicyDraft(updatedPolicy);
-      freeboardStore.setPublicAuthPolicy(updatedPolicy);
+      const executionModeChanged = authStore.setPublicAuthPolicy(updatedPolicy);
+      if (executionModeChanged) {
+        dashboardStore.loadDashboardAssets();
+      }
     } else {
       await refetchPolicy();
     }
@@ -577,7 +593,7 @@ const createBrokerProfile = async () => {
     });
     createBrokerProfileInput.value = toBrokerProfileDraft();
     await refetchBrokerProfiles();
-    freeboardStore.setBrokerProfiles(brokerProfiles.value);
+    profileCatalogStore.setBrokerProfiles(brokerProfiles.value);
     statusMessage.value = "Broker profile created.";
   } catch (error) {
     setErrorMessage(error, "Could not create broker profile.");
@@ -598,7 +614,7 @@ const saveBrokerProfile = async (profileId) => {
       input,
     });
     await refetchBrokerProfiles();
-    freeboardStore.setBrokerProfiles(brokerProfiles.value);
+    profileCatalogStore.setBrokerProfiles(brokerProfiles.value);
     statusMessage.value = "Broker profile updated.";
   } catch (error) {
     setErrorMessage(error, "Could not update broker profile.");
@@ -617,7 +633,7 @@ const deleteBrokerProfile = async (profile) => {
       id: profile._id,
     });
     await refetchBrokerProfiles();
-    freeboardStore.setBrokerProfiles(brokerProfiles.value);
+    profileCatalogStore.setBrokerProfiles(brokerProfiles.value);
     statusMessage.value = "Broker profile deleted.";
   } catch (error) {
     setErrorMessage(error, "Could not delete broker profile.");

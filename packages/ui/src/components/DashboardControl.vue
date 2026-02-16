@@ -6,22 +6,25 @@
 defineOptions({ name: 'DashboardControl' });
 
 import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useAuthStore } from "../stores/auth.js";
+import { useDashboardStore } from "../stores/dashboard.js";
 import Form from "./Form.vue";
 import { computed, getCurrentInstance, ref, watch } from "vue";
 import DatasourcesDialogBox from "./DatasourcesDialogBox.vue";
 import SettingsDialogBox from "./SettingsDialogBox.vue";
 import ShareDialogBox from "./ShareDialogBox.vue";
 import createSettings from "../settings";
+import { openModal } from "../ui/modalHost.js";
 
-const freeboardStore = useFreeboardStore();
-const { dashboard } = storeToRefs(freeboardStore);
+const authStore = useAuthStore();
+const dashboardStore = useDashboardStore();
+const { dashboard } = storeToRefs(dashboardStore);
 
 // Inline settings schema and current values
 const fields = computed(
   () =>
     createSettings(dashboard.value, {
-      allowTrustedExecution: freeboardStore.isTrustedExecutionMode(),
+      allowTrustedExecution: authStore.isTrustedExecutionMode(),
     })[0].fields
 );
 const settings = ref({});
@@ -39,7 +42,7 @@ watch(
 
 /** Open the settings dialog and apply changes on OK */
 const openSettingsDialogBox = () => {
-  freeboardStore.createComponent(SettingsDialogBox, instance.appContext, {
+  openModal(SettingsDialogBox, instance.appContext, {
     onOk: (newSettings) => {
       dashboard.value.settings = newSettings.settings;
       settings.value = {
@@ -47,21 +50,20 @@ const openSettingsDialogBox = () => {
         columns: newSettings.columns,
       };
       onChange(settings.value);
-      freeboardStore.loadDashboardAssets();
-      freeboardStore.loadDashboardTheme();
-      freeboardStore.saveSettingsToLocalStorage();
+      dashboardStore.loadDashboardAssets();
+      dashboardStore.loadDashboardTheme();
     },
   });
 };
 
 /** Open the datasources management dialog */
 const openDatasourcesDialogBox = () => {
-  freeboardStore.createComponent(DatasourcesDialogBox, instance.appContext);
+  openModal(DatasourcesDialogBox, instance.appContext);
 };
 
 /** Open the dashboard share/collaboration dialog */
 const openShareDialogBox = () => {
-  freeboardStore.createComponent(ShareDialogBox, instance.appContext);
+  openModal(ShareDialogBox, instance.appContext);
 };
 
 /**

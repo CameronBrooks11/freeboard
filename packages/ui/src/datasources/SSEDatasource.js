@@ -3,12 +3,16 @@
  * @description Gateway-backed Server-Sent Events datasource runtime.
  */
 
-import { useFreeboardStore } from "../stores/freeboard";
 import {
   mintDatasourceSessionToken,
 } from "./datasourceSessionToken.js";
 import { DatasourceRuntimeBase } from "./runtime/DatasourceRuntimeBase.js";
 import { getStreamingManager } from "./runtime/StreamingManager.js";
+import {
+  getAuthToken,
+  getDashboardId,
+  getRuntimeShareToken,
+} from "../runtime/runtimeContext.js";
 
 const STREAM_PARSERS = ["json", "text"];
 const AUTH_PLACEMENT_OPTIONS = ["header", "query"];
@@ -169,8 +173,7 @@ export class SSEDatasource extends DatasourceRuntimeBase {
   }
 
   async mintSessionToken() {
-    const store = useFreeboardStore();
-    const dashboardId = this.runtimeContext.dashboardId || store.dashboard?._id;
+    const dashboardId = this.runtimeContext.dashboardId || getDashboardId();
     const datasourceId = this.runtimeContext.datasourceId;
 
     if (!dashboardId || !datasourceId) {
@@ -180,8 +183,8 @@ export class SSEDatasource extends DatasourceRuntimeBase {
     const minted = await mintDatasourceSessionToken({
       dashboardId,
       datasourceId,
-      shareToken: store.runtimeShareToken || null,
-      authToken: store.token || null,
+      shareToken: getRuntimeShareToken(),
+      authToken: getAuthToken(),
     });
 
     this.sessionToken = minted.token;
@@ -226,8 +229,7 @@ export class SSEDatasource extends DatasourceRuntimeBase {
       return;
     }
 
-    const store = useFreeboardStore();
-    const dashboardId = this.runtimeContext.dashboardId || store.dashboard?._id;
+    const dashboardId = this.runtimeContext.dashboardId || getDashboardId();
     const datasourceId = this.runtimeContext.datasourceId;
     if (!dashboardId || !datasourceId) {
       this.emitError("Datasource runtime context is incomplete", "STREAM_CONNECT_FAILED");

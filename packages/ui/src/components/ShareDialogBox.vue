@@ -9,7 +9,7 @@ import { computed, ref, watch } from "vue";
 import { useMutation, useQuery } from "@vue/apollo-composable";
 import { storeToRefs } from "pinia";
 import DialogBox from "./DialogBox.vue";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
 import router from "../router";
 import { buildFallbackSharePath } from "../sharePolicy";
 import {
@@ -32,8 +32,8 @@ const { onClose } = defineProps({
   onClose: Function,
 });
 
-const freeboardStore = useFreeboardStore();
-const { dashboard, isSaved } = storeToRefs(freeboardStore);
+const dashboardStore = useDashboardStore();
+const { dashboard, isSaved } = storeToRefs(dashboardStore);
 
 const visibilityDraft = ref("private");
 const collaboratorEmail = ref("");
@@ -127,7 +127,7 @@ const applyDashboardMutationPayload = (payload) => {
     return;
   }
   visibilityDraft.value = dashboard.value.visibility;
-  freeboardStore.syncEditingPermissions();
+  dashboardStore.syncEditingPermissions();
 };
 
 const saveVisibility = async () => {

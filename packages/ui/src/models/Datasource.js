@@ -3,9 +3,12 @@
  * @description Client-side model for dashboard datasources, handling configuration, lifecycle, and data updates.
  */
 
-import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
-import { generateModelId } from "./id";
+import { generateModelId } from "./id.js";
+import {
+  getDashboardId,
+  getDatasourcePlugin,
+  processDatasourceUpdate,
+} from "../runtime/runtimeContext.js";
 
 /**
  * Wrapper around a datasource plugin instance, managing settings, type, and data flow.
@@ -107,9 +110,7 @@ export class Datasource {
       return;
     }
 
-    const freeboardStore = useFreeboardStore();
-    const { datasourcePlugins, dashboard } = storeToRefs(freeboardStore);
-    const datasourceType = datasourcePlugins.value[this._type];
+    const datasourceType = getDatasourcePlugin(this._type);
 
     if (!datasourceType || typeof datasourceType.newInstance !== "function") {
       return;
@@ -126,7 +127,7 @@ export class Datasource {
         (statusPayload) => this.statusCallback(statusPayload),
         {
           datasourceId: this.id,
-          dashboardId: dashboard.value?._id || null,
+          dashboardId: getDashboardId(),
         }
       );
     } catch (error) {
@@ -180,16 +181,13 @@ export class Datasource {
       return;
     }
 
-    const freeboardStore = useFreeboardStore();
-    const { dashboard } = storeToRefs(freeboardStore);
-
     this.latestData = newData;
     this.lastUpdated = new Date();
     this.lastMessageAt = this.lastUpdated;
     this.lastError = null;
     this.errorCode = null;
     this.status = "connected";
-    dashboard.value.processDatasourceUpdate(this);
+    processDatasourceUpdate(this);
   }
 
   /**

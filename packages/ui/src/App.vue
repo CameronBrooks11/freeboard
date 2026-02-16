@@ -9,11 +9,11 @@ import "./assets/css/app.css";
 import { RouterView } from "vue-router";
 
 import { useHead } from "@unhead/vue";
-import { useFreeboardStore } from "./stores/freeboard";
+import { useDashboardStore } from "./stores/dashboard.js";
 import { storeToRefs } from "pinia";
 
-const freeboardStore = useFreeboardStore();
-const { dashboard } = storeToRefs(freeboardStore);
+const dashboardStore = useDashboardStore();
+const { dashboard } = storeToRefs(dashboardStore);
 
 // Dynamically update the page title when the dashboard changes
 useHead({

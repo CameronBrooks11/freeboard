@@ -3,7 +3,7 @@
  * @description Image widget with optional refresh cache-busting.
  */
 
-import { ReactiveWidget } from "./runtime/ReactiveWidget";
+import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
 const withCacheBust = (url) => {
   const base = String(url || "").trim();

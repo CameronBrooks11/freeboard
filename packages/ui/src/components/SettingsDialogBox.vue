@@ -11,14 +11,15 @@ defineOptions({ name: 'SettingsDialogBox' });
 import { computed, ref } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useAuthStore } from "../stores/auth.js";
+import { useDashboardStore } from "../stores/dashboard.js";
 import { storeToRefs } from "pinia";
 import TabNavigator from "./TabNavigator.vue";
 import createSettings from "../settings";
 
-const freeboardStore = useFreeboardStore();
-
-const { dashboard } = storeToRefs(freeboardStore);
+const authStore = useAuthStore();
+const dashboardStore = useDashboardStore();
+const { dashboard } = storeToRefs(dashboardStore);
 
 // Store child form component refs for validation
 const components = ref({});
@@ -36,7 +37,7 @@ const { onClose, onOk } = defineProps({
 // Compute tab fields schema from current dashboard settings
 const fields = computed(() =>
   createSettings(dashboard.value, {
-    allowTrustedExecution: freeboardStore.isTrustedExecutionMode(),
+    allowTrustedExecution: authStore.isTrustedExecutionMode(),
   })
 );
 

@@ -3,7 +3,7 @@
  * @description Compass/pointer widget for directional values.
  */
 
-import { ReactiveWidget } from "./runtime/ReactiveWidget";
+import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
 const normalizeAngle = (value) => {
   const parsed = Number(value);

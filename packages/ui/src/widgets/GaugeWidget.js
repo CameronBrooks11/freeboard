@@ -3,7 +3,7 @@
  * @description Circular gauge widget for numeric values with min/max range.
  */
 
-import { ReactiveWidget } from "./runtime/ReactiveWidget";
+import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 

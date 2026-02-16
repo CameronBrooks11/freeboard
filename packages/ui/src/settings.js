@@ -3,7 +3,7 @@
  * @description Generates configuration schema for dashboard settings forms.
  */
 
-import { MAX_COLUMNS, MIN_COLUMNS } from "./models/Dashboard";
+import { MAX_COLUMNS, MIN_COLUMNS } from "./models/Dashboard.js";
 
 /**
  * Build settings panels and fields for the dashboard editor.

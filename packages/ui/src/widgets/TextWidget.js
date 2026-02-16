@@ -3,7 +3,7 @@
  * @description Text widget with optional title, units, and numeric animation.
  */
 
-import { ReactiveWidget } from "./runtime/ReactiveWidget";
+import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
 const isFiniteNumber = (v) => typeof v === "number" && Number.isFinite(v);
 

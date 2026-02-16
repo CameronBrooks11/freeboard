@@ -100,6 +100,7 @@ Recommended local loop:
 
 ```bash
 npm run lint
+npm run check:ui:store-boundaries
 npm run test
 npm run build:verify
 ```

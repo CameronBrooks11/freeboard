@@ -6,12 +6,11 @@
 defineOptions({ name: 'ToggleHeaderButton' });
 
 import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
 
 // Access the editing flag from the store
-const freeboardStore = useFreeboardStore();
-
-const { isEditing } = storeToRefs(freeboardStore);
+const dashboardStore = useDashboardStore();
+const { isEditing } = storeToRefs(dashboardStore);
 </script>
 
 <template>

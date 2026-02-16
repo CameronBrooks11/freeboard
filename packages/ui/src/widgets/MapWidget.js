@@ -3,7 +3,7 @@
  * @description Map widget with provider abstraction (OpenStreetMap implementation).
  */
 
-import { ReactiveWidget } from "./runtime/ReactiveWidget";
+import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 

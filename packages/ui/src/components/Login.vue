@@ -8,7 +8,8 @@ import { useMutation, useQuery } from "@vue/apollo-composable";
 import { useRoute } from "vue-router";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useAuthStore } from "../stores/auth.js";
+import { useDashboardStore } from "../stores/dashboard.js";
 import router from "../router";
 import {
   canAcceptInviteForMode,
@@ -27,7 +28,8 @@ import {
 
 const MODES = LOGIN_ACTION_MODES;
 
-const freeboardStore = useFreeboardStore();
+const authStore = useAuthStore();
+const dashboardStore = useDashboardStore();
 const route = useRoute();
 
 const form = ref(null);
@@ -201,7 +203,7 @@ const updateFields = () => {
 watch(authPolicyResult, () => {
   const policy = authPolicyResult.value?.publicAuthPolicy;
   if (policy) {
-    freeboardStore.setPublicAuthPolicy(policy);
+    authStore.setPublicAuthPolicy(policy);
   }
 });
 
@@ -255,7 +257,8 @@ const onDialogBoxOk = async () => {
         loginError.value = "Invalid authentication response.";
         return;
       }
-      freeboardStore.login(token);
+      authStore.login(token);
+      dashboardStore.syncEditingPermissions();
       const lastPath = router.options.history?.state?.back;
       const targetPath = lastPath && lastPath !== "/login" ? lastPath : "/";
       await router.push(targetPath);
@@ -273,7 +276,8 @@ const onDialogBoxOk = async () => {
         loginError.value = "Invalid authentication response.";
         return;
       }
-      freeboardStore.login(token);
+      authStore.login(token);
+      dashboardStore.syncEditingPermissions();
       await router.push("/");
       return;
     }
@@ -289,7 +293,8 @@ const onDialogBoxOk = async () => {
         loginError.value = "Invalid authentication response.";
         return;
       }
-      freeboardStore.login(token);
+      authStore.login(token);
+      dashboardStore.syncEditingPermissions();
       await router.push("/");
       return;
     }

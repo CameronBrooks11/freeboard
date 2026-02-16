@@ -6,7 +6,7 @@
 defineOptions({ name: 'DatasourcesList' });
 
 import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
 import DatasourceDialogBox from "./DatasourceDialogBox.vue";
 import ConfirmDialogBox from "./ConfirmDialogBox.vue";
 import { Datasource } from "../models/Datasource";
@@ -14,11 +14,12 @@ import { getCurrentInstance } from "vue";
 import TextButton from "./TextButton.vue";
 import { useI18n } from "vue-i18n";
 import ActionButton from "./ActionButton.vue";
+import { openModal } from "../ui/modalHost.js";
 
 const { t } = useI18n();
 
-const freeboardStore = useFreeboardStore();
-const { dashboard } = storeToRefs(freeboardStore);
+const dashboardStore = useDashboardStore();
+const { dashboard } = storeToRefs(dashboardStore);
 
 const formatDateTime = (value) => {
   if (!value) {
@@ -33,7 +34,7 @@ const formatDateTime = (value) => {
 
 // Open dialog to edit an existing datasource
 const openDatasourceEditDialogBox = (datasource) => {
-  freeboardStore.createComponent(DatasourceDialogBox, instance.appContext, {
+  openModal(DatasourceDialogBox, instance.appContext, {
     header: t("datasourcesList.titleEdit"),
     datasource,
     onOk: (newSettings) => {
@@ -52,7 +53,7 @@ const openDatasourceEditDialogBox = (datasource) => {
 
 // Open confirmation dialog before deleting a datasource
 const openDatasourceDeleteDialogBox = (datasource) => {
-  freeboardStore.createComponent(ConfirmDialogBox, instance.appContext, {
+  openModal(ConfirmDialogBox, instance.appContext, {
     title: t("datasourcesList.titleDelete"),
     onOk: () => {
       dashboard.value.deleteDatasource(datasource);
@@ -62,7 +63,7 @@ const openDatasourceDeleteDialogBox = (datasource) => {
 
 // Open dialog to add a new datasource
 const openDatasourceAddDialogBox = () => {
-  freeboardStore.createComponent(DatasourceDialogBox, instance.appContext, {
+  openModal(DatasourceDialogBox, instance.appContext, {
     header: t("datasourcesList.titleAdd"),
     onOk: (newSettings) => {
       const newViewModel = new Datasource();

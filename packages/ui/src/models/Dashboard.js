@@ -3,8 +3,8 @@
  * @description Client-side model for Freeboard Dashboard, managing panes, datasources, and serialization.
  */
 
-import { Datasource } from "./Datasource";
-import { Pane } from "./Pane";
+import { Datasource } from "./Datasource.js";
+import { Pane } from "./Pane.js";
 import {
   buildDatasourceSnapshot,
   clampPaneLayoutHeights,
@@ -14,7 +14,7 @@ import {
   replaceDatasourceReferences,
   serializeDashboardState,
 } from "./dashboardRuntime.js";
-import { generateModelId } from "./id";
+import { generateModelId } from "./id.js";
 import { resolveDashboardIsOwner } from "./ownership.js";
 
 /**
@@ -221,6 +221,7 @@ export class Dashboard {
    * @param {Pane} pane - Pane instance to add.
    */
   addPane(pane) {
+    this.ensurePaneWidgetIds(pane);
     this.ensurePaneLayoutId(pane);
     this.panes = [...this.panes, pane];
     this.clampPaneLayoutHeights();
@@ -427,6 +428,47 @@ export class Dashboard {
     }
 
     pane.layout.i = normalizedCurrentId;
+  }
+
+  /**
+   * Ensure every widget in a pane has a unique identifier across the dashboard.
+   *
+   * @param {Pane} pane
+   */
+  ensurePaneWidgetIds(pane) {
+    if (!Array.isArray(pane.widgets)) {
+      pane.widgets = [];
+      return;
+    }
+
+    const existingIds = new Set(
+      this.panes
+        .flatMap((item) => item?.widgets || [])
+        .map((widget) => widget?.id)
+        .filter((value) => value !== undefined && value !== null)
+        .map((value) => String(value))
+    );
+    const paneIds = new Set();
+
+    pane.widgets.forEach((widget) => {
+      if (!widget) {
+        return;
+      }
+
+      widget.pane = pane;
+      let candidate =
+        widget.id === undefined || widget.id === null ? "" : String(widget.id);
+
+      if (!candidate || existingIds.has(candidate) || paneIds.has(candidate)) {
+        candidate = generateModelId("w");
+        while (existingIds.has(candidate) || paneIds.has(candidate)) {
+          candidate = generateModelId("w");
+        }
+      }
+
+      widget.id = candidate;
+      paneIds.add(candidate);
+    });
   }
 
   /**

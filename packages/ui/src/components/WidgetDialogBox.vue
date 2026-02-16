@@ -13,14 +13,16 @@ defineOptions({ name: 'WidgetDialogBox' });
 import { computed, ref, watch } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
+import { usePluginRegistryStore } from "../stores/pluginRegistry.js";
 import { storeToRefs } from "pinia";
 import TabNavigator from "./TabNavigator.vue";
 import TypeSelect from "./TypeSelect.vue";
 
-const freeboardStore = useFreeboardStore();
-
-const { widgetPlugins, dashboard } = storeToRefs(freeboardStore);
+const dashboardStore = useDashboardStore();
+const pluginRegistryStore = usePluginRegistryStore();
+const { dashboard } = storeToRefs(dashboardStore);
+const { widgetPlugins } = storeToRefs(pluginRegistryStore);
 
 // Props passed from parent component
 const { header, onClose, onOk, widget } = defineProps({
@@ -47,11 +49,12 @@ const storeComponentRef = (name, el) => {
 watch(
   typeRef,
   (newValue) => {
-    if (!newValue) {
+    const plugin = widgetPlugins.value[newValue];
+    if (!newValue || !plugin || typeof plugin.fields !== "function") {
       fields.value = [];
       return;
     }
-    fields.value = widgetPlugins.value[newValue].fields(
+    fields.value = plugin.fields(
       widget,
       dashboard.value,
       {

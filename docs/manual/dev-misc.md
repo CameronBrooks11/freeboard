@@ -3,6 +3,7 @@
 ## Useful Commands
 
 - Full lint: `npm run lint`
+- UI store boundary guardrail: `npm run check:ui:store-boundaries`
 - UI lint only: `npm run lint:ui`
 - API lint only: `npm run lint:api`
 - Build UI: `npm run build:ui`
@@ -22,6 +23,7 @@ Run this sequence before opening a PR:
 
 ```bash
 npm run lint
+npm run check:ui:store-boundaries
 npm run test
 npm run build:verify
 ```
@@ -31,6 +33,7 @@ If your change is docs-only, still run `npm run lint` to catch formatting or syn
 ## CI Troubleshooting (Quick)
 
 - If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`lint`, `test-api`, `test-ui`, `build-verify`).
+- If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
 - If a job was expected but appears skipped, check `Classify changes` output in the `changes` job.
 - If Docker publish unexpectedly rebuilds all images, verify event type:
   - `workflow_dispatch` intentionally rebuilds all packages.

@@ -3,7 +3,7 @@
  * @description Lightweight sparkline widget with single or multi-series support.
  */
 
-import { ReactiveWidget } from "./runtime/ReactiveWidget";
+import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
 const DEFAULT_COLORS = [
   "#f59e0b",

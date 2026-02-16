@@ -3,12 +3,16 @@
  * @description HTTP datasource runtime with gateway-backed fetch and parser modes.
  */
 
-import { useFreeboardStore } from "../stores/freeboard";
 import {
   getDatasourceSessionTokenExpiry,
   mintDatasourceSessionToken,
 } from "./datasourceSessionToken.js";
 import { DatasourceRuntimeBase } from "./runtime/DatasourceRuntimeBase.js";
+import {
+  getAuthToken,
+  getDashboardId,
+  getRuntimeShareToken,
+} from "../runtime/runtimeContext.js";
 
 const ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 const ALLOWED_PARSERS = ["json", "text", "csv"];
@@ -305,8 +309,7 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
       return this.sessionToken;
     }
 
-    const store = useFreeboardStore();
-    const dashboardId = this.runtimeContext.dashboardId || store.dashboard?._id;
+    const dashboardId = this.runtimeContext.dashboardId || getDashboardId();
     const datasourceId = this.runtimeContext.datasourceId;
     if (!dashboardId || !datasourceId) {
       throw new Error("Datasource runtime context is incomplete");
@@ -315,8 +318,8 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
     const minted = await mintDatasourceSessionToken({
       dashboardId,
       datasourceId,
-      shareToken: store.runtimeShareToken || null,
-      authToken: store.token || null,
+      shareToken: getRuntimeShareToken(),
+      authToken: getAuthToken(),
     });
     this.sessionToken = minted.token;
     return this.sessionToken;
@@ -324,8 +327,7 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
 
   async fetchViaGateway() {
     const token = await this.ensureSessionToken();
-    const store = useFreeboardStore();
-    const dashboardId = this.runtimeContext.dashboardId || store.dashboard?._id;
+    const dashboardId = this.runtimeContext.dashboardId || getDashboardId();
 
     const response = await fetch("/gateway/http/fetch", {
       method: "POST",

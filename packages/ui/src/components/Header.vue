@@ -7,7 +7,8 @@ defineOptions({ name: 'Header' });
 
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useAuthStore } from "../stores/auth.js";
+import { useDashboardStore } from "../stores/dashboard.js";
 // Admin controls and toggles
 import DashboardControl from "./DashboardControl.vue";
 import FreeboardControl from "./FreeboardControl.vue";
@@ -16,9 +17,10 @@ import ColumnToolbar from "./ColumnToolbar.vue";
 import { RouterLink } from "vue-router";
 
 // Retrieve editing flags and dashboard instance
-const freeboardStore = useFreeboardStore();
-const { allowEdit, isEditing } = storeToRefs(freeboardStore);
-const showAdminButton = computed(() => freeboardStore.isAdmin());
+const authStore = useAuthStore();
+const dashboardStore = useDashboardStore();
+const { allowEdit, isEditing } = storeToRefs(dashboardStore);
+const showAdminButton = computed(() => authStore.isAdmin());
 </script>
 
 <template>
