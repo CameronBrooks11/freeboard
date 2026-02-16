@@ -214,5 +214,5 @@ test("gateway fetch handler rejects upstream non-2xx responses", async () => {
   await handler(clientReq, clientRes);
 
   assert.equal(clientRes.statusCode, 502);
-  assert.match(String(clientRes.payload?.error || ""), /Upstream request failed/);
+  assert.match(String(clientRes.payload?.error || ""), /Gateway request failed/);
 });
