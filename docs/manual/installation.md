@@ -34,6 +34,11 @@ JWT_GATEWAY_SECRET=replace-with-a-long-random-gateway-secret-at-least-32-chars
 GATEWAY_SERVICE_TOKEN=replace-with-a-long-random-gateway-service-token-at-least-32-chars
 CREDENTIAL_ENCRYPTION_KEY=replace-with-base64-32-byte-key
 
+# Optional runtime image tag pinning (default is latest)
+FREEBOARD_UI_IMAGE_TAG=latest
+FREEBOARD_API_IMAGE_TAG=latest
+FREEBOARD_GATEWAY_IMAGE_TAG=latest
+
 # Mongo for API
 FREEBOARD_MONGO_URL=mongodb://freeboard_app:replace-with-strong-app-password@freeboard-mongo:27017/freeboard
 
@@ -76,6 +81,22 @@ API env precedence:
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
 ```
+
+Pinning examples:
+
+```bash
+# release pin
+FREEBOARD_UI_IMAGE_TAG=v0.1.0
+FREEBOARD_API_IMAGE_TAG=v0.1.0
+FREEBOARD_GATEWAY_IMAGE_TAG=v0.1.0
+
+# immutable build pin
+FREEBOARD_UI_IMAGE_TAG=sha-abc1234
+FREEBOARD_API_IMAGE_TAG=sha-abc1234
+FREEBOARD_GATEWAY_IMAGE_TAG=sha-abc1234
+```
+
+Rollback is tag-based: switch to the prior known-good `v*` or `sha-*` tags and redeploy.
 
 Services:
 

@@ -98,6 +98,7 @@ Core env values:
 - `FREEBOARD_MONGO_URL` (containerized API)
 - `PORT` (API/gateway workspace process port)
 - `FREEBOARD_MONGO_IMAGE` (Mongo image tag for dev compose)
+- `FREEBOARD_UI_IMAGE_TAG` / `FREEBOARD_API_IMAGE_TAG` / `FREEBOARD_GATEWAY_IMAGE_TAG` (runtime service image tag pinning)
 - `FREEBOARD_STATIC` (static UI build mode; only enable for static deploy builds)
 - `FREEBOARD_RUNTIME_ENV` (`production` for containerized runtime defaults)
 - `JWT_SECRET` (required for containerized API startup)
@@ -130,5 +131,7 @@ Core env values:
 - Docker publish workflow: `.github/workflows/build-docker-images.yml`
   - Runs on push to `main` and manual dispatch.
   - Per-package diff detection skips unchanged matrix entries while still rebuilding on shared dependency/lockfile changes.
+  - Publishes `latest`, `v<workspace-version>`, and `sha-<short-commit>` tags per service image.
+  - Emits OCI labels including source URL, git revision, and package-derived version.
   - Manual dispatch forces full rebuild intentionally.
   - Concurrency cancellation is intentionally disabled to avoid skipped publishes on rapid sequential pushes.

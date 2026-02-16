@@ -63,6 +63,26 @@ For containerized production mode, set these in `.env` first:
 - `FREEBOARD_MONGO_URL` (API required Mongo connection string)
 - `MONGO_INITDB_ROOT_USERNAME` / `MONGO_INITDB_ROOT_PASSWORD` (Mongo bootstrap)
 - `MONGO_APP_USERNAME` / `MONGO_APP_PASSWORD` (application DB account)
+- `FREEBOARD_UI_IMAGE_TAG` / `FREEBOARD_API_IMAGE_TAG` / `FREEBOARD_GATEWAY_IMAGE_TAG` (optional service image pinning, default `latest`)
+
+Version tags published by CI:
+
+- `latest`
+- `v<workspace-version>` (for example `v0.1.0`)
+- `sha-<short-commit>` (immutable build pin)
+
+Example pin + rollback flow:
+
+```bash
+# pin all services to a release tag
+FREEBOARD_UI_IMAGE_TAG=v0.1.0
+FREEBOARD_API_IMAGE_TAG=v0.1.0
+FREEBOARD_GATEWAY_IMAGE_TAG=v0.1.0
+
+docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
+
+# rollback by changing tags to a previous known-good release
+```
 
 ### Development
 

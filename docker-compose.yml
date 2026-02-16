@@ -1,6 +1,6 @@
 services:
   freeboard-ui:
-    image: ghcr.io/cameronbrooks11/freeboard-ui:dev
+    image: ghcr.io/cameronbrooks11/freeboard-ui:${FREEBOARD_UI_IMAGE_TAG:-latest}
     restart: unless-stopped
     container_name: freeboard-ui
     ports:
@@ -14,7 +14,7 @@ services:
   freeboard-api:
     restart: unless-stopped
     container_name: freeboard-api
-    image: ghcr.io/cameronbrooks11/freeboard-api:dev
+    image: ghcr.io/cameronbrooks11/freeboard-api:${FREEBOARD_API_IMAGE_TAG:-latest}
     environment:
       - MONGO_URL=${FREEBOARD_MONGO_URL:?Set FREEBOARD_MONGO_URL in .env for containerized deployments}
       - NODE_ENV=${FREEBOARD_RUNTIME_ENV:-production}
@@ -42,7 +42,7 @@ services:
   freeboard-gateway:
     restart: unless-stopped
     container_name: freeboard-gateway
-    image: ghcr.io/cameronbrooks11/freeboard-gateway:dev
+    image: ghcr.io/cameronbrooks11/freeboard-gateway:${FREEBOARD_GATEWAY_IMAGE_TAG:-latest}
     environment:
       - NODE_ENV=${FREEBOARD_RUNTIME_ENV:-production}
       - EGRESS_ALLOWED_HOSTS=${EGRESS_ALLOWED_HOSTS:?Set EGRESS_ALLOWED_HOSTS in .env for containerized deployments}

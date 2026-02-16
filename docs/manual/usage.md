@@ -41,6 +41,16 @@ In private -> external (`link/public`) transitions, share tokens are rotated.
 - Docker deploy: `docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d`
 - Quality gate: `npm run ci`
 
+## Container image pinning
+
+- Compose defaults to `latest` tags for UI/API/Gateway images.
+- To pin a release, set:
+  - `FREEBOARD_UI_IMAGE_TAG=v<version>`
+  - `FREEBOARD_API_IMAGE_TAG=v<version>`
+  - `FREEBOARD_GATEWAY_IMAGE_TAG=v<version>`
+- To pin an immutable build, use `sha-<short-commit>` tags from the publish workflow.
+- Rollback is tag-based: set prior known-good tags and redeploy with compose.
+
 ## Dashboard maintenance commands
 
 - Migrate legacy `published` dashboards to visibility model:
