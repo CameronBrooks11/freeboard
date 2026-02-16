@@ -48,7 +48,7 @@ Expected output: sortable 2-row table with paging controls.
 ### Datasource Setup
 
 1. Add datasource.
-2. Set `Type = JSON`.
+2. Set `Type = HTTP`.
 3. Set `Title = usersData`.
 4. Set `URL = https://jsonplaceholder.typicode.com/users`.
 5. Set `Refresh = 300` seconds.

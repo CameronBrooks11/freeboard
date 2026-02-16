@@ -46,6 +46,7 @@ docs/.vitepress/cache/
 .envrc
 !.env.example
 !.env.pi
+!.env.dev
 
 # Docker / local data
 db/

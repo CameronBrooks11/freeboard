@@ -5,7 +5,7 @@
 ### Datasource Setup
 
 1. Add datasource.
-2. Set `Type = JSON`.
+2. Set `Type = HTTP`.
 3. Set `Title = dogImage`.
 4. Set `URL = https://dog.ceo/api/breeds/image/random`.
 5. Set `Refresh = 15` seconds.
@@ -29,7 +29,7 @@ Expected output: a new random dog image each datasource refresh.
 ### Datasource Setup
 
 1. Add datasource.
-2. Set `Type = JSON`.
+2. Set `Type = HTTP`.
 3. Set `Title = catImage`.
 4. Set `URL = https://api.thecatapi.com/v1/images/search`.
 5. Set `Refresh = 20` seconds.

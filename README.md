@@ -35,6 +35,8 @@ git checkout main
 # Optional: align to repo Node baseline via .nvmrc
 nvm use || nvm install
 npm install
+# quick local dev env
+cp .env.dev .env
 ```
 
 ## Usage
@@ -89,6 +91,9 @@ docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
 ### Development
 
 ```bash
+# if needed (first setup on a machine)
+cp .env.dev .env
+
 npm run dev
 ```
 

@@ -5,7 +5,7 @@
 ### Datasource Setup
 
 1. Add datasource.
-2. Set `Type = JSON`.
+2. Set `Type = HTTP`.
 3. Set `Title = tokyoWeather`.
 4. Set `URL = https://api.open-meteo.com/v1/forecast?latitude=35.6762&longitude=139.6503&current_weather=true`.
 5. Set `Refresh = 60` seconds.
@@ -31,7 +31,7 @@ Expected output: green indicator during day, gray at night.
 ### Datasource Setup
 
 1. Add datasource.
-2. Set `Type = JSON`.
+2. Set `Type = HTTP`.
 3. Set `Title = nyTime`.
 4. Set `URL = https://worldtimeapi.org/api/timezone/America/New_York`.
 5. Set `Refresh = 300` seconds.

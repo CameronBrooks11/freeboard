@@ -5,7 +5,7 @@
 ### Datasource Setup
 
 1. Add datasource.
-2. Set `Type = JSON`.
+2. Set `Type = HTTP`.
 3. Set `Title = myGeo`.
 4. Set `URL = https://ipapi.co/json/`.
 5. Set `Refresh = 300` seconds.
@@ -32,7 +32,7 @@ Expected output: map centered on detected public IP location.
 ### Datasource Setup
 
 1. Add datasource.
-2. Set `Type = JSON`.
+2. Set `Type = HTTP`.
 3. Set `Title = issNow`.
 4. Set `URL = https://api.wheretheiss.at/v1/satellites/25544`.
 5. Set `Refresh = 5` seconds.

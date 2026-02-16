@@ -24,6 +24,8 @@ npm install
 
 Copy `.env.example` to `.env` and set real secrets.
 
+For quick local development bootstrap, copy `.env.dev` to `.env` first.
+
 ### Minimum production-safe values
 
 ```bash
@@ -68,7 +70,7 @@ After first successful login, set `CREATE_ADMIN=false`.
 
 ## Local development
 
-1. `cp .env.example .env`
+1. `cp .env.dev .env`
 2. Set bootstrap credentials if needed (`CREATE_ADMIN=true`)
 3. Run `npm run dev`
 4. Login once and disable bootstrap (`CREATE_ADMIN=false`)
