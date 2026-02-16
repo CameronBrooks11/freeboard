@@ -52,7 +52,7 @@ const PasswordResetTokenSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 PasswordResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

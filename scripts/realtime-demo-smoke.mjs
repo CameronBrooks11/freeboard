@@ -42,10 +42,9 @@ const assertSseEvent = async (url) => {
 
       buffer += decoder.decode(value, { stream: true });
       while (true) {
-        const splitCandidates = [
-          buffer.indexOf("\r\n\r\n"),
-          buffer.indexOf("\n\n"),
-        ].filter((value) => value >= 0);
+        const splitCandidates = [buffer.indexOf("\r\n\r\n"), buffer.indexOf("\n\n")].filter(
+          (value) => value >= 0,
+        );
         if (splitCandidates.length === 0) {
           break;
         }
@@ -85,7 +84,9 @@ const assertSseEvent = async (url) => {
 
 const assertWebSocketEvent = async (url) => {
   if (typeof WebSocket !== "function") {
-    console.warn("Skipping WebSocket smoke check: WebSocket client API unavailable in this Node runtime");
+    console.warn(
+      "Skipping WebSocket smoke check: WebSocket client API unavailable in this Node runtime",
+    );
     return;
   }
 

@@ -1,24 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  buildFallbackSharePath,
-  isDashboardShareable,
-} from "../src/sharePolicy.js";
+import { buildFallbackSharePath, isDashboardShareable } from "../src/sharePolicy.js";
 
 test("isDashboardShareable requires a saved dashboard id", () => {
-  assert.equal(
-    isDashboardShareable({ isSaved: false, dashboardId: "dash-1" }),
-    false
-  );
-  assert.equal(
-    isDashboardShareable({ isSaved: true, dashboardId: "" }),
-    false
-  );
-  assert.equal(
-    isDashboardShareable({ isSaved: true, dashboardId: "dash-1" }),
-    true
-  );
+  assert.equal(isDashboardShareable({ isSaved: false, dashboardId: "dash-1" }), false);
+  assert.equal(isDashboardShareable({ isSaved: true, dashboardId: "" }), false);
+  assert.equal(isDashboardShareable({ isSaved: true, dashboardId: "dash-1" }), true);
 });
 
 test("buildFallbackSharePath maps public dashboards to /p/:id", () => {
@@ -46,7 +34,7 @@ test("buildFallbackSharePath returns empty for private or missing identifiers", 
       dashboardId: "dash-1",
       shareToken: "token-1",
     }),
-    ""
+    "",
   );
   assert.equal(
     buildFallbackSharePath({
@@ -54,7 +42,7 @@ test("buildFallbackSharePath returns empty for private or missing identifiers", 
       dashboardId: "",
       shareToken: "token-1",
     }),
-    ""
+    "",
   );
   assert.equal(
     buildFallbackSharePath({
@@ -62,6 +50,6 @@ test("buildFallbackSharePath returns empty for private or missing identifiers", 
       dashboardId: "dash-1",
       shareToken: "",
     }),
-    ""
+    "",
   );
 });

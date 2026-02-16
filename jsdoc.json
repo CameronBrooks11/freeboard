@@ -4,16 +4,11 @@
     "allowUnknownTypes": true
   },
   "source": {
-    "include": [
-      "packages/api/src",
-      "packages/gateway/src"
-    ],
+    "include": ["packages/api/src", "packages/gateway/src"],
     "includePattern": "\\.(js|mjs|cjs)$",
     "excludePattern": "(node_modules/|docs/|\\.vue$)"
   },
-  "plugins": [
-    "jsdoc-type-pratt-parser"
-  ],
+  "plugins": ["jsdoc-type-pratt-parser"],
   "opts": {
     "destination": "docs/auto/api",
     "recurse": true,

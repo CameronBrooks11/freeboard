@@ -12,7 +12,7 @@
  * @emits cancel - Emitted when the Cancel button is clicked.
  * @emits close - Emitted when the dialog is closed (including on Escape key).
  */
-defineOptions({ name: 'DialogBox' });
+defineOptions({ name: "DialogBox" });
 
 import { onBeforeUnmount, onDeactivated, onMounted, ref } from "vue";
 import TextButton from "./TextButton.vue";

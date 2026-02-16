@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, test } from "node:test";
-import {
-  clearRuntimeExecutionMode,
-  setRuntimeExecutionMode,
-} from "../src/executionPolicy.js";
+import { clearRuntimeExecutionMode, setRuntimeExecutionMode } from "../src/executionPolicy.js";
 import { BaseWidget } from "../src/widgets/BaseWidget.js";
 import { HtmlWidget } from "../src/widgets/HtmlWidget.js";
 
@@ -67,10 +64,7 @@ test("BaseWidget template suppresses script/resources while execution mode is sa
   });
 
   assert.equal(template.includes("window.hacked = true;"), false);
-  assert.equal(
-    template.includes('src="https://cdn.example.com/widget.js"'),
-    false
-  );
+  assert.equal(template.includes('src="https://cdn.example.com/widget.js"'), false);
 });
 
 test("BaseWidget template includes script/resources while execution mode is trusted", () => {
@@ -84,10 +78,7 @@ test("BaseWidget template includes script/resources while execution mode is trus
   });
 
   assert.equal(template.includes("window.trusted = true;"), true);
-  assert.equal(
-    template.includes('src="https://cdn.example.com/widget.js"'),
-    true
-  );
+  assert.equal(template.includes('src="https://cdn.example.com/widget.js"'), true);
 });
 
 test("BaseWidget applies strict iframe sandbox defaults in safe mode", () => {

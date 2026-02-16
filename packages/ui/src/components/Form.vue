@@ -10,20 +10,11 @@
  *
  * @emits change - Emitted with the form’s current values whenever any field changes.
  */
-defineOptions({ name: 'Form' });
+defineOptions({ name: "Form" });
 
-import {
-  markRaw,
-  ref,
-  toRef,
-  watch,
-} from "vue";
+import { markRaw, ref, toRef, watch } from "vue";
 import InputFormElement from "./InputFormElement.vue";
-import {
-  validateInteger,
-  validateNumber,
-  validateRequired,
-} from "../validators";
+import { validateInteger, validateNumber, validateRequired } from "../validators";
 import SwitchFormElement from "./SwitchFormElement.vue";
 import SelectFormElement from "./SelectFormElement.vue";
 import ArrayFormElement from "./ArrayFormElement.vue";
@@ -131,7 +122,7 @@ const listFormElementRef = markRaw(ListFormElement);
  */
 const resolveFieldOptions = async (field) => {
   const promises = [];
-  if (typeof field.options === 'object') {
+  if (typeof field.options === "object") {
     promises.push(field.options);
   }
 
@@ -184,9 +175,7 @@ const translateField = (field) => {
  */
 const fieldToFormElement = (field) => {
   const validators = [];
-  const customValidators = Array.isArray(field.validators)
-    ? field.validators
-    : [];
+  const customValidators = Array.isArray(field.validators) ? field.validators : [];
   let type = null;
   if (field.type === "number") {
     if (field.required) {
@@ -254,24 +243,25 @@ const formFields = ref([]);
 const f = toRef(props, "fields");
 const s = toRef(props, "settings");
 
-watch([f, s], async () => {
-  // Build, translate, and resolve each field definition
-  formFields.value = await Promise.all(
-    (f.value || [])
-      .map(fieldToFormElement)
-      .map(translateField)
-      .map(resolveFieldOptions)
-  );
-  // Initialize each field’s model and watch for changes
-  formFields.value.forEach((field) => {
-    const value = resolveFieldModelValue(field, s.value || {});
-    const r = ref(value);
-    field.model = r;
-    watch(r, onUpdate);
-  });
-}, {
-  immediate: true
-});
+watch(
+  [f, s],
+  async () => {
+    // Build, translate, and resolve each field definition
+    formFields.value = await Promise.all(
+      (f.value || []).map(fieldToFormElement).map(translateField).map(resolveFieldOptions),
+    );
+    // Initialize each field’s model and watch for changes
+    formFields.value.forEach((field) => {
+      const value = resolveFieldModelValue(field, s.value || {});
+      const r = ref(value);
+      field.model = r;
+      watch(r, onUpdate);
+    });
+  },
+  {
+    immediate: true,
+  },
+);
 </script>
 
 <template>
@@ -282,12 +272,23 @@ watch([f, s], async () => {
       </div>
       <div class="form__row__value">
         <div class="form__row__value__container">
-          <component :ref="(el) => storeComponentRef(field.name, el)" :is="field.component" :disabled="field.disabled"
-            v-model="field.model" :options="field.options || field.settings" :placeholder="field.placeholder"
-            :secret="field.type === 'password'" :language="field.language"></component>
+          <component
+            :ref="(el) => storeComponentRef(field.name, el)"
+            :is="field.component"
+            :disabled="field.disabled"
+            v-model="field.model"
+            :options="field.options || field.settings"
+            :placeholder="field.placeholder"
+            :secret="field.type === 'password'"
+            :language="field.language"
+          ></component>
         </div>
         <template v-if="errors[field.name]">
-          <div class="form__row__value__error" v-for="error in errors[field.name]" :key="`${field.name}-${error}`">
+          <div
+            class="form__row__value__error"
+            v-for="error in errors[field.name]"
+            :key="`${field.name}-${error}`"
+          >
             {{ error }}
           </div>
         </template>

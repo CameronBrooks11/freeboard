@@ -48,7 +48,7 @@ test("adminDeleteUser reassigns owned dashboards and removes stale ACL access", 
             role: "editor",
             active: false,
           }
-        : null
+        : null,
     );
   User.findOneAndDelete = ({ _id }) =>
     asLean(
@@ -59,7 +59,7 @@ test("adminDeleteUser reassigns owned dashboards and removes stale ACL access", 
             role: "editor",
             active: false,
           }
-        : null
+        : null,
     );
 
   Dashboard.find = () =>
@@ -98,31 +98,23 @@ test("adminDeleteUser reassigns owned dashboards and removes stale ACL access", 
   const result = await UserResolvers.Mutation.adminDeleteUser(
     null,
     { _id: "target-user" },
-    { user: { _id: "admin-1", role: "admin", active: true } }
+    { user: { _id: "admin-1", role: "admin", active: true } },
   );
 
   assert.equal(result._id, "target-user");
   assert.equal(updatedDashboards.length, 2);
 
-  const ownedUpdate = updatedDashboards.find(
-    (entry) => entry.filter._id === "dash-owned"
-  );
+  const ownedUpdate = updatedDashboards.find((entry) => entry.filter._id === "dash-owned");
   assert.ok(ownedUpdate);
   assert.equal(ownedUpdate.update.$set.user, "admin-1");
   assert.equal(ownedUpdate.update.$set.visibility, "private");
   assert.equal(typeof ownedUpdate.update.$set.shareToken, "string");
   assert.ok(ownedUpdate.update.$set.shareToken.length > 0);
-  assert.deepEqual(ownedUpdate.update.$set.acl, [
-    { userId: "viewer-1", accessLevel: "viewer" },
-  ]);
+  assert.deepEqual(ownedUpdate.update.$set.acl, [{ userId: "viewer-1", accessLevel: "viewer" }]);
 
-  const aclOnlyUpdate = updatedDashboards.find(
-    (entry) => entry.filter._id === "dash-acl"
-  );
+  const aclOnlyUpdate = updatedDashboards.find((entry) => entry.filter._id === "dash-acl");
   assert.ok(aclOnlyUpdate);
-  assert.deepEqual(aclOnlyUpdate.update.$set.acl, [
-    { userId: "editor-2", accessLevel: "editor" },
-  ]);
+  assert.deepEqual(aclOnlyUpdate.update.$set.acl, [{ userId: "editor-2", accessLevel: "editor" }]);
 });
 
 test("adminDeleteUser rejects permanent deletion for active users", async () => {
@@ -135,7 +127,7 @@ test("adminDeleteUser rejects permanent deletion for active users", async () => 
             role: "viewer",
             active: true,
           }
-        : null
+        : null,
     );
 
   await assert.rejects(
@@ -143,9 +135,9 @@ test("adminDeleteUser rejects permanent deletion for active users", async () => 
       UserResolvers.Mutation.adminDeleteUser(
         null,
         { _id: "target-user" },
-        { user: { _id: "admin-1", role: "admin", active: true } }
+        { user: { _id: "admin-1", role: "admin", active: true } },
       ),
-    /Deactivate the user account before permanent deletion/
+    /Deactivate the user account before permanent deletion/,
   );
 });
 
@@ -179,8 +171,8 @@ test("deleteMyUserAccount blocks removal when no fallback admin exists for owned
       UserResolvers.Mutation.deleteMyUserAccount(
         null,
         {},
-        { user: { _id: "editor-1", role: "editor", active: true } }
+        { user: { _id: "editor-1", role: "editor", active: true } },
       ),
-    /active administrator recovery owner/
+    /active administrator recovery owner/,
   );
 });

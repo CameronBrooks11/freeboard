@@ -5,19 +5,12 @@
  *
  * @prop {Object} widget - Widget model instance with settings, type, title, enabled flag, and render method.
  */
-defineOptions({ name: 'Widget' });
+defineOptions({ name: "Widget" });
 
 import { storeToRefs } from "pinia";
 import { useDashboardStore } from "../stores/dashboard.js";
 import WidgetDialogBox from "./WidgetDialogBox.vue";
-import {
-  computed,
-  getCurrentInstance,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
+import { computed, getCurrentInstance, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import ConfirmDialogBox from "./ConfirmDialogBox.vue";
 import { useI18n } from "vue-i18n";
 import { openModal } from "../ui/modalHost.js";
@@ -106,11 +99,14 @@ const render = () => {
 onMounted(render);
 watch(dashboard, render);
 watch(() => widget.shouldRender, render);
-watch(() => widget.enabled, (enabled) => {
-  if (enabled) {
-    render();
-  }
-});
+watch(
+  () => widget.enabled,
+  (enabled) => {
+    if (enabled) {
+      render();
+    }
+  },
+);
 
 onMounted(() => {
   if (!widgetRef.value || typeof ResizeObserver === "undefined") {
@@ -154,27 +150,42 @@ const instance = getCurrentInstance();
           <li class="widget__sub-section__board-toolbar__item">
             {{ widget.title }}
           </li>
-          <li @click="() => (widget.enabled = !widget.enabled)" class="widget__sub-section__board-toolbar__item">
+          <li
+            @click="() => (widget.enabled = !widget.enabled)"
+            class="widget__sub-section__board-toolbar__item"
+          >
             <i class="widget__sub-section__board-toolbar__item__icon">
               <v-icon :name="widget.enabled ? 'hi-pause' : 'hi-play'"></v-icon>
             </i>
           </li>
-          <li @click="() => widget.pane.moveWidgetUp(widget)" class="widget__sub-section__board-toolbar__item">
+          <li
+            @click="() => widget.pane.moveWidgetUp(widget)"
+            class="widget__sub-section__board-toolbar__item"
+          >
             <i class="widget__sub-section__board-toolbar__item__icon">
               <v-icon name="hi-solid-chevron-up"></v-icon>
             </i>
           </li>
-          <li @click="() => widget.pane.moveWidgetDown(widget)" class="widget__sub-section__board-toolbar__item">
+          <li
+            @click="() => widget.pane.moveWidgetDown(widget)"
+            class="widget__sub-section__board-toolbar__item"
+          >
             <i class="widget__sub-section__board-toolbar__item__icon">
               <v-icon name="hi-solid-chevron-down"></v-icon>
             </i>
           </li>
-          <li @click="() => openWidgetEditDialogBox()" class="widget__sub-section__board-toolbar__item">
+          <li
+            @click="() => openWidgetEditDialogBox()"
+            class="widget__sub-section__board-toolbar__item"
+          >
             <i class="widget__sub-section__board-toolbar__item__icon">
               <v-icon name="hi-solid-cog"></v-icon>
             </i>
           </li>
-          <li @click="() => openWidgetDeleteDialogBox()" class="widget__sub-section__board-toolbar__item">
+          <li
+            @click="() => openWidgetDeleteDialogBox()"
+            class="widget__sub-section__board-toolbar__item"
+          >
             <i class="widget__sub-section__board-toolbar__item__icon">
               <v-icon name="hi-trash"></v-icon>
             </i>

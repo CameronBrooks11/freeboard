@@ -65,12 +65,10 @@ export const buildDatasourceSnapshot = (datasources = []) => {
  * @param {string|null} [excludeId]
  * @returns {boolean}
  */
-export const hasDatasourceTitleConflict = (
-  datasources,
-  title,
-  excludeId = null
-) => {
-  const candidate = String(title || "").trim().toLowerCase();
+export const hasDatasourceTitleConflict = (datasources, title, excludeId = null) => {
+  const candidate = String(title || "")
+    .trim()
+    .toLowerCase();
   if (!candidate) {
     return true;
   }
@@ -88,7 +86,11 @@ export const hasDatasourceTitleConflict = (
       return false;
     }
 
-    return String(datasource.title || "").trim().toLowerCase() === candidate;
+    return (
+      String(datasource.title || "")
+        .trim()
+        .toLowerCase() === candidate
+    );
   });
 };
 
@@ -159,16 +161,9 @@ export const clampPaneLayoutHeights = (panes) => {
  * @param {string} [fieldName]
  * @returns {any}
  */
-export const replaceDatasourceReferences = (
-  value,
-  oldTitle,
-  newTitle,
-  fieldName = ""
-) => {
+export const replaceDatasourceReferences = (value, oldTitle, newTitle, fieldName = "") => {
   if (Array.isArray(value)) {
-    return value.map((item) =>
-      replaceDatasourceReferences(item, oldTitle, newTitle, fieldName)
-    );
+    return value.map((item) => replaceDatasourceReferences(item, oldTitle, newTitle, fieldName));
   }
 
   if (value && typeof value === "object") {
@@ -176,7 +171,7 @@ export const replaceDatasourceReferences = (
       Object.entries(value).map(([key, innerValue]) => [
         key,
         replaceDatasourceReferences(innerValue, oldTitle, newTitle, key),
-      ])
+      ]),
     );
   }
 
@@ -184,8 +179,7 @@ export const replaceDatasourceReferences = (
     return value;
   }
 
-  const shouldRewrite =
-    /(?:path|template|binding)$/i.test(fieldName) || fieldName === "";
+  const shouldRewrite = /(?:path|template|binding)$/i.test(fieldName) || fieldName === "";
   if (!shouldRewrite) {
     return value;
   }

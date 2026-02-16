@@ -24,9 +24,7 @@ const toMutablePolicyInput = (args = {}) => {
     input.dashboardDefaultVisibility = args.dashboardDefaultVisibility;
   }
   if (args.dashboardPublicListingEnabled !== undefined) {
-    input.dashboardPublicListingEnabled = Boolean(
-      args.dashboardPublicListingEnabled
-    );
+    input.dashboardPublicListingEnabled = Boolean(args.dashboardPublicListingEnabled);
   }
   if (args.executionMode !== undefined) {
     input.executionMode = args.executionMode;
@@ -66,12 +64,9 @@ export default {
       ensureThatUserIsAdministrator(context);
 
       if (config.policyEditLock) {
-        throw createGraphQLError(
-          "Auth policy is locked by environment configuration",
-          {
-            extensions: { code: "FORBIDDEN" },
-          }
-        );
+        throw createGraphQLError("Auth policy is locked by environment configuration", {
+          extensions: { code: "FORBIDDEN" },
+        });
       }
 
       const policyInput = toMutablePolicyInput(args);

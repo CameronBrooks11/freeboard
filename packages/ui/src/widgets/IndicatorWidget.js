@@ -132,15 +132,9 @@ export class IndicatorWidget extends ReactiveWidget {
 
   resolveInputs() {
     return {
-      header:
-        this.getBinding(this.currentSettings?.headerPath) ??
-        this.currentSettings?.headerText,
-      onText:
-        this.getBinding(this.currentSettings?.onTextPath) ??
-        this.currentSettings?.onText,
-      offText:
-        this.getBinding(this.currentSettings?.offTextPath) ??
-        this.currentSettings?.offText,
+      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
+      onText: this.getBinding(this.currentSettings?.onTextPath) ?? this.currentSettings?.onText,
+      offText: this.getBinding(this.currentSettings?.offTextPath) ?? this.currentSettings?.offText,
       value: this.getBinding(this.currentSettings?.valuePath),
     };
   }
@@ -159,8 +153,6 @@ export class IndicatorWidget extends ReactiveWidget {
       ? `0 0 10px ${this.currentSettings?.onColor || "#16a34a"}`
       : "none";
 
-    this.labelElement.textContent = isOn
-      ? inputs.onText || "On"
-      : inputs.offText || "Off";
+    this.labelElement.textContent = isOn ? inputs.onText || "On" : inputs.offText || "Off";
   }
 }

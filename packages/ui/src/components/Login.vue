@@ -39,29 +39,24 @@ const fields = ref([]);
 const actionMode = ref(MODES.login);
 
 const { mutate: authUser, loading: authLoading } = useMutation(USER_AUTH_MUTATION);
-const { mutate: registerUser, loading: registerLoading } = useMutation(
-  USER_REGISTER_MUTATION
-);
-const { mutate: acceptInvite, loading: inviteLoading } = useMutation(
-  ACCEPT_INVITE_MUTATION
-);
+const { mutate: registerUser, loading: registerLoading } = useMutation(USER_REGISTER_MUTATION);
+const { mutate: acceptInvite, loading: inviteLoading } = useMutation(ACCEPT_INVITE_MUTATION);
 const { mutate: requestPasswordReset, loading: requestResetLoading } = useMutation(
-  REQUEST_PASSWORD_RESET_MUTATION
+  REQUEST_PASSWORD_RESET_MUTATION,
 );
-const { mutate: resetPassword, loading: resetPasswordLoading } = useMutation(
-  RESET_PASSWORD_MUTATION
-);
+const { mutate: resetPassword, loading: resetPasswordLoading } =
+  useMutation(RESET_PASSWORD_MUTATION);
 const { result: authPolicyResult, loading: authPolicyLoading } = useQuery(
   PUBLIC_AUTH_POLICY_QUERY,
   {},
-  { fetchPolicy: "network-only" }
+  { fetchPolicy: "network-only" },
 );
 
 const inviteTokenFromRoute = computed(() => String(route.query?.invite || "").trim());
 const resetTokenFromRoute = computed(() => String(route.query?.reset || "").trim());
 
 const registrationMode = computed(
-  () => authPolicyResult.value?.publicAuthPolicy?.registrationMode || "disabled"
+  () => authPolicyResult.value?.publicAuthPolicy?.registrationMode || "disabled",
 );
 const isBusy = computed(
   () =>
@@ -70,17 +65,15 @@ const isBusy = computed(
     inviteLoading.value ||
     requestResetLoading.value ||
     resetPasswordLoading.value ||
-    authPolicyLoading.value
+    authPolicyLoading.value,
 );
 
-const canCreateAccount = computed(() =>
-  canCreateAccountForMode(registrationMode.value)
-);
+const canCreateAccount = computed(() => canCreateAccountForMode(registrationMode.value));
 const canAcceptInvite = computed(() =>
   canAcceptInviteForMode({
     registrationMode: registrationMode.value,
     inviteToken: inviteTokenFromRoute.value,
-  })
+  }),
 );
 
 const dialogHeaderKey = computed(() => {
@@ -152,11 +145,13 @@ const updateFields = () => {
         label: "form.labelToken",
         type: "text",
         required: true,
-        disabled: disabled || (actionMode.value === MODES.invite && Boolean(inviteTokenFromRoute.value)),
+        disabled:
+          disabled || (actionMode.value === MODES.invite && Boolean(inviteTokenFromRoute.value)),
       },
       {
         name: "password",
-        label: actionMode.value === MODES.completeReset ? "form.labelNewPassword" : "form.labelPassword",
+        label:
+          actionMode.value === MODES.completeReset ? "form.labelNewPassword" : "form.labelPassword",
         type: "password",
         required: true,
         disabled,
@@ -217,7 +212,7 @@ watch(
       currentMode: actionMode.value,
     });
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch([isBusy, actionMode], updateFields, { immediate: true });

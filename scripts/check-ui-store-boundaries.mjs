@@ -81,7 +81,7 @@ const main = async () => {
     const content = await readFile(filePath, "utf8");
     const lineNumbers = getRegexMatchLineNumbers(
       content,
-      /(?:^|\n)\s*import[^;]*from\s+["'][^"']*stores\/[^"']+["'][^;]*;?/g
+      /(?:^|\n)\s*import[^;]*from\s+["'][^"']*stores\/[^"']+["'][^;]*;?/g,
     );
 
     if (lineNumbers.length > 0) {
@@ -98,8 +98,9 @@ const main = async () => {
     console.error("UI store boundary check failed:\n");
     violations.forEach((violation) => {
       console.error(
-        `- ${relativePath(violation.filePath)}:${violation.lineNumbers.join(","
-        )} -> ${violation.message}`
+        `- ${relativePath(violation.filePath)}:${violation.lineNumbers.join(
+          ",",
+        )} -> ${violation.message}`,
       );
     });
     process.exit(1);

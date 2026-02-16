@@ -3,27 +3,25 @@
  * @description Gateway-backed Server-Sent Events datasource runtime.
  */
 
-import {
-  mintDatasourceSessionToken,
-} from "./datasourceSessionToken.js";
+import { mintDatasourceSessionToken } from "./datasourceSessionToken.js";
 import { DatasourceRuntimeBase } from "./runtime/DatasourceRuntimeBase.js";
 import { getStreamingManager } from "./runtime/StreamingManager.js";
-import {
-  getAuthToken,
-  getDashboardId,
-  getRuntimeShareToken,
-} from "../runtime/runtimeContext.js";
+import { getAuthToken, getDashboardId, getRuntimeShareToken } from "../runtime/runtimeContext.js";
 
 const STREAM_PARSERS = ["json", "text"];
 const AUTH_PLACEMENT_OPTIONS = ["header", "query"];
 
 const normalizeParser = (value) => {
-  const normalized = String(value || "json").trim().toLowerCase();
+  const normalized = String(value || "json")
+    .trim()
+    .toLowerCase();
   return STREAM_PARSERS.includes(normalized) ? normalized : "json";
 };
 
 const normalizeAuthPlacement = (value) => {
-  const normalized = String(value || "header").trim().toLowerCase();
+  const normalized = String(value || "header")
+    .trim()
+    .toLowerCase();
   return AUTH_PLACEMENT_OPTIONS.includes(normalized) ? normalized : "header";
 };
 
@@ -151,10 +149,10 @@ export class SSEDatasource extends DatasourceRuntimeBase {
     newInstanceCallback,
     updateCallback,
     statusCallback,
-    runtimeContext
+    runtimeContext,
   ) {
     newInstanceCallback(
-      new SSEDatasource(settings, updateCallback, statusCallback, runtimeContext)
+      new SSEDatasource(settings, updateCallback, statusCallback, runtimeContext),
     );
   }
 
@@ -264,7 +262,10 @@ export class SSEDatasource extends DatasourceRuntimeBase {
             });
           },
           onError: (message) => {
-            this.emitError(message.message || "Realtime stream failed", message.errorCode || "STREAM_CONNECT_FAILED");
+            this.emitError(
+              message.message || "Realtime stream failed",
+              message.errorCode || "STREAM_CONNECT_FAILED",
+            );
           },
           onTokenExpiring: () => {
             void this.refreshSessionToken();

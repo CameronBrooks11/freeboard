@@ -29,22 +29,23 @@ afterEach(() => {
 
 test("brokerProfiles query returns profiles for editor role", async () => {
   BrokerProfile.find = () => ({
-    sort: () => asLean([
-      {
-        _id: "broker-1",
-        name: "Factory Broker",
-        protocol: "mqtt",
-        brokerUrl: "mqtt://broker.example.com:1883",
-        topicAllowlist: ["factory/#"],
-        allowPublicUse: false,
-      },
-    ]),
+    sort: () =>
+      asLean([
+        {
+          _id: "broker-1",
+          name: "Factory Broker",
+          protocol: "mqtt",
+          brokerUrl: "mqtt://broker.example.com:1883",
+          topicAllowlist: ["factory/#"],
+          allowPublicUse: false,
+        },
+      ]),
   });
 
   const result = await BrokerProfileResolvers.Query.brokerProfiles(
     null,
     {},
-    { user: { _id: "editor-1", role: "editor" } }
+    { user: { _id: "editor-1", role: "editor" } },
   );
 
   assert.equal(result.length, 1);
@@ -70,9 +71,9 @@ test("adminCreateBrokerProfile enforces basic credential profile for mqtt", asyn
             credentialProfileId: "cred-1",
           },
         },
-        { user: { _id: "admin-1", role: "admin" } }
+        { user: { _id: "admin-1", role: "admin" } },
       ),
-    /must use a basic credential profile/
+    /must use a basic credential profile/,
   );
 });
 
@@ -114,7 +115,7 @@ test("adminCreateBrokerProfile creates mqtt broker profile with normalized value
         topicAllowlist: ["factory/#", "factory/#", "line/+/status"],
       },
     },
-    { user: { _id: "admin-1", role: "admin" } }
+    { user: { _id: "admin-1", role: "admin" } },
   );
 
   assert.equal(result._id, "broker-created");

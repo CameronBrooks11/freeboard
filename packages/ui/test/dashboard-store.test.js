@@ -131,7 +131,7 @@ test("dashboard store syncs edit mode based on auth role and dashboard ACL", asy
       email: "editor@example.com",
       role: "editor",
       active: true,
-    })
+    }),
   );
 
   dashboardStore.isSaved = true;
@@ -160,7 +160,7 @@ test("dashboard store saveDashboard enforces publish policy on create", async ()
       email: "editor@example.com",
       role: "editor",
       active: true,
-    })
+    }),
   );
   authStore.setPublicAuthPolicy({ editorCanPublish: false });
 
@@ -196,7 +196,7 @@ test("dashboard store saveDashboard enforces publish policy on create", async ()
       settings: {},
     },
     createDashboard,
-    updateDashboard
+    updateDashboard,
   );
 
   assert.equal(receivedCreatePayload?.visibility, "private");

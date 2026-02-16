@@ -79,20 +79,16 @@ test("dashboard query denies private dashboard to non-owner", async () => {
       DashboardResolvers.Query.dashboard(
         null,
         { _id: "dash-1" },
-        { user: { _id: "someone-else", role: "viewer" } }
+        { user: { _id: "someone-else", role: "viewer" } },
       ),
-    /Dashboard not found/
+    /Dashboard not found/,
   );
 });
 
 test("dashboard query allows public dashboard for anonymous user", async () => {
   Dashboard.findOne = () => asLean(buildDashboardDoc({ visibility: "public" }));
 
-  const result = await DashboardResolvers.Query.dashboard(
-    null,
-    { _id: "dash-1" },
-    {}
-  );
+  const result = await DashboardResolvers.Query.dashboard(null, { _id: "dash-1" }, {});
 
   assert.equal(result._id, "dash-1");
   assert.equal(result.visibility, "public");
@@ -106,13 +102,13 @@ test("dashboardByShareToken allows anonymous link access", async () => {
     asLean(
       shareToken === "token-1"
         ? buildDashboardDoc({ visibility: "link", shareToken: "token-1" })
-        : null
+        : null,
     );
 
   const result = await DashboardResolvers.Query.dashboardByShareToken(
     null,
     { shareToken: "token-1" },
-    {}
+    {},
   );
 
   assert.equal(result._id, "dash-1");
@@ -124,13 +120,8 @@ test("dashboardByShareToken denies private dashboard to anonymous user", async (
     asLean(buildDashboardDoc({ visibility: "private", shareToken: "token-1" }));
 
   await assert.rejects(
-    () =>
-      DashboardResolvers.Query.dashboardByShareToken(
-        null,
-        { shareToken: "token-1" },
-        {}
-      ),
-    /Dashboard not found/
+    () => DashboardResolvers.Query.dashboardByShareToken(null, { shareToken: "token-1" }, {}),
+    /Dashboard not found/,
   );
 });
 
@@ -141,7 +132,7 @@ test("updateDashboard allows acl editor and strips immutable fields", async () =
       buildDashboardDoc({
         user: "owner-1",
         acl: [{ userId: "editor-1", accessLevel: "editor" }],
-      })
+      }),
     );
   Dashboard.findOneAndUpdate = (filter, update) => {
     assert.deepEqual(filter, { _id: "dash-1" });
@@ -150,7 +141,7 @@ test("updateDashboard allows acl editor and strips immutable fields", async () =
       buildDashboardDoc({
         title: "Updated",
         acl: [{ userId: "editor-1", accessLevel: "editor" }],
-      })
+      }),
     );
   };
 
@@ -164,7 +155,7 @@ test("updateDashboard allows acl editor and strips immutable fields", async () =
         settings: { theme: "dark" },
       },
     },
-    { user: { _id: "editor-1", role: "editor" } }
+    { user: { _id: "editor-1", role: "editor" } },
   );
 
   assert.deepEqual(receivedUpdate, {
@@ -196,9 +187,9 @@ test("createDashboard rejects legacy json datasource type", async () => {
             ],
           },
         },
-        { user: { _id: "owner-1", role: "editor" } }
+        { user: { _id: "owner-1", role: "editor" } },
       ),
-    /Datasource type 'json' is not supported/
+    /Datasource type 'json' is not supported/,
   );
 });
 
@@ -223,9 +214,9 @@ test("updateDashboard rejects http datasource without URL", async () => {
             ],
           },
         },
-        { user: { _id: "owner-1", role: "editor" } }
+        { user: { _id: "owner-1", role: "editor" } },
       ),
-    /requires a non-empty settings\.url/
+    /requires a non-empty settings\.url/,
   );
 });
 
@@ -252,9 +243,9 @@ test("updateDashboard rejects websocket query auth without queryParamName", asyn
             ],
           },
         },
-        { user: { _id: "owner-1", role: "editor" } }
+        { user: { _id: "owner-1", role: "editor" } },
       ),
-    /requires settings\.queryParamName/
+    /requires settings\.queryParamName/,
   );
 });
 
@@ -280,9 +271,9 @@ test("updateDashboard rejects mqtt datasource without brokerProfileId", async ()
             ],
           },
         },
-        { user: { _id: "owner-1", role: "editor" } }
+        { user: { _id: "owner-1", role: "editor" } },
       ),
-    /requires a non-empty settings\.brokerProfileId/
+    /requires a non-empty settings\.brokerProfileId/,
   );
 });
 
@@ -292,7 +283,7 @@ test("deleteDashboard allows acl editor collaborator", async () => {
       buildDashboardDoc({
         user: "owner-1",
         acl: [{ userId: "editor-1", accessLevel: "editor" }],
-      })
+      }),
     );
   Dashboard.findOneAndDelete = (filter) => {
     assert.deepEqual(filter, { _id: "dash-1" });
@@ -300,14 +291,14 @@ test("deleteDashboard allows acl editor collaborator", async () => {
       buildDashboardDoc({
         user: "owner-1",
         acl: [{ userId: "editor-1", accessLevel: "editor" }],
-      })
+      }),
     );
   };
 
   const result = await DashboardResolvers.Mutation.deleteDashboard(
     null,
     { _id: "dash-1" },
-    { user: { _id: "editor-1", role: "editor" } }
+    { user: { _id: "editor-1", role: "editor" } },
   );
 
   assert.equal(result._id, "dash-1");
@@ -325,9 +316,9 @@ test("setDashboardVisibility rejects external visibility when publish policy dis
       DashboardResolvers.Mutation.setDashboardVisibility(
         null,
         { _id: "dash-1", visibility: "public" },
-        { user: { _id: "owner-1", role: "editor" } }
+        { user: { _id: "owner-1", role: "editor" } },
       ),
-    /Editors are not allowed to publish dashboards/
+    /Editors are not allowed to publish dashboards/,
   );
 });
 
@@ -336,13 +327,12 @@ test("setDashboardVisibility allows reducing exposure to private even when publi
     "auth.publish.editorCanPublish": false,
   });
   Dashboard.findOne = () => asLean(buildDashboardDoc({ visibility: "public" }));
-  Dashboard.findOneAndUpdate = () =>
-    asLean(buildDashboardDoc({ visibility: "private" }));
+  Dashboard.findOneAndUpdate = () => asLean(buildDashboardDoc({ visibility: "private" }));
 
   const result = await DashboardResolvers.Mutation.setDashboardVisibility(
     null,
     { _id: "dash-1", visibility: "private" },
-    { user: { _id: "owner-1", role: "editor" } }
+    { user: { _id: "owner-1", role: "editor" } },
   );
 
   assert.equal(result.visibility, "private");
@@ -376,18 +366,13 @@ test("setDashboardVisibility to private immediately revokes share-token access",
   const updated = await DashboardResolvers.Mutation.setDashboardVisibility(
     null,
     { _id: "dash-1", visibility: "private" },
-    { user: { _id: "owner-1", role: "editor" } }
+    { user: { _id: "owner-1", role: "editor" } },
   );
   assert.equal(updated.visibility, "private");
 
   await assert.rejects(
-    () =>
-      DashboardResolvers.Query.dashboardByShareToken(
-        null,
-        { shareToken: "token-1" },
-        {}
-      ),
-    /Dashboard not found/
+    () => DashboardResolvers.Query.dashboardByShareToken(null, { shareToken: "token-1" }, {}),
+    /Dashboard not found/,
   );
 });
 
@@ -406,15 +391,14 @@ test("upsertDashboardAccess allows acl editor collaborator to grant viewer acces
             email: "viewer@example.com",
             active: true,
           }
-        : null
+        : null,
     );
   Dashboard.findOneAndUpdate = (filter, update) => {
     assert.deepEqual(filter, { _id: "dash-1" });
     assert.ok(
       update.$set.acl.some(
-        (entry) =>
-          entry.userId === "viewer-2" && entry.accessLevel === "viewer"
-      )
+        (entry) => entry.userId === "viewer-2" && entry.accessLevel === "viewer",
+      ),
     );
     dashboardState = {
       ...dashboardState,
@@ -426,13 +410,11 @@ test("upsertDashboardAccess allows acl editor collaborator to grant viewer acces
   const result = await DashboardResolvers.Mutation.upsertDashboardAccess(
     null,
     { _id: "dash-1", email: "viewer@example.com", accessLevel: "viewer" },
-    { user: { _id: "editor-1", role: "editor" } }
+    { user: { _id: "editor-1", role: "editor" } },
   );
 
   assert.ok(
-    result.acl.some(
-      (entry) => entry.userId === "viewer-2" && entry.accessLevel === "viewer"
-    )
+    result.acl.some((entry) => entry.userId === "viewer-2" && entry.accessLevel === "viewer"),
   );
   assert.equal(result.canManageSharing, true);
 });
@@ -446,7 +428,7 @@ test("dashboardCollaborators allows acl editor collaborator", async () => {
             user: "owner-1",
             acl: [{ userId: "editor-1", accessLevel: "editor" }],
           })
-        : null
+        : null,
     );
   User.find = () => ({
     select: () =>
@@ -459,18 +441,15 @@ test("dashboardCollaborators allows acl editor collaborator", async () => {
   const result = await DashboardResolvers.Query.dashboardCollaborators(
     null,
     { _id: "dash-1" },
-    { user: { _id: "editor-1", role: "editor" } }
+    { user: { _id: "editor-1", role: "editor" } },
   );
 
   assert.equal(result.length, 2);
   assert.ok(result.some((entry) => entry.isOwner && entry.userId === "owner-1"));
   assert.ok(
     result.some(
-      (entry) =>
-        !entry.isOwner &&
-        entry.userId === "editor-1" &&
-        entry.accessLevel === "editor"
-    )
+      (entry) => !entry.isOwner && entry.userId === "editor-1" && entry.accessLevel === "editor",
+    ),
   );
 });
 
@@ -491,7 +470,7 @@ test("createDashboard falls back to private when default visibility is external 
             user: "editor-1",
             visibility: "private",
           })
-        : null
+        : null,
     );
 
   const result = await DashboardResolvers.Mutation.createDashboard(
@@ -502,7 +481,7 @@ test("createDashboard falls back to private when default visibility is external 
         version: "1",
       },
     },
-    { user: { _id: "editor-1", role: "editor" } }
+    { user: { _id: "editor-1", role: "editor" } },
   );
 
   assert.equal(result.visibility, "private");
@@ -526,9 +505,9 @@ test("createDashboard rejects trusted dashboard settings while execution mode is
             },
           },
         },
-        { user: { _id: "editor-1", role: "editor" } }
+        { user: { _id: "editor-1", role: "editor" } },
       ),
-    /Trusted dashboard settings require execution mode 'trusted'/
+    /Trusted dashboard settings require execution mode 'trusted'/,
   );
 });
 
@@ -577,9 +556,9 @@ test("updateDashboard rejects trusted widget capability changes while execution 
             ],
           },
         },
-        { user: { _id: "owner-1", role: "editor" } }
+        { user: { _id: "owner-1", role: "editor" } },
       ),
-    /Trusted widget capabilities require execution mode 'trusted'/
+    /Trusted widget capabilities require execution mode 'trusted'/,
   );
 });
 
@@ -605,7 +584,7 @@ test("dashboards query includes public dashboards only when listing policy enabl
   const result = await DashboardResolvers.Query.dashboards(
     null,
     {},
-    { user: { _id: "viewer-1", role: "viewer" } }
+    { user: { _id: "viewer-1", role: "viewer" } },
   );
 
   assert.equal(result.length, 2);
@@ -636,7 +615,7 @@ test("setDashboardVisibility rotates existing share token when re-exposing from 
   const result = await DashboardResolvers.Mutation.setDashboardVisibility(
     null,
     { _id: "dash-1", visibility: "link" },
-    { user: { _id: "owner-1", role: "editor" } }
+    { user: { _id: "owner-1", role: "editor" } },
   );
 
   assert.equal(result.visibility, "link");
@@ -653,7 +632,7 @@ test("transferDashboardOwnership assigns previous owner editor ACL", async () =>
             user: "owner-1",
             acl: [{ userId: "viewer-2", accessLevel: "viewer" }],
           })
-        : null
+        : null,
     );
   User.findOne = ({ _id }) =>
     asLean(_id === "new-owner" ? { _id: "new-owner", active: true } : null);
@@ -661,24 +640,21 @@ test("transferDashboardOwnership assigns previous owner editor ACL", async () =>
     assert.deepEqual(filter, { _id: "dash-1" });
     assert.equal(update.$set.user, "new-owner");
     assert.ok(
-      update.$set.acl.some(
-        (entry) =>
-          entry.userId === "owner-1" && entry.accessLevel === "editor"
-      )
+      update.$set.acl.some((entry) => entry.userId === "owner-1" && entry.accessLevel === "editor"),
     );
     return asLean(
       buildDashboardDoc({
         _id: "dash-1",
         user: "new-owner",
         acl: update.$set.acl,
-      })
+      }),
     );
   };
 
   const result = await DashboardResolvers.Mutation.transferDashboardOwnership(
     null,
     { _id: "dash-1", newOwnerUserId: "new-owner" },
-    { user: { _id: "owner-1", role: "editor" } }
+    { user: { _id: "owner-1", role: "editor" } },
   );
 
   assert.equal(result.user, "new-owner");
@@ -692,7 +668,7 @@ test("transferDashboardOwnership rejects acl editor who is not owner", async () 
       buildDashboardDoc({
         user: "owner-1",
         acl: [{ userId: "editor-1", accessLevel: "editor" }],
-      })
+      }),
     );
 
   await assert.rejects(
@@ -700,8 +676,8 @@ test("transferDashboardOwnership rejects acl editor who is not owner", async () 
       DashboardResolvers.Mutation.transferDashboardOwnership(
         null,
         { _id: "dash-1", newOwnerUserId: "new-owner" },
-        { user: { _id: "editor-1", role: "editor" } }
+        { user: { _id: "editor-1", role: "editor" } },
       ),
-    /Dashboard not found/
+    /Dashboard not found/,
   );
 });

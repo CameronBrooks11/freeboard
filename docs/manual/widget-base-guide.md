@@ -62,10 +62,7 @@ window.addEventListener("message", (event) => {
   const msg = event.data;
   if (msg?.type !== "datasource:update") return;
 
-  const text =
-    typeof msg.value === "object"
-      ? JSON.stringify(msg.value)
-      : String(msg.value);
+  const text = typeof msg.value === "object" ? JSON.stringify(msg.value) : String(msg.value);
 
   document.getElementById("out").textContent = text;
 });

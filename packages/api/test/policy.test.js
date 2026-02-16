@@ -42,10 +42,7 @@ test("normalizeDashboardVisibility accepts supported values", () => {
 });
 
 test("normalizeDashboardVisibility rejects unsupported value", () => {
-  assert.throws(
-    () => normalizeDashboardVisibility("internal"),
-    /Invalid dashboard visibility/
-  );
+  assert.throws(() => normalizeDashboardVisibility("internal"), /Invalid dashboard visibility/);
 });
 
 test("normalizeDashboardAccessLevel accepts supported values", () => {
@@ -54,8 +51,5 @@ test("normalizeDashboardAccessLevel accepts supported values", () => {
 });
 
 test("normalizeDashboardAccessLevel rejects unsupported value", () => {
-  assert.throws(
-    () => normalizeDashboardAccessLevel("owner"),
-    /Invalid dashboard access level/
-  );
+  assert.throws(() => normalizeDashboardAccessLevel("owner"), /Invalid dashboard access level/);
 });

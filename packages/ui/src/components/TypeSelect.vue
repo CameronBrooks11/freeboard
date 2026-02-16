@@ -8,10 +8,10 @@
  *
  * @emits update:modelValue               - Emitted when the selection changes.
  */
-defineOptions({ name: 'TypeSelect' });
+defineOptions({ name: "TypeSelect" });
 
-import { ref, watch } from 'vue';
-import SelectFormElement from './SelectFormElement.vue';
+import { ref, watch } from "vue";
+import SelectFormElement from "./SelectFormElement.vue";
 
 const props = defineProps(["modelValue", "options"]);
 const emit = defineEmits(["update:modelValue"]);
@@ -24,9 +24,12 @@ watch(select, (v) => {
 });
 
 // Keep local ref in sync when parent updates v-model
-watch(() => props.modelValue, (v) => {
-  if (v !== select.value) select.value = v;
-});
+watch(
+  () => props.modelValue,
+  (v) => {
+    if (v !== select.value) select.value = v;
+  },
+);
 </script>
 
 <template>
@@ -36,8 +39,12 @@ watch(() => props.modelValue, (v) => {
         <label>{{ $t("typeSelect.labelType") }}</label>
       </div>
       <div class="type-select__form__row__value">
-        <SelectFormElement v-model="select" :options="props.options" :placeholder="$t('typeSelect.placeholderType')"
-          :placeholderDisabled="true" />
+        <SelectFormElement
+          v-model="select"
+          :options="props.options"
+          :placeholder="$t('typeSelect.placeholderType')"
+          :placeholderDisabled="true"
+        />
       </div>
     </div>
   </div>

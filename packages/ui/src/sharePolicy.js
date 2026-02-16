@@ -4,7 +4,9 @@
  */
 
 const normalizeVisibility = (visibility) =>
-  String(visibility || "private").trim().toLowerCase();
+  String(visibility || "private")
+    .trim()
+    .toLowerCase();
 
 /**
  * Determine whether dashboard sharing is allowed for the current state.
@@ -26,11 +28,7 @@ export const isDashboardShareable = ({ isSaved, dashboardId }) =>
  * @param {string|undefined|null} input.shareToken
  * @returns {string}
  */
-export const buildFallbackSharePath = ({
-  visibility,
-  dashboardId,
-  shareToken,
-}) => {
+export const buildFallbackSharePath = ({ visibility, dashboardId, shareToken }) => {
   const normalizedVisibility = normalizeVisibility(visibility);
   const normalizedDashboardId = String(dashboardId || "").trim();
   const normalizedShareToken = String(shareToken || "").trim();

@@ -88,20 +88,15 @@ export class SimpleMqttClient extends EventEmitter {
     this.resolvedFamily =
       Number(resolvedFamily) === 6 ? 6 : Number(resolvedFamily) === 4 ? 4 : null;
     this.tlsServername = String(tlsServername || "").trim();
-    this.keepaliveSeconds = Math.max(
-      5,
-      Math.min(3600, Math.floor(Number(keepaliveSeconds) || 60))
-    );
+    this.keepaliveSeconds = Math.max(5, Math.min(3600, Math.floor(Number(keepaliveSeconds) || 60)));
     this.connectTimeoutMs = Math.max(1000, Math.floor(Number(connectTimeoutMs) || 10000));
     this.reconnectMinMs = Math.max(500, Math.floor(Number(reconnectMinMs) || 1000));
     this.reconnectMaxMs = Math.max(
       this.reconnectMinMs,
-      Math.floor(Number(reconnectMaxMs) || 30000)
+      Math.floor(Number(reconnectMaxMs) || 30000),
     );
     this.tlsOptions =
-      tlsOptions && typeof tlsOptions === "object" && !Array.isArray(tlsOptions)
-        ? tlsOptions
-        : {};
+      tlsOptions && typeof tlsOptions === "object" && !Array.isArray(tlsOptions) ? tlsOptions : {};
   }
 
   nextPacketId() {
@@ -226,7 +221,7 @@ export class SimpleMqttClient extends EventEmitter {
     this.reconnectAttempt += 1;
     const delay = Math.min(
       this.reconnectMaxMs,
-      this.reconnectMinMs * 2 ** (this.reconnectAttempt - 1)
+      this.reconnectMinMs * 2 ** (this.reconnectAttempt - 1),
     );
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
@@ -266,7 +261,7 @@ export class SimpleMqttClient extends EventEmitter {
         if (returnCode !== 0) {
           this.emit(
             "error",
-            createClientError(502, `MQTT broker rejected connection (${returnCode})`)
+            createClientError(502, `MQTT broker rejected connection (${returnCode})`),
           );
           this.socket?.destroy();
           return;
@@ -329,7 +324,7 @@ export class SimpleMqttClient extends EventEmitter {
           packetId: this.nextPacketId(),
           topic: normalizedTopic,
           qos: normalizedQos,
-        })
+        }),
       );
       callback(null);
     } catch (error) {
@@ -355,7 +350,7 @@ export class SimpleMqttClient extends EventEmitter {
         buildMqttUnsubscribePacket({
           packetId: this.nextPacketId(),
           topic: normalizedTopic,
-        })
+        }),
       );
       callback(null);
     } catch (error) {
@@ -371,7 +366,7 @@ export class SimpleMqttClient extends EventEmitter {
             packetId: this.nextPacketId(),
             topic,
             qos,
-          })
+          }),
         );
       } catch (error) {
         this.emit("error", error);

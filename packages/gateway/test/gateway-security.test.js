@@ -27,7 +27,7 @@ const createSessionToken = ({
       datasourceId,
     },
     "freeboard-gateway-dev-insecure-local-only-secret-32",
-    { algorithm: "HS256", expiresIn: "5m" }
+    { algorithm: "HS256", expiresIn: "5m" },
   );
 
 const createClientRes = () => ({
@@ -54,14 +54,14 @@ test("parseTargetUrl rejects missing target URL", () => {
 test("parseTargetUrl rejects unsupported protocols", () => {
   assert.throws(
     () => parseTargetUrl("ftp://example.com/data"),
-    /Only http and https protocols are allowed/
+    /Only http and https protocols are allowed/,
   );
 });
 
 test("parseTargetUrl rejects disallowed ports", () => {
   assert.throws(
     () => parseTargetUrl("https://example.com:8080/data"),
-    /Target port is not allowed/
+    /Target port is not allowed/,
   );
 });
 
@@ -77,14 +77,8 @@ test("deriveClientIp falls back to socket remote address by default", () => {
 
 test("getTokenExpiryDelayMs returns ms until expiration", () => {
   const nowMs = Date.UTC(2026, 0, 1, 0, 0, 0);
-  assert.equal(
-    getTokenExpiryDelayMs({ exp: Math.floor((nowMs + 30_000) / 1000) }, nowMs),
-    30_000
-  );
-  assert.equal(
-    getTokenExpiryDelayMs({ exp: Math.floor((nowMs - 1_000) / 1000) }, nowMs),
-    -1_000
-  );
+  assert.equal(getTokenExpiryDelayMs({ exp: Math.floor((nowMs + 30_000) / 1000) }, nowMs), 30_000);
+  assert.equal(getTokenExpiryDelayMs({ exp: Math.floor((nowMs - 1_000) / 1000) }, nowMs), -1_000);
   assert.equal(getTokenExpiryDelayMs({}, nowMs), null);
 });
 
@@ -100,7 +94,7 @@ test("ensureResolvedDestinationIsAllowed blocks private resolved destinations", 
       ensureResolvedDestinationIsAllowed("example.com", {
         lookup: async () => [{ address: "127.0.0.1", family: 4 }],
       }),
-    /Target resolves to a blocked address/
+    /Target resolves to a blocked address/,
   );
 });
 

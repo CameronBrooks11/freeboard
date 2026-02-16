@@ -69,9 +69,7 @@ test("serializeDashboardState includes versioned payload and serialized child mo
       columns: 6,
       width: "lg",
       settings: { theme: "dark" },
-      datasources: [
-        { serialize: () => ({ id: "ds1", title: "Weather", type: "http" }) },
-      ],
+      datasources: [{ serialize: () => ({ id: "ds1", title: "Weather", type: "http" }) }],
       panes: [
         {
           serialize: () => ({
@@ -82,7 +80,7 @@ test("serializeDashboardState includes versioned payload and serialized child mo
         },
       ],
     },
-    "test-version"
+    "test-version",
   );
 
   assert.equal(serialized.version, "test-version");
@@ -92,9 +90,7 @@ test("serializeDashboardState includes versioned payload and serialized child mo
   assert.equal(serialized.columns, 6);
   assert.equal(serialized.width, "lg");
   assert.deepEqual(serialized.settings, { theme: "dark" });
-  assert.deepEqual(serialized.datasources, [
-    { id: "ds1", title: "Weather", type: "http" },
-  ]);
+  assert.deepEqual(serialized.datasources, [{ id: "ds1", title: "Weather", type: "http" }]);
   assert.deepEqual(serialized.panes, [
     {
       title: "Pane 1",

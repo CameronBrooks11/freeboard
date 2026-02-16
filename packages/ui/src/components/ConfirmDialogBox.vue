@@ -6,7 +6,7 @@
  * @prop {Function} onClose - Callback invoked when the dialog is canceled or closed.
  * @prop {Function} onOk - Callback invoked when the user confirms the action.
  */
-defineOptions({ name: 'ConfirmDialogBox' });
+defineOptions({ name: "ConfirmDialogBox" });
 
 import { ref } from "vue";
 import DialogBox from "./DialogBox.vue";
@@ -29,8 +29,14 @@ const onDialogBoxOk = () => {
 </script>
 
 <template>
-  <DialogBox :header="$t('dialogBox.titleConfirm')" :ok="$t('dialogBox.buttonOk')"
-    :cancel="$t('dialogBox.buttonCancel')" @close="onClose" @ok="onDialogBoxOk" ref="dialog">
+  <DialogBox
+    :header="$t('dialogBox.titleConfirm')"
+    :ok="$t('dialogBox.buttonOk')"
+    :cancel="$t('dialogBox.buttonCancel')"
+    @close="onClose"
+    @ok="onDialogBoxOk"
+    ref="dialog"
+  >
     <!-- Confirmation message including the action title -->
     <p>Are you sure you want to {{ title }}?</p>
   </DialogBox>

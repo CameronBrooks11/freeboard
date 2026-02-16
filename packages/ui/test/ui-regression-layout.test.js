@@ -16,46 +16,30 @@ test("Login keeps forgot-password action in the footer row, not content actions"
 
   assert.match(
     loginSource,
-    /<template #footer>[\s\S]*login__footer-action[\s\S]*buttonForgotPassword/
+    /<template #footer>[\s\S]*login__footer-action[\s\S]*buttonForgotPassword/,
   );
-  assert.doesNotMatch(
-    loginSource,
-    /class="login__switch-mode"[\s\S]*buttonForgotPassword/
-  );
+  assert.doesNotMatch(loginSource, /class="login__switch-mode"[\s\S]*buttonForgotPassword/);
 });
 
 test("Admin checkbox input style restores native checkbox control rendering", () => {
-  const adminConsoleCss = readProjectFile(
-    "../src/assets/css/components/admin-console.css"
-  );
+  const adminConsoleCss = readProjectFile("../src/assets/css/components/admin-console.css");
 
+  assert.match(adminConsoleCss, /\.admin-console__checkbox-input\s*\{[\s\S]*all:\s*revert;/);
   assert.match(
     adminConsoleCss,
-    /\.admin-console__checkbox-input\s*\{[\s\S]*all:\s*revert;/
-  );
-  assert.match(
-    adminConsoleCss,
-    /\.admin-console__checkbox-input\s*\{[\s\S]*accent-color:\s*var\(--color-primary\);/
+    /\.admin-console__checkbox-input\s*\{[\s\S]*accent-color:\s*var\(--color-primary\);/,
   );
 });
 
 test("Datasource dialog exposes MQTT broker-profile quick-create path", () => {
-  const datasourceDialogSource = readProjectFile(
-    "../src/components/DatasourceDialogBox.vue"
-  );
+  const datasourceDialogSource = readProjectFile("../src/components/DatasourceDialogBox.vue");
 
   assert.match(
     datasourceDialogSource,
-    /showBrokerProfileQuickCreate[\s\S]*typeRef\.value === "mqtt"[\s\S]*brokerProfiles\.value\.length === 0/
+    /showBrokerProfileQuickCreate[\s\S]*typeRef\.value === "mqtt"[\s\S]*brokerProfiles\.value\.length === 0/,
   );
-  assert.match(
-    datasourceDialogSource,
-    /datasourceDialogBox\.noBrokerProfilesHint/
-  );
-  assert.match(
-    datasourceDialogSource,
-    /datasourceDialogBox\.openAdminBrokerProfiles/
-  );
+  assert.match(datasourceDialogSource, /datasourceDialogBox\.noBrokerProfilesHint/);
+  assert.match(datasourceDialogSource, /datasourceDialogBox\.openAdminBrokerProfiles/);
 });
 
 test("Vite dev proxy enables websocket upgrades for /gateway realtime channel", () => {
@@ -63,7 +47,7 @@ test("Vite dev proxy enables websocket upgrades for /gateway realtime channel", 
 
   assert.match(
     viteConfigSource,
-    /"\/gateway"[\s\S]*target:[\s\S]*changeOrigin:\s*true,[\s\S]*ws:\s*true/
+    /"\/gateway"[\s\S]*target:[\s\S]*changeOrigin:\s*true,[\s\S]*ws:\s*true/,
   );
 });
 
@@ -72,6 +56,6 @@ test("Nginx gateway location forwards websocket upgrade headers", () => {
 
   assert.match(
     nginxConfigSource,
-    /location\s+\/gateway\s*\{[\s\S]*proxy_http_version\s+1\.1;[\s\S]*proxy_set_header\s+Upgrade\s+\$http_upgrade;[\s\S]*proxy_set_header\s+Connection\s+"upgrade";/
+    /location\s+\/gateway\s*\{[\s\S]*proxy_http_version\s+1\.1;[\s\S]*proxy_set_header\s+Upgrade\s+\$http_upgrade;[\s\S]*proxy_set_header\s+Connection\s+"upgrade";/,
   );
 });

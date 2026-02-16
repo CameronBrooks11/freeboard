@@ -44,7 +44,7 @@ wss.on("connection", (socket) => {
     JSON.stringify({
       type: "hello",
       timestamp: new Date().toISOString(),
-    })
+    }),
   );
 });
 

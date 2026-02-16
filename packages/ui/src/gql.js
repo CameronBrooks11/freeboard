@@ -662,11 +662,7 @@ export const DASHBOARD_ROTATE_SHARE_TOKEN_MUTATION = gql`
  * @constant {import('graphql').DocumentNode} DASHBOARD_UPSERT_ACCESS_MUTATION
  */
 export const DASHBOARD_UPSERT_ACCESS_MUTATION = gql`
-  mutation UpsertDashboardAccess(
-    $id: ID!
-    $email: String!
-    $accessLevel: DashboardAccessLevel!
-  ) {
+  mutation UpsertDashboardAccess($id: ID!, $email: String!, $accessLevel: DashboardAccessLevel!) {
     upsertDashboardAccess(_id: $id, email: $email, accessLevel: $accessLevel) {
       _id
       acl {

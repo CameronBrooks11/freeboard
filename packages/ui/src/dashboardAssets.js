@@ -8,4 +8,3 @@ export const disposeDashboardAssets = (assets = {}) => {
     asset?.node?.remove?.();
   });
 };
-

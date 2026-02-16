@@ -7,14 +7,7 @@ import { ensureThatUserIsAdministrator } from "../auth.js";
 import Dashboard from "../models/Dashboard.js";
 import BrokerProfile from "../models/BrokerProfile.js";
 
-const ALLOWED_DATASOURCE_TYPES = new Set([
-  "http",
-  "clock",
-  "static",
-  "sse",
-  "websocket",
-  "mqtt",
-]);
+const ALLOWED_DATASOURCE_TYPES = new Set(["http", "clock", "static", "sse", "websocket", "mqtt"]);
 const EXTERNAL_VISIBILITIES = new Set(["link", "public"]);
 
 const normalizeType = (value) => {
@@ -29,23 +22,17 @@ export default {
     adminDatasourceDiagnostics: async (parent, args, context) => {
       ensureThatUserIsAdministrator(context);
 
-      const dashboards = await Dashboard.find({})
-        .select("_id visibility datasources")
-        .lean();
+      const dashboards = await Dashboard.find({}).select("_id visibility datasources").lean();
 
       const brokerProfileIds = new Set();
       dashboards.forEach((dashboard) => {
-        const datasources = Array.isArray(dashboard?.datasources)
-          ? dashboard.datasources
-          : [];
+        const datasources = Array.isArray(dashboard?.datasources) ? dashboard.datasources : [];
         datasources.forEach((datasource) => {
           const type = normalizeType(datasource?.type);
           if (type !== "mqtt") {
             return;
           }
-          const brokerProfileId = String(
-            datasource?.settings?.brokerProfileId || ""
-          ).trim();
+          const brokerProfileId = String(datasource?.settings?.brokerProfileId || "").trim();
           if (brokerProfileId) {
             brokerProfileIds.add(brokerProfileId);
           }
@@ -61,7 +48,7 @@ export default {
         brokerProfiles.map((profile) => [
           String(profile._id),
           String(profile.credentialProfileId || "").trim(),
-        ])
+        ]),
       );
 
       let totalDatasources = 0;
@@ -74,9 +61,7 @@ export default {
         const visibility = String(dashboard?.visibility || "private")
           .trim()
           .toLowerCase();
-        const datasources = Array.isArray(dashboard?.datasources)
-          ? dashboard.datasources
-          : [];
+        const datasources = Array.isArray(dashboard?.datasources) ? dashboard.datasources : [];
 
         datasources.forEach((datasource) => {
           totalDatasources += 1;
@@ -88,15 +73,13 @@ export default {
           }
 
           const credentialProfileId = String(
-            datasource?.settings?.credentialProfileId || ""
+            datasource?.settings?.credentialProfileId || "",
           ).trim();
           if (["http", "sse", "websocket"].includes(type) && credentialProfileId) {
             credentialBoundDatasources += 1;
           }
           if (type === "mqtt") {
-            const brokerProfileId = String(
-              datasource?.settings?.brokerProfileId || ""
-            ).trim();
+            const brokerProfileId = String(datasource?.settings?.brokerProfileId || "").trim();
             if (brokerProfileId && brokerCredentialMap.get(brokerProfileId)) {
               credentialBoundDatasources += 1;
             }

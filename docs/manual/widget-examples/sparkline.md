@@ -51,4 +51,3 @@ Expected output: one trend line showing recent BTC movement.
 10. Save.
 
 Expected output: two colored trend lines (temperature and wind speed).
-

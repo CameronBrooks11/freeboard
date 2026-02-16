@@ -45,6 +45,6 @@ test("plugin registry rejects invalid datasource plugin definitions", () => {
     },
     {
       message: /Datasource plugin requires a non-empty string `typeName`/,
-    }
+    },
   );
 });

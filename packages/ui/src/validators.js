@@ -42,7 +42,5 @@ export const validateInteger = (value) => {
  * @returns {Object} Empty object if valid number, otherwise an error descriptor.
  */
 export const validateNumber = (value) => {
-  return !isNaN(parseFloat(value)) && isFinite(value)
-    ? {}
-    : { error: "Must be a number." };
+  return !isNaN(parseFloat(value)) && isFinite(value) ? {} : { error: "Must be a number." };
 };

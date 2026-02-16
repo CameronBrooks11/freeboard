@@ -8,9 +8,7 @@ const TRUSTED_MODE = "trusted";
 const SAFE_MODE = "safe";
 
 const normalizeExecutionMode = (mode) =>
-  String(mode || SAFE_MODE).toLowerCase() === TRUSTED_MODE
-    ? TRUSTED_MODE
-    : SAFE_MODE;
+  String(mode || SAFE_MODE).toLowerCase() === TRUSTED_MODE ? TRUSTED_MODE : SAFE_MODE;
 
 /**
  * Set runtime execution mode for widget/runtime policy checks.

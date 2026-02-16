@@ -49,4 +49,3 @@ test("clearLoginThrottle removes active lock state", () => {
   assert.equal(state.blocked, false);
   assert.equal(state.retryAfterMs, 0);
 });
-

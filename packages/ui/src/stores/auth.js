@@ -79,12 +79,12 @@ const normalizeRole = (role) => {
 
 const normalizePublicAuthPolicy = (policy = {}) => ({
   registrationMode: ["disabled", "invite", "open"].includes(
-    String(policy.registrationMode || "").toLowerCase()
+    String(policy.registrationMode || "").toLowerCase(),
   )
     ? String(policy.registrationMode).toLowerCase()
     : DEFAULT_PUBLIC_AUTH_POLICY.registrationMode,
   registrationDefaultRole: ["viewer", "editor"].includes(
-    String(policy.registrationDefaultRole || "").toLowerCase()
+    String(policy.registrationDefaultRole || "").toLowerCase(),
   )
     ? String(policy.registrationDefaultRole).toLowerCase()
     : DEFAULT_PUBLIC_AUTH_POLICY.registrationDefaultRole,
@@ -93,7 +93,7 @@ const normalizePublicAuthPolicy = (policy = {}) => ({
       ? DEFAULT_PUBLIC_AUTH_POLICY.editorCanPublish
       : Boolean(policy.editorCanPublish),
   dashboardDefaultVisibility: ["private", "link", "public"].includes(
-    String(policy.dashboardDefaultVisibility || "").toLowerCase()
+    String(policy.dashboardDefaultVisibility || "").toLowerCase(),
   )
     ? String(policy.dashboardDefaultVisibility).toLowerCase()
     : DEFAULT_PUBLIC_AUTH_POLICY.dashboardDefaultVisibility,
@@ -101,9 +101,7 @@ const normalizePublicAuthPolicy = (policy = {}) => ({
     policy.dashboardPublicListingEnabled === undefined
       ? DEFAULT_PUBLIC_AUTH_POLICY.dashboardPublicListingEnabled
       : Boolean(policy.dashboardPublicListingEnabled),
-  executionMode: ["safe", "trusted"].includes(
-    String(policy.executionMode || "").toLowerCase()
-  )
+  executionMode: ["safe", "trusted"].includes(String(policy.executionMode || "").toLowerCase())
     ? String(policy.executionMode).toLowerCase()
     : DEFAULT_PUBLIC_AUTH_POLICY.executionMode,
   policyEditLock:

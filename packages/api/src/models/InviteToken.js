@@ -60,7 +60,7 @@ const InviteTokenSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 InviteTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

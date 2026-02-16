@@ -1,0 +1,14 @@
+# Build artifacts
+dist
+coverage
+docs/.vitepress/dist
+docs/auto
+metrics
+
+# Dependencies and lock/install artifacts
+node_modules
+packages/*/node_modules
+package-lock.json
+
+# Generated/docs snapshots
+docs/public

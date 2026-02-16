@@ -1,6 +1,14 @@
 import js from "@eslint/js";
 import pluginVue from "eslint-plugin-vue";
 
+let eslintConfigPrettier = null;
+try {
+  const prettierModule = await import("eslint-config-prettier");
+  eslintConfigPrettier = prettierModule.default ?? prettierModule;
+} catch {
+  // Allow lint to run even before local dependencies are fully synchronized.
+}
+
 export default [
   {
     name: "app/files-to-lint",
@@ -31,4 +39,5 @@ export default [
       "vue/no-mutating-props": "off",
     },
   },
+  ...(eslintConfigPrettier ? [eslintConfigPrettier] : []),
 ];

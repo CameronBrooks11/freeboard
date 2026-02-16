@@ -59,8 +59,7 @@ export const recordShareTokenRevocationEvent = async ({
   }
 
   const normalizedVersion = Math.max(0, Math.floor(Number(shareTokenVersion) || 0));
-  const readyState =
-    ShareTokenRevocationEvent?.db?.readyState ?? mongoose.connection?.readyState;
+  const readyState = ShareTokenRevocationEvent?.db?.readyState ?? mongoose.connection?.readyState;
   if (readyState !== 1) {
     return;
   }
@@ -72,10 +71,7 @@ export const recordShareTokenRevocationEvent = async ({
       revokedAt: new Date(revokedAt),
     }).save();
   } catch (error) {
-    console.warn(
-      "Share token revocation event persistence failed",
-      error?.message || error
-    );
+    console.warn("Share token revocation event persistence failed", error?.message || error);
   }
 };
 
@@ -91,10 +87,7 @@ export const queryShareTokenRevocationFeed = async ({
   retentionSeconds = 86_400,
 } = {}) => {
   const safeLimit = Math.min(1000, Math.max(1, Math.floor(Number(limit) || 200)));
-  const safeRetentionSeconds = Math.max(
-    60,
-    Math.floor(Number(retentionSeconds) || 86_400)
-  );
+  const safeRetentionSeconds = Math.max(60, Math.floor(Number(retentionSeconds) || 86_400));
   const retentionCutoff = new Date(Date.now() - safeRetentionSeconds * 1000);
   const decodedCursor = decodeCursor(sinceCursor);
 

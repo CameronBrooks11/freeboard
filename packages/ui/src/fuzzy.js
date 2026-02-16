@@ -24,7 +24,7 @@ export function levenshteinDistance(str1, str2) {
   for (let i = 0; i <= len1; i++) {
     matrix[i][0] = i;
   }
-  
+
   for (let j = 0; j <= len2; j++) {
     matrix[0][j] = j;
   }
@@ -39,7 +39,7 @@ export function levenshteinDistance(str1, str2) {
         matrix[i][j] = Math.min(
           matrix[i - 1][j] + 1,
           matrix[i][j - 1] + 1,
-          matrix[i - 1][j - 1] + 1
+          matrix[i - 1][j - 1] + 1,
         );
       }
     }

@@ -47,9 +47,7 @@ const connectToMongo = async () => {
       console.info(`MongoDB connected on ${config.mongoUrl}`);
       connected = true;
     } catch (error) {
-      console.error(
-        `MongoDB connection attempt ${attempts} failed. Retrying in 2s...`
-      );
+      console.error(`MongoDB connection attempt ${attempts} failed. Retrying in 2s...`);
       console.error(error?.message || error);
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
@@ -72,9 +70,7 @@ const ensureAdminUser = async () => {
     return;
   }
 
-  console.log(
-    `No admin found with email '${config.adminEmail}'. Creating one now...`
-  );
+  console.log(`No admin found with email '${config.adminEmail}'. Creating one now...`);
   await new User({
     email: config.adminEmail,
     password: config.adminPassword,
@@ -96,8 +92,7 @@ const yoga = createYoga({
   plugins: [useGraphQLSSE()],
 });
 
-const INTERNAL_GATEWAY_INTROSPECTION_PATH =
-  "/internal/gateway/datasource-introspect";
+const INTERNAL_GATEWAY_INTROSPECTION_PATH = "/internal/gateway/datasource-introspect";
 const INTERNAL_GATEWAY_REVOKED_TOKENS_PATH = "/internal/gateway/revoked-tokens";
 
 const getClientIp = (req) => {
@@ -155,7 +150,7 @@ const handleGatewayIntrospection = async (req, res) => {
   const clientIp = getClientIp(req);
   const rateLimit = consumeRateLimit(
     `gateway-introspection:${clientIp}`,
-    config.gatewayIntrospectionRateLimitPerMin
+    config.gatewayIntrospectionRateLimitPerMin,
   );
   if (!rateLimit.allowed) {
     await recordAuditEvent({
@@ -220,8 +215,7 @@ const handleGatewayIntrospection = async (req, res) => {
     sendJson(res, 200, resolved);
   } catch (error) {
     const statusCode = Number(error?.statusCode) || 500;
-    const message =
-      statusCode >= 500 ? "Datasource introspection failed" : error.message;
+    const message = statusCode >= 500 ? "Datasource introspection failed" : error.message;
     sendJson(res, statusCode, { error: message });
   }
 };
@@ -235,7 +229,7 @@ const handleGatewayRevokedTokens = async (req, res) => {
   const clientIp = getClientIp(req);
   const rateLimit = consumeRateLimit(
     `gateway-revoked-tokens:${clientIp}`,
-    config.gatewayRevokedTokensRateLimitPerMin
+    config.gatewayRevokedTokensRateLimitPerMin,
   );
   if (!rateLimit.allowed) {
     await recordAuditEvent({
@@ -264,20 +258,12 @@ const handleGatewayRevokedTokens = async (req, res) => {
     const body = await readJsonBody(req);
     const requestedLimit = Number(body?.limit);
     const safeLimit = Number.isFinite(requestedLimit)
-      ? Math.max(
-          1,
-          Math.min(
-            Math.floor(requestedLimit),
-            config.gatewayRevokedTokensMaxBatch
-          )
-        )
+      ? Math.max(1, Math.min(Math.floor(requestedLimit), config.gatewayRevokedTokensMaxBatch))
       : config.gatewayRevokedTokensMaxBatch;
 
     const feed = await queryShareTokenRevocationFeed({
       sinceCursor:
-        body?.sinceCursor === undefined
-          ? null
-          : String(body.sinceCursor || "").trim() || null,
+        body?.sinceCursor === undefined ? null : String(body.sinceCursor || "").trim() || null,
       limit: safeLimit,
       retentionSeconds: config.realtimeRevokeEventRetentionSeconds,
     });
@@ -285,8 +271,7 @@ const handleGatewayRevokedTokens = async (req, res) => {
     sendJson(res, 200, feed);
   } catch (error) {
     const statusCode = Number(error?.statusCode) || 500;
-    const message =
-      statusCode >= 500 ? "Revoked token feed request failed" : error.message;
+    const message = statusCode >= 500 ? "Revoked token feed request failed" : error.message;
     sendJson(res, statusCode, { error: message });
   }
 };
@@ -316,12 +301,8 @@ const startServer = async () => {
     // Start HTTP server on configured host and port
     server.listen(config.port, config.host, () => {
       const printableHost =
-        config.host === "0.0.0.0" || config.host === "::"
-          ? "127.0.0.1"
-          : config.host;
-      console.info(
-        `Server is running on http://${printableHost}:${config.port}/graphql`
-      );
+        config.host === "0.0.0.0" || config.host === "::" ? "127.0.0.1" : config.host;
+      console.info(`Server is running on http://${printableHost}:${config.port}/graphql`);
     });
   } catch (error) {
     console.error("API startup failed", error);

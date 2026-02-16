@@ -10,7 +10,7 @@
  *
  * @emits update:modelValue - Emitted when the selection changes.
  */
-defineOptions({ name: 'ListFormElement' });
+defineOptions({ name: "ListFormElement" });
 
 import { ref, watch } from "vue";
 import { levenshteinDistance } from "../fuzzy";
@@ -30,7 +30,7 @@ const value = ref(props.modelValue);
 
 // Compute the display label from the selected value
 const label = asyncComputed(async () => {
-  const opt = (await props.options).find(o => o.value === value.value);
+  const opt = (await props.options).find((o) => o.value === value.value);
   return opt ? opt.label : t("form.placeholderList");
 });
 
@@ -41,11 +41,11 @@ const label = asyncComputed(async () => {
 const filter = async () => {
   const all = await props.options;
   return all
-    .filter(opt => opt.value)
-    .map(opt => ({
+    .filter((opt) => opt.value)
+    .map((opt) => ({
       value: opt.value,
       label: opt.label,
-      prio: levenshteinDistance(value.value, opt.label)
+      prio: levenshteinDistance(value.value, opt.label),
     }))
     .sort((a, b) => a.prio - b.prio)
     .slice(0, 10);
@@ -78,19 +78,34 @@ watch(show, () => {
 <template>
   <div class="list-form-element">
     <!-- Dropdown toggle button showing current label -->
-    <button @click="show = !show" class="list-form-element__drop-button" type="button" :disabled="props.disabled">
+    <button
+      @click="show = !show"
+      class="list-form-element__drop-button"
+      type="button"
+      :disabled="props.disabled"
+    >
       {{ label }}
     </button>
     <Transition>
       <div class="list-form-element__dropdown-content" v-if="show">
         <!-- Search input -->
-        <input class="list-form-element__dropdown-content__input" type="text" v-model="value"
-          :placeholder="$t('form.placeholderList')" :disabled="props.disabled" @keyup.prevent="onSearch" />
+        <input
+          class="list-form-element__dropdown-content__input"
+          type="text"
+          v-model="value"
+          :placeholder="$t('form.placeholderList')"
+          :disabled="props.disabled"
+          @keyup.prevent="onSearch"
+        />
 
         <!-- Filtered option list -->
         <ul>
           <li v-for="option in opts" :key="option.value">
-            <a href="#" class="list-form-element__dropdown-content__link" @click.prevent="onLinkClicked(option)">
+            <a
+              href="#"
+              class="list-form-element__dropdown-content__link"
+              @click.prevent="onLinkClicked(option)"
+            >
               {{ option.label }}
             </a>
           </li>

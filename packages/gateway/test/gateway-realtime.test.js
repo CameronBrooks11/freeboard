@@ -34,7 +34,7 @@ const createStreamToken = ({
       ...(shareTokenVersion !== null ? { shareTokenVersion } : {}),
     },
     JWT_GATEWAY_SECRET,
-    { algorithm: "HS256", expiresIn }
+    { algorithm: "HS256", expiresIn },
   );
 
 class FakeUpstreamWebSocket extends EventEmitter {
@@ -55,11 +55,7 @@ class FakeUpstreamWebSocket extends EventEmitter {
       if (this.messagePayload !== null) {
         setTimeout(() => {
           if (this.readyState === FakeUpstreamWebSocket.OPEN) {
-            this.emit(
-              "message",
-              Buffer.from(JSON.stringify(this.messagePayload), "utf8"),
-              false
-            );
+            this.emit("message", Buffer.from(JSON.stringify(this.messagePayload), "utf8"), false);
           }
         }, 5);
       }
@@ -95,9 +91,7 @@ const waitForMessage = async (messages, predicate, timeoutMs = 2000) => {
     await sleep(10);
   }
 
-  throw new Error(
-    `Timed out waiting for realtime message. Received: ${JSON.stringify(messages)}`
-  );
+  throw new Error(`Timed out waiting for realtime message. Received: ${JSON.stringify(messages)}`);
 };
 
 const connectRealtimeClient = async (port) => {
@@ -164,11 +158,9 @@ const loadRealtimeGatewayModule = async ({
   process.env.JWT_GATEWAY_SECRET = JWT_GATEWAY_SECRET;
   process.env.GATEWAY_SERVICE_TOKEN = GATEWAY_SERVICE_TOKEN;
   process.env.REALTIME_ENABLED = "true";
-  process.env.REALTIME_PUBLIC_REVALIDATE_INTERVAL_MS = String(
-    realtimePublicRevalidateIntervalMs
-  );
+  process.env.REALTIME_PUBLIC_REVALIDATE_INTERVAL_MS = String(realtimePublicRevalidateIntervalMs);
   process.env.REALTIME_PUBLIC_FULL_REVALIDATE_INTERVAL_MS = String(
-    realtimePublicFullRevalidateIntervalMs
+    realtimePublicFullRevalidateIntervalMs,
   );
   process.env.REALTIME_WS_PING_INTERVAL_MS = String(realtimeWsPingIntervalMs);
 
@@ -246,12 +238,12 @@ test("realtime gateway websocket subscribe/unsubscribe lifecycle emits ack, stat
         dashboardId: "dash-rt-1",
         datasourceId: "ds-rt-1",
         sessionToken,
-      })
+      }),
     );
 
     const subscribeAck = await waitForMessage(
       messages,
-      (message) => message.type === "ack" && message.requestId === "sub-1"
+      (message) => message.type === "ack" && message.requestId === "sub-1",
     );
     assert.equal(subscribeAck.ok, true);
 
@@ -260,13 +252,13 @@ test("realtime gateway websocket subscribe/unsubscribe lifecycle emits ack, stat
       (message) =>
         message.type === "status" &&
         message.datasourceId === "ds-rt-1" &&
-        message.status === "connected"
+        message.status === "connected",
     );
     assert.equal(connectedStatus.errorCode, undefined);
 
     const dataMessage = await waitForMessage(
       messages,
-      (message) => message.type === "data" && message.datasourceId === "ds-rt-1"
+      (message) => message.type === "data" && message.datasourceId === "ds-rt-1",
     );
     assert.deepEqual(dataMessage.payload, { value: 42 });
 
@@ -275,12 +267,12 @@ test("realtime gateway websocket subscribe/unsubscribe lifecycle emits ack, stat
         type: "unsubscribe",
         requestId: "unsub-1",
         datasourceId: "ds-rt-1",
-      })
+      }),
     );
 
     const unsubscribeAck = await waitForMessage(
       messages,
-      (message) => message.type === "ack" && message.requestId === "unsub-1"
+      (message) => message.type === "ack" && message.requestId === "unsub-1",
     );
     assert.equal(unsubscribeAck.ok, true);
 
@@ -289,7 +281,7 @@ test("realtime gateway websocket subscribe/unsubscribe lifecycle emits ack, stat
       (message) =>
         message.type === "status" &&
         message.datasourceId === "ds-rt-1" &&
-        message.status === "disconnected"
+        message.status === "disconnected",
     );
     assert.equal(disconnectedStatus.status, "disconnected");
     assert.equal(upstreamSockets.length > 0, true);
@@ -383,12 +375,12 @@ test("realtime gateway disconnects stale public subscriptions from revoked feed 
         dashboardId: "dash-public-1",
         datasourceId: "ds-public-1",
         sessionToken: publicSessionToken,
-      })
+      }),
     );
 
     const subscribeAck = await waitForMessage(
       messages,
-      (message) => message.type === "ack" && message.requestId === "sub-public-1"
+      (message) => message.type === "ack" && message.requestId === "sub-public-1",
     );
     assert.equal(subscribeAck.ok, true);
 
@@ -397,7 +389,7 @@ test("realtime gateway disconnects stale public subscriptions from revoked feed 
       (message) =>
         message.type === "error" &&
         message.datasourceId === "ds-public-1" &&
-        message.errorCode === "STREAM_AUTH_FAILED"
+        message.errorCode === "STREAM_AUTH_FAILED",
     );
     assert.match(String(revokeError.message || ""), /revoked/i);
     assert.equal(revokedFeedCalls >= 1, true);
@@ -494,12 +486,12 @@ test("realtime gateway runs full revalidation when revocation cursor expires", a
         dashboardId: "dash-public-2",
         datasourceId: "ds-public-2",
         sessionToken: publicSessionToken,
-      })
+      }),
     );
 
     const subscribeAck = await waitForMessage(
       messages,
-      (message) => message.type === "ack" && message.requestId === "sub-public-2"
+      (message) => message.type === "ack" && message.requestId === "sub-public-2",
     );
     assert.equal(subscribeAck.ok, true);
 
@@ -508,7 +500,7 @@ test("realtime gateway runs full revalidation when revocation cursor expires", a
       (message) =>
         message.type === "error" &&
         message.datasourceId === "ds-public-2" &&
-        message.errorCode === "STREAM_AUTH_FAILED"
+        message.errorCode === "STREAM_AUTH_FAILED",
     );
     assert.match(String(revokeError.message || ""), /revoked/i);
     assert.equal(introspectionCalls >= 2, true);

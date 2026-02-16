@@ -93,7 +93,7 @@ export const mintDatasourceSessionToken = async ({
   const graphQLError = Array.isArray(payload?.errors) ? payload.errors[0] : null;
   if (!response.ok || graphQLError) {
     throw new Error(
-      graphQLError?.message || payload?.error || "Could not mint datasource session token"
+      graphQLError?.message || payload?.error || "Could not mint datasource session token",
     );
   }
 

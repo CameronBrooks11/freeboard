@@ -57,11 +57,11 @@ if (!mongoUrl) {
 
 const oldKey = decodeKey(
   process.env.CREDENTIAL_ENCRYPTION_KEY_OLD || process.env.CREDENTIAL_ENCRYPTION_KEY,
-  "CREDENTIAL_ENCRYPTION_KEY_OLD (or CREDENTIAL_ENCRYPTION_KEY)"
+  "CREDENTIAL_ENCRYPTION_KEY_OLD (or CREDENTIAL_ENCRYPTION_KEY)",
 );
 const newKey = decodeKey(
   process.env.CREDENTIAL_ENCRYPTION_KEY_NEW,
-  "CREDENTIAL_ENCRYPTION_KEY_NEW"
+  "CREDENTIAL_ENCRYPTION_KEY_NEW",
 );
 
 if (Buffer.compare(oldKey, newKey) === 0) {

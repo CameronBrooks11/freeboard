@@ -10,4 +10,3 @@ export const resolveDashboardIsOwner = (dashboard = {}) => {
   }
   return !dashboard.user;
 };
-

@@ -35,9 +35,7 @@ const CONFIG_ENV_KEYS = [
 ];
 
 const withEnv = async (overrides, run) => {
-  const original = Object.fromEntries(
-    CONFIG_ENV_KEYS.map((key) => [key, process.env[key]])
-  );
+  const original = Object.fromEntries(CONFIG_ENV_KEYS.map((key) => [key, process.env[key]]));
 
   for (const key of CONFIG_ENV_KEYS) {
     if (Object.prototype.hasOwnProperty.call(overrides, key)) {
@@ -84,11 +82,8 @@ test("config rejects weak JWT secret in non-development runtime", async () => {
       CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
     },
     async () => {
-      await assert.rejects(
-        () => importConfigFresh(),
-        /JWT_SECRET is missing or too weak/
-      );
-    }
+      await assert.rejects(() => importConfigFresh(), /JWT_SECRET is missing or too weak/);
+    },
   );
 });
 
@@ -105,7 +100,7 @@ test("config rejects invalid admin email when CREATE_ADMIN=true", async () => {
     },
     async () => {
       await assert.rejects(() => importConfigFresh(), /valid ADMIN_EMAIL/);
-    }
+    },
   );
 });
 
@@ -122,7 +117,7 @@ test("config rejects weak admin password when CREATE_ADMIN=true", async () => {
     },
     async () => {
       await assert.rejects(() => importConfigFresh(), /strong ADMIN_PASSWORD/);
-    }
+    },
   );
 });
 
@@ -141,7 +136,7 @@ test("config accepts valid CREATE_ADMIN credentials and normalizes email", async
       const { config } = await importConfigFresh();
       assert.equal(config.createAdmin, true);
       assert.equal(config.adminEmail, "admin@example.com");
-    }
+    },
   );
 });
 
@@ -158,11 +153,8 @@ test("config requires explicit MONGO_URL in non-development runtime", async () =
       CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
     },
     async () => {
-      await assert.rejects(
-        () => importConfigFresh(),
-        /MONGO_URL must be explicitly configured/
-      );
-    }
+      await assert.rejects(() => importConfigFresh(), /MONGO_URL must be explicitly configured/);
+    },
   );
 });
 
@@ -176,7 +168,7 @@ test("config rejects unsupported registration mode", async () => {
     },
     async () => {
       await assert.rejects(() => importConfigFresh(), /Invalid registration mode/);
-    }
+    },
   );
 });
 
@@ -190,11 +182,8 @@ test("config rejects unsupported registration default role", async () => {
       AUTH_REGISTRATION_DEFAULT_ROLE: "admin",
     },
     async () => {
-      await assert.rejects(
-        () => importConfigFresh(),
-        /Invalid non-admin role/
-      );
-    }
+      await assert.rejects(() => importConfigFresh(), /Invalid non-admin role/);
+    },
   );
 });
 
@@ -227,7 +216,7 @@ test("config accepts valid auth policy environment overrides", async () => {
       assert.equal(config.authLoginMaxAttempts, 7);
       assert.equal(config.authLoginWindowSeconds, 120);
       assert.equal(config.authLoginLockSeconds, 180);
-    }
+    },
   );
 });
 
@@ -240,11 +229,8 @@ test("config rejects unsupported dashboard default visibility", async () => {
       DASHBOARD_DEFAULT_VISIBILITY: "internal",
     },
     async () => {
-      await assert.rejects(
-        () => importConfigFresh(),
-        /Invalid dashboard visibility/
-      );
-    }
+      await assert.rejects(() => importConfigFresh(), /Invalid dashboard visibility/);
+    },
   );
 });
 
@@ -258,6 +244,6 @@ test("config rejects unsupported execution mode", async () => {
     },
     async () => {
       await assert.rejects(() => importConfigFresh(), /Invalid execution mode/);
-    }
+    },
   );
 });

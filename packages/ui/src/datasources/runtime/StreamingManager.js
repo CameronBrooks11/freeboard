@@ -115,7 +115,7 @@ export class StreamingManager {
           void this.replaySubscriptions();
           resolve();
         },
-        { once: true }
+        { once: true },
       );
 
       socket.addEventListener(
@@ -125,7 +125,7 @@ export class StreamingManager {
             reject(new Error("Realtime connection failed"));
           }
         },
-        { once: true }
+        { once: true },
       );
 
       socket.addEventListener("message", (event) => {
@@ -155,7 +155,7 @@ export class StreamingManager {
     this.reconnectAttempts += 1;
     const delay = Math.min(
       REALTIME_RECONNECT_MAX_MS,
-      REALTIME_RECONNECT_MIN_MS * 2 ** (this.reconnectAttempts - 1)
+      REALTIME_RECONNECT_MIN_MS * 2 ** (this.reconnectAttempts - 1),
     );
 
     this.reconnectTimer = setTimeout(() => {

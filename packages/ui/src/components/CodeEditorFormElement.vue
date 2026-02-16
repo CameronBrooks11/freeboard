@@ -8,7 +8,7 @@
  *
  * @emits update:modelValue - Emitted when the code content changes.
  */
-defineOptions({ name: 'CodeEditorFormElement' });
+defineOptions({ name: "CodeEditorFormElement" });
 
 import { VueMonacoEditor } from "@guolao/vue-monaco-editor";
 import { reactive, ref, shallowRef } from "vue";
@@ -57,10 +57,15 @@ defineExpose({
 </script>
 
 <template>
-  <vue-monaco-editor class="code-editor-form-element" v-model:value="code" theme="vs-dark"
+  <vue-monaco-editor
+    class="code-editor-form-element"
+    v-model:value="code"
+    theme="vs-dark"
     :options="MONACO_EDITOR_OPTIONS"
-    :language="typeof props.language === 'function' ? props.language() : props.language" @change="onChange"
-    @mount="handleMount" />
+    :language="typeof props.language === 'function' ? props.language() : props.language"
+    @change="onChange"
+    @mount="handleMount"
+  />
 </template>
 
 <style lang="css" scoped>

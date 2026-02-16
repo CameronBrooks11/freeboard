@@ -145,14 +145,17 @@ export class DatasourceRuntimeBase {
       return;
     }
 
-    this.staleInterval = setInterval(() => {
-      if (!this.lastUpdatedAt) {
-        return;
-      }
-      if (Date.now() - this.lastUpdatedAt.getTime() > thresholdMs) {
-        this.emitStatus({ status: "stale" });
-      }
-    }, Math.min(1000, Math.max(250, Math.floor(thresholdMs / 2))));
+    this.staleInterval = setInterval(
+      () => {
+        if (!this.lastUpdatedAt) {
+          return;
+        }
+        if (Date.now() - this.lastUpdatedAt.getTime() > thresholdMs) {
+          this.emitStatus({ status: "stale" });
+        }
+      },
+      Math.min(1000, Math.max(250, Math.floor(thresholdMs / 2))),
+    );
   }
 
   start() {

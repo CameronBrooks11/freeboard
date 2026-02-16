@@ -23,9 +23,7 @@ const parseArgs = () => {
     if (arg.startsWith("--external-visibility=")) {
       const value = arg.split("=")[1]?.trim().toLowerCase();
       if (!VALID_VISIBILITIES.has(value) || value === "private") {
-        throw new Error(
-          "Invalid --external-visibility value. Use 'link' or 'public'."
-        );
+        throw new Error("Invalid --external-visibility value. Use 'link' or 'public'.");
       }
       parsed.externalVisibility = value;
       continue;
@@ -63,8 +61,7 @@ const ensureShareToken = (dashboard) => {
   return crypto.randomBytes(24).toString("base64url");
 };
 
-const normalizeAcl = (dashboard) =>
-  Array.isArray(dashboard?.acl) ? dashboard.acl : [];
+const normalizeAcl = (dashboard) => (Array.isArray(dashboard?.acl) ? dashboard.acl : []);
 
 const run = async () => {
   const options = parseArgs();
@@ -76,17 +73,13 @@ const run = async () => {
   const updates = [];
 
   for (const dashboard of dashboards) {
-    const nextVisibility = normalizeVisibility(
-      dashboard,
-      options.externalVisibility
-    );
+    const nextVisibility = normalizeVisibility(dashboard, options.externalVisibility);
     const nextShareToken = ensureShareToken(dashboard);
     const nextAcl = normalizeAcl(dashboard);
     const hadLegacyPublished = hasLegacyPublishedField(dashboard);
 
     const visibilityChanged = dashboard.visibility !== nextVisibility;
-    const shareTokenChanged =
-      String(dashboard.shareToken ?? "").trim() !== nextShareToken;
+    const shareTokenChanged = String(dashboard.shareToken ?? "").trim() !== nextShareToken;
     const aclChanged = !Array.isArray(dashboard.acl);
 
     const requiresUpdate =
@@ -108,7 +101,7 @@ const run = async () => {
   }
 
   console.log(
-    `[dashboard-visibility-migrate] dashboards=${dashboards.length} pending_updates=${changed} apply=${options.apply}`
+    `[dashboard-visibility-migrate] dashboards=${dashboards.length} pending_updates=${changed} apply=${options.apply}`,
   );
 
   if (options.apply) {
@@ -118,24 +111,19 @@ const run = async () => {
       await Dashboard.updateOne(
         { _id: update._id },
         { $set, ...($unset ? { $unset } : {}) },
-        { strict: false }
+        { strict: false },
       );
     }
     console.log("[dashboard-visibility-migrate] updates applied successfully");
   } else {
-    console.log(
-      "[dashboard-visibility-migrate] dry run only. Re-run with --apply to persist."
-    );
+    console.log("[dashboard-visibility-migrate] dry run only. Re-run with --apply to persist.");
   }
 
   await mongoose.disconnect();
 };
 
 run().catch(async (error) => {
-  console.error(
-    "[dashboard-visibility-migrate] failed:",
-    error?.message || error
-  );
+  console.error("[dashboard-visibility-migrate] failed:", error?.message || error);
   try {
     await mongoose.disconnect();
   } catch {

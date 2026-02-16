@@ -40,7 +40,7 @@ export class SSELink extends ApolloLink {
           next: sink.next.bind(sink),
           complete: sink.complete.bind(sink),
           error: sink.error.bind(sink),
-        }
+        },
       );
     });
   }

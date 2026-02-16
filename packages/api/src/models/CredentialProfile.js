@@ -8,12 +8,7 @@ import { nanoid } from "nanoid";
 
 const Schema = mongoose.Schema;
 
-export const CREDENTIAL_PROFILE_TYPES = Object.freeze([
-  "none",
-  "header",
-  "bearer",
-  "basic",
-]);
+export const CREDENTIAL_PROFILE_TYPES = Object.freeze(["none", "header", "bearer", "basic"]);
 
 const CredentialProfileSchema = new Schema(
   {
@@ -68,7 +63,7 @@ const CredentialProfileSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 CredentialProfileSchema.index({ name: 1 }, { unique: true });

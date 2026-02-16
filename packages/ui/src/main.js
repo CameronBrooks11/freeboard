@@ -5,12 +5,7 @@
 
 import { createApp } from "vue";
 import { DefaultApolloClient } from "@vue/apollo-composable";
-import {
-  ApolloClient,
-  ApolloLink,
-  HttpLink,
-  InMemoryCache,
-} from "@apollo/client/core";
+import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/client/core";
 import { onError } from "apollo-link-error";
 import App from "./App.vue";
 import monaco from "./monaco.js";
@@ -84,7 +79,7 @@ addIcons(
   HiBeaker,
   HiBriefcase,
   HiPlay,
-  HiPause
+  HiPause,
 );
 
 // Initialize internationalization
@@ -167,11 +162,7 @@ const apolloClient = new ApolloClient({
   cache,
   link: ApolloLink.from([
     errorLink,
-    ApolloLink.split(
-      (operation) => operation.getContext().apiName === "stream",
-      sseLink,
-      httpLink
-    ),
+    ApolloLink.split((operation) => operation.getContext().apiName === "stream", sseLink, httpLink),
   ]),
 });
 

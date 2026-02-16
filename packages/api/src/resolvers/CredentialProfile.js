@@ -4,22 +4,19 @@
  */
 
 import { createGraphQLError } from "graphql-yoga";
-import {
-  ensureThatUserHasRole,
-  ensureThatUserIsAdministrator,
-} from "../auth.js";
+import { ensureThatUserHasRole, ensureThatUserIsAdministrator } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
 import {
   decryptCredentialSecret,
   encryptCredentialSecret,
   redactSecretShape,
 } from "../credentialEncryption.js";
-import CredentialProfile, {
-  CREDENTIAL_PROFILE_TYPES,
-} from "../models/CredentialProfile.js";
+import CredentialProfile, { CREDENTIAL_PROFILE_TYPES } from "../models/CredentialProfile.js";
 
 const normalizeProfileType = (value) => {
-  const normalized = String(value || "none").trim().toLowerCase();
+  const normalized = String(value || "none")
+    .trim()
+    .toLowerCase();
   if (!CREDENTIAL_PROFILE_TYPES.includes(normalized)) {
     throw createGraphQLError("Invalid credential profile type", {
       extensions: { code: "BAD_USER_INPUT" },
@@ -167,10 +164,7 @@ export default {
         throw createGraphQLError("Credential profile not found");
       }
 
-      const nextType =
-        input?.type === undefined
-          ? existing.type
-          : normalizeProfileType(input.type);
+      const nextType = input?.type === undefined ? existing.type : normalizeProfileType(input.type);
       const nextMetadata =
         input?.metadata === undefined
           ? normalizeMetadata(existing.metadata)
@@ -193,10 +187,7 @@ export default {
         { _id },
         {
           $set: {
-            name:
-              input?.name === undefined
-                ? existing.name
-                : String(input.name || "").trim(),
+            name: input?.name === undefined ? existing.name : String(input.name || "").trim(),
             description:
               input?.description === undefined
                 ? existing.description
@@ -211,7 +202,7 @@ export default {
             updatedBy: context.user._id,
           },
         },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       ).lean();
 
       await recordAuditEvent({

@@ -21,7 +21,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "mongosh --quiet --host 127.0.0.1 --port 27017 -u \"$${MONGO_INITDB_ROOT_USERNAME}\" -p \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval \"quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)\"",
+          'mongosh --quiet --host 127.0.0.1 --port 27017 -u "$${MONGO_INITDB_ROOT_USERNAME}" -p "$${MONGO_INITDB_ROOT_PASSWORD}" --authenticationDatabase admin --eval "quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)"',
         ]
       interval: 5s
       timeout: 5s

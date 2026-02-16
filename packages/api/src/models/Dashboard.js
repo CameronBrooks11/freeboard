@@ -7,10 +7,7 @@ import crypto from "node:crypto";
 import mongoose from "mongoose";
 import { ObjectId } from "mongodb";
 import { nanoid } from "nanoid";
-import {
-  DASHBOARD_ACCESS_LEVELS,
-  DASHBOARD_VISIBILITIES,
-} from "../policy.js";
+import { DASHBOARD_ACCESS_LEVELS, DASHBOARD_VISIBILITIES } from "../policy.js";
 
 /**
  * @typedef {Object} MongooseSchema
@@ -152,7 +149,7 @@ const DashboardSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 DashboardSchema.index({ "acl.userId": 1 });

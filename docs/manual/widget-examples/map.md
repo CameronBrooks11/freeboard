@@ -53,4 +53,3 @@ Expected output: map centered on detected public IP location.
 11. Save.
 
 Expected output: map updates as ISS coordinates change.
-

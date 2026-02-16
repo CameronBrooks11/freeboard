@@ -282,11 +282,7 @@ const {
         </label>
         <label class="admin-console__field">
           {{ $t("admin.role") }}
-          <select
-            v-model="createInviteInput.role"
-            class="admin-console__select"
-            :disabled="isBusy"
-          >
+          <select v-model="createInviteInput.role" class="admin-console__select" :disabled="isBusy">
             <option v-for="role in INVITE_ROLE_OPTIONS" :key="`invite-role-${role}`" :value="role">
               {{ role }}
             </option>
@@ -411,10 +407,7 @@ const {
             :disabled="isBusy"
           />
         </label>
-        <label
-          v-if="createCredentialProfileInput.type === 'header'"
-          class="admin-console__field"
-        >
+        <label v-if="createCredentialProfileInput.type === 'header'" class="admin-console__field">
           {{ $t("admin.headerName") }}
           <input
             v-model="createCredentialProfileInput.metadataHeaderName"
@@ -423,10 +416,7 @@ const {
             :disabled="isBusy"
           />
         </label>
-        <label
-          v-if="createCredentialProfileInput.type === 'header'"
-          class="admin-console__field"
-        >
+        <label v-if="createCredentialProfileInput.type === 'header'" class="admin-console__field">
           {{ $t("admin.headerValue") }}
           <input
             v-model="createCredentialProfileInput.secretHeaderValue"
@@ -447,10 +437,7 @@ const {
             :disabled="isBusy"
           />
         </label>
-        <label
-          v-if="createCredentialProfileInput.type === 'basic'"
-          class="admin-console__field"
-        >
+        <label v-if="createCredentialProfileInput.type === 'basic'" class="admin-console__field">
           {{ $t("admin.usernameSecret") }}
           <input
             v-model="createCredentialProfileInput.secretUsername"
@@ -459,10 +446,7 @@ const {
             :disabled="isBusy"
           />
         </label>
-        <label
-          v-if="createCredentialProfileInput.type === 'basic'"
-          class="admin-console__field"
-        >
+        <label v-if="createCredentialProfileInput.type === 'basic'" class="admin-console__field">
           {{ $t("admin.passwordSecret") }}
           <input
             v-model="createCredentialProfileInput.secretPassword"
@@ -803,11 +787,7 @@ const {
         </label>
         <label class="admin-console__field">
           {{ $t("admin.role") }}
-          <select
-            v-model="createUserInput.role"
-            class="admin-console__select"
-            :disabled="isBusy"
-          >
+          <select v-model="createUserInput.role" class="admin-console__select" :disabled="isBusy">
             <option v-for="role in ROLE_OPTIONS" :key="`create-role-${role}`" :value="role">
               {{ role }}
             </option>

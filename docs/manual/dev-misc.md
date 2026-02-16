@@ -2,6 +2,8 @@
 
 ## Useful Commands
 
+- Format all supported files: `npm run format`
+- Validate formatting: `npm run format:check`
 - Full lint: `npm run lint`
 - UI store boundary guardrail: `npm run check:ui:store-boundaries`
 - UI lint only: `npm run lint:ui`
@@ -22,17 +24,18 @@
 Run this sequence before opening a PR:
 
 ```bash
+npm run format:check
 npm run lint
 npm run check:ui:store-boundaries
 npm run test
 npm run build:verify
 ```
 
-If your change is docs-only, still run `npm run lint` to catch formatting or syntax issues in touched JS/YAML files.
+If your change is docs-only, run `npm run format:check` to verify Markdown/YAML formatting consistency.
 
 ## CI Troubleshooting (Quick)
 
-- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`lint`, `test-api`, `test-ui`, `build-verify`).
+- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-ui`, `build-verify`).
 - If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
 - If a job was expected but appears skipped, check `Classify changes` output in the `changes` job.
 - If Docker publish unexpectedly rebuilds all images, verify event type:
@@ -42,11 +45,11 @@ If your change is docs-only, still run `npm run lint` to catch formatting or syn
 
 ## CI Workflow Matrix
 
-| Workflow | Trigger | Heavy-work cancellation | Notes |
-| --- | --- | --- | --- |
-| `CI` (`.github/workflows/ci.yml`) | `pull_request` to `dev`, `merge_group`, `workflow_dispatch` | Yes (`concurrency: ci-<pr/ref>`) | Required gate via `Required CI` job; path-gated jobs |
-| `Deploy to GitHub Pages` (`.github/workflows/build-pages.yml`) | `push` to `dev` on docs/demo-related paths, `workflow_dispatch` | Yes (`concurrency: pages-<ref>`) | Builds docs + demo site |
-| `Build & publish docker images` (`.github/workflows/build-docker-images.yml`) | `push` to `dev`, `workflow_dispatch` | No (intentional) | Per-package diff skip; manual dispatch forces full rebuild |
+| Workflow                                                                      | Trigger                                                         | Heavy-work cancellation          | Notes                                                      |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------- |
+| `CI` (`.github/workflows/ci.yml`)                                             | `pull_request` to `dev`, `merge_group`, `workflow_dispatch`     | Yes (`concurrency: ci-<pr/ref>`) | Required gate via `Required CI` job; path-gated jobs       |
+| `Deploy to GitHub Pages` (`.github/workflows/build-pages.yml`)                | `push` to `dev` on docs/demo-related paths, `workflow_dispatch` | Yes (`concurrency: pages-<ref>`) | Builds docs + demo site                                    |
+| `Build & publish docker images` (`.github/workflows/build-docker-images.yml`) | `push` to `dev`, `workflow_dispatch`                            | No (intentional)                 | Per-package diff skip; manual dispatch forces full rebuild |
 
 ## CI Runtime Budget (Targets)
 

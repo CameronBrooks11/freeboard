@@ -9,7 +9,7 @@ test("DatasourceRuntimeBase supports applySettings contract and emits connected 
   const runtime = new DatasourceRuntimeBase(
     {},
     (payload) => emittedData.push(payload),
-    (payload) => emittedStatus.push(payload)
+    (payload) => emittedStatus.push(payload),
   );
 
   runtime.applySettings({ refresh: 5 });
@@ -36,7 +36,7 @@ test("DatasourceRuntimeBase emits error state and increments retry/error metrics
   const runtime = new DatasourceRuntimeBase(
     {},
     () => {},
-    (payload) => emittedStatus.push(payload)
+    (payload) => emittedStatus.push(payload),
   );
 
   runtime.metrics.retryCount = 2;
@@ -56,7 +56,7 @@ test("DatasourceRuntimeBase stale monitor flips status to stale after threshold"
   const runtime = new DatasourceRuntimeBase(
     {},
     () => {},
-    (payload) => emittedStatus.push(payload)
+    (payload) => emittedStatus.push(payload),
   );
   t.after(() => runtime.dispose());
 
@@ -68,6 +68,6 @@ test("DatasourceRuntimeBase stale monitor flips status to stale after threshold"
 
   assert.ok(
     emittedStatus.some((payload) => payload.status === "stale"),
-    "expected at least one stale status emission"
+    "expected at least one stale status emission",
   );
 });

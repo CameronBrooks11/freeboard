@@ -39,8 +39,7 @@ const AuditEventSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.model("AuditEvent", AuditEventSchema);
-

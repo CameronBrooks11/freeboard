@@ -210,7 +210,7 @@ export default /** @type {IResolvers} */ {
       await InviteToken.findOneAndUpdate(
         { _id: invite._id },
         { $set: { acceptedAt: new Date(), acceptedUserId: user._id } },
-        { new: false }
+        { new: false },
       ).lean();
 
       await recordAuditEvent({
@@ -247,10 +247,7 @@ export default /** @type {IResolvers} */ {
       const throttleKey = buildLoginThrottleKey(normalizedEmail, context?.clientIp);
       const throttleState = getLoginThrottleState(throttleKey);
       if (throttleState.blocked) {
-        const retryAfterSeconds = Math.max(
-          1,
-          Math.ceil(throttleState.retryAfterMs / 1000)
-        );
+        const retryAfterSeconds = Math.max(1, Math.ceil(throttleState.retryAfterMs / 1000));
         await recordAuditEvent({
           actorUserId: null,
           action: "auth.login.blocked",
@@ -266,7 +263,7 @@ export default /** @type {IResolvers} */ {
           `Too many login attempts. Try again in ${retryAfterSeconds} seconds.`,
           {
             extensions: { code: "TOO_MANY_REQUESTS" },
-          }
+          },
         );
       }
 
@@ -298,12 +295,9 @@ export default /** @type {IResolvers} */ {
       }
       if (!user.active) {
         await registerFailure();
-        throw createGraphQLError(
-          "Your account is deactivated. Contact an administrator.",
-          {
-            extensions: { code: "FORBIDDEN" },
-          }
-        );
+        throw createGraphQLError("Your account is deactivated. Contact an administrator.", {
+          extensions: { code: "FORBIDDEN" },
+        });
       }
 
       const isCorrectPassword = await bcrypt.compare(password, user.password);
@@ -317,7 +311,7 @@ export default /** @type {IResolvers} */ {
       await User.findOneAndUpdate(
         { _id: user._id },
         { $set: { lastLogin: new Date() } },
-        { new: false }
+        { new: false },
       ).lean();
 
       return {
@@ -409,7 +403,7 @@ export default /** @type {IResolvers} */ {
       await PasswordResetToken.findOneAndUpdate(
         { _id: reset._id },
         { $set: { usedAt: new Date() } },
-        { new: false }
+        { new: false },
       ).lean();
 
       await recordAuditEvent({
@@ -462,8 +456,7 @@ export default /** @type {IResolvers} */ {
         metadata: {
           email: user.email,
           role: user.role,
-          dashboardOwnershipReassignments:
-            dashboardReconciliation.ownershipReassignments,
+          dashboardOwnershipReassignments: dashboardReconciliation.ownershipReassignments,
           dashboardAclRevocations: dashboardReconciliation.aclRevocations,
         },
       });
@@ -573,7 +566,7 @@ export default /** @type {IResolvers} */ {
           expiresAt: { $gt: now },
         },
         { $set: { revokedAt: now } },
-        { new: true }
+        { new: true },
       ).lean();
 
       if (updated) {
@@ -617,10 +610,8 @@ export default /** @type {IResolvers} */ {
         return user;
       }
 
-      const roleChanged =
-        update.role !== undefined && update.role !== String(user.role || "");
-      const activeChanged =
-        update.active !== undefined && update.active !== Boolean(user.active);
+      const roleChanged = update.role !== undefined && update.role !== String(user.role || "");
+      const activeChanged = update.active !== undefined && update.active !== Boolean(user.active);
       const shouldRevokeSessions = roleChanged || activeChanged;
 
       if (String(_id) === String(context.user._id) && update.role && update.role !== "admin") {
@@ -641,11 +632,10 @@ export default /** @type {IResolvers} */ {
         ...(shouldRevokeSessions ? { $inc: { sessionVersion: 1 } } : {}),
       };
 
-      const updatedUser = await User.findOneAndUpdate(
-        { _id },
-        updateDocument,
-        { new: true, runValidators: true }
-      ).lean();
+      const updatedUser = await User.findOneAndUpdate({ _id }, updateDocument, {
+        new: true,
+        runValidators: true,
+      }).lean();
       if (!updatedUser) {
         throw createGraphQLError("User not found or login not allowed");
       }
@@ -687,12 +677,9 @@ export default /** @type {IResolvers} */ {
         throw createGraphQLError("User not found or login not allowed");
       }
       if (user.active) {
-        throw createGraphQLError(
-          "Deactivate the user account before permanent deletion",
-          {
-            extensions: { code: "FORBIDDEN" },
-          }
-        );
+        throw createGraphQLError("Deactivate the user account before permanent deletion", {
+          extensions: { code: "FORBIDDEN" },
+        });
       }
       if (user.role === "admin") {
         await ensureAtLeastOneActiveAdminWillRemain(user._id);
@@ -718,8 +705,7 @@ export default /** @type {IResolvers} */ {
         metadata: {
           email: deletedUser.email,
           role: deletedUser.role,
-          dashboardOwnershipReassignments:
-            dashboardReconciliation.ownershipReassignments,
+          dashboardOwnershipReassignments: dashboardReconciliation.ownershipReassignments,
           dashboardAclRevocations: dashboardReconciliation.aclRevocations,
         },
       });
@@ -748,10 +734,7 @@ export default /** @type {IResolvers} */ {
         user,
         createdBy: context.user._id,
         requestedByEmail: null,
-        expiresInHours: clampExpiryHours(
-          expiresInHours,
-          PASSWORD_RESET_ADMIN_DEFAULT_EXPIRY_HOURS
-        ),
+        expiresInHours: clampExpiryHours(expiresInHours, PASSWORD_RESET_ADMIN_DEFAULT_EXPIRY_HOURS),
       });
 
       await recordAuditEvent({

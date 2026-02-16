@@ -28,12 +28,9 @@ const ShareTokenRevocationEventSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 ShareTokenRevocationEventSchema.index({ revokedAt: 1, _id: 1 });
 
-export default mongoose.model(
-  "ShareTokenRevocationEvent",
-  ShareTokenRevocationEventSchema
-);
+export default mongoose.model("ShareTokenRevocationEvent", ShareTokenRevocationEventSchema);

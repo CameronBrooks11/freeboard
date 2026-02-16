@@ -49,4 +49,3 @@ Expected output: plain text advice sentence (no HTML interpretation).
 Expected output: styled HTML card rendered in the widget.
 
 Use Trusted HTML only with content you control.
-

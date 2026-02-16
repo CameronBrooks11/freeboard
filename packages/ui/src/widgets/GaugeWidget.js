@@ -174,12 +174,8 @@ export class GaugeWidget extends ReactiveWidget {
 
   resolveInputs() {
     return {
-      header:
-        this.getBinding(this.currentSettings?.headerPath) ??
-        this.currentSettings?.headerText,
-      unit:
-        this.getBinding(this.currentSettings?.unitPath) ??
-        this.currentSettings?.unitText,
+      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
+      unit: this.getBinding(this.currentSettings?.unitPath) ?? this.currentSettings?.unitText,
       value: this.getBinding(this.currentSettings?.valuePath),
     };
   }

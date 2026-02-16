@@ -135,22 +135,17 @@ export class PointerWidget extends ReactiveWidget {
       this.headerElement,
       this.dialWrap,
       this.valueElement,
-      this.unitElement
+      this.unitElement,
     );
   }
 
   resolveInputs() {
     return {
-      header:
-        this.getBinding(this.currentSettings?.headerPath) ??
-        this.currentSettings?.headerText,
-      unit:
-        this.getBinding(this.currentSettings?.unitPath) ??
-        this.currentSettings?.unitText,
+      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
+      unit: this.getBinding(this.currentSettings?.unitPath) ?? this.currentSettings?.unitText,
       angle: this.getBinding(this.currentSettings?.anglePath),
       valueText:
-        this.getBinding(this.currentSettings?.valueTextPath) ??
-        this.currentSettings?.valueText,
+        this.getBinding(this.currentSettings?.valueTextPath) ?? this.currentSettings?.valueText,
     };
   }
 

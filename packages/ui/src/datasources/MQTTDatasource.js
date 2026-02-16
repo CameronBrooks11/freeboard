@@ -3,21 +3,17 @@
  * @description Gateway-backed MQTT datasource runtime.
  */
 
-import {
-  mintDatasourceSessionToken,
-} from "./datasourceSessionToken.js";
+import { mintDatasourceSessionToken } from "./datasourceSessionToken.js";
 import { DatasourceRuntimeBase } from "./runtime/DatasourceRuntimeBase.js";
 import { getStreamingManager } from "./runtime/StreamingManager.js";
-import {
-  getAuthToken,
-  getDashboardId,
-  getRuntimeShareToken,
-} from "../runtime/runtimeContext.js";
+import { getAuthToken, getDashboardId, getRuntimeShareToken } from "../runtime/runtimeContext.js";
 
 const STREAM_PARSERS = ["json", "text"];
 
 const normalizeParser = (value) => {
-  const normalized = String(value || "json").trim().toLowerCase();
+  const normalized = String(value || "json")
+    .trim()
+    .toLowerCase();
   return STREAM_PARSERS.includes(normalized) ? normalized : "json";
 };
 
@@ -121,10 +117,10 @@ export class MQTTDatasource extends DatasourceRuntimeBase {
     newInstanceCallback,
     updateCallback,
     statusCallback,
-    runtimeContext
+    runtimeContext,
   ) {
     newInstanceCallback(
-      new MQTTDatasource(settings, updateCallback, statusCallback, runtimeContext)
+      new MQTTDatasource(settings, updateCallback, statusCallback, runtimeContext),
     );
   }
 
@@ -234,7 +230,10 @@ export class MQTTDatasource extends DatasourceRuntimeBase {
             });
           },
           onError: (message) => {
-            this.emitError(message.message || "Realtime stream failed", message.errorCode || "STREAM_CONNECT_FAILED");
+            this.emitError(
+              message.message || "Realtime stream failed",
+              message.errorCode || "STREAM_CONNECT_FAILED",
+            );
           },
           onTokenExpiring: () => {
             void this.refreshSessionToken();

@@ -25,7 +25,7 @@ const main = async () => {
     await runOrThrow(
       dockerCommand,
       [...composeArgs, "up", "-d", "--build", "--wait", "--wait-timeout", "180"],
-      "Realtime fixture startup"
+      "Realtime fixture startup",
     );
 
     await runOrThrow("node", ["scripts/realtime-demo-smoke.mjs"], "Realtime smoke checks");

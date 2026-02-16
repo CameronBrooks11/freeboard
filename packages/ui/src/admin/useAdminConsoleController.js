@@ -47,21 +47,17 @@ import {
 
 const roleToEnum = (role) => String(role || "viewer").toUpperCase();
 const registrationModeToEnum = (mode) => String(mode || "disabled").toUpperCase();
-const dashboardVisibilityToEnum = (visibility) =>
-  String(visibility || "private").toUpperCase();
+const dashboardVisibilityToEnum = (visibility) => String(visibility || "private").toUpperCase();
 const executionModeToEnum = (mode) => String(mode || "safe").toUpperCase();
-const credentialProfileTypeToEnum = (type) =>
-  String(type || "none").toUpperCase();
-const brokerProfileProtocolToEnum = (protocol) =>
-  String(protocol || "mqtt").toUpperCase();
-
+const credentialProfileTypeToEnum = (type) => String(type || "none").toUpperCase();
+const brokerProfileProtocolToEnum = (protocol) => String(protocol || "mqtt").toUpperCase();
 
 export const useAdminConsoleController = () => {
   const authStore = useAuthStore();
   const dashboardStore = useDashboardStore();
   const profileCatalogStore = useProfileCatalogStore();
   const appBaseUrl = `${window.location.origin}${window.location.pathname.replace(/\/admin\/?$/, "/")}`;
-  
+
   const statusMessage = ref("");
   const actionError = ref("");
   const userDrafts = ref({});
@@ -69,7 +65,7 @@ export const useAdminConsoleController = () => {
   const brokerProfileDrafts = ref({});
   const issuedInvite = ref(null);
   const issuedResetByUser = ref({});
-  
+
   const createUserInput = ref({
     email: "",
     password: "",
@@ -84,7 +80,7 @@ export const useAdminConsoleController = () => {
   const createCredentialProfileInput = ref(toCredentialProfileDraft());
   const createBrokerProfileInput = ref(toBrokerProfileDraft());
   const policyDraft = ref(toPolicyDraft());
-  
+
   const {
     result: usersResult,
     loading: usersLoading,
@@ -120,62 +116,52 @@ export const useAdminConsoleController = () => {
     loading: datasourceDiagnosticsLoading,
     error: datasourceDiagnosticsError,
   } = useQuery(ADMIN_DATASOURCE_DIAGNOSTICS_QUERY, {}, { fetchPolicy: "network-only" });
-  
+
   const { mutate: adminCreateUser, loading: createUserLoading } = useMutation(
-    ADMIN_CREATE_USER_MUTATION
+    ADMIN_CREATE_USER_MUTATION,
   );
   const { mutate: adminUpdateUser, loading: updateUserLoading } = useMutation(
-    ADMIN_UPDATE_USER_MUTATION
+    ADMIN_UPDATE_USER_MUTATION,
   );
   const { mutate: adminDeleteUser, loading: deleteUserLoading } = useMutation(
-    ADMIN_DELETE_USER_MUTATION
+    ADMIN_DELETE_USER_MUTATION,
   );
-  const { mutate: setAuthPolicy, loading: setPolicyLoading } = useMutation(
-    SET_AUTH_POLICY_MUTATION
-  );
+  const { mutate: setAuthPolicy, loading: setPolicyLoading } =
+    useMutation(SET_AUTH_POLICY_MUTATION);
   const { mutate: adminCreateInvite, loading: createInviteLoading } = useMutation(
-    ADMIN_CREATE_INVITE_MUTATION
+    ADMIN_CREATE_INVITE_MUTATION,
   );
   const { mutate: adminRevokeInvite, loading: revokeInviteLoading } = useMutation(
-    ADMIN_REVOKE_INVITE_MUTATION
+    ADMIN_REVOKE_INVITE_MUTATION,
   );
   const { mutate: adminIssuePasswordReset, loading: issueResetLoading } = useMutation(
-    ADMIN_ISSUE_PASSWORD_RESET_MUTATION
+    ADMIN_ISSUE_PASSWORD_RESET_MUTATION,
   );
-  const {
-    mutate: adminCreateCredentialProfile,
-    loading: createCredentialProfileLoading,
-  } = useMutation(ADMIN_CREATE_CREDENTIAL_PROFILE_MUTATION);
-  const {
-    mutate: adminUpdateCredentialProfile,
-    loading: updateCredentialProfileLoading,
-  } = useMutation(ADMIN_UPDATE_CREDENTIAL_PROFILE_MUTATION);
-  const {
-    mutate: adminDeleteCredentialProfile,
-    loading: deleteCredentialProfileLoading,
-  } = useMutation(ADMIN_DELETE_CREDENTIAL_PROFILE_MUTATION);
-  const {
-    mutate: adminCreateBrokerProfile,
-    loading: createBrokerProfileLoading,
-  } = useMutation(ADMIN_CREATE_BROKER_PROFILE_MUTATION);
-  const {
-    mutate: adminUpdateBrokerProfile,
-    loading: updateBrokerProfileLoading,
-  } = useMutation(ADMIN_UPDATE_BROKER_PROFILE_MUTATION);
-  const {
-    mutate: adminDeleteBrokerProfile,
-    loading: deleteBrokerProfileLoading,
-  } = useMutation(ADMIN_DELETE_BROKER_PROFILE_MUTATION);
-  
+  const { mutate: adminCreateCredentialProfile, loading: createCredentialProfileLoading } =
+    useMutation(ADMIN_CREATE_CREDENTIAL_PROFILE_MUTATION);
+  const { mutate: adminUpdateCredentialProfile, loading: updateCredentialProfileLoading } =
+    useMutation(ADMIN_UPDATE_CREDENTIAL_PROFILE_MUTATION);
+  const { mutate: adminDeleteCredentialProfile, loading: deleteCredentialProfileLoading } =
+    useMutation(ADMIN_DELETE_CREDENTIAL_PROFILE_MUTATION);
+  const { mutate: adminCreateBrokerProfile, loading: createBrokerProfileLoading } = useMutation(
+    ADMIN_CREATE_BROKER_PROFILE_MUTATION,
+  );
+  const { mutate: adminUpdateBrokerProfile, loading: updateBrokerProfileLoading } = useMutation(
+    ADMIN_UPDATE_BROKER_PROFILE_MUTATION,
+  );
+  const { mutate: adminDeleteBrokerProfile, loading: deleteBrokerProfileLoading } = useMutation(
+    ADMIN_DELETE_BROKER_PROFILE_MUTATION,
+  );
+
   const users = computed(() => usersResult.value?.listAllUsers || []);
   const pendingInvites = computed(() => pendingInvitesResult.value?.listPendingInvites || []);
   const policy = computed(() => policyResult.value?.authPolicy || null);
   const credentialProfiles = computed(
-    () => credentialProfilesResult.value?.credentialProfiles || []
+    () => credentialProfilesResult.value?.credentialProfiles || [],
   );
   const brokerProfiles = computed(() => brokerProfilesResult.value?.brokerProfiles || []);
   const datasourceDiagnostics = computed(
-    () => datasourceDiagnosticsResult.value?.adminDatasourceDiagnostics || null
+    () => datasourceDiagnosticsResult.value?.adminDatasourceDiagnostics || null,
   );
   const issuedResetEntries = computed(() =>
     users.value
@@ -184,7 +170,7 @@ export const useAdminConsoleController = () => {
         email: user.email,
         payload: issuedResetByUser.value[user._id],
         userId: user._id,
-      }))
+      })),
   );
   const isBusy = computed(
     () =>
@@ -205,7 +191,7 @@ export const useAdminConsoleController = () => {
       deleteCredentialProfileLoading.value ||
       createBrokerProfileLoading.value ||
       updateBrokerProfileLoading.value ||
-      deleteBrokerProfileLoading.value
+      deleteBrokerProfileLoading.value,
   );
   const isPolicyLocked = computed(() => policyDraft.value.policyEditLock === true);
   const hasLoadError = computed(
@@ -215,9 +201,9 @@ export const useAdminConsoleController = () => {
       pendingInvitesError.value ||
       credentialProfilesError.value ||
       brokerProfilesError.value ||
-      datasourceDiagnosticsError.value
+      datasourceDiagnosticsError.value,
   );
-  
+
   watch(usersResult, () => {
     const nextDrafts = {};
     users.value.forEach((user) => {
@@ -225,7 +211,7 @@ export const useAdminConsoleController = () => {
     });
     userDrafts.value = nextDrafts;
   });
-  
+
   watch(policyResult, () => {
     if (!policy.value) {
       return;
@@ -236,7 +222,7 @@ export const useAdminConsoleController = () => {
       dashboardStore.loadDashboardAssets();
     }
   });
-  
+
   watch(credentialProfilesResult, () => {
     const profiles = credentialProfiles.value;
     const nextDrafts = {};
@@ -246,7 +232,7 @@ export const useAdminConsoleController = () => {
     credentialProfileDrafts.value = nextDrafts;
     profileCatalogStore.setCredentialProfiles(profiles);
   });
-  
+
   watch(brokerProfilesResult, () => {
     const profiles = brokerProfiles.value;
     const nextDrafts = {};
@@ -256,19 +242,19 @@ export const useAdminConsoleController = () => {
     brokerProfileDrafts.value = nextDrafts;
     profileCatalogStore.setBrokerProfiles(profiles);
   });
-  
+
   watch(brokerProfilesError, () => {
     if (brokerProfilesError.value) {
       profileCatalogStore.clearBrokerProfiles();
     }
   });
-  
+
   watch(credentialProfilesError, () => {
     if (credentialProfilesError.value) {
       profileCatalogStore.clearCredentialProfiles();
     }
   });
-  
+
   const buildCredentialProfileMutationInput = (draft, { includeSecrets = true } = {}) => {
     const type = normalizeCredentialProfileTypeValue(draft.type);
     const input = {
@@ -278,17 +264,17 @@ export const useAdminConsoleController = () => {
       allowPublicUse: Boolean(draft.allowPublicUse),
       metadata: {},
     };
-  
+
     if (type === "header") {
       input.metadata = {
         headerName: String(draft.metadataHeaderName || "").trim(),
       };
     }
-  
+
     if (!includeSecrets) {
       return input;
     }
-  
+
     const secret = {};
     if (type === "bearer") {
       if (draft.secretToken) {
@@ -306,21 +292,21 @@ export const useAdminConsoleController = () => {
         secret.headerValue = String(draft.secretHeaderValue);
       }
     }
-  
+
     if (Object.keys(secret).length > 0 || type === "none") {
       input.secret = secret;
     }
-  
+
     return input;
   };
-  
+
   const buildBrokerProfileMutationInput = (draft) => {
     const protocol = String(draft.protocol || "mqtt").toLowerCase();
     const allowlist = String(draft.topicAllowlist || "")
       .split(",")
       .map((entry) => entry.trim())
       .filter(Boolean);
-  
+
     return {
       name: String(draft.name || "").trim(),
       description: String(draft.description || "").trim(),
@@ -334,17 +320,16 @@ export const useAdminConsoleController = () => {
       },
     };
   };
-  
+
   const clearMessages = () => {
     statusMessage.value = "";
     actionError.value = "";
   };
-  
+
   const setErrorMessage = (error, fallback) => {
-    actionError.value =
-      error?.graphQLErrors?.[0]?.message || error?.message || fallback;
+    actionError.value = error?.graphQLErrors?.[0]?.message || error?.message || fallback;
   };
-  
+
   const formatDateTime = (value) => {
     if (!value) {
       return "—";
@@ -355,25 +340,23 @@ export const useAdminConsoleController = () => {
     }
     return parsed.toLocaleString();
   };
-  
+
   const savePolicy = async () => {
     clearMessages();
     if (isPolicyLocked.value) {
       actionError.value = "Policy updates are locked by environment configuration.";
       return;
     }
-  
+
     try {
       const result = await setAuthPolicy({
         registrationMode: registrationModeToEnum(policyDraft.value.registrationMode),
         registrationDefaultRole: roleToEnum(policyDraft.value.registrationDefaultRole),
         editorCanPublish: Boolean(policyDraft.value.editorCanPublish),
         dashboardDefaultVisibility: dashboardVisibilityToEnum(
-          policyDraft.value.dashboardDefaultVisibility
+          policyDraft.value.dashboardDefaultVisibility,
         ),
-        dashboardPublicListingEnabled: Boolean(
-          policyDraft.value.dashboardPublicListingEnabled
-        ),
+        dashboardPublicListingEnabled: Boolean(policyDraft.value.dashboardPublicListingEnabled),
         executionMode: executionModeToEnum(policyDraft.value.executionMode),
       });
       const updatedPolicy = result.data?.setAuthPolicy;
@@ -391,14 +374,14 @@ export const useAdminConsoleController = () => {
       setErrorMessage(error, "Could not update policy.");
     }
   };
-  
+
   const createUser = async () => {
     clearMessages();
     if (!createUserInput.value.email || !createUserInput.value.password) {
       actionError.value = "Email and password are required.";
       return;
     }
-  
+
     try {
       await adminCreateUser({
         email: createUserInput.value.email,
@@ -418,14 +401,14 @@ export const useAdminConsoleController = () => {
       setErrorMessage(error, "Could not create user.");
     }
   };
-  
+
   const saveUser = async (userId) => {
     clearMessages();
     const draft = userDrafts.value[userId];
     if (!draft) {
       return;
     }
-  
+
     try {
       await adminUpdateUser({
         id: userId,
@@ -438,14 +421,14 @@ export const useAdminConsoleController = () => {
       setErrorMessage(error, "Could not update user.");
     }
   };
-  
+
   const deleteUser = async (user) => {
     clearMessages();
     const accepted = window.confirm(`Delete user '${user.email}'?`);
     if (!accepted) {
       return;
     }
-  
+
     try {
       await adminDeleteUser({ id: user._id });
       await refetchUsers();
@@ -454,14 +437,14 @@ export const useAdminConsoleController = () => {
       setErrorMessage(error, "Could not delete user.");
     }
   };
-  
+
   const createInvite = async () => {
     clearMessages();
     if (!createInviteInput.value.email) {
       actionError.value = "Invite email is required.";
       return;
     }
-  
+
     try {
       const result = await adminCreateInvite({
         email: createInviteInput.value.email,
@@ -486,7 +469,7 @@ export const useAdminConsoleController = () => {
       setErrorMessage(error, "Could not create invite.");
     }
   };
-  
+
   const revokeInvite = async (invite) => {
     clearMessages();
     try {
@@ -497,7 +480,7 @@ export const useAdminConsoleController = () => {
       setErrorMessage(error, "Could not revoke invite.");
     }
   };
-  
+
   const issueResetToken = async (user) => {
     clearMessages();
     try {
@@ -520,7 +503,7 @@ export const useAdminConsoleController = () => {
       setErrorMessage(error, "Could not issue password reset token.");
     }
   };
-  
+
   const createCredentialProfile = async () => {
     clearMessages();
     try {
@@ -535,14 +518,14 @@ export const useAdminConsoleController = () => {
       setErrorMessage(error, "Could not create credential profile.");
     }
   };
-  
+
   const saveCredentialProfile = async (profileId) => {
     clearMessages();
     const draft = credentialProfileDrafts.value[profileId];
     if (!draft) {
       return;
     }
-  
+
     try {
       const input = buildCredentialProfileMutationInput(draft);
       const type = normalizeCredentialProfileTypeValue(draft.type);
@@ -564,14 +547,14 @@ export const useAdminConsoleController = () => {
       setErrorMessage(error, "Could not update credential profile.");
     }
   };
-  
+
   const deleteCredentialProfile = async (profile) => {
     clearMessages();
     const accepted = window.confirm(`Delete credential profile '${profile.name}'?`);
     if (!accepted) {
       return;
     }
-  
+
     try {
       await adminDeleteCredentialProfile({
         id: profile._id,
@@ -582,7 +565,7 @@ export const useAdminConsoleController = () => {
       setErrorMessage(error, "Could not delete credential profile.");
     }
   };
-  
+
   const createBrokerProfile = async () => {
     clearMessages();
     try {
@@ -598,14 +581,14 @@ export const useAdminConsoleController = () => {
       setErrorMessage(error, "Could not create broker profile.");
     }
   };
-  
+
   const saveBrokerProfile = async (profileId) => {
     clearMessages();
     const draft = brokerProfileDrafts.value[profileId];
     if (!draft) {
       return;
     }
-  
+
     try {
       const input = buildBrokerProfileMutationInput(draft);
       await adminUpdateBrokerProfile({
@@ -619,14 +602,14 @@ export const useAdminConsoleController = () => {
       setErrorMessage(error, "Could not update broker profile.");
     }
   };
-  
+
   const deleteBrokerProfile = async (profile) => {
     clearMessages();
     const accepted = window.confirm(`Delete broker profile '${profile.name}'?`);
     if (!accepted) {
       return;
     }
-  
+
     try {
       await adminDeleteBrokerProfile({
         id: profile._id,

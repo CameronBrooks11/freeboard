@@ -47,4 +47,3 @@ Expected output: compass pointer rotates to current wind direction.
 8. Save.
 
 Expected output: live directional pointer for Sydney wind heading.
-

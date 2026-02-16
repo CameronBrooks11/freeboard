@@ -61,10 +61,7 @@ export const decryptCredentialSecret = (encrypted) => {
 
   const decipher = crypto.createDecipheriv(ALGORITHM, config.credentialEncryptionKey, iv);
   decipher.setAuthTag(authTag);
-  const plaintext = Buffer.concat([
-    decipher.update(ciphertext),
-    decipher.final(),
-  ]).toString("utf8");
+  const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
 
   return JSON.parse(plaintext);
 };
@@ -80,7 +77,5 @@ export const redactSecretShape = (secret) => {
     return {};
   }
 
-  return Object.fromEntries(
-    Object.keys(secret).map((key) => [key, "***"])
-  );
+  return Object.fromEntries(Object.keys(secret).map((key) => [key, "***"]));
 };

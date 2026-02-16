@@ -59,7 +59,7 @@ test("mintDatasourceSessionToken rejects link/public token mint without share to
         datasourceId: "ds-1",
         user: null,
       }),
-    /share token/i
+    /share token/i,
   );
 });
 

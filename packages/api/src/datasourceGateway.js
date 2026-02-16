@@ -25,7 +25,7 @@ const ALLOWED_AUTH_PLACEMENTS = new Set(["header", "query"]);
 
 export const DATASOURCE_SESSION_TTL_SECONDS = Math.max(
   60,
-  Math.floor(Number(config.datasourceSessionTtlSeconds) || 300)
+  Math.floor(Number(config.datasourceSessionTtlSeconds) || 300),
 );
 
 const toComparableId = (value) => {
@@ -84,17 +84,23 @@ const sanitizeCustomHeaders = (inputHeaders = {}) => {
 };
 
 const normalizeHttpMethod = (value) => {
-  const method = String(value || "GET").trim().toUpperCase();
+  const method = String(value || "GET")
+    .trim()
+    .toUpperCase();
   return ALLOWED_HTTP_METHODS.has(method) ? method : "GET";
 };
 
 const normalizeHttpParser = (value) => {
-  const parser = String(value || "json").trim().toLowerCase();
+  const parser = String(value || "json")
+    .trim()
+    .toLowerCase();
   return ALLOWED_HTTP_PARSERS.has(parser) ? parser : "json";
 };
 
 const normalizeStreamParser = (value) => {
-  const parser = String(value || "json").trim().toLowerCase();
+  const parser = String(value || "json")
+    .trim()
+    .toLowerCase();
   return ALLOWED_STREAM_PARSERS.has(parser) ? parser : "json";
 };
 
@@ -130,15 +136,15 @@ const normalizeQos = (value) => {
 };
 
 const normalizeAuthPlacement = (value) => {
-  const normalized = String(value || "header").trim().toLowerCase();
+  const normalized = String(value || "header")
+    .trim()
+    .toLowerCase();
   return ALLOWED_AUTH_PLACEMENTS.has(normalized) ? normalized : "header";
 };
 
 const normalizeWebSocketProtocols = (value) => {
   if (Array.isArray(value)) {
-    return value
-      .map((entry) => String(entry || "").trim())
-      .filter(Boolean);
+    return value.map((entry) => String(entry || "").trim()).filter(Boolean);
   }
 
   if (typeof value === "string") {
@@ -231,7 +237,7 @@ const resolveQueryCredentialValue = ({ profile, secret }) => {
     throw createClientError(
       400,
       "Basic credential profile cannot be used with query auth placement",
-      "CREDENTIAL_QUERY_UNSUPPORTED"
+      "CREDENTIAL_QUERY_UNSUPPORTED",
     );
   }
 
@@ -244,7 +250,7 @@ const applyQueryCredentialToUrl = ({ rawUrl, paramName, value }) => {
     throw createClientError(
       400,
       "queryParamName is required for query auth placement",
-      "QUERY_PARAM_REQUIRED"
+      "QUERY_PARAM_REQUIRED",
     );
   }
   const parsed = new URL(rawUrl);
@@ -255,9 +261,7 @@ const applyQueryCredentialToUrl = ({ rawUrl, paramName, value }) => {
 const resolveAclAccess = (dashboard, userId) => {
   const normalizedUserId = toComparableId(userId);
   const entries = Array.isArray(dashboard?.acl) ? dashboard.acl : [];
-  return (
-    entries.find((entry) => toComparableId(entry?.userId) === normalizedUserId) || null
-  );
+  return entries.find((entry) => toComparableId(entry?.userId) === normalizedUserId) || null;
 };
 
 const canUserReadDashboard = ({ dashboard, user }) => {
@@ -315,13 +319,12 @@ const resolveScopeFromDatasourceType = (datasourceType) =>
 export const findDashboardDatasource = (
   dashboard,
   datasourceId,
-  { allowedTypes = SUPPORTED_GATEWAY_DATASOURCE_TYPES } = {}
+  { allowedTypes = SUPPORTED_GATEWAY_DATASOURCE_TYPES } = {},
 ) => {
   const targetDatasourceId = toComparableId(datasourceId);
   const datasources = Array.isArray(dashboard?.datasources) ? dashboard.datasources : [];
   const datasource =
-    datasources.find((entry) => toComparableId(entry?.id) === targetDatasourceId) ||
-    null;
+    datasources.find((entry) => toComparableId(entry?.id) === targetDatasourceId) || null;
 
   if (!datasource) {
     throw createClientError(404, "Datasource not found", "DATASOURCE_NOT_FOUND");
@@ -332,7 +335,7 @@ export const findDashboardDatasource = (
     throw createClientError(
       400,
       "Datasource type is not supported by gateway",
-      "UNSUPPORTED_DATASOURCE"
+      "UNSUPPORTED_DATASOURCE",
     );
   }
 
@@ -344,9 +347,7 @@ export const buildCanonicalDatasourceIntent = async ({ dashboard, datasourceId }
     allowedTypes: HTTP_DATASOURCE_TYPES,
   });
   const settings =
-    datasource.settings && typeof datasource.settings === "object"
-      ? datasource.settings
-      : {};
+    datasource.settings && typeof datasource.settings === "object" ? datasource.settings : {};
 
   const targetUrl = String(settings.url || "").trim();
   if (!targetUrl) {
@@ -363,7 +364,7 @@ export const buildCanonicalDatasourceIntent = async ({ dashboard, datasourceId }
   }
 
   const customHeaders = sanitizeCustomHeaders(
-    parseJsonObjectSetting(settings.headers || settings.requestHeaders)
+    parseJsonObjectSetting(settings.headers || settings.requestHeaders),
   );
 
   return {
@@ -388,9 +389,7 @@ export const buildCanonicalStreamingIntent = async ({ dashboard, datasourceId })
   });
   const datasourceType = getDatasourceType(datasource);
   const settings =
-    datasource.settings && typeof datasource.settings === "object"
-      ? datasource.settings
-      : {};
+    datasource.settings && typeof datasource.settings === "object" ? datasource.settings : {};
 
   if (datasourceType === "sse" || datasourceType === "websocket") {
     const targetUrl = String(settings.url || "").trim();
@@ -406,7 +405,7 @@ export const buildCanonicalStreamingIntent = async ({ dashboard, datasourceId })
         throw createClientError(
           403,
           "Credential profile not found",
-          "CREDENTIAL_PROFILE_NOT_FOUND"
+          "CREDENTIAL_PROFILE_NOT_FOUND",
         );
       }
     }
@@ -423,16 +422,14 @@ export const buildCanonicalStreamingIntent = async ({ dashboard, datasourceId })
       url: targetUrl,
       parser: normalizeStreamParser(settings.parser),
       headers: sanitizeCustomHeaders(
-        parseJsonObjectSetting(settings.headers || settings.requestHeaders)
+        parseJsonObjectSetting(settings.headers || settings.requestHeaders),
       ),
       idleTimeoutMs: normalizeTimeout(
         settings.idleTimeoutMs,
-        datasourceType === "sse" ? 120_000 : 300_000
+        datasourceType === "sse" ? 120_000 : 300_000,
       ),
       protocols:
-        datasourceType === "websocket"
-          ? normalizeWebSocketProtocols(settings.protocols)
-          : [],
+        datasourceType === "websocket" ? normalizeWebSocketProtocols(settings.protocols) : [],
       authPlacement,
       queryParamName,
       credentialProfileId,
@@ -446,7 +443,7 @@ export const buildCanonicalStreamingIntent = async ({ dashboard, datasourceId })
       throw createClientError(
         400,
         "MQTT datasource requires brokerProfileId",
-        "BROKER_PROFILE_REQUIRED"
+        "BROKER_PROFILE_REQUIRED",
       );
     }
 
@@ -464,22 +461,21 @@ export const buildCanonicalStreamingIntent = async ({ dashboard, datasourceId })
     }
 
     let credentialProfile = null;
-    const credentialProfileId =
-      String(brokerProfile.credentialProfileId || "").trim() || null;
+    const credentialProfileId = String(brokerProfile.credentialProfileId || "").trim() || null;
     if (credentialProfileId) {
       credentialProfile = await CredentialProfile.findOne({ _id: credentialProfileId }).lean();
       if (!credentialProfile) {
         throw createClientError(
           403,
           "Broker credential profile not found",
-          "CREDENTIAL_PROFILE_NOT_FOUND"
+          "CREDENTIAL_PROFILE_NOT_FOUND",
         );
       }
       if (String(credentialProfile.type || "").toLowerCase() !== "basic") {
         throw createClientError(
           400,
           "MQTT broker credentials must use a basic credential profile",
-          "MQTT_CREDENTIAL_TYPE_INVALID"
+          "MQTT_CREDENTIAL_TYPE_INVALID",
         );
       }
     }
@@ -495,10 +491,7 @@ export const buildCanonicalStreamingIntent = async ({ dashboard, datasourceId })
       topic,
       qos: normalizeQos(settings.qos),
       parser: normalizeStreamParser(settings.parser),
-      keepaliveSeconds: normalizeKeepaliveSeconds(
-        settings.keepaliveSeconds,
-        60
-      ),
+      keepaliveSeconds: normalizeKeepaliveSeconds(settings.keepaliveSeconds, 60),
       credentialProfileId,
       credentialProfile,
     };
@@ -507,7 +500,7 @@ export const buildCanonicalStreamingIntent = async ({ dashboard, datasourceId })
   throw createClientError(
     400,
     "Datasource type is not supported by streaming gateway",
-    "UNSUPPORTED_DATASOURCE"
+    "UNSUPPORTED_DATASOURCE",
   );
 };
 
@@ -584,7 +577,7 @@ const buildCanonicalIntentForDatasource = async ({ dashboard, datasourceId }) =>
   throw createClientError(
     400,
     `Datasource type '${datasourceType || "unknown"}' is not supported by gateway`,
-    "UNSUPPORTED_DATASOURCE"
+    "UNSUPPORTED_DATASOURCE",
   );
 };
 
@@ -610,7 +603,7 @@ export const mintDatasourceSessionToken = async ({
     throw createClientError(
       400,
       "Datasource type is not supported by gateway",
-      "UNSUPPORTED_DATASOURCE"
+      "UNSUPPORTED_DATASOURCE",
     );
   }
 
@@ -620,8 +613,7 @@ export const mintDatasourceSessionToken = async ({
   });
 
   const intentHash = hashDatasourceIntent(canonicalIntent);
-  const credentialProfileId =
-    String(canonicalIntent.credentialProfileId || "").trim() || null;
+  const credentialProfileId = String(canonicalIntent.credentialProfileId || "").trim() || null;
 
   const nowEpoch = Math.floor(Date.now() / 1000);
   const expiresAtEpoch = nowEpoch + DATASOURCE_SESSION_TTL_SECONDS;
@@ -655,10 +647,7 @@ export const mintDatasourceSessionToken = async ({
   };
 };
 
-export const validateDatasourceSessionToken = (
-  token,
-  { expectedScope = null } = {}
-) => {
+export const validateDatasourceSessionToken = (token, { expectedScope = null } = {}) => {
   let claims;
   try {
     claims = jwt.verify(token, config.jwtGatewaySecret, {
@@ -667,11 +656,7 @@ export const validateDatasourceSessionToken = (
       issuer: "freeboard-api",
     });
   } catch {
-    throw createClientError(
-      401,
-      "Invalid or expired datasource session token",
-      "TOKEN_INVALID"
-    );
+    throw createClientError(401, "Invalid or expired datasource session token", "TOKEN_INVALID");
   }
 
   if (expectedScope && String(claims?.scope || "") !== expectedScope) {
@@ -687,7 +672,7 @@ const ensureTokenScopeMatchesDatasource = ({ tokenClaims, datasourceType }) => {
     throw createClientError(
       400,
       "Datasource type is not supported by gateway",
-      "UNSUPPORTED_DATASOURCE"
+      "UNSUPPORTED_DATASOURCE",
     );
   }
   if (String(tokenClaims?.scope || "") !== expectedScope) {
@@ -711,7 +696,7 @@ const enforcePublicCredentialPolicy = ({
       throw createClientError(
         403,
         "Credential profile does not allow public usage",
-        "CREDENTIAL_PUBLIC_FORBIDDEN"
+        "CREDENTIAL_PUBLIC_FORBIDDEN",
       );
     }
     return;
@@ -722,7 +707,7 @@ const enforcePublicCredentialPolicy = ({
       throw createClientError(
         403,
         "Broker profile does not allow public usage",
-        "BROKER_PUBLIC_FORBIDDEN"
+        "BROKER_PUBLIC_FORBIDDEN",
       );
     }
 
@@ -730,17 +715,13 @@ const enforcePublicCredentialPolicy = ({
       throw createClientError(
         403,
         "Credential profile does not allow public usage",
-        "CREDENTIAL_PUBLIC_FORBIDDEN"
+        "CREDENTIAL_PUBLIC_FORBIDDEN",
       );
     }
   }
 };
 
-const resolveStreamingSseWebsocketIntent = ({
-  canonicalIntent,
-  tokenClaims,
-  decryptSecret,
-}) => {
+const resolveStreamingSseWebsocketIntent = ({ canonicalIntent, tokenClaims, decryptSecret }) => {
   const profile = canonicalIntent.credentialProfile || null;
   const protocol = canonicalIntent.protocol;
   enforcePublicCredentialPolicy({
@@ -772,7 +753,7 @@ const resolveStreamingSseWebsocketIntent = ({
         resolveCredentialHeaders({
           profile,
           secret,
-        })
+        }),
       );
     }
   }
@@ -784,18 +765,12 @@ const resolveStreamingSseWebsocketIntent = ({
     headers,
     idleTimeoutMs: canonicalIntent.idleTimeoutMs,
     protocols:
-      protocol === "websocket"
-        ? normalizeWebSocketProtocols(canonicalIntent.protocols)
-        : [],
+      protocol === "websocket" ? normalizeWebSocketProtocols(canonicalIntent.protocols) : [],
     authPlacement: canonicalIntent.authPlacement,
   };
 };
 
-const resolveMqttIntent = ({
-  canonicalIntent,
-  tokenClaims,
-  decryptSecret,
-}) => {
+const resolveMqttIntent = ({ canonicalIntent, tokenClaims, decryptSecret }) => {
   const brokerProfile = canonicalIntent.brokerProfile || null;
   const credentialProfile = canonicalIntent.credentialProfile || null;
 
@@ -813,7 +788,7 @@ const resolveMqttIntent = ({
       throw createClientError(
         400,
         "MQTT broker credentials must use a basic credential profile",
-        "MQTT_CREDENTIAL_TYPE_INVALID"
+        "MQTT_CREDENTIAL_TYPE_INVALID",
       );
     }
     const secret = decryptSecret(credentialProfile.secret);

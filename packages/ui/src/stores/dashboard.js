@@ -81,9 +81,7 @@ export const useDashboardStore = defineStore("dashboard", {
         if (updated) {
           this.dashboard.visibility = updated.visibility;
           this.dashboard.shareToken = updated.shareToken || null;
-          this.dashboard.shareTokenVersion = Number.isFinite(
-            Number(updated.shareTokenVersion)
-          )
+          this.dashboard.shareTokenVersion = Number.isFinite(Number(updated.shareTokenVersion))
             ? Math.max(0, Math.floor(Number(updated.shareTokenVersion)))
             : this.dashboard.shareTokenVersion;
           this.dashboard.canEdit = updated.canEdit !== false;
@@ -103,9 +101,7 @@ export const useDashboardStore = defineStore("dashboard", {
         nextDashboardId = created._id;
         this.dashboard.visibility = created.visibility;
         this.dashboard.shareToken = created.shareToken || null;
-        this.dashboard.shareTokenVersion = Number.isFinite(
-          Number(created.shareTokenVersion)
-        )
+        this.dashboard.shareTokenVersion = Number.isFinite(Number(created.shareTokenVersion))
           ? Math.max(0, Math.floor(Number(created.shareTokenVersion)))
           : 0;
         this.dashboard.canEdit = created.canEdit !== false;

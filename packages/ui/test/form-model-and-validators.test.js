@@ -11,7 +11,7 @@ test("resolveFieldModelValue preserves explicit false model value", () => {
       model: { value: false },
       default: true,
     },
-    { enabled: true }
+    { enabled: true },
   );
 
   assert.equal(value, false);
@@ -23,7 +23,7 @@ test("resolveFieldModelValue preserves explicit 0 setting value", () => {
       name: "interval",
       default: 10,
     },
-    { interval: 0 }
+    { interval: 0 },
   );
 
   assert.equal(value, 0);
@@ -35,7 +35,7 @@ test("resolveFieldModelValue preserves explicit empty-string setting value", () 
       name: "label",
       default: "fallback",
     },
-    { label: "" }
+    { label: "" },
   );
 
   assert.equal(value, "");
@@ -47,7 +47,7 @@ test("resolveFieldModelValue falls back to default when unset", () => {
       name: "timeout",
       default: 15,
     },
-    {}
+    {},
   );
 
   assert.equal(value, 15);
@@ -69,4 +69,3 @@ test("validateRequired enforces non-empty arrays", () => {
   assert.deepEqual(validateRequired([]), { error: "This is required." });
   assert.deepEqual(validateRequired([1]), {});
 });
-

@@ -51,7 +51,11 @@ const toPositiveInteger = (value, fallback) => {
   return floored;
 };
 
-const toBoundedInteger = (value, fallback, { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER } = {}) => {
+const toBoundedInteger = (
+  value,
+  fallback,
+  { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER } = {},
+) => {
   const normalized = Number(value);
   if (!Number.isFinite(normalized)) {
     return fallback;
@@ -75,139 +79,120 @@ const NODE_ENV = String(process.env.NODE_ENV || "development").toLowerCase();
 const IS_PRODUCTION = NODE_ENV === "production";
 
 const ALLOW_INSECURE_TLS = toBoolean(process.env.EGRESS_ALLOW_INSECURE_TLS, false);
-const ALLOW_PRIVATE_DESTINATIONS = toBoolean(
-  process.env.EGRESS_ALLOW_PRIVATE_DESTINATIONS,
-  false
-);
+const ALLOW_PRIVATE_DESTINATIONS = toBoolean(process.env.EGRESS_ALLOW_PRIVATE_DESTINATIONS, false);
 const REQUEST_TIMEOUT_MS = toPositiveInteger(process.env.FETCH_TIMEOUT_MS, 15000);
-const MAX_RESPONSE_BYTES = toPositiveInteger(
-  process.env.FETCH_MAX_RESPONSE_BYTES,
-  5 * 1024 * 1024
-);
+const MAX_RESPONSE_BYTES = toPositiveInteger(process.env.FETCH_MAX_RESPONSE_BYTES, 5 * 1024 * 1024);
 const INTROSPECTION_TIMEOUT_MS = toPositiveInteger(
   process.env.GATEWAY_INTROSPECTION_TIMEOUT_MS,
-  5000
+  5000,
 );
 const REVOKED_TOKENS_TIMEOUT_MS = toPositiveInteger(
   process.env.GATEWAY_REVOKED_TOKENS_TIMEOUT_MS,
-  5000
+  5000,
 );
 const REVOKED_TOKENS_MAX_BATCH = toPositiveInteger(
   process.env.GATEWAY_REVOKED_TOKENS_MAX_BATCH,
-  500
+  500,
 );
 const ALLOWED_HOST_PATTERNS = parseCsvList(process.env.EGRESS_ALLOWED_HOSTS).map((value) =>
-  value.toLowerCase()
+  value.toLowerCase(),
 );
 const ALLOWED_PORTS = parseCsvList(process.env.EGRESS_ALLOWED_PORTS || "80,443,1883,8883")
   .map((value) => Number(value.trim()))
   .filter((value) => Number.isInteger(value) && value >= 1 && value <= 65535);
 const JWT_GATEWAY_SECRET =
-  process.env.JWT_GATEWAY_SECRET ||
-  "freeboard-gateway-dev-insecure-local-only-secret-32";
+  process.env.JWT_GATEWAY_SECRET || "freeboard-gateway-dev-insecure-local-only-secret-32";
 const GATEWAY_SERVICE_TOKEN =
-  process.env.GATEWAY_SERVICE_TOKEN ||
-  "freeboard-gateway-service-dev-token-local-only-32";
+  process.env.GATEWAY_SERVICE_TOKEN || "freeboard-gateway-service-dev-token-local-only-32";
 const GATEWAY_API_BASE_URL = process.env.GATEWAY_API_BASE_URL || "http://127.0.0.1:4001";
-const GATEWAY_INTROSPECTION_URL =
-  `${GATEWAY_API_BASE_URL.replace(/\/$/, "")}/internal/gateway/datasource-introspect`;
-const GATEWAY_REVOKED_TOKENS_URL =
-  `${GATEWAY_API_BASE_URL.replace(/\/$/, "")}/internal/gateway/revoked-tokens`;
+const GATEWAY_INTROSPECTION_URL = `${GATEWAY_API_BASE_URL.replace(/\/$/, "")}/internal/gateway/datasource-introspect`;
+const GATEWAY_REVOKED_TOKENS_URL = `${GATEWAY_API_BASE_URL.replace(/\/$/, "")}/internal/gateway/revoked-tokens`;
 
 const REALTIME_ENABLED = toBoolean(process.env.REALTIME_ENABLED, true);
 const REALTIME_MAX_CLIENT_CONNECTIONS_PER_IP = toPositiveInteger(
   process.env.REALTIME_MAX_CLIENT_CONNECTIONS_PER_IP,
-  25
+  25,
 );
 const REALTIME_MAX_CONNECTIONS_PER_DASHBOARD = toPositiveInteger(
   process.env.REALTIME_MAX_CONNECTIONS_PER_DASHBOARD,
-  1000
+  1000,
 );
 const REALTIME_MAX_SUBSCRIPTIONS_PER_CONNECTION = toPositiveInteger(
   process.env.REALTIME_MAX_SUBSCRIPTIONS_PER_CONNECTION,
-  50
+  50,
 );
 const REALTIME_CONNECT_TIMEOUT_MS = toPositiveInteger(
   process.env.REALTIME_CONNECT_TIMEOUT_MS,
-  10000
+  10000,
 );
-const REALTIME_RECONNECT_MIN_MS = toPositiveInteger(
-  process.env.REALTIME_RECONNECT_MIN_MS,
-  1000
-);
-const REALTIME_RECONNECT_MAX_MS = toPositiveInteger(
-  process.env.REALTIME_RECONNECT_MAX_MS,
-  30000
-);
+const REALTIME_RECONNECT_MIN_MS = toPositiveInteger(process.env.REALTIME_RECONNECT_MIN_MS, 1000);
+const REALTIME_RECONNECT_MAX_MS = toPositiveInteger(process.env.REALTIME_RECONNECT_MAX_MS, 30000);
 const REALTIME_MAX_MESSAGE_BYTES = toPositiveInteger(
   process.env.REALTIME_MAX_MESSAGE_BYTES,
-  1024 * 1024
+  1024 * 1024,
 );
 const REALTIME_CONNECT_RATE_LIMIT_IP_PER_MIN = toPositiveInteger(
   process.env.REALTIME_CONNECT_RATE_LIMIT_IP_PER_MIN,
-  60
+  60,
 );
 const REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_IP_PER_MIN = toPositiveInteger(
   process.env.REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_IP_PER_MIN,
-  60
+  60,
 );
 const REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_SHARE_TOKEN_PER_MIN = toPositiveInteger(
   process.env.REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_SHARE_TOKEN_PER_MIN,
-  120
+  120,
 );
 const REALTIME_PUBLIC_REVALIDATE_INTERVAL_MS = toPositiveInteger(
   process.env.REALTIME_PUBLIC_REVALIDATE_INTERVAL_MS,
-  30000
+  30000,
 );
 const REALTIME_PUBLIC_FULL_REVALIDATE_INTERVAL_MS = toPositiveInteger(
   process.env.REALTIME_PUBLIC_FULL_REVALIDATE_INTERVAL_MS,
-  300000
+  300000,
 );
 const REALTIME_TRUST_PROXY_HOPS = Math.max(
   0,
-  toBoundedInteger(process.env.REALTIME_TRUST_PROXY_HOPS, 0, { min: 0, max: 16 })
+  toBoundedInteger(process.env.REALTIME_TRUST_PROXY_HOPS, 0, { min: 0, max: 16 }),
 );
 
 const REALTIME_SSE_ENABLED = toBoolean(process.env.REALTIME_SSE_ENABLED, true);
 const REALTIME_SSE_IDLE_TIMEOUT_MS = toPositiveInteger(
   process.env.REALTIME_SSE_IDLE_TIMEOUT_MS,
-  120000
+  120000,
 );
 
 const REALTIME_WS_ENABLED = toBoolean(process.env.REALTIME_WS_ENABLED, true);
 const REALTIME_WS_IDLE_TIMEOUT_MS = toPositiveInteger(
   process.env.REALTIME_WS_IDLE_TIMEOUT_MS,
-  300000
+  300000,
 );
 const REALTIME_WS_PING_INTERVAL_MS = toPositiveInteger(
   process.env.REALTIME_WS_PING_INTERVAL_MS,
-  30000
+  30000,
 );
 
 const REALTIME_MQTT_ENABLED = toBoolean(process.env.REALTIME_MQTT_ENABLED, true);
 const REALTIME_MQTT_MAX_MESSAGE_BYTES = toPositiveInteger(
   process.env.REALTIME_MQTT_MAX_MESSAGE_BYTES,
-  256 * 1024
+  256 * 1024,
 );
 const REALTIME_MQTT_KEEPALIVE_SECONDS = toPositiveInteger(
   process.env.REALTIME_MQTT_KEEPALIVE_SECONDS,
-  60
+  60,
 );
 const REALTIME_MQTT_ALLOWED_TOPICS = parseCsvList(process.env.REALTIME_MQTT_ALLOWED_TOPICS);
 const REALTIME_MQTT_MAX_QOS = Math.max(
   0,
-  Math.min(
-    1,
-    toBoundedInteger(process.env.REALTIME_MQTT_MAX_QOS, 1, { min: 0, max: 1 })
-  )
+  Math.min(1, toBoundedInteger(process.env.REALTIME_MQTT_MAX_QOS, 1, { min: 0, max: 1 })),
 );
 const REALTIME_MQTT_MAX_CONNECTIONS_PER_BROKER = toPositiveInteger(
   process.env.REALTIME_MQTT_MAX_CONNECTIONS_PER_BROKER,
-  10
+  10,
 );
 const REALTIME_MQTT_IDLE_DISCONNECT_MS = toPositiveInteger(
   process.env.REALTIME_MQTT_IDLE_DISCONNECT_MS,
-  300000
+  300000,
 );
 
 const STREAM_ERROR_CODES = Object.freeze({
@@ -239,9 +224,7 @@ const isWeakSecret = (secret) => {
   ) {
     return true;
   }
-  return ["freeboard", "changeme", "default", "secret", "password"].includes(
-    normalized
-  );
+  return ["freeboard", "changeme", "default", "secret", "password"].includes(normalized);
 };
 
 if (IS_PRODUCTION && ALLOW_INSECURE_TLS) {
@@ -250,7 +233,7 @@ if (IS_PRODUCTION && ALLOW_INSECURE_TLS) {
 
 if (IS_PRODUCTION && ALLOWED_HOST_PATTERNS.length === 0) {
   throw new Error(
-    "EGRESS_ALLOWED_HOSTS must be configured in production (comma-separated host allowlist)."
+    "EGRESS_ALLOWED_HOSTS must be configured in production (comma-separated host allowlist).",
   );
 }
 
@@ -259,9 +242,7 @@ if (IS_PRODUCTION && isWeakSecret(JWT_GATEWAY_SECRET)) {
 }
 
 if (IS_PRODUCTION && isWeakSecret(GATEWAY_SERVICE_TOKEN)) {
-  throw new Error(
-    "GATEWAY_SERVICE_TOKEN is missing or too weak for production runtime."
-  );
+  throw new Error("GATEWAY_SERVICE_TOKEN is missing or too weak for production runtime.");
 }
 
 const blockedIpv4Ranges = [
@@ -490,7 +471,7 @@ export const parseTargetUrl = (rawTarget) =>
  */
 export const ensureResolvedDestinationIsAllowed = async (
   hostname,
-  { lookup = dns.promises.lookup } = {}
+  { lookup = dns.promises.lookup } = {},
 ) => {
   const resolved = await lookup(hostname, { all: true, verbatim: true });
   if (!Array.isArray(resolved) || resolved.length === 0) {
@@ -635,8 +616,7 @@ const executeIntentFetch = async ({ intent, lookup, httpRequest, httpsRequest })
   const resolvedDestination = await ensureResolvedDestinationIsAllowed(hostname, {
     lookup,
   });
-  const bodyText =
-    intent.body === null || intent.body === undefined ? "" : String(intent.body);
+  const bodyText = intent.body === null || intent.body === undefined ? "" : String(intent.body);
   const timeoutMs = Number(intent.timeoutMs) > 0 ? Number(intent.timeoutMs) : REQUEST_TIMEOUT_MS;
 
   const options = createUpstreamRequestOptions({
@@ -721,9 +701,12 @@ const validateSessionToken = (token, { expectedScope = null } = {}) => {
 
 const fetchJson = async ({ url, body, timeoutMs, fetchFn = fetch }) => {
   const abortController = new AbortController();
-  const timeout = setTimeout(() => {
-    abortController.abort();
-  }, Math.max(500, timeoutMs));
+  const timeout = setTimeout(
+    () => {
+      abortController.abort();
+    },
+    Math.max(500, timeoutMs),
+  );
 
   let response;
   try {
@@ -753,12 +736,7 @@ const fetchJson = async ({ url, body, timeoutMs, fetchFn = fetch }) => {
   return payload;
 };
 
-const fetchIntrospection = async ({
-  sessionToken,
-  dashboardId,
-  datasourceId,
-  fetchFn = fetch,
-}) =>
+const fetchIntrospection = async ({ sessionToken, dashboardId, datasourceId, fetchFn = fetch }) =>
   fetchJson({
     url: GATEWAY_INTROSPECTION_URL,
     body: {
@@ -787,12 +765,13 @@ const fetchRevokedTokens = async ({ sinceCursor, limit, fetchFn = fetch }) =>
  * @param {{lookup?: Function, httpRequest?: Function, httpsRequest?: Function, fetchFn?: Function}} [options]
  * @returns {import('express').RequestHandler}
  */
-export const createGatewayFetchHandler = ({
-  lookup = dns.promises.lookup,
-  httpRequest = http.request,
-  httpsRequest = https.request,
-  fetchFn = fetch,
-} = {}) =>
+export const createGatewayFetchHandler =
+  ({
+    lookup = dns.promises.lookup,
+    httpRequest = http.request,
+    httpsRequest = https.request,
+    fetchFn = fetch,
+  } = {}) =>
   async (clientReq, clientRes) => {
     try {
       const authHeader = String(clientReq.headers.authorization || "");
@@ -807,10 +786,10 @@ export const createGatewayFetchHandler = ({
         expectedScope: "datasource:fetch",
       });
       const dashboardId = String(
-        clientReq.body?.dashboardId || tokenClaims.dashboardId || ""
+        clientReq.body?.dashboardId || tokenClaims.dashboardId || "",
       ).trim();
       const datasourceId = String(
-        clientReq.body?.datasourceId || tokenClaims.datasourceId || ""
+        clientReq.body?.datasourceId || tokenClaims.datasourceId || "",
       ).trim();
       if (!dashboardId || !datasourceId) {
         throw createClientError(400, "dashboardId and datasourceId are required");
@@ -875,7 +854,7 @@ export const deriveClientIp = (request) => {
   const forwardedForHeader = request?.headers?.["x-forwarded-for"];
   if (typeof forwardedForHeader !== "string" || !forwardedForHeader.trim()) {
     console.warn(
-      "Realtime gateway warning: REALTIME_TRUST_PROXY_HOPS>0 but X-Forwarded-For is missing; falling back to socket remote address."
+      "Realtime gateway warning: REALTIME_TRUST_PROXY_HOPS>0 but X-Forwarded-For is missing; falling back to socket remote address.",
     );
     return socketAddress;
   }
@@ -887,7 +866,7 @@ export const deriveClientIp = (request) => {
 
   if (forwardedEntries.length <= REALTIME_TRUST_PROXY_HOPS) {
     console.warn(
-      "Realtime gateway warning: X-Forwarded-For has fewer entries than REALTIME_TRUST_PROXY_HOPS; falling back to socket remote address."
+      "Realtime gateway warning: X-Forwarded-For has fewer entries than REALTIME_TRUST_PROXY_HOPS; falling back to socket remote address.",
     );
     return socketAddress;
   }
@@ -965,7 +944,7 @@ const parseRealtimeTargetUrl = ({ rawTarget, protocol }) => {
   throw createClientError(
     400,
     "Realtime protocol is not supported",
-    STREAM_ERROR_CODES.POLICY_BLOCKED
+    STREAM_ERROR_CODES.POLICY_BLOCKED,
   );
 };
 
@@ -1013,13 +992,10 @@ export const createRealtimeGateway = ({
     return true;
   };
 
-  const sendAck = (connection, {
-    requestId,
-    datasourceId = null,
-    ok,
-    errorCode = null,
-    message = null,
-  }) => {
+  const sendAck = (
+    connection,
+    { requestId, datasourceId = null, ok, errorCode = null, message = null },
+  ) => {
     sendWsResponse(connection, {
       type: "ack",
       requestId,
@@ -1039,12 +1015,7 @@ export const createRealtimeGateway = ({
     });
   };
 
-  const sendStatus = (connection, {
-    datasourceId,
-    status,
-    errorCode = null,
-    message = null,
-  }) => {
+  const sendStatus = (connection, { datasourceId, status, errorCode = null, message = null }) => {
     sendWsResponse(connection, {
       type: "status",
       datasourceId,
@@ -1063,11 +1034,7 @@ export const createRealtimeGateway = ({
     });
   };
 
-  const sendError = (connection, {
-    datasourceId,
-    errorCode,
-    message,
-  }) => {
+  const sendError = (connection, { datasourceId, errorCode, message }) => {
     sendWsResponse(connection, {
       type: "error",
       datasourceId,
@@ -1094,7 +1061,7 @@ export const createRealtimeGateway = ({
   const ensureDashboardCapacity = ({ connection, dashboardId, datasourceId }) => {
     const alreadySubscribedToDashboard = [...connection.subscriptions.values()].some(
       (subscription) =>
-        subscription.dashboardId === dashboardId && subscription.datasourceId !== datasourceId
+        subscription.dashboardId === dashboardId && subscription.datasourceId !== datasourceId,
     );
     if (alreadySubscribedToDashboard) {
       return;
@@ -1108,7 +1075,7 @@ export const createRealtimeGateway = ({
       throw createClientError(
         429,
         "Realtime dashboard connection limit reached",
-        STREAM_ERROR_CODES.RATE_LIMITED
+        STREAM_ERROR_CODES.RATE_LIMITED,
       );
     }
   };
@@ -1121,7 +1088,7 @@ export const createRealtimeGateway = ({
 
   const detachDashboardRefIfUnused = ({ connection, dashboardId }) => {
     const stillUsed = [...connection.subscriptions.values()].some(
-      (subscription) => subscription.dashboardId === dashboardId
+      (subscription) => subscription.dashboardId === dashboardId,
     );
     if (stillUsed) {
       return;
@@ -1188,14 +1155,12 @@ export const createRealtimeGateway = ({
       throw createClientError(
         429,
         "MQTT broker connection pool limit reached",
-        STREAM_ERROR_CODES.RATE_LIMITED
+        STREAM_ERROR_CODES.RATE_LIMITED,
       );
     }
 
     const tlsOptions =
-      intent.tls && typeof intent.tls === "object" && !Array.isArray(intent.tls)
-        ? intent.tls
-        : {};
+      intent.tls && typeof intent.tls === "object" && !Array.isArray(intent.tls) ? intent.tls : {};
 
     const client = new SimpleMqttClient({
       brokerUrl: intent.brokerUrl,
@@ -1206,7 +1171,7 @@ export const createRealtimeGateway = ({
       tlsServername: new URL(intent.brokerUrl).hostname,
       keepaliveSeconds: Math.max(
         5,
-        Math.floor(Number(intent.keepaliveSeconds) || REALTIME_MQTT_KEEPALIVE_SECONDS)
+        Math.floor(Number(intent.keepaliveSeconds) || REALTIME_MQTT_KEEPALIVE_SECONDS),
       ),
       connectTimeoutMs: REALTIME_CONNECT_TIMEOUT_MS,
       reconnectMinMs: REALTIME_RECONNECT_MIN_MS,
@@ -1252,11 +1217,7 @@ export const createRealtimeGateway = ({
   const ensureMqttTopicPolicy = ({ intent }) => {
     const topic = String(intent.topic || "").trim();
     if (!topic) {
-      throw createClientError(
-        400,
-        "MQTT topic is required",
-        STREAM_ERROR_CODES.POLICY_BLOCKED
-      );
+      throw createClientError(400, "MQTT topic is required", STREAM_ERROR_CODES.POLICY_BLOCKED);
     }
 
     const brokerAllowlist = normalizeMqttAllowlist(intent.topicAllowlist);
@@ -1264,7 +1225,7 @@ export const createRealtimeGateway = ({
       throw createClientError(
         403,
         "MQTT topic is blocked by broker policy",
-        STREAM_ERROR_CODES.POLICY_BLOCKED
+        STREAM_ERROR_CODES.POLICY_BLOCKED,
       );
     }
 
@@ -1275,7 +1236,7 @@ export const createRealtimeGateway = ({
       throw createClientError(
         403,
         "MQTT topic is blocked by gateway policy",
-        STREAM_ERROR_CODES.POLICY_BLOCKED
+        STREAM_ERROR_CODES.POLICY_BLOCKED,
       );
     }
 
@@ -1287,7 +1248,7 @@ export const createRealtimeGateway = ({
       throw createClientError(
         403,
         "MQTT topic allowlist is required in production",
-        STREAM_ERROR_CODES.POLICY_BLOCKED
+        STREAM_ERROR_CODES.POLICY_BLOCKED,
       );
     }
   };
@@ -1373,11 +1334,7 @@ export const createRealtimeGateway = ({
     }
   };
 
-  const scheduleSubscriptionTokenExpiry = ({
-    connection,
-    datasourceId,
-    subscription,
-  }) => {
+  const scheduleSubscriptionTokenExpiry = ({ connection, datasourceId, subscription }) => {
     if (subscription.tokenExpiryTimer) {
       clearTimeout(subscription.tokenExpiryTimer);
       subscription.tokenExpiryTimer = null;
@@ -1416,8 +1373,8 @@ export const createRealtimeGateway = ({
         removeSubscription({
           connection,
           datasourceId,
-        })
-      )
+        }),
+      ),
     );
 
     connectionsById.delete(connection.id);
@@ -1427,26 +1384,26 @@ export const createRealtimeGateway = ({
   const handlePublicSubscriptionRateLimit = ({ connection, dashboardId, tokenClaims }) => {
     const ipBucket = consumeRateLimit(
       `realtime-public-subscribe-ip:${connection.ip}`,
-      REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_IP_PER_MIN
+      REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_IP_PER_MIN,
     );
     if (!ipBucket.allowed) {
       throw createClientError(
         429,
         "Too many public realtime subscribe requests",
-        STREAM_ERROR_CODES.RATE_LIMITED
+        STREAM_ERROR_CODES.RATE_LIMITED,
       );
     }
 
     const shareVersion = Math.max(0, Math.floor(Number(tokenClaims.shareTokenVersion) || 0));
     const shareBucket = consumeRateLimit(
       `realtime-public-subscribe-share:${dashboardId}:${shareVersion}`,
-      REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_SHARE_TOKEN_PER_MIN
+      REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_SHARE_TOKEN_PER_MIN,
     );
     if (!shareBucket.allowed) {
       throw createClientError(
         429,
         "Too many public realtime subscribe requests",
-        STREAM_ERROR_CODES.RATE_LIMITED
+        STREAM_ERROR_CODES.RATE_LIMITED,
       );
     }
   };
@@ -1505,7 +1462,7 @@ export const createRealtimeGateway = ({
         throw createClientError(
           403,
           "Datasource identifiers do not match token claims",
-          STREAM_ERROR_CODES.AUTH_FAILED
+          STREAM_ERROR_CODES.AUTH_FAILED,
         );
       }
 
@@ -1528,7 +1485,7 @@ export const createRealtimeGateway = ({
         throw createClientError(
           403,
           "Datasource token scope mismatch",
-          STREAM_ERROR_CODES.AUTH_FAILED
+          STREAM_ERROR_CODES.AUTH_FAILED,
         );
       }
 
@@ -1537,7 +1494,7 @@ export const createRealtimeGateway = ({
         throw createClientError(
           502,
           "Introspection payload is invalid",
-          STREAM_ERROR_CODES.CONNECT_FAILED
+          STREAM_ERROR_CODES.CONNECT_FAILED,
         );
       }
 
@@ -1546,7 +1503,7 @@ export const createRealtimeGateway = ({
           throw createClientError(
             403,
             "Datasource token dashboard mismatch",
-            STREAM_ERROR_CODES.AUTH_FAILED
+            STREAM_ERROR_CODES.AUTH_FAILED,
           );
         }
 
@@ -1556,7 +1513,7 @@ export const createRealtimeGateway = ({
           throw createClientError(
             403,
             "Datasource token intent mismatch",
-            STREAM_ERROR_CODES.AUTH_FAILED
+            STREAM_ERROR_CODES.AUTH_FAILED,
           );
         }
 
@@ -1752,10 +1709,7 @@ export const createRealtimeGateway = ({
       const events = Array.isArray(feed?.events) ? feed.events : [];
       for (const event of events) {
         const dashboardId = String(event?.dashboardId || "").trim();
-        const revokedVersion = Math.max(
-          0,
-          Math.floor(Number(event?.shareTokenVersion) || 0)
-        );
+        const revokedVersion = Math.max(0, Math.floor(Number(event?.shareTokenVersion) || 0));
 
         for (const activePublicSubscription of [...publicSubscriptions.values()]) {
           if (activePublicSubscription.dashboardId !== dashboardId) {
@@ -1782,7 +1736,7 @@ export const createRealtimeGateway = ({
     } catch (error) {
       console.warn(
         "Realtime gateway warning: revoked token polling failed",
-        error?.message || error
+        error?.message || error,
       );
     } finally {
       pollingRevocations = false;
@@ -1811,9 +1765,7 @@ export const createRealtimeGateway = ({
     incrementConnectionCountByIp(clientIp);
 
     ws.on("message", (rawPayload, isBinary) => {
-      const payloadBuffer = Buffer.isBuffer(rawPayload)
-        ? rawPayload
-        : Buffer.from(rawPayload);
+      const payloadBuffer = Buffer.isBuffer(rawPayload) ? rawPayload : Buffer.from(rawPayload);
       if (payloadBuffer.byteLength > REALTIME_MAX_MESSAGE_BYTES) {
         sendError(connection, {
           datasourceId: null,
@@ -1824,9 +1776,7 @@ export const createRealtimeGateway = ({
         return;
       }
 
-      const rawText = isBinary
-        ? payloadBuffer.toString("utf8")
-        : String(rawPayload);
+      const rawText = isBinary ? payloadBuffer.toString("utf8") : String(rawPayload);
 
       let message;
       try {
@@ -1840,7 +1790,9 @@ export const createRealtimeGateway = ({
         return;
       }
 
-      const type = String(message?.type || "").trim().toLowerCase();
+      const type = String(message?.type || "")
+        .trim()
+        .toLowerCase();
       if (type === "subscribe") {
         void handleSubscribe({ connection, message });
         return;
@@ -1887,7 +1839,7 @@ export const createRealtimeGateway = ({
 
     const connectRateLimit = consumeRateLimit(
       `realtime-connect:${clientIp}`,
-      REALTIME_CONNECT_RATE_LIMIT_IP_PER_MIN
+      REALTIME_CONNECT_RATE_LIMIT_IP_PER_MIN,
     );
     if (!connectRateLimit.allowed) {
       socket.write("HTTP/1.1 429 Too Many Requests\r\n\r\n");
@@ -1915,7 +1867,7 @@ export const createRealtimeGateway = ({
       clearInterval(fullRevalidateTimer);
 
       await Promise.all(
-        [...connectionsById.values()].map((connection) => cleanupConnection(connection))
+        [...connectionsById.values()].map((connection) => cleanupConnection(connection)),
       );
 
       for (const entry of mqttPool.values()) {
@@ -1939,10 +1891,7 @@ export const createRealtimeGateway = ({
  * @param {{lookup?: Function, fetchFn?: Function}} [options]
  * @returns {import('express').Express}
  */
-export const createGatewayApp = ({
-  lookup = dns.promises.lookup,
-  fetchFn = fetch,
-} = {}) => {
+export const createGatewayApp = ({ lookup = dns.promises.lookup, fetchFn = fetch } = {}) => {
   const app = express();
   app.use(express.json({ limit: "256kb" }));
 

@@ -39,7 +39,7 @@ const writeStoredPolicy = async (key, value, updatedBy = null) => {
       upsert: true,
       new: true,
       setDefaultsOnInsert: true,
-    }
+    },
   ).lean();
 };
 
@@ -60,8 +60,7 @@ export const getAuthPolicyState = async () => {
   const registrationModeRaw =
     (await readStoredPolicy(POLICY_KEYS.registrationMode)) ?? config.registrationMode;
   const registrationDefaultRoleRaw =
-    (await readStoredPolicy(POLICY_KEYS.registrationDefaultRole)) ??
-    config.registrationDefaultRole;
+    (await readStoredPolicy(POLICY_KEYS.registrationDefaultRole)) ?? config.registrationDefaultRole;
   const editorCanPublishRaw =
     (await readStoredPolicy(POLICY_KEYS.editorCanPublish)) ?? config.editorCanPublish;
   const dashboardDefaultVisibilityRaw =
@@ -77,9 +76,7 @@ export const getAuthPolicyState = async () => {
     registrationMode: normalizeRegistrationMode(registrationModeRaw),
     registrationDefaultRole: normalizeNonAdminRole(registrationDefaultRoleRaw),
     editorCanPublish: Boolean(editorCanPublishRaw),
-    dashboardDefaultVisibility: normalizeDashboardVisibility(
-      dashboardDefaultVisibilityRaw
-    ),
+    dashboardDefaultVisibility: normalizeDashboardVisibility(dashboardDefaultVisibilityRaw),
     dashboardPublicListingEnabled: Boolean(dashboardPublicListingEnabledRaw),
     executionMode: normalizeExecutionMode(executionModeRaw),
     policyEditLock: config.policyEditLock,
@@ -116,7 +113,7 @@ export const setAuthPolicyState = async (input, actorUserId = null) => {
     await writeStoredPolicy(
       POLICY_KEYS.editorCanPublish,
       Boolean(input.editorCanPublish),
-      actorUserId
+      actorUserId,
     );
   }
 
@@ -129,7 +126,7 @@ export const setAuthPolicyState = async (input, actorUserId = null) => {
     await writeStoredPolicy(
       POLICY_KEYS.dashboardPublicListingEnabled,
       Boolean(input.dashboardPublicListingEnabled),
-      actorUserId
+      actorUserId,
     );
   }
 

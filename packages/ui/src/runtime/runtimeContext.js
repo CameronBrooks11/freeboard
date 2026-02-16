@@ -37,8 +37,7 @@ export const getDashboardId = () => invokeAccessor(runtimeContext.getDashboardId
 
 export const getAuthToken = () => invokeAccessor(runtimeContext.getAuthToken, null);
 
-export const getRuntimeShareToken = () =>
-  invokeAccessor(runtimeContext.getRuntimeShareToken, null);
+export const getRuntimeShareToken = () => invokeAccessor(runtimeContext.getRuntimeShareToken, null);
 
 export const getDatasourcePlugin = (typeName) => {
   if (typeof runtimeContext.getDatasourcePlugin !== "function") {

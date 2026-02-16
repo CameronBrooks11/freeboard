@@ -1,20 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  isAuthGraphQLError,
-  shouldForceLogoutOnGraphQLErrors,
-} from "../src/apolloAuthError.js";
+import { isAuthGraphQLError, shouldForceLogoutOnGraphQLErrors } from "../src/apolloAuthError.js";
 
 test("isAuthGraphQLError matches auth extension codes", () => {
   assert.equal(
     isAuthGraphQLError({ message: "boom", extensions: { code: "UNAUTHENTICATED" } }),
-    true
+    true,
   );
-  assert.equal(
-    isAuthGraphQLError({ message: "boom", extensions: { code: "FORBIDDEN" } }),
-    false
-  );
+  assert.equal(isAuthGraphQLError({ message: "boom", extensions: { code: "FORBIDDEN" } }), false);
 });
 
 test("isAuthGraphQLError matches auth-related messages when code is absent", () => {
@@ -26,22 +20,19 @@ test("isAuthGraphQLError matches auth-related messages when code is absent", () 
 test("shouldForceLogoutOnGraphQLErrors returns true only when any auth error exists", () => {
   assert.equal(shouldForceLogoutOnGraphQLErrors(), false);
   assert.equal(shouldForceLogoutOnGraphQLErrors([]), false);
-  assert.equal(
-    shouldForceLogoutOnGraphQLErrors([{ message: "Validation failed" }]),
-    false
-  );
+  assert.equal(shouldForceLogoutOnGraphQLErrors([{ message: "Validation failed" }]), false);
   assert.equal(
     shouldForceLogoutOnGraphQLErrors([
       { message: "Validation failed" },
       { message: "forbidden access" },
     ]),
-    false
+    false,
   );
   assert.equal(
     shouldForceLogoutOnGraphQLErrors([
       { message: "Validation failed" },
       { message: "jwt malformed" },
     ]),
-    true
+    true,
   );
 });

@@ -38,9 +38,7 @@ export const normalizeMqttAllowlist = (value) => {
   if (!Array.isArray(value)) {
     return [];
   }
-  return value
-    .map((entry) => String(entry || "").trim())
-    .filter(Boolean);
+  return value.map((entry) => String(entry || "").trim()).filter(Boolean);
 };
 
 const encodeMqttString = (value) => {
@@ -92,12 +90,7 @@ export const decodeMqttRemainingLength = (buffer, offset = 1) => {
   };
 };
 
-export const buildMqttConnectPacket = ({
-  clientId,
-  username,
-  password,
-  keepaliveSeconds,
-}) => {
+export const buildMqttConnectPacket = ({ clientId, username, password, keepaliveSeconds }) => {
   const protocolName = encodeMqttString("MQTT");
   const protocolLevel = Buffer.from([0x04]);
   let connectFlags = 0x02;
@@ -115,7 +108,7 @@ export const buildMqttConnectPacket = ({
   const keepaliveBuffer = Buffer.alloc(2);
   keepaliveBuffer.writeUInt16BE(
     Math.max(5, Math.min(3600, Math.floor(Number(keepaliveSeconds) || 60))),
-    0
+    0,
   );
 
   const payloadParts = [encodeMqttString(clientId)];
@@ -133,9 +126,7 @@ export const buildMqttConnectPacket = ({
     keepaliveBuffer,
   ]);
   const payload = Buffer.concat(payloadParts);
-  const remainingLength = encodeMqttRemainingLength(
-    variableHeader.length + payload.length
-  );
+  const remainingLength = encodeMqttRemainingLength(variableHeader.length + payload.length);
 
   return Buffer.concat([Buffer.from([0x10]), remainingLength, variableHeader, payload]);
 };
@@ -147,9 +138,7 @@ export const buildMqttSubscribePacket = ({ packetId, topic, qos }) => {
     encodeMqttString(topic),
     Buffer.from([Math.max(0, Math.min(1, Math.floor(Number(qos) || 0)))]),
   ]);
-  const remainingLength = encodeMqttRemainingLength(
-    variableHeader.length + payload.length
-  );
+  const remainingLength = encodeMqttRemainingLength(variableHeader.length + payload.length);
   return Buffer.concat([Buffer.from([0x82]), remainingLength, variableHeader, payload]);
 };
 
@@ -157,9 +146,7 @@ export const buildMqttUnsubscribePacket = ({ packetId, topic }) => {
   const variableHeader = Buffer.alloc(2);
   variableHeader.writeUInt16BE(packetId, 0);
   const payload = encodeMqttString(topic);
-  const remainingLength = encodeMqttRemainingLength(
-    variableHeader.length + payload.length
-  );
+  const remainingLength = encodeMqttRemainingLength(variableHeader.length + payload.length);
   return Buffer.concat([Buffer.from([0xa2]), remainingLength, variableHeader, payload]);
 };
 

@@ -124,7 +124,7 @@ export const reconcileDashboardAccessForRemovedUser = async ({
   }).lean();
 
   const ownedDashboards = impactedDashboards.filter(
-    (dashboard) => toComparableId(dashboard.user) === normalizedTargetUserId
+    (dashboard) => toComparableId(dashboard.user) === normalizedTargetUserId,
   );
 
   if (ownedDashboards.length > 0 && !normalizedReplacementOwnerUserId) {
@@ -132,7 +132,7 @@ export const reconcileDashboardAccessForRemovedUser = async ({
       "Cannot remove user while owning dashboards without an active administrator recovery owner",
       {
         extensions: { code: "FORBIDDEN" },
-      }
+      },
     );
   }
 
@@ -144,12 +144,11 @@ export const reconcileDashboardAccessForRemovedUser = async ({
     const ownerWasTarget = toComparableId(dashboard.user) === normalizedTargetUserId;
     const currentAcl = Array.isArray(dashboard.acl) ? dashboard.acl : [];
     const aclWithoutTarget = currentAcl.filter(
-      (entry) => toComparableId(entry?.userId) !== normalizedTargetUserId
+      (entry) => toComparableId(entry?.userId) !== normalizedTargetUserId,
     );
     const nextAcl = ownerWasTarget
       ? aclWithoutTarget.filter(
-          (entry) =>
-            toComparableId(entry?.userId) !== normalizedReplacementOwnerUserId
+          (entry) => toComparableId(entry?.userId) !== normalizedReplacementOwnerUserId,
         )
       : aclWithoutTarget;
     const aclChanged = nextAcl.length !== currentAcl.length;
@@ -172,7 +171,7 @@ export const reconcileDashboardAccessForRemovedUser = async ({
     const updated = await Dashboard.findOneAndUpdate(
       { _id: dashboardId },
       { $set: update },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     ).lean();
 
     if (!updated) {
@@ -224,9 +223,7 @@ export const sortUsersForAdmin = (users) =>
     if (roleDelta !== 0) {
       return roleDelta;
     }
-    return (
-      new Date(a.registrationDate).valueOf() - new Date(b.registrationDate).valueOf()
-    );
+    return new Date(a.registrationDate).valueOf() - new Date(b.registrationDate).valueOf();
   });
 
 export const toInviteView = (invite) => ({
@@ -241,9 +238,7 @@ export const toInviteView = (invite) => ({
 
 export const ensurePasswordIsStrong = (password) => {
   if (!isStrongPassword(password)) {
-    throw createGraphQLError(
-      `The password is not secure enough. ${credentialPolicy.password}.`
-    );
+    throw createGraphQLError(`The password is not secure enough. ${credentialPolicy.password}.`);
   }
 };
 
@@ -267,7 +262,7 @@ export const issueUserAuthToken = (user) =>
     user.role,
     user.active,
     user._id,
-    toSessionVersion(user.sessionVersion)
+    toSessionVersion(user.sessionVersion),
   );
 
 export const findActiveInviteByToken = async (token) => {
@@ -299,7 +294,7 @@ export const issueInviteToken = async ({ email, role, createdBy, expiresInHours 
       acceptedAt: null,
       expiresAt: { $gt: now },
     },
-    { $set: { revokedAt: now } }
+    { $set: { revokedAt: now } },
   );
 
   const rawToken = generateOneTimeToken();
@@ -308,9 +303,7 @@ export const issueInviteToken = async ({ email, role, createdBy, expiresInHours 
     role: normalizedRole,
     tokenHash: hashOneTimeToken(rawToken),
     createdBy: createdBy || null,
-    expiresAt: computeExpiryDate(
-      clampExpiryHours(expiresInHours, INVITE_DEFAULT_EXPIRY_HOURS)
-    ),
+    expiresAt: computeExpiryDate(clampExpiryHours(expiresInHours, INVITE_DEFAULT_EXPIRY_HOURS)),
   }).save();
 
   return {
@@ -333,7 +326,7 @@ export const issuePasswordResetToken = async ({
       usedAt: null,
       expiresAt: { $gt: now },
     },
-    { $set: { revokedAt: now } }
+    { $set: { revokedAt: now } },
   );
 
   const rawToken = generateOneTimeToken();

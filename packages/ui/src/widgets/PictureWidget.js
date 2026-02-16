@@ -130,9 +130,7 @@ export class PictureWidget extends ReactiveWidget {
 
   resolveInputs() {
     return {
-      header:
-        this.getBinding(this.currentSettings?.headerPath) ??
-        this.currentSettings?.headerText,
+      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
       src: this.getBinding(this.currentSettings?.srcPath),
       alt: this.getBinding(this.currentSettings?.altPath),
     };

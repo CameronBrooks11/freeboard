@@ -8,34 +8,31 @@ import {
   mintDatasourceSessionToken,
 } from "./datasourceSessionToken.js";
 import { DatasourceRuntimeBase } from "./runtime/DatasourceRuntimeBase.js";
-import {
-  getAuthToken,
-  getDashboardId,
-  getRuntimeShareToken,
-} from "../runtime/runtimeContext.js";
+import { getAuthToken, getDashboardId, getRuntimeShareToken } from "../runtime/runtimeContext.js";
 
 const ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 const ALLOWED_PARSERS = ["json", "text", "csv"];
 const TRUTHY_ENV_VALUES = new Set(["1", "true", "yes", "on"]);
-const importMetaEnv =
-  typeof import.meta !== "undefined" && import.meta.env
-    ? import.meta.env
-    : {};
+const importMetaEnv = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
 const DIRECT_HTTP_ENABLED =
   Boolean(importMetaEnv.DEV) ||
   TRUTHY_ENV_VALUES.has(
     String(importMetaEnv.VITE_ALLOW_DIRECT_HTTP_DATASOURCE || "")
       .trim()
-      .toLowerCase()
+      .toLowerCase(),
   );
 
 const normalizeMethod = (value) => {
-  const method = String(value || "GET").trim().toUpperCase();
+  const method = String(value || "GET")
+    .trim()
+    .toUpperCase();
   return ALLOWED_METHODS.includes(method) ? method : "GET";
 };
 
 const normalizeParser = (value) => {
-  const parser = String(value || "json").trim().toLowerCase();
+  const parser = String(value || "json")
+    .trim()
+    .toLowerCase();
   return ALLOWED_PARSERS.includes(parser) ? parser : "json";
 };
 
@@ -60,7 +57,7 @@ const normalizeHeaders = (rawValue) => {
   return Object.fromEntries(
     Object.entries(parsed)
       .map(([key, value]) => [String(key || "").trim(), String(value ?? "")])
-      .filter(([key]) => Boolean(key))
+      .filter(([key]) => Boolean(key)),
   );
 };
 
@@ -151,9 +148,7 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
           url: datasource?.settings.url,
           refresh: datasource?.settings.refresh,
           useGateway:
-            datasource?.settings.useGateway === undefined
-              ? true
-              : datasource?.settings.useGateway,
+            datasource?.settings.useGateway === undefined ? true : datasource?.settings.useGateway,
           staleAfterSeconds: datasource?.settings.staleAfterSeconds,
         },
         fields: generalFields,
@@ -246,10 +241,10 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
     newInstanceCallback,
     updateCallback,
     statusCallback,
-    runtimeContext
+    runtimeContext,
   ) {
     newInstanceCallback(
-      new HTTPDatasource(settings, updateCallback, statusCallback, runtimeContext)
+      new HTTPDatasource(settings, updateCallback, statusCallback, runtimeContext),
     );
   }
 
@@ -281,7 +276,7 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
     const refreshSeconds = Math.max(1, Number(nextSettings.refresh) || 5);
     const staleAfterSeconds = Math.max(
       refreshSeconds * 2,
-      Number(nextSettings.staleAfterSeconds) || refreshSeconds * 3
+      Number(nextSettings.staleAfterSeconds) || refreshSeconds * 3,
     );
 
     this.setPollingInterval(() => {
@@ -352,13 +347,13 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
   async fetchDirect() {
     if (!DIRECT_HTTP_ENABLED) {
       throw new Error(
-        "Direct mode is disabled for this deployment. Use gateway mode for HTTP datasources."
+        "Direct mode is disabled for this deployment. Use gateway mode for HTTP datasources.",
       );
     }
 
     if (this.currentSettings.credentialProfileId) {
       throw new Error(
-        "Direct mode cannot use credential profiles. Enable gateway mode for this datasource."
+        "Direct mode cannot use credential profiles. Enable gateway mode for this datasource.",
       );
     }
 
@@ -404,9 +399,7 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
     this.setStatus(this.lastUpdatedAt ? "updating" : "connecting");
 
     try {
-      const data = useGateway
-        ? await this.fetchViaGateway()
-        : await this.fetchDirect();
+      const data = useGateway ? await this.fetchViaGateway() : await this.fetchDirect();
       this.retryStage = 0;
       this.emitData({
         data,

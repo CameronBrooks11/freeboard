@@ -50,8 +50,7 @@ export const setContext = async ({ req }) => {
     typeof forwardedForHeader === "string"
       ? forwardedForHeader.split(",")[0]?.trim() || null
       : null;
-  const clientIp =
-    forwardedFor || req?.socket?.remoteAddress || req?.ip || null;
+  const clientIp = forwardedFor || req?.socket?.remoteAddress || req?.ip || null;
 
   const context = {
     pubsub: createPubSub(),
@@ -82,7 +81,7 @@ export const setContext = async ({ req }) => {
         return context;
       }
       const persistedSessionVersion = Number(
-        persistedUser.sessionVersion === undefined ? 0 : persistedUser.sessionVersion
+        persistedUser.sessionVersion === undefined ? 0 : persistedUser.sessionVersion,
       );
       const tokenSessionVersion = Number(user?.sv === undefined ? 0 : user.sv);
       if (persistedSessionVersion !== tokenSessionVersion) {

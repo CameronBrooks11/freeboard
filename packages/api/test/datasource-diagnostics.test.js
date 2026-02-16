@@ -19,9 +19,9 @@ test("adminDatasourceDiagnostics requires admin role", async () => {
       DatasourceDiagnosticsResolvers.Query.adminDatasourceDiagnostics(
         null,
         {},
-        { user: { _id: "viewer-1", role: "viewer" } }
+        { user: { _id: "viewer-1", role: "viewer" } },
       ),
-    /administrator/i
+    /administrator/i,
   );
 });
 
@@ -93,7 +93,7 @@ test("adminDatasourceDiagnostics returns datasource rollup counts", async () => 
   const result = await DatasourceDiagnosticsResolvers.Query.adminDatasourceDiagnostics(
     null,
     {},
-    { user: { _id: "admin-1", role: "admin" } }
+    { user: { _id: "admin-1", role: "admin" } },
   );
 
   assert.equal(result.totalDashboards, 2);

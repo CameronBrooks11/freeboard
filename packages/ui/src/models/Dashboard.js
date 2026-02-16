@@ -138,10 +138,7 @@ export class Dashboard {
     this.columns = object.columns;
     this.image = object.image;
     this.width = object.width;
-    this.visibility =
-      typeof object.visibility === "string"
-        ? object.visibility
-        : "private";
+    this.visibility = typeof object.visibility === "string" ? object.visibility : "private";
     this.shareToken = object.shareToken || null;
     this.shareTokenVersion = Number.isFinite(Number(object.shareTokenVersion))
       ? Math.max(0, Math.floor(Number(object.shareTokenVersion)))
@@ -149,12 +146,9 @@ export class Dashboard {
     this.acl = Array.isArray(object.acl) ? object.acl : [];
     this.settings = object.settings || {};
     this.isOwner = resolveDashboardIsOwner(object);
-    this.canEdit =
-      object.canEdit === undefined ? this.isOwner : Boolean(object.canEdit);
+    this.canEdit = object.canEdit === undefined ? this.isOwner : Boolean(object.canEdit);
     this.canManageSharing =
-      object.canManageSharing === undefined
-        ? this.isOwner
-        : Boolean(object.canManageSharing);
+      object.canManageSharing === undefined ? this.isOwner : Boolean(object.canManageSharing);
 
     object.datasources?.forEach((datasourceConfig) => {
       const datasource = new Datasource();
@@ -412,7 +406,7 @@ export class Dashboard {
       this.panes
         .map((item) => item?.layout?.i)
         .filter((value) => value !== undefined && value !== null)
-        .map((value) => String(value))
+        .map((value) => String(value)),
     );
 
     const currentId = pane.layout.i;
@@ -446,7 +440,7 @@ export class Dashboard {
         .flatMap((item) => item?.widgets || [])
         .map((widget) => widget?.id)
         .filter((value) => value !== undefined && value !== null)
-        .map((value) => String(value))
+        .map((value) => String(value)),
     );
     const paneIds = new Set();
 
@@ -456,8 +450,7 @@ export class Dashboard {
       }
 
       widget.pane = pane;
-      let candidate =
-        widget.id === undefined || widget.id === null ? "" : String(widget.id);
+      let candidate = widget.id === undefined || widget.id === null ? "" : String(widget.id);
 
       if (!candidate || existingIds.has(candidate) || paneIds.has(candidate)) {
         candidate = generateModelId("w");

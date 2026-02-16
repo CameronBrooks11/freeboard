@@ -128,7 +128,7 @@ export class Datasource {
         {
           datasourceId: this.id,
           dashboardId: getDashboardId(),
-        }
+        },
       );
     } catch (error) {
       this.lastError = error;
@@ -213,9 +213,7 @@ export class Datasource {
       this.errorCode = statusPayload.errorCode || null;
     }
     if (statusPayload.error !== undefined) {
-      this.lastError = statusPayload.error
-        ? new Error(String(statusPayload.error))
-        : null;
+      this.lastError = statusPayload.error ? new Error(String(statusPayload.error)) : null;
     }
     if (statusPayload.metrics && typeof statusPayload.metrics === "object") {
       this.metrics = {

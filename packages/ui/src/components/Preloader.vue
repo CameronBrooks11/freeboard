@@ -3,7 +3,7 @@
  * @component Preloader
  * @description Loading indicator with animated bars for async operations.
  */
-defineOptions({ name: 'Preloader' });
+defineOptions({ name: "Preloader" });
 </script>
 
 <template>

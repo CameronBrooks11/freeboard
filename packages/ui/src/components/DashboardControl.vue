@@ -3,7 +3,7 @@
  * @component DashboardControl
  * @description Renders dashboard action toolbar and inline settings form for title/columns.
  */
-defineOptions({ name: 'DashboardControl' });
+defineOptions({ name: "DashboardControl" });
 
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "../stores/auth.js";
@@ -25,7 +25,7 @@ const fields = computed(
   () =>
     createSettings(dashboard.value, {
       allowTrustedExecution: authStore.isTrustedExecutionMode(),
-    })[0].fields
+    })[0].fields,
 );
 const settings = ref({});
 
@@ -37,7 +37,7 @@ watch(
   },
   {
     immediate: true,
-  }
+  },
 );
 
 /** Open the settings dialog and apply changes on OK */
@@ -83,28 +83,28 @@ const instance = getCurrentInstance();
   <div class="dashboard-control">
     <ul class="dashboard-control__board-toolbar dashboard-control__board-toolbar">
       <li @click="() => openSettingsDialogBox()" class="dashboard-control__board-toolbar__item">
-        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-solid-cog" /></i><label
-          class="dashboard-control__board-toolbar__item__label">{{
-            $t("dashboardControl.labelSettings")
-          }}</label>
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-solid-cog" /></i
+        ><label class="dashboard-control__board-toolbar__item__label">{{
+          $t("dashboardControl.labelSettings")
+        }}</label>
       </li>
       <li @click="() => openDatasourcesDialogBox()" class="dashboard-control__board-toolbar__item">
-        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-database" /></i><label
-          class="dashboard-control__board-toolbar__item__label">{{
-            $t("dashboardControl.labelDatasources")
-          }}</label>
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-database" /></i
+        ><label class="dashboard-control__board-toolbar__item__label">{{
+          $t("dashboardControl.labelDatasources")
+        }}</label>
       </li>
       <li @click="() => openShareDialogBox()" class="dashboard-control__board-toolbar__item">
-        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-collection" /></i><label
-          class="dashboard-control__board-toolbar__item__label">{{
-            $t("dashboardControl.labelShare")
-          }}</label>
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-collection" /></i
+        ><label class="dashboard-control__board-toolbar__item__label">{{
+          $t("dashboardControl.labelShare")
+        }}</label>
       </li>
       <li @click="() => dashboard.createPane()" class="dashboard-control__board-toolbar__item">
-        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-plus-circle" /></i><label
-          class="dashboard-control__board-toolbar__item__label">{{
-            $t("dashboardControl.labelAddPane")
-          }}</label>
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-plus-circle" /></i
+        ><label class="dashboard-control__board-toolbar__item__label">{{
+          $t("dashboardControl.labelAddPane")
+        }}</label>
       </li>
     </ul>
     <div class="dashboard-control__form">

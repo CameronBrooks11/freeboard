@@ -5,20 +5,17 @@
 
 import { URL } from "url";
 import { createGraphQLError } from "graphql-yoga";
-import {
-  ensureThatUserHasRole,
-  ensureThatUserIsAdministrator,
-} from "../auth.js";
+import { ensureThatUserHasRole, ensureThatUserIsAdministrator } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
-import BrokerProfile, {
-  BROKER_PROFILE_PROTOCOLS,
-} from "../models/BrokerProfile.js";
+import BrokerProfile, { BROKER_PROFILE_PROTOCOLS } from "../models/BrokerProfile.js";
 import CredentialProfile from "../models/CredentialProfile.js";
 
 const MQTT_ALLOWED_URL_PROTOCOLS = new Set(["mqtt:", "mqtts:"]);
 
 const normalizeProtocol = (value) => {
-  const normalized = String(value || "mqtt").trim().toLowerCase();
+  const normalized = String(value || "mqtt")
+    .trim()
+    .toLowerCase();
   if (!BROKER_PROFILE_PROTOCOLS.includes(normalized)) {
     throw createGraphQLError("Invalid broker profile protocol", {
       extensions: { code: "BAD_USER_INPUT" },
@@ -109,12 +106,9 @@ const ensureMqttCredentialProfile = async (credentialProfileId) => {
     });
   }
   if (String(credentialProfile.type || "").toLowerCase() !== "basic") {
-    throw createGraphQLError(
-      "MQTT broker credentials must use a basic credential profile",
-      {
-        extensions: { code: "BAD_USER_INPUT" },
-      }
-    );
+    throw createGraphQLError("MQTT broker credentials must use a basic credential profile", {
+      extensions: { code: "BAD_USER_INPUT" },
+    });
   }
 
   return String(credentialProfile._id);
@@ -172,7 +166,7 @@ export default {
       }
 
       const credentialProfileId = await ensureMqttCredentialProfile(
-        normalizeCredentialProfileId(input?.credentialProfileId)
+        normalizeCredentialProfileId(input?.credentialProfileId),
       );
 
       let created;
@@ -220,13 +214,8 @@ export default {
       }
 
       const protocol =
-        input?.protocol === undefined
-          ? existing.protocol
-          : normalizeProtocol(input.protocol);
-      const name =
-        input?.name === undefined
-          ? existing.name
-          : normalizeName(input.name);
+        input?.protocol === undefined ? existing.protocol : normalizeProtocol(input.protocol);
+      const name = input?.name === undefined ? existing.name : normalizeName(input.name);
       if (!name) {
         throw createGraphQLError("Broker profile name is required", {
           extensions: { code: "BAD_USER_INPUT" },
@@ -237,9 +226,7 @@ export default {
         input?.credentialProfileId === undefined
           ? normalizeCredentialProfileId(existing.credentialProfileId)
           : normalizeCredentialProfileId(input.credentialProfileId);
-      const resolvedCredentialProfileId = await ensureMqttCredentialProfile(
-        credentialProfileId
-      );
+      const resolvedCredentialProfileId = await ensureMqttCredentialProfile(credentialProfileId);
 
       const updatePayload = {
         name,
@@ -252,8 +239,7 @@ export default {
           input?.brokerUrl === undefined
             ? normalizeBrokerUrl(existing.brokerUrl, protocol)
             : normalizeBrokerUrl(input.brokerUrl, protocol),
-        tls:
-          input?.tls === undefined ? normalizeTls(existing.tls) : normalizeTls(input.tls),
+        tls: input?.tls === undefined ? normalizeTls(existing.tls) : normalizeTls(input.tls),
         credentialProfileId: resolvedCredentialProfileId,
         allowPublicUse:
           input?.allowPublicUse === undefined
@@ -271,7 +257,7 @@ export default {
         updated = await BrokerProfile.findOneAndUpdate(
           { _id },
           { $set: updatePayload },
-          { new: true, runValidators: true }
+          { new: true, runValidators: true },
         ).lean();
       } catch (error) {
         const duplicateError = toDuplicateNameGraphQLError(error);

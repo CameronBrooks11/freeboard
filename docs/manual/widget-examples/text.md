@@ -49,4 +49,3 @@ Expected output: current London temperature in Celsius.
 9. Save.
 
 Expected output: live BTC/USD spot price.
-

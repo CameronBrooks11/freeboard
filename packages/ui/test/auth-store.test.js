@@ -55,7 +55,7 @@ test("auth store hydrates session and enforces role/publish policy gating", () =
       email: "editor@example.com",
       role: "editor",
       active: true,
-    })
+    }),
   );
 
   assert.equal(store.isLoggedIn(), true);
@@ -76,7 +76,10 @@ test("auth store hydrates session and enforces role/publish policy gating", () =
 test("auth store drops invalid token payload during hydration", () => {
   const store = useAuthStore();
 
-  globalThis.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ token: "invalid.token.payload" }));
+  globalThis.sessionStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ token: "invalid.token.payload" }),
+  );
   store.token = "invalid.token.payload";
 
   assert.equal(store.hydrateFromToken(), false);

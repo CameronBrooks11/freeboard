@@ -6,10 +6,7 @@
 import { createGraphQLError } from "graphql-yoga";
 import { recordAuditEvent } from "../audit.js";
 import { config } from "../config.js";
-import {
-  createClientError,
-  mintDatasourceSessionToken,
-} from "../datasourceGateway.js";
+import { createClientError, mintDatasourceSessionToken } from "../datasourceGateway.js";
 import Dashboard from "../models/Dashboard.js";
 import { consumeRateLimit } from "../rateLimit.js";
 
@@ -40,7 +37,7 @@ const enforceMintRateLimit = async ({ context, dashboardId, shareToken }) => {
     const userId = toComparableId(context.user._id);
     const userBucket = consumeRateLimit(
       `datasource-mint:user:${userId}`,
-      config.datasourceTokenMintRateLimitUserPerMin
+      config.datasourceTokenMintRateLimitUserPerMin,
     );
     if (!userBucket.allowed) {
       await recordAuditEvent({
@@ -58,7 +55,7 @@ const enforceMintRateLimit = async ({ context, dashboardId, shareToken }) => {
 
     const dashboardBucket = consumeRateLimit(
       `datasource-mint:user-dashboard:${userId}:${dashboardId}`,
-      config.datasourceTokenMintRateLimitUserPerMin
+      config.datasourceTokenMintRateLimitUserPerMin,
     );
     if (!dashboardBucket.allowed) {
       await recordAuditEvent({
@@ -78,7 +75,7 @@ const enforceMintRateLimit = async ({ context, dashboardId, shareToken }) => {
 
   const ipBucket = consumeRateLimit(
     `datasource-mint:public-ip:${clientIp}`,
-    config.datasourceTokenMintRateLimitPublicIpPerMin
+    config.datasourceTokenMintRateLimitPublicIpPerMin,
   );
   if (!ipBucket.allowed) {
     await recordAuditEvent({
@@ -98,7 +95,7 @@ const enforceMintRateLimit = async ({ context, dashboardId, shareToken }) => {
   const normalizedShareKey = String(shareToken || dashboardId || "public").trim();
   const shareBucket = consumeRateLimit(
     `datasource-mint:public-share:${normalizedShareKey}`,
-    config.datasourceTokenMintRateLimitShareTokenPerMin
+    config.datasourceTokenMintRateLimitShareTokenPerMin,
   );
   if (!shareBucket.allowed) {
     await recordAuditEvent({
@@ -121,7 +118,7 @@ export default {
     mintDatasourceSessionToken: async (
       parent,
       { dashboardId, datasourceId, shareToken },
-      context
+      context,
     ) => {
       const dashboard = await Dashboard.findOne({ _id: dashboardId }).lean();
       if (!dashboard) {

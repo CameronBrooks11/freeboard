@@ -12,11 +12,7 @@
  */
 export const resolveFieldModelValue = (field, settings = {}) => {
   const currentModelValue = field?.model?.value;
-  const hasExplicitSetting = Object.prototype.hasOwnProperty.call(
-    settings,
-    field?.name
-  );
+  const hasExplicitSetting = Object.prototype.hasOwnProperty.call(settings, field?.name);
   const settingValue = hasExplicitSetting ? settings[field.name] : undefined;
   return currentModelValue ?? settingValue ?? field?.default;
 };
-

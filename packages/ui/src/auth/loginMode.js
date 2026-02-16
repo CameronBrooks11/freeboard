@@ -39,8 +39,7 @@ export const canCreateAccountForMode = (registrationMode) =>
  * @returns {boolean}
  */
 export const canAcceptInviteForMode = ({ registrationMode, inviteToken }) =>
-  normalizeRegistrationMode(registrationMode) === "invite" ||
-  Boolean(normalizeToken(inviteToken));
+  normalizeRegistrationMode(registrationMode) === "invite" || Boolean(normalizeToken(inviteToken));
 
 /**
  * Resolve effective login action mode after policy/token changes.
@@ -66,16 +65,10 @@ export const resolveLoginActionMode = ({
   }
 
   const normalizedRegistrationMode = normalizeRegistrationMode(registrationMode);
-  if (
-    currentMode === LOGIN_ACTION_MODES.register &&
-    normalizedRegistrationMode !== "open"
-  ) {
+  if (currentMode === LOGIN_ACTION_MODES.register && normalizedRegistrationMode !== "open") {
     return LOGIN_ACTION_MODES.login;
   }
-  if (
-    currentMode === LOGIN_ACTION_MODES.invite &&
-    normalizedRegistrationMode !== "invite"
-  ) {
+  if (currentMode === LOGIN_ACTION_MODES.invite && normalizedRegistrationMode !== "invite") {
     return LOGIN_ACTION_MODES.login;
   }
 

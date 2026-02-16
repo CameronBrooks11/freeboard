@@ -28,7 +28,7 @@ test("setContext hydrates authenticated user when sessionVersion matches", async
             active: true,
             sessionVersion: 2,
           }
-        : null
+        : null,
     );
 
   const context = await setContext({
@@ -56,7 +56,7 @@ test("setContext rejects stale JWT when sessionVersion no longer matches", async
             active: true,
             sessionVersion: 3,
           }
-        : null
+        : null,
     );
 
   const context = await setContext({
@@ -68,4 +68,3 @@ test("setContext rejects stale JWT when sessionVersion no longer matches", async
 
   assert.equal(context.user, undefined);
 });
-

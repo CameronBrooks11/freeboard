@@ -21,7 +21,7 @@ import { MAX_COLUMNS, MIN_COLUMNS } from "./models/Dashboard.js";
  */
 export default (dashboard, { allowTrustedExecution = true } = {}) => {
   const fields = [
-  // General settings: title and columns
+    // General settings: title and columns
     {
       label: "form.labelGeneral",
       icon: "hi-home",
@@ -75,7 +75,7 @@ export default (dashboard, { allowTrustedExecution = true } = {}) => {
             {
               label: "form.labelThemeDark",
               value: "dark",
-            },          
+            },
           ],
         },
       ],
@@ -145,13 +145,13 @@ export default (dashboard, { allowTrustedExecution = true } = {}) => {
                   data.results.map((r) => ({
                     value: r.latest,
                     label: r.name,
-                  }))
+                  })),
                 ),
             },
           ],
         },
       ],
-    }
+    },
   );
 
   return fields;

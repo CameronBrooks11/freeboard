@@ -55,7 +55,7 @@ test("transformDashboard derives isOwner from viewer context", () => {
 test("transformDashboard handles populated user object", () => {
   const transformed = transformDashboard(
     buildDoc({ user: { _id: { toString: () => "owner-1" } } }),
-    "owner-1"
+    "owner-1",
   );
 
   assert.equal(transformed.user, "owner-1");

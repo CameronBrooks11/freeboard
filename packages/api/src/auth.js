@@ -14,9 +14,7 @@ import jwt from "jsonwebtoken";
  * @param {number} numberOfCurrentlyUsersRegistered - Current count of registered users.
  * @throws {GraphQLError} When the user limit has been reached.
  */
-export const ensureLimitOfUsersIsNotReached = (
-  numberOfCurrentlyUsersRegistered,
-) => {
+export const ensureLimitOfUsersIsNotReached = (numberOfCurrentlyUsersRegistered) => {
   const usersLimit = config.userLimit;
   if (usersLimit === 0) {
     return;
@@ -37,12 +35,9 @@ export const ensureLimitOfUsersIsNotReached = (
  */
 export const ensureThatUserIsLogged = (context) => {
   if (!context.user) {
-    throw createGraphQLError(
-      "You must be logged in to perform this action",
-      {
-        extensions: { code: "UNAUTHENTICATED" },
-      },
-    );
+    throw createGraphQLError("You must be logged in to perform this action", {
+      extensions: { code: "UNAUTHENTICATED" },
+    });
   }
 };
 
@@ -55,12 +50,9 @@ export const ensureThatUserIsLogged = (context) => {
 export const ensureThatUserIsAdministrator = (context) => {
   ensureThatUserIsLogged(context);
   if (context.user.role !== "admin") {
-    throw createGraphQLError(
-      "You must be an administrator to perform this action",
-      {
-        extensions: { code: "FORBIDDEN" },
-      }
-    );
+    throw createGraphQLError("You must be an administrator to perform this action", {
+      extensions: { code: "FORBIDDEN" },
+    });
   }
 };
 
@@ -110,13 +102,7 @@ export const getUser = async (context) => {
  * @param {number} [sessionVersion=0] - Session version for revocation checks.
  * @returns {string}           Signed JWT token.
  */
-export const createAuthToken = (
-  email,
-  role,
-  active,
-  _id,
-  sessionVersion = 0
-) => {
+export const createAuthToken = (email, role, active, _id, sessionVersion = 0) => {
   const normalizedRole = String(role || "").toLowerCase();
   return jwt.sign(
     {
@@ -131,8 +117,8 @@ export const createAuthToken = (
     },
     config.jwtSecret,
     {
-    expiresIn: config.jwtTimeExpiration,
-    }
+      expiresIn: config.jwtTimeExpiration,
+    },
   );
 };
 

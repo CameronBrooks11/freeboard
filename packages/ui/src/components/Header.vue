@@ -3,7 +3,7 @@
  * @component Header
  * @description Renders the application header with admin controls, dashboard tools, and column toolbar when in edit mode.
  */
-defineOptions({ name: 'Header' });
+defineOptions({ name: "Header" });
 
 import { storeToRefs } from "pinia";
 import { computed } from "vue";

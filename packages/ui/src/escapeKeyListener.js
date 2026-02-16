@@ -18,4 +18,3 @@ export const bindEscapeKeyListener = (onEscape, target = window) => {
     target.removeEventListener("keydown", onKey);
   };
 };
-

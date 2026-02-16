@@ -5,14 +5,7 @@
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
-const DEFAULT_COLORS = [
-  "#f59e0b",
-  "#22d3ee",
-  "#a3e635",
-  "#f43f5e",
-  "#e879f9",
-  "#38bdf8",
-];
+const DEFAULT_COLORS = ["#f59e0b", "#22d3ee", "#a3e635", "#f43f5e", "#e879f9", "#38bdf8"];
 
 const toFiniteNumber = (value) => {
   const parsed = Number(value);
@@ -100,8 +93,7 @@ export class SparklineWidget extends ReactiveWidget {
           name: "valuePath",
           label: "Value Path",
           type: "text",
-          description:
-            "Single-series path. If empty, `Series Paths` or array values are used.",
+          description: "Single-series path. If empty, `Series Paths` or array values are used.",
         },
         {
           name: "seriesPaths",
@@ -169,9 +161,7 @@ export class SparklineWidget extends ReactiveWidget {
     }
 
     return {
-      header:
-        this.getBinding(this.currentSettings?.headerPath) ??
-        this.currentSettings?.headerText,
+      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
       series: Array.isArray(series) ? series : [series],
     };
   }
@@ -196,7 +186,7 @@ export class SparklineWidget extends ReactiveWidget {
       2,
       Number.isFinite(Number(this.currentSettings?.historyLength))
         ? Math.ceil(Number(this.currentSettings.historyLength))
-        : 100
+        : 100,
     );
 
     while (this.seriesHistory.length < values.length) {
@@ -279,8 +269,7 @@ export class SparklineWidget extends ReactiveWidget {
           return;
         }
 
-        const x =
-          longest <= 1 ? 0 : (pointIndex / (longest - 1)) * Math.max(1, width - 1);
+        const x = longest <= 1 ? 0 : (pointIndex / (longest - 1)) * Math.max(1, width - 1);
         const y = height - ((point - min) / (max - min)) * Math.max(1, height - 1);
 
         if (!started) {

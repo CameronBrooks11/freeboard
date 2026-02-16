@@ -34,10 +34,7 @@ const loadEnvFile = (filePath, { overridableKeys = new Set() } = {}) => {
   const parsed = dotenv.parse(fs.readFileSync(filePath));
   const loadedKeys = new Set();
   for (const [key, value] of Object.entries(parsed)) {
-    const hasExternalValue = Object.prototype.hasOwnProperty.call(
-      process.env,
-      key
-    );
+    const hasExternalValue = Object.prototype.hasOwnProperty.call(process.env, key);
     if (!hasExternalValue || overridableKeys.has(key)) {
       process.env[key] = value;
       loadedKeys.add(key);
@@ -141,9 +138,7 @@ const isWeakJwtSecret = (secret) => {
     return true;
   }
 
-  return ["freeboard", "changeme", "default", "secret", "password"].includes(
-    normalized
-  );
+  return ["freeboard", "changeme", "default", "secret", "password"].includes(normalized);
 };
 
 const credentialPolicy = getCredentialPolicyHints();
@@ -154,12 +149,8 @@ const warnAndThrow = (message) => {
 };
 
 const gatewaySecretDefault = "freeboard-gateway-dev-insecure-local-only-secret-32";
-const gatewayServiceTokenDefault =
-  "freeboard-gateway-service-dev-token-local-only-32";
-const credentialEncryptionKeyFromEnv = parseBase64Key(
-  process.env.CREDENTIAL_ENCRYPTION_KEY,
-  32
-);
+const gatewayServiceTokenDefault = "freeboard-gateway-service-dev-token-local-only-32";
+const credentialEncryptionKeyFromEnv = parseBase64Key(process.env.CREDENTIAL_ENCRYPTION_KEY, 32);
 const credentialEncryptionKey =
   credentialEncryptionKeyFromEnv ||
   (isNonDevRuntime
@@ -167,7 +158,7 @@ const credentialEncryptionKey =
     : (() => {
         const generated = crypto.randomBytes(32);
         console.warn(
-          "Configuration warning: CREDENTIAL_ENCRYPTION_KEY is missing/invalid in development. Generated ephemeral key; encrypted credentials will be unreadable after restart."
+          "Configuration warning: CREDENTIAL_ENCRYPTION_KEY is missing/invalid in development. Generated ephemeral key; encrypted credentials will be unreadable after restart.",
         );
         return generated;
       })());
@@ -203,9 +194,7 @@ const credentialEncryptionKey =
 export const config = Object.freeze({
   host: process.env.API_HOST || "0.0.0.0", // Bind on all interfaces by default
   port: num(process.env.PORT, 4001), // Port with sensible fallback
-  mongoUrl:
-    process.env.MONGO_URL ||
-    "mongodb://127.0.0.1:27017/freeboard", // Local-only default for development/test
+  mongoUrl: process.env.MONGO_URL || "mongodb://127.0.0.1:27017/freeboard", // Local-only default for development/test
   jwtSecret: process.env.JWT_SECRET || "freeboard-dev-insecure-local-only",
   jwtTimeExpiration: process.env.JWT_TIME_EXPIRATION || "2h",
   userLimit: num(process.env.USER_LIMIT, 0),
@@ -215,21 +204,14 @@ export const config = Object.freeze({
   registrationMode: String(process.env.AUTH_REGISTRATION_MODE || "disabled")
     .trim()
     .toLowerCase(),
-  registrationDefaultRole: String(
-    process.env.AUTH_REGISTRATION_DEFAULT_ROLE || "viewer"
-  )
+  registrationDefaultRole: String(process.env.AUTH_REGISTRATION_DEFAULT_ROLE || "viewer")
     .trim()
     .toLowerCase(),
   editorCanPublish: bool(process.env.AUTH_EDITOR_CAN_PUBLISH, false),
-  dashboardDefaultVisibility: String(
-    process.env.DASHBOARD_DEFAULT_VISIBILITY || "private"
-  )
+  dashboardDefaultVisibility: String(process.env.DASHBOARD_DEFAULT_VISIBILITY || "private")
     .trim()
     .toLowerCase(),
-  dashboardPublicListingEnabled: bool(
-    process.env.DASHBOARD_PUBLIC_LISTING_ENABLED,
-    false
-  ),
+  dashboardPublicListingEnabled: bool(process.env.DASHBOARD_PUBLIC_LISTING_ENABLED, false),
   executionMode: String(process.env.EXECUTION_MODE || "safe")
     .trim()
     .toLowerCase(),
@@ -237,91 +219,74 @@ export const config = Object.freeze({
   authLoginMaxAttempts: positiveInteger(process.env.AUTH_LOGIN_MAX_ATTEMPTS, 5),
   authLoginWindowSeconds: positiveInteger(process.env.AUTH_LOGIN_WINDOW_SECONDS, 300),
   authLoginLockSeconds: positiveInteger(process.env.AUTH_LOGIN_LOCK_SECONDS, 300),
-  jwtGatewaySecret:
-    process.env.JWT_GATEWAY_SECRET || gatewaySecretDefault,
-  gatewayServiceToken:
-    process.env.GATEWAY_SERVICE_TOKEN || gatewayServiceTokenDefault,
+  jwtGatewaySecret: process.env.JWT_GATEWAY_SECRET || gatewaySecretDefault,
+  gatewayServiceToken: process.env.GATEWAY_SERVICE_TOKEN || gatewayServiceTokenDefault,
   credentialEncryptionKey,
   fetchTimeoutMs: positiveInteger(process.env.FETCH_TIMEOUT_MS, 15000),
-  fetchMaxResponseBytes: positiveInteger(
-    process.env.FETCH_MAX_RESPONSE_BYTES,
-    5 * 1024 * 1024
-  ),
+  fetchMaxResponseBytes: positiveInteger(process.env.FETCH_MAX_RESPONSE_BYTES, 5 * 1024 * 1024),
   datasourceTokenMintRateLimitUserPerMin: positiveInteger(
     process.env.DATASOURCE_TOKEN_MINT_RATE_LIMIT_USER_PER_MIN,
-    60
+    60,
   ),
   datasourceTokenMintRateLimitPublicIpPerMin: positiveInteger(
     process.env.DATASOURCE_TOKEN_MINT_RATE_LIMIT_PUBLIC_IP_PER_MIN,
-    30
+    30,
   ),
   datasourceTokenMintRateLimitShareTokenPerMin: positiveInteger(
     process.env.DATASOURCE_TOKEN_MINT_RATE_LIMIT_SHARE_TOKEN_PER_MIN,
-    60
+    60,
   ),
-  datasourceSessionTtlSeconds: positiveInteger(
-    process.env.DATASOURCE_SESSION_TTL_SECONDS,
-    300
-  ),
+  datasourceSessionTtlSeconds: positiveInteger(process.env.DATASOURCE_SESSION_TTL_SECONDS, 300),
   gatewayIntrospectionRateLimitPerMin: positiveInteger(
     process.env.GATEWAY_INTROSPECTION_RATE_LIMIT_PER_MIN,
-    600
+    600,
   ),
   gatewayRevokedTokensRateLimitPerMin: positiveInteger(
     process.env.GATEWAY_REVOKED_TOKENS_RATE_LIMIT_PER_MIN,
-    600
+    600,
   ),
-  gatewayRevokedTokensMaxBatch: positiveInteger(
-    process.env.GATEWAY_REVOKED_TOKENS_MAX_BATCH,
-    500
-  ),
+  gatewayRevokedTokensMaxBatch: positiveInteger(process.env.GATEWAY_REVOKED_TOKENS_MAX_BATCH, 500),
   realtimeRevokeEventRetentionSeconds: positiveInteger(
     process.env.REALTIME_REVOKE_EVENT_RETENTION_SECONDS,
-    86_400
+    86_400,
   ),
 });
 
 if (isNonDevRuntime && isWeakJwtSecret(config.jwtSecret)) {
   throw new Error(
-    "JWT_SECRET is missing or too weak for non-development runtime. Provide a strong secret (>=32 chars)."
+    "JWT_SECRET is missing or too weak for non-development runtime. Provide a strong secret (>=32 chars).",
   );
 }
 
 if (isNonDevRuntime && !hasExplicitMongoUrl) {
-  throw new Error(
-    "MONGO_URL must be explicitly configured for non-development runtime."
-  );
+  throw new Error("MONGO_URL must be explicitly configured for non-development runtime.");
 }
 
 if (isNonDevRuntime && isWeakJwtSecret(config.jwtGatewaySecret)) {
   throw new Error(
-    "JWT_GATEWAY_SECRET is missing or too weak for non-development runtime. Provide a strong secret (>=32 chars)."
+    "JWT_GATEWAY_SECRET is missing or too weak for non-development runtime. Provide a strong secret (>=32 chars).",
   );
 }
 
 if (isNonDevRuntime && isWeakJwtSecret(config.gatewayServiceToken)) {
   throw new Error(
-    "GATEWAY_SERVICE_TOKEN is missing or too weak for non-development runtime. Provide a strong token (>=32 chars)."
+    "GATEWAY_SERVICE_TOKEN is missing or too weak for non-development runtime. Provide a strong token (>=32 chars).",
   );
 }
 
 if (isNonDevRuntime && !credentialEncryptionKey) {
   throw new Error(
-    "CREDENTIAL_ENCRYPTION_KEY must be set to a valid base64-encoded 32-byte key in non-development runtime."
+    "CREDENTIAL_ENCRYPTION_KEY must be set to a valid base64-encoded 32-byte key in non-development runtime.",
   );
 }
 
 if (config.createAdmin) {
   if (!isValidEmail(config.adminEmail)) {
-    warnAndThrow(
-      `CREATE_ADMIN=true requires valid ADMIN_EMAIL. ${credentialPolicy.email}.`
-    );
+    warnAndThrow(`CREATE_ADMIN=true requires valid ADMIN_EMAIL. ${credentialPolicy.email}.`);
   }
 
   if (!isStrongPassword(config.adminPassword)) {
-    warnAndThrow(
-      `CREATE_ADMIN=true requires strong ADMIN_PASSWORD. ${credentialPolicy.password}.`
-    );
+    warnAndThrow(`CREATE_ADMIN=true requires strong ADMIN_PASSWORD. ${credentialPolicy.password}.`);
   }
 }
 

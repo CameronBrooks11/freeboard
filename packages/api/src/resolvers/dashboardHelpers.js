@@ -8,10 +8,7 @@ import { createGraphQLError } from "graphql-yoga";
 import Dashboard from "../models/Dashboard.js";
 import User from "../models/User.js";
 import { getAuthPolicyState } from "../policyStore.js";
-import {
-  normalizeDashboardAccessLevel,
-  normalizeDashboardVisibility,
-} from "../policy.js";
+import { normalizeDashboardAccessLevel, normalizeDashboardVisibility } from "../policy.js";
 import { transformDashboard } from "./merge.js";
 import { recordShareTokenRevocationEvent } from "../shareTokenRevocationFeed.js";
 
@@ -28,14 +25,7 @@ const DASHBOARD_MUTABLE_FIELDS = new Set([
 ]);
 
 const EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES = new Set(["link", "public"]);
-const ALLOWED_DATASOURCE_TYPES = new Set([
-  "http",
-  "clock",
-  "static",
-  "sse",
-  "websocket",
-  "mqtt",
-]);
+const ALLOWED_DATASOURCE_TYPES = new Set(["http", "clock", "static", "sse", "websocket", "mqtt"]);
 const ALLOWED_HTTP_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 const ALLOWED_HTTP_PARSERS = new Set(["json", "text", "csv"]);
 const ALLOWED_STREAM_PARSERS = new Set(["json", "text"]);
@@ -64,8 +54,7 @@ export const getDashboardVisibility = (dashboard) => {
   return "private";
 };
 
-const toTrimmedString = (value) =>
-  typeof value === "string" ? value.trim() : "";
+const toTrimmedString = (value) => (typeof value === "string" ? value.trim() : "");
 
 const normalizeResourceList = (resources) => {
   if (!Array.isArray(resources)) {
@@ -97,8 +86,8 @@ const hasTrustedDashboardSettings = (settings) => {
   }
   return Boolean(
     toTrimmedString(settings.script) ||
-      toTrimmedString(settings.style) ||
-      normalizeResourceList(settings.resources).length > 0
+    toTrimmedString(settings.style) ||
+    normalizeResourceList(settings.resources).length > 0,
   );
 };
 
@@ -125,9 +114,7 @@ const trustedWidgetPayloadSignatures = (panes) => {
     widgets.forEach((widget, widgetIndex) => {
       const widgetType = normalizeWidgetType(widget);
       const widgetSettings =
-        widget?.settings && typeof widget.settings === "object"
-          ? widget.settings
-          : {};
+        widget?.settings && typeof widget.settings === "object" ? widget.settings : {};
       const widgetKey = toTrimmedString(widget?.id) || `${paneIndex}:${widgetIndex}`;
 
       if (widgetType === "html") {
@@ -141,9 +128,7 @@ const trustedWidgetPayloadSignatures = (panes) => {
         const script = toTrimmedString(widgetSettings.script);
         const resources = normalizeResourceList(widgetSettings.resources);
         if (script || resources.length > 0) {
-          signatures.push(
-            `base:${widgetKey}:${script}:${JSON.stringify(resources)}`
-          );
+          signatures.push(`base:${widgetKey}:${script}:${JSON.stringify(resources)}`);
         }
       }
     });
@@ -164,10 +149,7 @@ export const ensureDashboardPayloadAllowedByExecutionMode = async ({
   const hasTrustedSettingsInInput =
     Object.prototype.hasOwnProperty.call(inputDashboard, "settings") &&
     hasTrustedDashboardSettings(inputDashboard.settings);
-  const inputTrustedWidgetSignatures = Object.prototype.hasOwnProperty.call(
-    inputDashboard,
-    "panes"
-  )
+  const inputTrustedWidgetSignatures = Object.prototype.hasOwnProperty.call(inputDashboard, "panes")
     ? trustedWidgetPayloadSignatures(inputDashboard.panes)
     : [];
 
@@ -186,30 +168,24 @@ export const ensureDashboardPayloadAllowedByExecutionMode = async ({
       trustedDashboardSettingsSignature(inputDashboard.settings) !==
         trustedDashboardSettingsSignature(existingDashboard?.settings)
     ) {
-      throw createGraphQLError(
-        "Trusted dashboard settings require execution mode 'trusted'",
-        {
-          extensions: { code: "FORBIDDEN" },
-        }
-      );
+      throw createGraphQLError("Trusted dashboard settings require execution mode 'trusted'", {
+        extensions: { code: "FORBIDDEN" },
+      });
     }
   }
 
   if (Object.prototype.hasOwnProperty.call(inputDashboard, "panes")) {
     if (inputTrustedWidgetSignatures.length > 0) {
       const existingTrustedWidgetSignatures = trustedWidgetPayloadSignatures(
-        existingDashboard?.panes
+        existingDashboard?.panes,
       );
       if (
         JSON.stringify(inputTrustedWidgetSignatures) !==
         JSON.stringify(existingTrustedWidgetSignatures)
       ) {
-        throw createGraphQLError(
-          "Trusted widget capabilities require execution mode 'trusted'",
-          {
-            extensions: { code: "FORBIDDEN" },
-          }
-        );
+        throw createGraphQLError("Trusted widget capabilities require execution mode 'trusted'", {
+          extensions: { code: "FORBIDDEN" },
+        });
       }
     }
   }
@@ -241,9 +217,7 @@ export const validateDashboardDatasources = (datasources) => {
 
   datasources.forEach((datasource, index) => {
     if (!datasource || typeof datasource !== "object" || Array.isArray(datasource)) {
-      throw createBadInputError(
-        `Dashboard datasource at index ${index} must be an object`
-      );
+      throw createBadInputError(`Dashboard datasource at index ${index} must be an object`);
     }
 
     const type = String(datasource.type || "")
@@ -251,7 +225,7 @@ export const validateDashboardDatasources = (datasources) => {
       .toLowerCase();
     if (!ALLOWED_DATASOURCE_TYPES.has(type)) {
       throw createBadInputError(
-        `Datasource type '${type || "unknown"}' is not supported. Allowed: http, clock, static, sse, websocket, mqtt.`
+        `Datasource type '${type || "unknown"}' is not supported. Allowed: http, clock, static, sse, websocket, mqtt.`,
       );
     }
 
@@ -266,7 +240,7 @@ export const validateDashboardDatasources = (datasources) => {
       const targetUrl = String(settings.url || "").trim();
       if (!targetUrl) {
         throw createBadInputError(
-          `HTTP datasource at index ${index} requires a non-empty settings.url`
+          `HTTP datasource at index ${index} requires a non-empty settings.url`,
         );
       }
 
@@ -275,9 +249,7 @@ export const validateDashboardDatasources = (datasources) => {
         settings.method !== null &&
         !ALLOWED_HTTP_METHODS.has(String(settings.method).trim().toUpperCase())
       ) {
-        throw createBadInputError(
-          `HTTP datasource at index ${index} uses an unsupported method`
-        );
+        throw createBadInputError(`HTTP datasource at index ${index} uses an unsupported method`);
       }
 
       if (
@@ -285,9 +257,7 @@ export const validateDashboardDatasources = (datasources) => {
         settings.parser !== null &&
         !ALLOWED_HTTP_PARSERS.has(String(settings.parser).trim().toLowerCase())
       ) {
-        throw createBadInputError(
-          `HTTP datasource at index ${index} uses an unsupported parser`
-        );
+        throw createBadInputError(`HTTP datasource at index ${index} uses an unsupported parser`);
       }
 
       if (
@@ -296,7 +266,7 @@ export const validateDashboardDatasources = (datasources) => {
         String(settings.credentialProfileId).trim() === ""
       ) {
         throw createBadInputError(
-          `HTTP datasource at index ${index} has an invalid credentialProfileId`
+          `HTTP datasource at index ${index} has an invalid credentialProfileId`,
         );
       }
       return;
@@ -306,7 +276,7 @@ export const validateDashboardDatasources = (datasources) => {
       const targetUrl = String(settings.url || "").trim();
       if (!targetUrl) {
         throw createBadInputError(
-          `${type.toUpperCase()} datasource at index ${index} requires a non-empty settings.url`
+          `${type.toUpperCase()} datasource at index ${index} requires a non-empty settings.url`,
         );
       }
 
@@ -316,28 +286,28 @@ export const validateDashboardDatasources = (datasources) => {
         !ALLOWED_STREAM_PARSERS.has(String(settings.parser).trim().toLowerCase())
       ) {
         throw createBadInputError(
-          `${type.toUpperCase()} datasource at index ${index} uses an unsupported parser`
+          `${type.toUpperCase()} datasource at index ${index} uses an unsupported parser`,
         );
       }
 
       if (
         settings.authPlacement !== undefined &&
         settings.authPlacement !== null &&
-        !ALLOWED_STREAM_AUTH_PLACEMENTS.has(
-          String(settings.authPlacement).trim().toLowerCase()
-        )
+        !ALLOWED_STREAM_AUTH_PLACEMENTS.has(String(settings.authPlacement).trim().toLowerCase())
       ) {
         throw createBadInputError(
-          `${type.toUpperCase()} datasource at index ${index} uses an unsupported authPlacement`
+          `${type.toUpperCase()} datasource at index ${index} uses an unsupported authPlacement`,
         );
       }
 
       if (
-        String(settings.authPlacement || "header").trim().toLowerCase() === "query" &&
+        String(settings.authPlacement || "header")
+          .trim()
+          .toLowerCase() === "query" &&
         String(settings.queryParamName || "").trim() === ""
       ) {
         throw createBadInputError(
-          `${type.toUpperCase()} datasource at index ${index} requires settings.queryParamName for query auth placement`
+          `${type.toUpperCase()} datasource at index ${index} requires settings.queryParamName for query auth placement`,
         );
       }
 
@@ -347,7 +317,7 @@ export const validateDashboardDatasources = (datasources) => {
         String(settings.credentialProfileId).trim() === ""
       ) {
         throw createBadInputError(
-          `${type.toUpperCase()} datasource at index ${index} has an invalid credentialProfileId`
+          `${type.toUpperCase()} datasource at index ${index} has an invalid credentialProfileId`,
         );
       }
 
@@ -356,7 +326,7 @@ export const validateDashboardDatasources = (datasources) => {
         const isArrayProtocols = Array.isArray(settings.protocols);
         if (!isStringProtocols && !isArrayProtocols) {
           throw createBadInputError(
-            `WEBSOCKET datasource at index ${index} requires settings.protocols to be a comma-separated string or string array`
+            `WEBSOCKET datasource at index ${index} requires settings.protocols to be a comma-separated string or string array`,
           );
         }
       }
@@ -366,12 +336,12 @@ export const validateDashboardDatasources = (datasources) => {
     if (type === "mqtt") {
       if (String(settings.brokerProfileId || "").trim() === "") {
         throw createBadInputError(
-          `MQTT datasource at index ${index} requires a non-empty settings.brokerProfileId`
+          `MQTT datasource at index ${index} requires a non-empty settings.brokerProfileId`,
         );
       }
       if (String(settings.topic || "").trim() === "") {
         throw createBadInputError(
-          `MQTT datasource at index ${index} requires a non-empty settings.topic`
+          `MQTT datasource at index ${index} requires a non-empty settings.topic`,
         );
       }
 
@@ -380,32 +350,23 @@ export const validateDashboardDatasources = (datasources) => {
         settings.parser !== null &&
         !ALLOWED_STREAM_PARSERS.has(String(settings.parser).trim().toLowerCase())
       ) {
-        throw createBadInputError(
-          `MQTT datasource at index ${index} uses an unsupported parser`
-        );
+        throw createBadInputError(`MQTT datasource at index ${index} uses an unsupported parser`);
       }
 
       if (settings.qos !== undefined && settings.qos !== null) {
         const qos = Number(settings.qos);
         if (!Number.isFinite(qos) || qos < 0 || qos > 1) {
           throw createBadInputError(
-            `MQTT datasource at index ${index} requires settings.qos between 0 and 1`
+            `MQTT datasource at index ${index} requires settings.qos between 0 and 1`,
           );
         }
       }
 
-      if (
-        settings.keepaliveSeconds !== undefined &&
-        settings.keepaliveSeconds !== null
-      ) {
+      if (settings.keepaliveSeconds !== undefined && settings.keepaliveSeconds !== null) {
         const keepaliveSeconds = Number(settings.keepaliveSeconds);
-        if (
-          !Number.isFinite(keepaliveSeconds) ||
-          keepaliveSeconds < 5 ||
-          keepaliveSeconds > 3600
-        ) {
+        if (!Number.isFinite(keepaliveSeconds) || keepaliveSeconds < 5 || keepaliveSeconds > 3600) {
           throw createBadInputError(
-            `MQTT datasource at index ${index} requires settings.keepaliveSeconds between 5 and 3600`
+            `MQTT datasource at index ${index} requires settings.keepaliveSeconds between 5 and 3600`,
           );
         }
       }
@@ -421,17 +382,13 @@ const getAclEntry = (dashboard, userId) => {
   if (!normalizedUserId || !Array.isArray(dashboard?.acl)) {
     return null;
   }
-  return (
-    dashboard.acl.find(
-      (entry) => toComparableId(entry?.userId) === normalizedUserId
-    ) || null
-  );
+  return dashboard.acl.find((entry) => toComparableId(entry?.userId) === normalizedUserId) || null;
 };
 
 export const resolveDashboardPermissions = (
   dashboard,
   context,
-  { shareTokenMatched = false } = {}
+  { shareTokenMatched = false } = {},
 ) => {
   if (!dashboard) {
     return {
@@ -552,10 +509,7 @@ export const ensureVisibilityTransitionAllowed = async ({
 };
 
 export const resolveCreateVisibility = async (inputDashboard, context) => {
-  const hasVisibility = Object.prototype.hasOwnProperty.call(
-    inputDashboard || {},
-    "visibility"
-  );
+  const hasVisibility = Object.prototype.hasOwnProperty.call(inputDashboard || {}, "visibility");
   const authPolicy = await getAuthPolicyState();
 
   let visibility = hasVisibility
@@ -598,17 +552,14 @@ export const uniqueAclEntries = (entries = []) => {
 export const buildCollaboratorView = async (dashboard) => {
   const ownerUserId = toComparableId(dashboard.user);
   const aclEntries = uniqueAclEntries(dashboard.acl || []);
-  const userIds = [
-    ownerUserId,
-    ...aclEntries.map((entry) => toComparableId(entry.userId)),
-  ].filter(Boolean);
+  const userIds = [ownerUserId, ...aclEntries.map((entry) => toComparableId(entry.userId))].filter(
+    Boolean,
+  );
 
   const users = await User.find({ _id: { $in: userIds } })
     .select("_id email")
     .lean();
-  const emailByUserId = new Map(
-    users.map((user) => [toComparableId(user._id), user.email])
-  );
+  const emailByUserId = new Map(users.map((user) => [toComparableId(user._id), user.email]));
 
   const collaborators = [
     {
@@ -635,10 +586,7 @@ export const buildCollaboratorView = async (dashboard) => {
   return collaborators;
 };
 
-export const recordShareTokenRevocation = async ({
-  dashboardId,
-  shareTokenVersion,
-}) => {
+export const recordShareTokenRevocation = async ({ dashboardId, shareTokenVersion }) => {
   const normalizedDashboardId = toComparableId(dashboardId);
   const normalizedVersion = Math.floor(Number(shareTokenVersion));
   if (!normalizedDashboardId || !Number.isFinite(normalizedVersion)) {

@@ -153,12 +153,8 @@ export class TextWidget extends ReactiveWidget {
       : this.getBinding(this.currentSettings?.valuePath);
 
     return {
-      header:
-        this.getBinding(this.currentSettings?.headerPath) ??
-        this.currentSettings?.headerText,
-      unit:
-        this.getBinding(this.currentSettings?.unitPath) ??
-        this.currentSettings?.unitText,
+      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
+      unit: this.getBinding(this.currentSettings?.unitPath) ?? this.currentSettings?.unitText,
       value,
     };
   }

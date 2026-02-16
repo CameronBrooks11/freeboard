@@ -15,18 +15,12 @@ test("canCreateAccountForMode only allows open mode", () => {
 });
 
 test("canAcceptInviteForMode allows invite mode or explicit invite token", () => {
-  assert.equal(
-    canAcceptInviteForMode({ registrationMode: "invite", inviteToken: "" }),
-    true
-  );
+  assert.equal(canAcceptInviteForMode({ registrationMode: "invite", inviteToken: "" }), true);
   assert.equal(
     canAcceptInviteForMode({ registrationMode: "disabled", inviteToken: "token-123" }),
-    true
+    true,
   );
-  assert.equal(
-    canAcceptInviteForMode({ registrationMode: "open", inviteToken: "" }),
-    false
-  );
+  assert.equal(canAcceptInviteForMode({ registrationMode: "open", inviteToken: "" }), false);
 });
 
 test("resolveLoginActionMode prioritizes reset token over invite token", () => {

@@ -6,7 +6,7 @@
  * @prop {Function} onClose - Callback when the dialog is canceled or closed.
  * @prop {Function} onOk    - Callback invoked with updated settings and general fields.
  */
-defineOptions({ name: 'SettingsDialogBox' });
+defineOptions({ name: "SettingsDialogBox" });
 
 import { computed, ref } from "vue";
 import DialogBox from "./DialogBox.vue";
@@ -38,7 +38,7 @@ const { onClose, onOk } = defineProps({
 const fields = computed(() =>
   createSettings(dashboard.value, {
     allowTrustedExecution: authStore.isTrustedExecutionMode(),
-  })
+  }),
 );
 
 // Reference to the DialogBox for closing the modal programmatically
@@ -70,12 +70,22 @@ const onDialogBoxOk = () => {
 </script>
 
 <template>
-  <DialogBox :header="$t('dialogBox.titleSettings')" ref="dialog" :ok="$t('dialogBox.buttonOk')"
-    :cancel="$t('dialogBox.buttonCancel')" @close="onClose" @ok="onDialogBoxOk">
+  <DialogBox
+    :header="$t('dialogBox.titleSettings')"
+    ref="dialog"
+    :ok="$t('dialogBox.buttonOk')"
+    :cancel="$t('dialogBox.buttonCancel')"
+    @close="onClose"
+    @ok="onDialogBoxOk"
+  >
     <!-- Tabbed sections for each settings category -->
     <TabNavigator :fields="fields">
       <template v-for="field in fields" :key="field.name" #[field.name]>
-        <Form :ref="(el) => storeComponentRef(field.name, el)" :settings="field.settings" :fields="field.fields" />
+        <Form
+          :ref="(el) => storeComponentRef(field.name, el)"
+          :settings="field.settings"
+          :fields="field.fields"
+        />
       </template>
     </TabNavigator>
   </DialogBox>

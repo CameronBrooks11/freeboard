@@ -50,8 +50,10 @@ export const createProtocolAdapterFactory = (deps) => {
       lookup,
     });
 
-    const idleTimeoutMs =
-      Math.max(1000, Number(intent.idleTimeoutMs) || REALTIME_SSE_IDLE_TIMEOUT_MS);
+    const idleTimeoutMs = Math.max(
+      1000,
+      Number(intent.idleTimeoutMs) || REALTIME_SSE_IDLE_TIMEOUT_MS,
+    );
 
     let upstreamRequest = null;
     let upstreamResponse = null;
@@ -170,7 +172,7 @@ export const createProtocolAdapterFactory = (deps) => {
           statusCode === 401 || statusCode === 403
             ? STREAM_ERROR_CODES.AUTH_FAILED
             : STREAM_ERROR_CODES.CONNECT_REFUSED,
-          "SSE upstream rejected connection"
+          "SSE upstream rejected connection",
         );
         stop();
         return;
@@ -241,8 +243,10 @@ export const createProtocolAdapterFactory = (deps) => {
       lookup,
     });
 
-    const idleTimeoutMs =
-      Math.max(1000, Number(intent.idleTimeoutMs) || REALTIME_WS_IDLE_TIMEOUT_MS);
+    const idleTimeoutMs = Math.max(
+      1000,
+      Number(intent.idleTimeoutMs) || REALTIME_WS_IDLE_TIMEOUT_MS,
+    );
 
     let stopped = false;
     let idleTimer = null;
@@ -320,14 +324,9 @@ export const createProtocolAdapterFactory = (deps) => {
         return;
       }
 
-      const payloadBuffer = Buffer.isBuffer(payload)
-        ? payload
-        : Buffer.from(payload);
+      const payloadBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
       if (payloadBuffer.byteLength > REALTIME_MAX_MESSAGE_BYTES) {
-        onError(
-          STREAM_ERROR_CODES.MESSAGE_TOO_LARGE,
-          "WebSocket message exceeded size limit"
-        );
+        onError(STREAM_ERROR_CODES.MESSAGE_TOO_LARGE, "WebSocket message exceeded size limit");
         return;
       }
 
@@ -376,13 +375,7 @@ export const createProtocolAdapterFactory = (deps) => {
 
     ensureMqttTopicPolicy({ intent });
 
-    const qos = Math.max(
-      0,
-      Math.min(
-        REALTIME_MQTT_MAX_QOS,
-        Math.floor(Number(intent.qos) || 0)
-      )
-    );
+    const qos = Math.max(0, Math.min(REALTIME_MQTT_MAX_QOS, Math.floor(Number(intent.qos) || 0)));
 
     const poolEntry = acquireMqttPoolEntry({
       intent,
@@ -405,11 +398,7 @@ export const createProtocolAdapterFactory = (deps) => {
           if (error) {
             poolEntry.topicRefCounts.delete(topic);
             reject(
-              createClientError(
-                502,
-                "MQTT subscribe failed",
-                STREAM_ERROR_CODES.CONNECT_FAILED
-              )
+              createClientError(502, "MQTT subscribe failed", STREAM_ERROR_CODES.CONNECT_FAILED),
             );
             return;
           }
@@ -454,19 +443,14 @@ export const createProtocolAdapterFactory = (deps) => {
         return;
       }
 
-      const payloadBuffer = Buffer.isBuffer(payload)
-        ? payload
-        : Buffer.from(payload);
+      const payloadBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
       if (payloadBuffer.byteLength > REALTIME_MQTT_MAX_MESSAGE_BYTES) {
         onError(STREAM_ERROR_CODES.MESSAGE_TOO_LARGE, "MQTT payload exceeded size limit");
         return;
       }
 
       try {
-        const parsedPayload = parseStreamPayload(
-          payloadBuffer.toString("utf8"),
-          intent.parser
-        );
+        const parsedPayload = parseStreamPayload(payloadBuffer.toString("utf8"), intent.parser);
         onData(parsedPayload);
       } catch {
         onError(STREAM_ERROR_CODES.PROTOCOL_ERROR, "MQTT payload parsing failed");
@@ -518,11 +502,7 @@ export const createProtocolAdapterFactory = (deps) => {
 
     if (protocol === "sse") {
       if (!REALTIME_SSE_ENABLED) {
-        throw createClientError(
-          403,
-          "SSE protocol is disabled",
-          STREAM_ERROR_CODES.POLICY_BLOCKED
-        );
+        throw createClientError(403, "SSE protocol is disabled", STREAM_ERROR_CODES.POLICY_BLOCKED);
       }
       return createSseAdapter({ intent, onData, onStatus, onError });
     }
@@ -532,7 +512,7 @@ export const createProtocolAdapterFactory = (deps) => {
         throw createClientError(
           403,
           "WebSocket protocol is disabled",
-          STREAM_ERROR_CODES.POLICY_BLOCKED
+          STREAM_ERROR_CODES.POLICY_BLOCKED,
         );
       }
       return createWebSocketAdapter({ intent, onData, onStatus, onError });
@@ -543,7 +523,7 @@ export const createProtocolAdapterFactory = (deps) => {
         throw createClientError(
           403,
           "MQTT protocol is disabled",
-          STREAM_ERROR_CODES.POLICY_BLOCKED
+          STREAM_ERROR_CODES.POLICY_BLOCKED,
         );
       }
       return createMqttAdapter({ intent, onData, onStatus, onError });
@@ -552,7 +532,7 @@ export const createProtocolAdapterFactory = (deps) => {
     throw createClientError(
       400,
       "Realtime protocol is not supported",
-      STREAM_ERROR_CODES.POLICY_BLOCKED
+      STREAM_ERROR_CODES.POLICY_BLOCKED,
     );
   };
 };

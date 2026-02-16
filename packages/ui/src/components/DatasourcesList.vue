@@ -3,7 +3,7 @@
  * @component DatasourcesList
  * @description Displays and manages the list of datasources, allowing add, edit, delete, and manual refresh operations.
  */
-defineOptions({ name: 'DatasourcesList' });
+defineOptions({ name: "DatasourcesList" });
 
 import { storeToRefs } from "pinia";
 import { useDashboardStore } from "../stores/dashboard.js";
@@ -41,7 +41,7 @@ const openDatasourceEditDialogBox = (datasource) => {
       const previousTitle = datasource.title;
       datasource.title = dashboard.value.ensureUniqueDatasourceTitle(
         newSettings.title,
-        datasource.id
+        datasource.id,
       );
       datasource.enabled = newSettings.enabled;
       datasource.type = newSettings.type;
@@ -67,9 +67,7 @@ const openDatasourceAddDialogBox = () => {
     header: t("datasourcesList.titleAdd"),
     onOk: (newSettings) => {
       const newViewModel = new Datasource();
-      newViewModel.title = dashboard.value.ensureUniqueDatasourceTitle(
-        newSettings.title
-      );
+      newViewModel.title = dashboard.value.ensureUniqueDatasourceTitle(newSettings.title);
       newViewModel.enabled = newSettings.enabled;
       newViewModel.settings = newSettings.settings;
       newViewModel.type = newSettings.type;
@@ -100,9 +98,15 @@ const instance = getCurrentInstance();
         </tr>
       </thead>
       <tbody class="datasources-list__table__body">
-        <tr v-for="datasource in dashboard.datasources" :key="datasource.id" class="datasources-list__table__body__row">
+        <tr
+          v-for="datasource in dashboard.datasources"
+          :key="datasource.id"
+          class="datasources-list__table__body__row"
+        >
           <td class="datasources-list__table__body__row__cell">
-            <TextButton @click="() => openDatasourceEditDialogBox(datasource)">{{ datasource.title }}</TextButton>
+            <TextButton @click="() => openDatasourceEditDialogBox(datasource)">{{
+              datasource.title
+            }}</TextButton>
           </td>
           <td class="datasources-list__table__body__row__cell">
             {{ formatDateTime(datasource.lastUpdated) }}
@@ -117,15 +121,21 @@ const instance = getCurrentInstance();
           </td>
           <td class="datasources-list__table__body__row__cell">
             <ul class="datasources-list__table__body__row__cell__board-toolbar">
-              <li @click="() => datasource.updateNow()"
-                class="datasources-list__table__body__row__cell__board-toolbar__item">
-                <i class="datasources-list__table__body__row__cell__board-toolbar__item__icon"><v-icon
-                    name="hi-refresh"></v-icon></i>
+              <li
+                @click="() => datasource.updateNow()"
+                class="datasources-list__table__body__row__cell__board-toolbar__item"
+              >
+                <i class="datasources-list__table__body__row__cell__board-toolbar__item__icon"
+                  ><v-icon name="hi-refresh"></v-icon
+                ></i>
               </li>
-              <li @click="() => openDatasourceDeleteDialogBox(datasource)"
-                class="datasources-list__table__body__row__cell__board-toolbar__item">
-                <i class="datasources-list__table__body__row__cell__board-toolbar__item__icon"><v-icon
-                    name="hi-trash"></v-icon></i>
+              <li
+                @click="() => openDatasourceDeleteDialogBox(datasource)"
+                class="datasources-list__table__body__row__cell__board-toolbar__item"
+              >
+                <i class="datasources-list__table__body__row__cell__board-toolbar__item__icon"
+                  ><v-icon name="hi-trash"></v-icon
+                ></i>
               </li>
             </ul>
           </td>

@@ -33,7 +33,9 @@ const destroyIfIdle = (key, entry) => {
 };
 
 const normalizeKeyPart = (value, fallback) => {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   return normalized || fallback;
 };
 
@@ -128,4 +130,3 @@ export const clearLoginThrottle = (key) => {
 export const resetLoginThrottleState = () => {
   attemptState.clear();
 };
-

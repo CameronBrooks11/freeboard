@@ -39,4 +39,3 @@ test("disposeDashboardAssets removes every known asset node safely", () => {
   disposeDashboardAssets(assets);
   assert.equal(removes, 2);
 });
-

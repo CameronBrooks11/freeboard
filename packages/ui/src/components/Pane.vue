@@ -5,7 +5,7 @@
  *
  * @prop {Object} pane - Pane model instance containing title, layout, and widgets.
  */
-defineOptions({ name: 'Pane' });
+defineOptions({ name: "Pane" });
 
 import { useDashboardStore } from "../stores/dashboard.js";
 import { storeToRefs } from "pinia";
@@ -91,7 +91,10 @@ const instance = getCurrentInstance();
               <v-icon name="hi-clipboard-list" />
             </i>
           </li>
-          <li @click="() => openPaneDeleteDialogBox(pane)" class="pane__header__board-toolbar__item">
+          <li
+            @click="() => openPaneDeleteDialogBox(pane)"
+            class="pane__header__board-toolbar__item"
+          >
             <i class="pane__header__board-toolbar__item__icon">
               <v-icon name="hi-trash" />
             </i>

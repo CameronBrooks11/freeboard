@@ -47,4 +47,3 @@ Expected output: a new random dog image each datasource refresh.
 8. Save.
 
 Expected output: random cat image with centered containment fit.
-

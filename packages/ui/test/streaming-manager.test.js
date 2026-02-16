@@ -41,7 +41,7 @@ class MockWebSocket {
     const handlers = this.listeners.get(type) || [];
     this.listeners.set(
       type,
-      handlers.filter((entry) => entry !== handler)
+      handlers.filter((entry) => entry !== handler),
     );
   }
 
@@ -100,7 +100,7 @@ const createToken = (expiresInSeconds) => {
     exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
   };
   return `${encodeBase64Url(JSON.stringify({ alg: "none", typ: "JWT" }))}.${encodeBase64Url(
-    JSON.stringify(payload)
+    JSON.stringify(payload),
   )}.signature`;
 };
 
@@ -184,13 +184,13 @@ test("StreamingManager refreshToken resends subscribe with new token", async () 
 
   const socket = MockWebSocket.instances[0];
   const initialSubscribeCount = socket.sent.filter(
-    (entry) => JSON.parse(entry).type === "subscribe"
+    (entry) => JSON.parse(entry).type === "subscribe",
   ).length;
 
   await manager.refreshToken("ds-stream-2", createToken(7200));
 
   const finalSubscribeCount = socket.sent.filter(
-    (entry) => JSON.parse(entry).type === "subscribe"
+    (entry) => JSON.parse(entry).type === "subscribe",
   ).length;
   assert.equal(finalSubscribeCount, initialSubscribeCount + 1);
 });

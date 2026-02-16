@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import {
-  defaultWidgetFields,
-  validateWidgetPlugin,
-} from "../src/widgets/runtime/plugin.js";
+import { defaultWidgetFields, validateWidgetPlugin } from "../src/widgets/runtime/plugin.js";
 
 test("defaultWidgetFields returns the general section", () => {
   const general = { name: "general" };
@@ -24,12 +21,9 @@ test("validateWidgetPlugin applies defaults for label and fields", () => {
 });
 
 test("validateWidgetPlugin rejects invalid definitions", () => {
-  assert.throws(
-    () => validateWidgetPlugin({ typeName: "x" }),
-    /requires a 'newInstance' function/
-  );
+  assert.throws(() => validateWidgetPlugin({ typeName: "x" }), /requires a 'newInstance' function/);
   assert.throws(
     () => validateWidgetPlugin({ newInstance: () => {} }),
-    /requires a non-empty string `typeName`/
+    /requires a non-empty string `typeName`/,
   );
 });

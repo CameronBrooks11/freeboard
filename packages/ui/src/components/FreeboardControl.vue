@@ -3,7 +3,7 @@
  * @component FreeboardControl
  * @description Toolbar for saving, importing, and exporting the Freeboard.
  */
-defineOptions({ name: 'FreeboardControl' });
+defineOptions({ name: "FreeboardControl" });
 
 import { storeToRefs } from "pinia";
 import { useDashboardStore } from "../stores/dashboard.js";
@@ -23,8 +23,6 @@ const { mutate: updateDashboard } = useMutation(DASHBOARD_UPDATE_MUTATION);
 const instance = getCurrentInstance();
 const router = useRouter();
 
-
-
 /**
  * Serialize current dashboard and invoke save or update mutation via store action.
  */
@@ -39,7 +37,7 @@ const saveDashboard = async () => {
     id,
     d,
     createDashboard,
-    updateDashboard
+    updateDashboard,
   );
   if (!wasSaved && savedDashboardId) {
     await router.push(`/${savedDashboardId}`);
@@ -49,7 +47,6 @@ const saveDashboard = async () => {
 const openSavedDashboards = () => {
   openModal(SavedDashboardsDialogBox, instance.appContext);
 };
-
 </script>
 
 <template>
@@ -74,7 +71,10 @@ const openSavedDashboards = () => {
         </label>
       </li>
       <!-- Import from local file -->
-      <li @click="dashboardStore.loadDashboardFromLocalFile()" class="freeboard-control__board-toolbar__item">
+      <li
+        @click="dashboardStore.loadDashboardFromLocalFile()"
+        class="freeboard-control__board-toolbar__item"
+      >
         <i class="freeboard-control__board-toolbar__item__icon">
           <v-icon name="hi-download" />
         </i>
@@ -94,8 +94,6 @@ const openSavedDashboards = () => {
     </ul>
   </div>
 </template>
-
-
 
 <style lang="css" scoped>
 @import url("../assets/css/components/freeboard-control.css");

@@ -108,13 +108,13 @@ export class BaseWidget {
                       data.results.map((r) => ({
                         value: r.latest,
                         label: r.name,
-                      }))
+                      })),
                     ),
                 },
               ],
             },
           ],
-        }
+        },
       );
     }
 
@@ -137,7 +137,7 @@ export class BaseWidget {
    * @param {{style: string, script: string, html: string, resources: Array<{asset: string,label: string}>}} settings - Template settings.
    * @returns {string} HTML document string for iframe srcdoc.
    */
-  static template({style, script, html, resources}) {
+  static template({ style, script, html, resources }) {
     const trustedExecution = isTrustedExecutionEnabled();
     const resourceTags = trustedExecution
       ? resources

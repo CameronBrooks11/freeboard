@@ -3,7 +3,7 @@
  * @component App
  * @description Root component that sets dynamic document title based on the current dashboard and renders the router view.
  */
-defineOptions({ name: 'App' });
+defineOptions({ name: "App" });
 
 import "./assets/css/app.css";
 import { RouterView } from "vue-router";
@@ -17,8 +17,7 @@ const { dashboard } = storeToRefs(dashboardStore);
 
 // Dynamically update the page title when the dashboard changes
 useHead({
-  title: () =>
-    dashboard.value ? `${dashboard.value.title} | Freeboard` : "Freeboard",
+  title: () => (dashboard.value ? `${dashboard.value.title} | Freeboard` : "Freeboard"),
 });
 </script>
 

@@ -62,7 +62,7 @@ test("registerUser rejects when registration mode is disabled", async () => {
         email: "new.user@example.com",
         password: "StrongPass123!",
       }),
-    /Self-registration is disabled/
+    /Self-registration is disabled/,
   );
 });
 
@@ -77,7 +77,7 @@ test("registerUser rejects when registration mode requires invite", async () => 
         email: "new.user@example.com",
         password: "StrongPass123!",
       }),
-    /Invitation is required/
+    /Invitation is required/,
   );
 });
 
@@ -140,7 +140,7 @@ test("authUser returns explicit deactivation message for inactive users", async 
         email: "inactive.user@example.com",
         password: "StrongPass123!",
       }),
-    /deactivated/i
+    /deactivated/i,
   );
 });
 
@@ -156,9 +156,9 @@ test("adminCreateInvite rejects non-admin context", async () => {
         },
         {
           user: { _id: "editor-1", role: "editor", active: true },
-        }
+        },
       ),
-    /administrator/i
+    /administrator/i,
   );
 });
 
@@ -181,9 +181,9 @@ test("adminUpdateUser prevents self-demotion", async () => {
         },
         {
           user: { _id: "admin-1", role: "admin", active: true },
-        }
+        },
       ),
-    /cannot demote themselves/i
+    /cannot demote themselves/i,
   );
 });
 
@@ -196,7 +196,7 @@ test("acceptInvite rejects invalid or expired token", async () => {
         token: "invalid-token",
         password: "StrongPass123!",
       }),
-    /invalid or expired/i
+    /invalid or expired/i,
   );
 });
 
@@ -211,7 +211,7 @@ test("adminUpdateUser increments sessionVersion when role or active changes", as
             role: "editor",
             active: true,
           }
-        : null
+        : null,
     );
   User.findOneAndUpdate = (filter, update) => {
     assert.deepEqual(filter, { _id: "user-1" });
@@ -228,7 +228,7 @@ test("adminUpdateUser increments sessionVersion when role or active changes", as
   const result = await UserResolvers.Mutation.adminUpdateUser(
     null,
     { _id: "user-1", role: "viewer", active: false },
-    { user: { _id: "admin-1", role: "admin", active: true } }
+    { user: { _id: "admin-1", role: "admin", active: true } },
   );
 
   assert.deepEqual(updatePayload, {
@@ -266,9 +266,9 @@ test("authUser throttles repeated failed login attempts", async () => {
           },
           {
             clientIp: "10.0.0.8",
-          }
+          },
         ),
-      /Invalid credentials/
+      /Invalid credentials/,
     );
   }
 
@@ -282,8 +282,8 @@ test("authUser throttles repeated failed login attempts", async () => {
         },
         {
           clientIp: "10.0.0.8",
-        }
+        },
       ),
-    /Too many login attempts/
+    /Too many login attempts/,
   );
 });

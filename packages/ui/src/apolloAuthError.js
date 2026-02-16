@@ -8,12 +8,7 @@ const AUTH_ERROR_CODES = new Set(["UNAUTHENTICATED"]);
  * Auth-related GraphQL message fragments used as fallback when no code is set.
  * @type {RegExp[]}
  */
-const AUTH_MESSAGE_PATTERNS = [
-  /unauthenticated/i,
-  /invalid token/i,
-  /jwt/i,
-  /token expired/i,
-];
+const AUTH_MESSAGE_PATTERNS = [/unauthenticated/i, /invalid token/i, /jwt/i, /token expired/i];
 
 /**
  * Determine whether a single GraphQL error indicates authentication/authorization failure.

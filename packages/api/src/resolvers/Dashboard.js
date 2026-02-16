@@ -4,10 +4,7 @@
  */
 
 import { createGraphQLError, createPubSub } from "graphql-yoga";
-import {
-  ensureThatUserHasRole,
-  ensureThatUserIsLogged,
-} from "../auth.js";
+import { ensureThatUserHasRole, ensureThatUserIsLogged } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
 import Dashboard from "../models/Dashboard.js";
 import User from "../models/User.js";
@@ -33,10 +30,7 @@ import {
   uniqueAclEntries,
   validateDashboardDatasources,
 } from "./dashboardHelpers.js";
-import {
-  normalizeDashboardAccessLevel,
-  normalizeDashboardVisibility,
-} from "../policy.js";
+import { normalizeDashboardAccessLevel, normalizeDashboardVisibility } from "../policy.js";
 import { isValidEmail, normalizeEmail } from "../validators.js";
 
 const pubSub = createPubSub();
@@ -83,10 +77,7 @@ export default {
       let filter = {};
       if (context.user.role !== "admin") {
         const authPolicy = await getAuthPolicyState();
-        const scopedFilters = [
-          { user: userId },
-          { acl: { $elemMatch: { userId } } },
-        ];
+        const scopedFilters = [{ user: userId }, { acl: { $elemMatch: { userId } } }];
         if (authPolicy.dashboardPublicListingEnabled) {
           scopedFilters.push({ visibility: "public" });
         }
@@ -174,18 +165,13 @@ export default {
         updatePayload.visibility = nextVisibility;
         const shouldExposeExternally =
           EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES.has(nextVisibility);
-        const shouldRotateShareToken =
-          shouldExposeExternally && previousVisibility === "private";
+        const shouldRotateShareToken = shouldExposeExternally && previousVisibility === "private";
         const visibilityChanged = nextVisibility !== previousVisibility;
-        if (
-          shouldExposeExternally &&
-          (shouldRotateShareToken || !existing.shareToken)
-        ) {
+        if (shouldExposeExternally && (shouldRotateShareToken || !existing.shareToken)) {
           updatePayload.shareToken = generateShareToken();
         }
         if (visibilityChanged) {
-          nextShareTokenVersion =
-            Math.max(0, Number(existing.shareTokenVersion) || 0) + 1;
+          nextShareTokenVersion = Math.max(0, Number(existing.shareTokenVersion) || 0) + 1;
           updatePayload.shareTokenVersion = nextShareTokenVersion;
         }
       }
@@ -193,7 +179,7 @@ export default {
       const updated = await Dashboard.findOneAndUpdate(
         { _id },
         { $set: updatePayload },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       ).lean();
       if (!updated) {
         throw createGraphQLError("Dashboard not found");
@@ -255,23 +241,18 @@ export default {
         previousVisibility,
         nextVisibility,
       });
-      const shouldExposeExternally =
-        EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES.has(nextVisibility);
-      const shouldRotateShareToken =
-        shouldExposeExternally && previousVisibility === "private";
+      const shouldExposeExternally = EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES.has(nextVisibility);
+      const shouldRotateShareToken = shouldExposeExternally && previousVisibility === "private";
       const visibilityChanged = nextVisibility !== previousVisibility;
       const shareTokenUpdate =
-        shouldExposeExternally &&
-        (shouldRotateShareToken || !existing.shareToken)
+        shouldExposeExternally && (shouldRotateShareToken || !existing.shareToken)
           ? { shareToken: generateShareToken() }
           : {};
       const nextShareTokenVersion = visibilityChanged
         ? Math.max(0, Number(existing.shareTokenVersion) || 0) + 1
         : null;
       const shareTokenVersionUpdate =
-        nextShareTokenVersion === null
-          ? {}
-          : { shareTokenVersion: nextShareTokenVersion };
+        nextShareTokenVersion === null ? {} : { shareTokenVersion: nextShareTokenVersion };
 
       const updated = await Dashboard.findOneAndUpdate(
         { _id },
@@ -282,7 +263,7 @@ export default {
             ...shareTokenVersionUpdate,
           },
         },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       ).lean();
       if (!updated) {
         throw createGraphQLError("Dashboard not found");
@@ -316,8 +297,7 @@ export default {
       ensureThatUserHasRole(context, ["editor", "admin"]);
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardShareManageable(existing, context);
-      const nextShareTokenVersion =
-        Math.max(0, Number(existing.shareTokenVersion) || 0) + 1;
+      const nextShareTokenVersion = Math.max(0, Number(existing.shareTokenVersion) || 0) + 1;
 
       const updated = await Dashboard.findOneAndUpdate(
         { _id },
@@ -327,7 +307,7 @@ export default {
             shareTokenVersion: nextShareTokenVersion,
           },
         },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       ).lean();
       if (!updated) {
         throw createGraphQLError("Dashboard not found");
@@ -352,11 +332,7 @@ export default {
       return transformed;
     },
 
-    upsertDashboardAccess: async (
-      parent,
-      { _id, email, accessLevel },
-      context
-    ) => {
+    upsertDashboardAccess: async (parent, { _id, email, accessLevel }, context) => {
       ensureThatUserHasRole(context, ["editor", "admin"]);
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardShareManageable(existing, context);
@@ -380,9 +356,7 @@ export default {
 
       const normalizedAccessLevel = normalizeDashboardAccessLevel(accessLevel);
       const nextAcl = uniqueAclEntries([
-        ...(existing.acl || []).filter(
-          (entry) => toComparableId(entry.userId) !== targetUserId
-        ),
+        ...(existing.acl || []).filter((entry) => toComparableId(entry.userId) !== targetUserId),
         {
           userId: targetUserId,
           accessLevel: normalizedAccessLevel,
@@ -394,7 +368,7 @@ export default {
       const updated = await Dashboard.findOneAndUpdate(
         { _id },
         { $set: { acl: nextAcl } },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       ).lean();
       if (!updated) {
         throw createGraphQLError("Dashboard not found");
@@ -432,13 +406,13 @@ export default {
 
       const previousCount = Array.isArray(existing.acl) ? existing.acl.length : 0;
       const nextAcl = (existing.acl || []).filter(
-        (entry) => toComparableId(entry.userId) !== targetUserId
+        (entry) => toComparableId(entry.userId) !== targetUserId,
       );
 
       const updated = await Dashboard.findOneAndUpdate(
         { _id },
         { $set: { acl: nextAcl } },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       ).lean();
       if (!updated) {
         throw createGraphQLError("Dashboard not found");
@@ -460,11 +434,7 @@ export default {
       return transformed;
     },
 
-    transferDashboardOwnership: async (
-      parent,
-      { _id, newOwnerUserId },
-      context
-    ) => {
+    transferDashboardOwnership: async (parent, { _id, newOwnerUserId }, context) => {
       ensureThatUserHasRole(context, ["editor", "admin"]);
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardOwnershipTransferAllowed(existing, context);
@@ -487,9 +457,7 @@ export default {
       const nextAcl = uniqueAclEntries([
         ...(existing.acl || []).filter((entry) => {
           const entryUserId = toComparableId(entry.userId);
-          return (
-            entryUserId !== currentOwnerUserId && entryUserId !== targetOwnerUserId
-          );
+          return entryUserId !== currentOwnerUserId && entryUserId !== targetOwnerUserId;
         }),
         {
           userId: currentOwnerUserId,
@@ -507,7 +475,7 @@ export default {
             acl: nextAcl,
           },
         },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       ).lean();
       if (!updated) {
         throw createGraphQLError("Dashboard not found");

@@ -6,7 +6,7 @@
  *
  * @prop {string} id - Optional dashboard ID to load (provided by vue-router via props).
  */
-defineOptions({ name: 'Freeboard' });
+defineOptions({ name: "Freeboard" });
 
 import { computed, onUnmounted, watch } from "vue";
 import Header from "./Header.vue";
@@ -70,21 +70,19 @@ const {
   result: resultById,
   loading: loadingById,
   error: errorById,
-} = useQuery(
-  DASHBOARD_READ_QUERY,
-  () => ({ id: routeId.value }),
-  { enabled: queryEnabledById, fetchPolicy: "network-only" }
-);
+} = useQuery(DASHBOARD_READ_QUERY, () => ({ id: routeId.value }), {
+  enabled: queryEnabledById,
+  fetchPolicy: "network-only",
+});
 
 const {
   result: resultByShareToken,
   loading: loadingByShareToken,
   error: errorByShareToken,
-} = useQuery(
-  DASHBOARD_READ_BY_SHARE_TOKEN_QUERY,
-  () => ({ shareToken: routeShareToken.value }),
-  { enabled: queryEnabledByShareToken, fetchPolicy: "network-only" }
-);
+} = useQuery(DASHBOARD_READ_BY_SHARE_TOKEN_QUERY, () => ({ shareToken: routeShareToken.value }), {
+  enabled: queryEnabledByShareToken,
+  fetchPolicy: "network-only",
+});
 
 /**
  * Subscribe to dashboard updates (SSE). Also reactive to the current `id`.
@@ -92,30 +90,36 @@ const {
 const { onResult: onSubResult } = useSubscription(
   DASHBOARD_UPDATE_SUBSCRIPTION,
   () => ({ id: routeId.value }),
-  { context: { apiName: "stream" }, enabled: queryEnabledById }
+  { context: { apiName: "stream" }, enabled: queryEnabledById },
 );
 
-const { result: publicPolicyResult } = useQuery(PUBLIC_AUTH_POLICY_QUERY, {}, {
-  fetchPolicy: "network-only",
-});
+const { result: publicPolicyResult } = useQuery(
+  PUBLIC_AUTH_POLICY_QUERY,
+  {},
+  {
+    fetchPolicy: "network-only",
+  },
+);
 
 const credentialProfilesQueryEnabled = computed(
-  () => authStore.isLoggedIn() && authStore.canEditDashboards()
+  () => authStore.isLoggedIn() && authStore.canEditDashboards(),
 );
-const {
-  result: credentialProfilesResult,
-  error: credentialProfilesError,
-} = useQuery(CREDENTIAL_PROFILES_QUERY, {}, {
-  fetchPolicy: "network-only",
-  enabled: credentialProfilesQueryEnabled,
-});
-const {
-  result: brokerProfilesResult,
-  error: brokerProfilesError,
-} = useQuery(BROKER_PROFILES_QUERY, {}, {
-  fetchPolicy: "network-only",
-  enabled: credentialProfilesQueryEnabled,
-});
+const { result: credentialProfilesResult, error: credentialProfilesError } = useQuery(
+  CREDENTIAL_PROFILES_QUERY,
+  {},
+  {
+    fetchPolicy: "network-only",
+    enabled: credentialProfilesQueryEnabled,
+  },
+);
+const { result: brokerProfilesResult, error: brokerProfilesError } = useQuery(
+  BROKER_PROFILES_QUERY,
+  {},
+  {
+    fetchPolicy: "network-only",
+    enabled: credentialProfilesQueryEnabled,
+  },
+);
 
 watch(publicPolicyResult, () => {
   const policy = publicPolicyResult.value?.publicAuthPolicy;
@@ -160,14 +164,10 @@ watch(credentialProfilesQueryEnabled, (enabled) => {
 watch(
   () => dashboard.value?._id || null,
   (nextDashboardId, previousDashboardId) => {
-    if (
-      previousDashboardId &&
-      nextDashboardId &&
-      previousDashboardId !== nextDashboardId
-    ) {
+    if (previousDashboardId && nextDashboardId && previousDashboardId !== nextDashboardId) {
       disposeStreamingManager(previousDashboardId);
     }
-  }
+  },
 );
 
 onUnmounted(() => {
@@ -187,12 +187,16 @@ watch([loadingById, loadingByShareToken], ([idLoading, shareLoading]) => {
 });
 
 // Show loader when the route id changes (before the query returns)
-watch([routeId, routeShareToken], ([id, shareToken]) => {
-  authStore.setRuntimeShareToken(shareToken || null);
-  if (id || shareToken) {
-    showLoadingIndicator.value = true;
-  }
-}, { immediate: true });
+watch(
+  [routeId, routeShareToken],
+  ([id, shareToken]) => {
+    authStore.setRuntimeShareToken(shareToken || null);
+    if (id || shareToken) {
+      showLoadingIndicator.value = true;
+    }
+  },
+  { immediate: true },
+);
 
 /**
  * Handle incoming dashboard data (initial or subscription).

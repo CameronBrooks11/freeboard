@@ -56,16 +56,14 @@ export default defineConfig(({ mode }) => {
   const isStatic = ["1", "true", "yes", "on"].includes(
     String(env.FREEBOARD_STATIC || "")
       .trim()
-      .toLowerCase()
+      .toLowerCase(),
   );
 
   /**
    * Public base path for built assets.
    * Allows overriding the default with FREEBOARD_BASE_PATH (e.g., /freeboard/demo/).
    */
-  const STATIC_BASE =
-    env.FREEBOARD_BASE_PATH ||
-    (isStatic ? "/freeboard/" : "/");
+  const STATIC_BASE = env.FREEBOARD_BASE_PATH || (isStatic ? "/freeboard/" : "/");
 
   return {
     // Enable Vue 3 single-file component support
@@ -77,10 +75,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         // Alias '~' to custom node_modules path for shared dependencies
-        "~": path.resolve(
-          __dirname,
-          env.FREEBOARD_NODE_MODULES || "./../../node_modules"
-        ),
+        "~": path.resolve(__dirname, env.FREEBOARD_NODE_MODULES || "./../../node_modules"),
       },
     },
 

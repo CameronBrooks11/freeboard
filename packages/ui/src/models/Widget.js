@@ -188,10 +188,7 @@ export class Widget {
       return;
     }
 
-    if (
-      this.widgetInstance !== undefined &&
-      typeof this.widgetInstance.render === "function"
-    ) {
+    if (this.widgetInstance !== undefined && typeof this.widgetInstance.render === "function") {
       try {
         this.widgetInstance.render(element);
         this.syncRuntimeError();
@@ -252,7 +249,8 @@ export class Widget {
     };
 
     if (
-      this.enabled && this.widgetInstance !== undefined &&
+      this.enabled &&
+      this.widgetInstance !== undefined &&
       typeof this.widgetInstance.processDatasourceUpdate === "function"
     ) {
       try {
@@ -272,7 +270,8 @@ export class Widget {
    */
   onResize(size) {
     if (
-      this.enabled && this.widgetInstance !== undefined &&
+      this.enabled &&
+      this.widgetInstance !== undefined &&
       typeof this.widgetInstance.onResize === "function"
     ) {
       try {
@@ -305,10 +304,7 @@ export class Widget {
     try {
       if (typeof this.widgetInstance?.getPreferredRows === "function") {
         return toPositiveInteger(
-          this.widgetInstance.getPreferredRows(
-            this.settings,
-            this.lastContext?.snapshot || {}
-          )
+          this.widgetInstance.getPreferredRows(this.settings, this.lastContext?.snapshot || {}),
         );
       }
     } catch (error) {

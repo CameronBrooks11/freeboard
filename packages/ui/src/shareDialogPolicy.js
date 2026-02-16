@@ -29,10 +29,7 @@ export const resolveShareDialogPermissions = ({ isSaved, dashboard }) => ({
  * @param {boolean} input.canManageSharing
  * @returns {string|null}
  */
-export const getShareMutationGuardError = ({
-  isShareableDashboard,
-  canManageSharing,
-}) => {
+export const getShareMutationGuardError = ({ isShareableDashboard, canManageSharing }) => {
   if (!isShareableDashboard) {
     return "Save the dashboard before configuring sharing.";
   }

@@ -65,7 +65,7 @@ const UserSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      trim: true,      // Remove surrounding whitespace
+      trim: true, // Remove surrounding whitespace
       lowercase: true, // Store emails in lowercase
       validate: {
         validator: isValidEmail,
@@ -74,13 +74,11 @@ const UserSchema = new Schema(
     },
     password: {
       type: String,
-      required: true,  // Plaintext will be hashed before save
+      required: true, // Plaintext will be hashed before save
       validate: {
         validator(value) {
           const isPasswordModified =
-            typeof this?.isModified === "function"
-              ? this.isModified("password")
-              : true;
+            typeof this?.isModified === "function" ? this.isModified("password") : true;
           if (!isPasswordModified) {
             return true;
           }
@@ -98,7 +96,7 @@ const UserSchema = new Schema(
     active: {
       type: Boolean,
       required: true,
-      default: true,   // Accounts are active by default
+      default: true, // Accounts are active by default
     },
     sessionVersion: {
       type: Number,
@@ -124,14 +122,13 @@ const UserSchema = new Schema(
 
 const ensureNoDirectPasswordUpdate = function (next) {
   const update = this.getUpdate() || {};
-  const directPasswordUpdate =
-    update.password !== undefined || update.$set?.password !== undefined;
+  const directPasswordUpdate = update.password !== undefined || update.$set?.password !== undefined;
 
   if (directPasswordUpdate) {
     return next(
       new Error(
-        "Direct password updates are not supported through update queries. Use a dedicated password reset/change flow."
-      )
+        "Direct password updates are not supported through update queries. Use a dedicated password reset/change flow.",
+      ),
     );
   }
 

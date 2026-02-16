@@ -44,6 +44,6 @@ test("decryptCredentialSecret rejects malformed encrypted payload", () => {
         iv: "not-base64",
         ciphertext: "bad",
       }),
-    /invalid/i
+    /invalid/i,
   );
 });

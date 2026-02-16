@@ -27,8 +27,7 @@ const PolicySchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.model("Policy", PolicySchema);
-

@@ -14,9 +14,7 @@ const normalizeTopicAllowlist = (value) => {
   if (!Array.isArray(value)) {
     return [];
   }
-  return value
-    .map((entry) => String(entry || "").trim())
-    .filter(Boolean);
+  return value.map((entry) => String(entry || "").trim()).filter(Boolean);
 };
 
 const BrokerProfileSchema = new Schema(
@@ -84,7 +82,7 @@ const BrokerProfileSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 BrokerProfileSchema.index({ name: 1 }, { unique: true });

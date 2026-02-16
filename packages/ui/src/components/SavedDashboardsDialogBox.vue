@@ -10,7 +10,7 @@
  *
  */
 
-defineOptions({ name: 'SavedDashboardsDialogBox' });
+defineOptions({ name: "SavedDashboardsDialogBox" });
 
 import { useQuery } from "@vue/apollo-composable";
 import { ref } from "vue";
@@ -76,12 +76,16 @@ const openDashboard = async (id) => {
 
 <template>
   <!-- Dialog container -->
-  <DialogBox :header="$t('savedDashboards.title')" :cancel="$t('dialogBox.buttonCancel')" @close="onClose">
+  <DialogBox
+    :header="$t('savedDashboards.title')"
+    :cancel="$t('dialogBox.buttonCancel')"
+    @close="onClose"
+  >
     <!-- Loading state -->
-    <div v-if="loading">{{ $t('savedDashboards.loading') }}</div>
+    <div v-if="loading">{{ $t("savedDashboards.loading") }}</div>
 
     <!-- Error state -->
-    <div v-else-if="error">{{ $t('savedDashboards.error') }}</div>
+    <div v-else-if="error">{{ $t("savedDashboards.error") }}</div>
 
     <!-- Saved dashboards list -->
     <ul v-else class="saved-dashboards">
@@ -96,7 +100,7 @@ const openDashboard = async (id) => {
 
       <!-- Empty state -->
       <li v-if="(result?.dashboards || []).length === 0" class="saved-dashboards__empty">
-        {{ $t('savedDashboards.empty') }}
+        {{ $t("savedDashboards.empty") }}
       </li>
     </ul>
   </DialogBox>

@@ -98,9 +98,7 @@ export class HtmlWidget extends ReactiveWidget {
 
   resolveInputs() {
     return {
-      header:
-        this.getBinding(this.currentSettings?.headerPath) ??
-        this.currentSettings?.headerText,
+      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
       content: this.getBinding(this.currentSettings?.htmlPath),
     };
   }
@@ -109,14 +107,10 @@ export class HtmlWidget extends ReactiveWidget {
     this.headerElement.textContent = inputs.header || "";
     this.headerElement.style.display = inputs.header ? "block" : "none";
 
-    const content = inputs.content === null || inputs.content === undefined
-      ? ""
-      : String(inputs.content);
+    const content =
+      inputs.content === null || inputs.content === undefined ? "" : String(inputs.content);
 
-    if (
-      this.currentSettings?.mode === "trusted_html" &&
-      isTrustedExecutionEnabled()
-    ) {
+    if (this.currentSettings?.mode === "trusted_html" && isTrustedExecutionEnabled()) {
       this.contentElement.innerHTML = content;
     } else {
       this.contentElement.textContent = content;

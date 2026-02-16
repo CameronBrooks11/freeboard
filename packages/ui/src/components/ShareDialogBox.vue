@@ -46,47 +46,39 @@ const shareDialogPermissions = computed(() =>
   resolveShareDialogPermissions({
     isSaved: isSaved.value,
     dashboard: dashboard.value,
-  })
+  }),
 );
-const canManageSharing = computed(
-  () => shareDialogPermissions.value.canManageSharing
-);
-const isShareableDashboard = computed(
-  () => shareDialogPermissions.value.isShareableDashboard
-);
+const canManageSharing = computed(() => shareDialogPermissions.value.canManageSharing);
+const isShareableDashboard = computed(() => shareDialogPermissions.value.isShareableDashboard);
 
 const {
   result: collaboratorsResult,
   loading: collaboratorsLoading,
   refetch: refetchCollaborators,
-} = useQuery(
-  DASHBOARD_COLLABORATORS_QUERY,
-  () => ({ id: dashboard.value?._id || "" }),
-  {
-    enabled: computed(() => isShareableDashboard.value && canManageSharing.value),
-    fetchPolicy: "network-only",
-  }
-);
+} = useQuery(DASHBOARD_COLLABORATORS_QUERY, () => ({ id: dashboard.value?._id || "" }), {
+  enabled: computed(() => isShareableDashboard.value && canManageSharing.value),
+  fetchPolicy: "network-only",
+});
 
 const { mutate: setDashboardVisibility, loading: setVisibilityLoading } = useMutation(
-  DASHBOARD_SET_VISIBILITY_MUTATION
+  DASHBOARD_SET_VISIBILITY_MUTATION,
 );
 const { mutate: rotateShareToken, loading: rotateShareTokenLoading } = useMutation(
-  DASHBOARD_ROTATE_SHARE_TOKEN_MUTATION
+  DASHBOARD_ROTATE_SHARE_TOKEN_MUTATION,
 );
 const { mutate: upsertDashboardAccess, loading: upsertAccessLoading } = useMutation(
-  DASHBOARD_UPSERT_ACCESS_MUTATION
+  DASHBOARD_UPSERT_ACCESS_MUTATION,
 );
 const { mutate: revokeDashboardAccess, loading: revokeAccessLoading } = useMutation(
-  DASHBOARD_REVOKE_ACCESS_MUTATION
+  DASHBOARD_REVOKE_ACCESS_MUTATION,
 );
 const { mutate: transferDashboardOwnership, loading: transferOwnershipLoading } = useMutation(
-  DASHBOARD_TRANSFER_OWNERSHIP_MUTATION
+  DASHBOARD_TRANSFER_OWNERSHIP_MUTATION,
 );
 
 const collaborators = computed(() => collaboratorsResult.value?.dashboardCollaborators || []);
 const ownershipTransferCandidates = computed(() =>
-  collaborators.value.filter((entry) => !entry.isOwner)
+  collaborators.value.filter((entry) => !entry.isOwner),
 );
 const isBusy = computed(
   () =>
@@ -95,7 +87,7 @@ const isBusy = computed(
     rotateShareTokenLoading.value ||
     upsertAccessLoading.value ||
     revokeAccessLoading.value ||
-    transferOwnershipLoading.value
+    transferOwnershipLoading.value,
 );
 
 watch(
@@ -103,7 +95,7 @@ watch(
   () => {
     visibilityDraft.value = dashboard.value?.visibility || "private";
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 const clearMessages = () => {
