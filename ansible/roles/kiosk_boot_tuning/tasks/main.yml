@@ -1,0 +1,119 @@
+---
+- name: Stat boot configuration files
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ kiosk_boot_config_path }}"
+    - "{{ kiosk_boot_cmdline_path }}"
+  register: kiosk_boot_file_stats
+
+- name: Fail when required boot files are missing
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+    fail_msg: "Required boot file missing: {{ item.stat.path }}"
+  loop: "{{ kiosk_boot_file_stats.results }}"
+
+- name: Backup boot files once before mutation
+  ansible.builtin.copy:
+    src: "{{ item.stat.path }}"
+    dest: "{{ item.stat.path }}{{ kiosk_boot_backup_suffix }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+    force: false
+  loop: "{{ kiosk_boot_file_stats.results }}"
+
+- name: Ensure required boot config lines
+  ansible.builtin.lineinfile:
+    path: "{{ kiosk_boot_config_path }}"
+    regexp: "^{{ (item.split('=')[0] | regex_escape) }}="
+    line: "{{ item }}"
+    state: present
+    insertafter: EOF
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ kiosk_boot_config_lines }}"
+
+- name: Remove deprecated boot config lines
+  ansible.builtin.lineinfile:
+    path: "{{ kiosk_boot_config_path }}"
+    regexp: "{{ item }}"
+    state: absent
+  loop: "{{ kiosk_boot_remove_config_regexes }}"
+
+- name: Install splashscreen packages
+  ansible.builtin.apt:
+    name: "{{ kiosk_boot_plymouth_packages }}"
+    state: present
+    update_cache: true
+  when: kiosk_boot_enable_plymouth | bool
+
+- name: Ensure Plymouth theme directory exists
+  ansible.builtin.file:
+    path: "{{ kiosk_boot_theme_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: kiosk_boot_enable_plymouth | bool
+
+- name: Deploy Plymouth theme files
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ kiosk_boot_theme_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - freeboard.plymouth
+    - freeboard.script
+    - splashscreen.png
+  when: kiosk_boot_enable_plymouth | bool
+
+- name: Get current Plymouth theme
+  ansible.builtin.command:
+    cmd: plymouth-set-default-theme
+  register: kiosk_current_plymouth_theme
+  changed_when: false
+  when: kiosk_boot_enable_plymouth | bool
+
+- name: Apply kiosk Plymouth theme
+  ansible.builtin.command:
+    cmd: plymouth-set-default-theme -R {{ kiosk_boot_theme_name }}
+  when:
+    - kiosk_boot_enable_plymouth | bool
+    - kiosk_current_plymouth_theme.stdout != kiosk_boot_theme_name
+
+- name: Read current kernel cmdline
+  ansible.builtin.slurp:
+    src: "{{ kiosk_boot_cmdline_path }}"
+  register: kiosk_boot_cmdline_raw
+
+- name: Build desired kernel cmdline
+  ansible.builtin.set_fact:
+    kiosk_boot_cmdline_current: "{{ kiosk_boot_cmdline_raw.content | b64decode | trim }}"
+    kiosk_boot_cmdline_desired: "{{ ((kiosk_boot_cmdline_raw.content | b64decode | trim).split() + kiosk_boot_cmdline_required_tokens) | unique | join(' ') }}"
+
+- name: Update kernel cmdline with required tokens
+  ansible.builtin.copy:
+    content: "{{ kiosk_boot_cmdline_desired }}\n"
+    dest: "{{ kiosk_boot_cmdline_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: kiosk_boot_cmdline_desired != kiosk_boot_cmdline_current
+
+- name: Disable active swap immediately
+  ansible.builtin.command:
+    cmd: /sbin/swapoff --all
+  changed_when: false
+  when: kiosk_disable_swap | bool
+
+- name: Remove legacy swapfile path
+  ansible.builtin.file:
+    path: /var/swap
+    state: absent
+  when: kiosk_disable_swap | bool

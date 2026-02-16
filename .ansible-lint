@@ -1,0 +1,6 @@
+profile: basic
+exclude_paths:
+  - planning/
+  - _archive/
+warn_list:
+  - yaml[line-length]

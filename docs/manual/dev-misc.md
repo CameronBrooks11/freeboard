@@ -90,6 +90,11 @@ Optional non-required deploy checks:
 - Stop Mongo: `npm run dev:mongo:down`
 - Reset Mongo data volume: `npm run dev:mongo:reset`
 
+Raspberry Pi note:
+
+- Use `.env.pi` as your compose override baseline when needed.
+- Reference support/risk details in [Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb).
+
 ## Quick Size Snapshot (`cloc`)
 
 Install:

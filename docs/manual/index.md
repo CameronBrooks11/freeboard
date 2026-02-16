@@ -30,5 +30,6 @@ Use this manual in two tracks:
 - [Realtime Operations Runbook](/manual/realtime-operations)
 - [Credential Key Rotation](/manual/credential-key-rotation)
 - [Ansible](/manual/ansible)
+- [Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)
 - [Documentation Site Setup](/manual/docs-site-setup)
 - [Development Misc](/manual/dev-misc)

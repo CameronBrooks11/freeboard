@@ -35,10 +35,12 @@ Contract:
 
 ## Profile 3: Kiosk Appliance (Viewer-Only Runtime)
 
-Use for wallboards, signage, and device interfaces.
+Use for wallboards, signage, and IoT/device interfaces.
 
-- Device runs player pointing to a dashboard URL
-- Account on device should be viewer-only (or link/public token URL)
+User/access contract:
+
+- Device opens one dashboard URL in kiosk browser mode
+- Device account should be viewer-only (or link-share/public URL when explicitly intended)
 - No admin/editor credentials on kiosk device
 
 Security contract:
@@ -48,15 +50,35 @@ Security contract:
 - Use `link/public` only for low-sensitivity signage
 - On device compromise: rotate share token or deactivate kiosk account immediately
 
+### Kiosk Provisioning Subprofiles (Ansible)
+
+Kiosk deployments include three provisioning subprofiles:
+
+- `player_only` (default): display + player service only
+- `appliance_with_runtime`: adds container runtime setup
+- `appliance_with_runtime_and_boot_tuning`: adds runtime + boot/splash tuning
+
+Use the least invasive profile that meets your target environment.
+
 ## URL and access guidance
 
 - Private authenticated dashboard: `/:id`
 - Public dashboard route: `/p/:id`
 - Link-share dashboard route: `/s/:shareToken`
 
+## Kiosk Decision Tree
+
+1. Need only dashboard playback on an already-managed host?
+   - Use `player_only`.
+2. Need this host to also run local container runtime dependencies?
+   - Use `appliance_with_runtime`.
+3. Need boot splash and kernel boot tuning on appliance-class hardware?
+   - Use `appliance_with_runtime_and_boot_tuning` (only after canary validation).
+
 ## Operational checklist
 
-1. Confirm profile for environment (`full`, `static`, or `kiosk`)
-2. Apply matching env/policy settings
-3. Validate role and visibility behavior
-4. Record profile in deployment runbook
+1. Confirm profile for environment (`full`, `static`, or `kiosk`).
+2. For kiosk: choose provisioning subprofile (`player_only`, `appliance_with_runtime`, or `appliance_with_runtime_and_boot_tuning`).
+3. Apply matching env/policy settings and role/visibility constraints.
+4. Validate behavior (auth role, dashboard visibility, and kiosk URL access).
+5. Record profile and rollback path in deployment runbook.

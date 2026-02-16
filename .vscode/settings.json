@@ -51,5 +51,6 @@
     "wlan",
     "xorg",
     "Xwrapper"
-  ]
+  ],
+  "ansible.python.interpreterPath": "c:\\Users\\Cameron\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
 }

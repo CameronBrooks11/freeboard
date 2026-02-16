@@ -98,6 +98,7 @@ Core env values:
 - `FREEBOARD_MONGO_URL` (containerized API)
 - `PORT` (API/gateway workspace process port)
 - `FREEBOARD_MONGO_IMAGE` (Mongo image tag for dev compose)
+- Raspberry Pi note for `FREEBOARD_MONGO_IMAGE`: [Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)
 - `FREEBOARD_UI_IMAGE_TAG` / `FREEBOARD_API_IMAGE_TAG` / `FREEBOARD_GATEWAY_IMAGE_TAG` (runtime service image tag pinning)
 - `FREEBOARD_STATIC` (static UI build mode; only enable for static deploy builds)
 - `FREEBOARD_RUNTIME_ENV` (`production` for containerized runtime defaults)

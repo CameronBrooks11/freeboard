@@ -53,6 +53,7 @@ export default defineConfig({
             { text: "Realtime Operations", link: "/manual/realtime-operations" },
             { text: "Credential Key Rotation", link: "/manual/credential-key-rotation" },
             { text: "Ansible", link: "/manual/ansible" },
+            { text: "Raspberry Pi MongoDB", link: "/manual/raspberry-pi-mongodb" },
             { text: "Docs Site Setup", link: "/manual/docs-site-setup" },
             { text: "Development Misc", link: "/manual/dev-misc" },
           ],

@@ -59,3 +59,6 @@ docker-data/
 # Private planning docs
 planning/
 _archive/
+
+# Local Ansible inventory (contains environment-specific host details)
+ansible/inventory.ini

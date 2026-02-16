@@ -176,13 +176,39 @@ Related docs:
   - Trigger: push to `main` and manual dispatch.
   - Matrix builds skip unchanged packages.
   - Concurrency auto-cancel is intentionally disabled to avoid missing publishes during rapid sequential pushes.
+- `Ansible quality` (`.github/workflows/ansible-quality.yml`)
+  - Trigger: PRs touching kiosk automation paths, merge queue, and manual dispatch.
+  - Runs `ansible-lint` and playbook syntax checks for kiosk provisioning and rollback.
 
 ## RaspberryPi
 
 ```bash
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt
-.venv/bin/ansible-playbook ansible/playbook.yml --become
+cp ansible/inventory.ini.example ansible/inventory.ini
+ANSIBLE_CONFIG=ansible/ansible.cfg .venv/bin/ansible-playbook -i ansible/inventory.ini ansible/playbook.yml \
+  -e "kiosk_profile=player_only kiosk_player_url=http://<freeboard-host>:8080/s/<share-token>" \
+  --check --diff
+ANSIBLE_CONFIG=ansible/ansible.cfg .venv/bin/ansible-playbook -i ansible/inventory.ini ansible/playbook.yml \
+  -e "kiosk_profile=player_only kiosk_player_url=http://<freeboard-host>:8080/s/<share-token>"
+```
+
+Single-device bootstrap (SSH into the Pi and run locally):
+
+```bash
+ANSIBLE_CONFIG=ansible/ansible.cfg .venv/bin/ansible-playbook -i localhost, -c local ansible/playbook.yml \
+  -e "freeboard_target_group=all kiosk_profile=player_only kiosk_player_url=http://127.0.0.1:8080/s/<share-token>"
+```
+
+If Mongo runs on Raspberry Pi 4, review `.env.pi` fallback pinning guidance:
+
+- `docs/manual/raspberry-pi-mongodb.md`
+- `docs/manual/ansible.md` (Pattern A vs Pattern B execution details)
+
+Rollback:
+
+```bash
+ANSIBLE_CONFIG=ansible/ansible.cfg .venv/bin/ansible-playbook -i ansible/inventory.ini ansible/rollback.yml
 ```
 
 ## Acknowledgement
