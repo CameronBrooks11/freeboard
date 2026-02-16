@@ -52,11 +52,12 @@ export class Datasource {
   set settings(newValue) {
     const nextValue = newValue || {};
 
-    if (
-      this.datasourceInstance !== undefined &&
-      typeof this.datasourceInstance.onSettingsChanged === "function"
-    ) {
-      this.datasourceInstance.onSettingsChanged(nextValue);
+    if (this.datasourceInstance !== undefined) {
+      if (typeof this.datasourceInstance.applySettings === "function") {
+        this.datasourceInstance.applySettings(nextValue);
+      } else if (typeof this.datasourceInstance.onSettingsChanged === "function") {
+        this.datasourceInstance.onSettingsChanged(nextValue);
+      }
     }
     this._settings = nextValue;
   }

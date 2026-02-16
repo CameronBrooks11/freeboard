@@ -180,8 +180,17 @@ export class DatasourceRuntimeBase {
     this.dispose();
   }
 
-  onSettingsChanged(nextSettings = {}) {
+  /**
+   * Optional settings hook used by datasource model/runtime coordination.
+   *
+   * @param {Object} nextSettings
+   */
+  applySettings(nextSettings = {}) {
     this.currentSettings = nextSettings;
+  }
+
+  onSettingsChanged(nextSettings = {}) {
+    this.applySettings(nextSettings);
   }
 
   updateNow() {
