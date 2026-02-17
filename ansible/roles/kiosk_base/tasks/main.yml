@@ -28,14 +28,17 @@
 
 - name: Resolve existing supplemental groups
   ansible.builtin.set_fact:
-    kiosk_existing_supplemental_groups: "{{ kiosk_supplemental_groups | select('in', ansible_facts.getent_group.keys() | list) | list }}"
+    kiosk_base_existing_supplemental_groups: >-
+      {{ kiosk_supplemental_groups
+         | select('in', ansible_facts.getent_group.keys() | list)
+         | list }}
 
 - name: Ensure kiosk service user has available supplemental groups
   ansible.builtin.user:
     name: "{{ kiosk_service_user }}"
-    groups: "{{ kiosk_existing_supplemental_groups }}"
+    groups: "{{ kiosk_base_existing_supplemental_groups }}"
     append: true
-  when: kiosk_existing_supplemental_groups | length > 0
+  when: kiosk_base_existing_supplemental_groups | length > 0
 
 - name: Create kiosk directories
   ansible.builtin.file:

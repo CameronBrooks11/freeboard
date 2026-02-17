@@ -23,7 +23,7 @@
   loop:
     - "{{ kiosk_xwrapper_config_dest }}"
     - "{{ kiosk_xorg_config_dest }}"
-  register: kiosk_x11_config_stats
+  register: kiosk_display_x11_config_stats
   when: kiosk_manage_x11_config | bool
 
 - name: Backup existing X11 config files once
@@ -35,7 +35,7 @@
     group: root
     mode: "0644"
     force: false
-  loop: "{{ kiosk_x11_config_stats.results }}"
+  loop: "{{ kiosk_display_x11_config_stats.results }}"
   when:
     - kiosk_manage_x11_config | bool
     - item.stat.exists

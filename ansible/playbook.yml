@@ -23,11 +23,21 @@
 
     - name: Resolve effective role toggles
       ansible.builtin.set_fact:
-        kiosk_enable_player: "{{ (kiosk_enable_player is not none) | ternary(kiosk_enable_player | bool, kiosk_profile_selected_defaults.kiosk_enable_player | bool) }}"
-        kiosk_enable_display: "{{ (kiosk_enable_display is not none) | ternary(kiosk_enable_display | bool, kiosk_profile_selected_defaults.kiosk_enable_display | bool) }}"
-        kiosk_enable_container_runtime: "{{ (kiosk_enable_container_runtime is not none) | ternary(kiosk_enable_container_runtime | bool, kiosk_profile_selected_defaults.kiosk_enable_container_runtime | bool) }}"
-        kiosk_enable_boot_tuning: "{{ (kiosk_enable_boot_tuning is not none) | ternary(kiosk_enable_boot_tuning | bool, kiosk_profile_selected_defaults.kiosk_enable_boot_tuning | bool) }}"
-        kiosk_enable_mongo_preload: "{{ (kiosk_enable_mongo_preload is not none) | ternary(kiosk_enable_mongo_preload | bool, kiosk_profile_selected_defaults.kiosk_enable_mongo_preload | bool) }}"
+        kiosk_enable_player: >-
+          {{ (kiosk_enable_player is not none)
+             | ternary(kiosk_enable_player | bool, kiosk_profile_selected_defaults.kiosk_enable_player | bool) }}
+        kiosk_enable_display: >-
+          {{ (kiosk_enable_display is not none)
+             | ternary(kiosk_enable_display | bool, kiosk_profile_selected_defaults.kiosk_enable_display | bool) }}
+        kiosk_enable_container_runtime: >-
+          {{ (kiosk_enable_container_runtime is not none)
+             | ternary(kiosk_enable_container_runtime | bool, kiosk_profile_selected_defaults.kiosk_enable_container_runtime | bool) }}
+        kiosk_enable_boot_tuning: >-
+          {{ (kiosk_enable_boot_tuning is not none)
+             | ternary(kiosk_enable_boot_tuning | bool, kiosk_profile_selected_defaults.kiosk_enable_boot_tuning | bool) }}
+        kiosk_enable_mongo_preload: >-
+          {{ (kiosk_enable_mongo_preload is not none)
+             | ternary(kiosk_enable_mongo_preload | bool, kiosk_profile_selected_defaults.kiosk_enable_mongo_preload | bool) }}
       tags:
         - always
 

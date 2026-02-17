@@ -48,14 +48,14 @@
     path: "{{ kiosk_player_script_source }}"
   delegate_to: localhost
   become: false
-  register: kiosk_player_script_source_stat
+  register: kiosk_preflight_player_script_source_stat
   run_once: true
   when: kiosk_enable_player | bool
 
 - name: Fail when local player script source is missing
   ansible.builtin.assert:
     that:
-      - kiosk_player_script_source_stat.stat.exists
+      - kiosk_preflight_player_script_source_stat.stat.exists
     fail_msg: >-
       Player script source not found at {{ kiosk_player_script_source }}.
       Update kiosk_player_script_source to point to this repo's player.sh.
