@@ -103,7 +103,7 @@ jobs:
             find . -type f -not -path "./.git/*" \
               -exec du -h {} + \
               | sort -rh \
-              | head -20
+              | awk "NR<=20"
           } > metrics/disk-usage.txt
 
       # ------------------------------------------------------------------
