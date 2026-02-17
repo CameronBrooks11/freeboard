@@ -69,7 +69,7 @@ External references for container architecture constraints:
 - https://docs.docker.com/engine/install/raspberry-pi-os/
 - https://docs.docker.com/engine/release-notes/29/
 - https://github.com/nodejs/docker-node
-- https://hub.docker.com/r/arm32v7/node
+- https://hub.docker.com/_/node
 
 Reference defaults: `ansible/vars.yml`
 
