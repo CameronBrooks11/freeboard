@@ -148,6 +148,25 @@ Published tags:
 - `latest`
 - `v<workspace-version>`
 - `sha-<short-commit>`
+- `latest-armv7` (legacy 32-bit Pi track)
+- `v<workspace-version>-armv7` (legacy 32-bit Pi track)
+- `sha-<short-commit>-armv7` (legacy 32-bit Pi track)
+
+Architecture strategy:
+
+- Mainline tags (`latest`, `v*`, `sha-*`) publish `linux/amd64` and `linux/arm64` using Node 24.
+- Legacy `-armv7` tags publish `linux/arm/v7` using Node 22 for 32-bit Raspberry Pi compatibility.
+- `linux/arm/v6` is intentionally unsupported.
+
+References for this split:
+
+- Docker Raspberry Pi OS (32-bit) guidance and deprecation notes:
+  - https://docs.docker.com/engine/install/raspberry-pi-os/
+  - https://docs.docker.com/engine/release-notes/29/
+- Node official image upstream:
+  - https://github.com/nodejs/docker-node
+- armv7 Node image track used for legacy tags:
+  - https://hub.docker.com/r/arm32v7/node
 
 Use `docs/manual/secrets-operations.md` for setup, rotation, and incident workflow.
 

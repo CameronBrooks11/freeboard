@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:24.13.1-alpine AS build-stage
+ARG NODE_IMAGE=node:24.13.1-alpine
+
+FROM ${NODE_IMAGE} AS build-stage
 WORKDIR /app
 
 COPY package.json package-lock.json ./
