@@ -14,6 +14,22 @@ const toPositiveInteger = (value, fallback = 1) => {
   return Math.max(1, Math.ceil(parsed));
 };
 
+const cloneMutableSettings = (value) => {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  if (typeof structuredClone === "function") {
+    try {
+      return structuredClone(value);
+    } catch {
+      // Fallback below.
+    }
+  }
+
+  return JSON.parse(JSON.stringify(value));
+};
+
 /**
  * Wrapper around a widget plugin instance, handling type, settings, rendering, and datasource updates.
  *
@@ -231,7 +247,7 @@ export class Widget {
     this.id = object.id || generateModelId("w");
     this.title = object.title;
     this.enabled = object.enabled !== undefined ? !!object.enabled : true;
-    this.settings = object.settings;
+    this.settings = cloneMutableSettings(object.settings);
     this.type = object.type;
     this.shouldRender = true;
   }

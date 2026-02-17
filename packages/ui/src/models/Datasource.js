@@ -10,6 +10,22 @@ import {
   processDatasourceUpdate,
 } from "../runtime/runtimeContext.js";
 
+const cloneMutableSettings = (value) => {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  if (typeof structuredClone === "function") {
+    try {
+      return structuredClone(value);
+    } catch {
+      // Fallback below.
+    }
+  }
+
+  return JSON.parse(JSON.stringify(value));
+};
+
 /**
  * Wrapper around a datasource plugin instance, managing settings, type, and data flow.
  *
@@ -247,7 +263,7 @@ export class Datasource {
     this.id = object.id || generateModelId("ds");
     this.title = object.title;
     this.enabled = object.enabled !== undefined ? !!object.enabled : true;
-    this.settings = object.settings;
+    this.settings = cloneMutableSettings(object.settings);
     this.type = object.type;
   }
 

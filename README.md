@@ -1,10 +1,12 @@
 # freeboard
 
 [![CI](https://github.com/CameronBrooks11/freeboard/actions/workflows/ci.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/ci.yml)
+[![E2E Smoke](https://github.com/CameronBrooks11/freeboard/actions/workflows/e2e-smoke.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/e2e-smoke.yml)
 [![Docker Images](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-docker-images.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-docker-images.yml)
 [![Ansible Quality](https://github.com/CameronBrooks11/freeboard/actions/workflows/ansible-quality.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/ansible-quality.yml)
 
 [![GitHub Pages](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-pages.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-pages.yml)
+[![Dependency Security Audit](https://github.com/CameronBrooks11/freeboard/actions/workflows/dependency-security.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/dependency-security.yml)
 [![Repository Metrics](https://github.com/CameronBrooks11/freeboard/actions/workflows/metrics.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/metrics.yml)
 
 freeboard is a modern fork of [Jim Heising's Freeboard](https://github.com/Freeboard/freeboard) focused on secure, production-grade dashboard delivery for IoT and operations use cases.
@@ -183,6 +185,9 @@ npm run test:realtime:integration
   - pull requests to `main`, merge queue, manual dispatch
   - docs-only changes skip heavy jobs
   - stable required check: `Required CI`
+- `E2E smoke` (`.github/workflows/e2e-smoke.yml`)
+  - pull requests to `main` (path-filtered), merge queue, manual dispatch
+  - browser smoke flow for login, datasource render, share view, and admin policy save
 - `Build & publish docker images` (`.github/workflows/build-docker-images.yml`)
   - push to `main`, manual dispatch
   - package-aware matrix build skips unchanged images
@@ -193,6 +198,9 @@ npm run test:realtime:integration
   - validates kiosk automation changes via `ansible-lint` and syntax checks
 - `Repository Metrics` (`.github/workflows/metrics.yml`)
   - runs on pushes/manual dispatch and publishes metrics artifacts
+- `Dependency security audit` (`.github/workflows/dependency-security.yml`)
+  - scheduled weekly and manual dispatch
+  - fails on production dependency vulnerabilities at high/critical severity
 
 ## Raspberry Pi Kiosk Automation
 

@@ -28,6 +28,8 @@ node_modules/.vite/
 packages/*/dist/
 packages/*/coverage/
 packages/*/.vite/
+playwright-report/
+test-results/
 *.log
 
 # Auto-generated documentation

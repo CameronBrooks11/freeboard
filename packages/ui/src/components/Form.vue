@@ -241,7 +241,15 @@ const fieldToFormElement = (field) => {
     type = listFormElementRef;
   }
 
-  return { ...field, component: type, validators: [...customValidators, ...validators] };
+  const normalizedField = {
+    ...field,
+    component: type,
+    validators: [...customValidators, ...validators],
+  };
+  if (!normalizedField.id) {
+    normalizedField.id = `form-field-${field.name}`;
+  }
+  return normalizedField;
 };
 
 // Expose methods for parent components (DialogBox) to call
@@ -283,7 +291,7 @@ watch(
   <div class="form">
     <div class="form__row" v-for="field in formFields" :key="field.name">
       <div class="form__row__label" v-if="!hideLabels">
-        <label>{{ field.label }}</label>
+        <label :for="field.id">{{ field.label }}</label>
       </div>
       <div class="form__row__value">
         <div class="form__row__value__container">
@@ -292,6 +300,7 @@ watch(
             :is="field.component"
             :disabled="field.disabled"
             v-model="field.model"
+            :id="field.id"
             :options="field.options || field.settings"
             :placeholder="field.placeholder"
             :secret="field.type === 'password'"

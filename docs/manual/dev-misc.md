@@ -18,6 +18,8 @@
 - Stop realtime fixture stack: `npm run demo:realtime:down`
 - Realtime fixture smoke test: `npm run demo:realtime:smoke`
 - Realtime integration loop (up + smoke + down): `npm run test:realtime:integration`
+- Browser E2E smoke flow (bootstraps mongo + ui/api/gateway + Playwright): `npm run test:e2e:smoke`
+- Production dependency audit: `npm run security:audit:prod`
 
 ## Pre-PR Checklist
 
@@ -45,11 +47,13 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 
 ## CI Workflow Matrix
 
-| Workflow                                                                      | Trigger                                                         | Heavy-work cancellation          | Notes                                                      |
-| ----------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------- |
-| `CI` (`.github/workflows/ci.yml`)                                             | `pull_request` to `dev`, `merge_group`, `workflow_dispatch`     | Yes (`concurrency: ci-<pr/ref>`) | Required gate via `Required CI` job; path-gated jobs       |
-| `Deploy to GitHub Pages` (`.github/workflows/build-pages.yml`)                | `push` to `dev` on docs/demo-related paths, `workflow_dispatch` | Yes (`concurrency: pages-<ref>`) | Builds docs + demo site                                    |
-| `Build & publish docker images` (`.github/workflows/build-docker-images.yml`) | `push` to `dev`, `workflow_dispatch`                            | No (intentional)                 | Per-package diff skip; manual dispatch forces full rebuild |
+| Workflow                                                                      | Trigger                                                                      | Heavy-work cancellation                 | Notes                                                           |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------- |
+| `CI` (`.github/workflows/ci.yml`)                                             | `pull_request` to `main`, `merge_group`, `workflow_dispatch`                 | Yes (`concurrency: ci-<pr/ref>`)        | Required gate via `Required CI` job; path-gated jobs            |
+| `E2E smoke` (`.github/workflows/e2e-smoke.yml`)                               | `pull_request` to `main` (path filtered), `merge_group`, `workflow_dispatch` | Yes (`concurrency: e2e-smoke-<pr/ref>`) | Browser smoke flow using Playwright and local service bootstrap |
+| `Deploy to GitHub Pages` (`.github/workflows/build-pages.yml`)                | `push` to `main` on docs/demo-related paths, `workflow_dispatch`             | Yes (`concurrency: pages-<ref>`)        | Builds docs + demo site                                         |
+| `Build & publish docker images` (`.github/workflows/build-docker-images.yml`) | `push` to `main`, `workflow_dispatch`                                        | No (intentional)                        | Per-package diff skip; manual dispatch forces full rebuild      |
+| `Dependency security audit` (`.github/workflows/dependency-security.yml`)     | Weekly schedule + manual dispatch                                            | N/A                                     | Fails on production dependency vulnerabilities (high/critical)  |
 
 ## CI Runtime Budget (Targets)
 
@@ -81,6 +85,23 @@ Optional non-required deploy checks:
 
 - `Deploy to GitHub Pages`
 - `Build & publish docker images`
+
+## Dependency and Security Triage Policy
+
+- Owners: repository maintainers.
+- Intake channels:
+  - Dependabot PRs (`.github/dependabot.yml`)
+  - scheduled audit workflow (`.github/workflows/dependency-security.yml`)
+- Triage SLA:
+  - critical: same day
+  - high: within 2 business days
+  - moderate/low: batch in normal dependency maintenance windows
+- Patch policy:
+  - prefer grouped minor/patch updates first
+  - major updates require focused validation (lint, test, build, and smoke checks)
+- Closure criteria:
+  - dependency PR merged or explicitly deferred with rationale in PR notes
+  - failed audit workflow resolved or acknowledged with a bounded remediation plan
 
 ## Mongo Dev Helpers
 

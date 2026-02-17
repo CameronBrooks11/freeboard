@@ -136,7 +136,8 @@ export default {
       });
 
       const permissions = resolveDashboardPermissions(createdDashboard, context);
-      return transformDashboardForContext(createdDashboard, context, permissions);
+      const transformed = transformDashboardForContext(createdDashboard, context, permissions);
+      return transformed;
     },
 
     updateDashboard: async (parent, { _id, dashboard }, context) => {

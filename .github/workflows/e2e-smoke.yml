@@ -1,0 +1,70 @@
+name: E2E smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/ui/**"
+      - "packages/api/**"
+      - "packages/gateway/**"
+      - "e2e/**"
+      - "scripts/e2e-smoke.mjs"
+      - "playwright.e2e.config.mjs"
+      - "docker-compose.mongo.yml"
+      - "package.json"
+      - "package-lock.json"
+      - ".nvmrc"
+      - ".env.dev"
+      - ".github/workflows/e2e-smoke.yml"
+  merge_group:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Browser smoke flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare e2e env
+        run: cp .env.dev .env
+
+      - name: Install Playwright browser (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke E2E
+        env:
+          E2E_BASE_URL: http://127.0.0.1:5173
+          E2E_API_URL: http://127.0.0.1:4001/graphql
+          E2E_GATEWAY_URL: http://127.0.0.1:8001
+        run: npm run test:e2e:smoke
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14

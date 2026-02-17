@@ -221,9 +221,11 @@ const applyResult = (data) => {
   }
 };
 
-// React to initial query results
-watch(resultById, () => applyResult(resultById.value));
-watch(resultByShareToken, () => applyResult(resultByShareToken.value));
+// React to initial query results.
+// `useQuery().result` already contains the GraphQL data object shape
+// ({ dashboard } / { dashboardByShareToken }), so do not access `.data`.
+watch(resultById, (value) => applyResult(value));
+watch(resultByShareToken, (value) => applyResult(value));
 // React to subscription updates
 onSubResult(({ data }) => applyResult(data));
 
