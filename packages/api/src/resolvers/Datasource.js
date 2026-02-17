@@ -9,6 +9,8 @@ import { config } from "../config.js";
 import { createClientError, mintDatasourceSessionToken } from "../datasourceGateway.js";
 import Dashboard from "../models/Dashboard.js";
 import { consumeRateLimit } from "../rateLimit.js";
+import { ensureThatPrincipalHasServiceScope } from "../auth.js";
+import { recordDatasourceMintMetric } from "../runtimeMetrics.js";
 
 const toComparableId = (value) => {
   if (!value) {
@@ -120,6 +122,9 @@ export default {
       { dashboardId, datasourceId, shareToken },
       context,
     ) => {
+      if (context.serviceAccount) {
+        ensureThatPrincipalHasServiceScope(context, ["datasource:mint"]);
+      }
       const dashboard = await Dashboard.findOne({ _id: dashboardId }).lean();
       if (!dashboard) {
         throw createGraphQLError("Dashboard not found");
@@ -139,8 +144,10 @@ export default {
           shareToken,
         });
 
+        recordDatasourceMintMetric({ ok: true });
         return minted;
       } catch (error) {
+        recordDatasourceMintMetric({ ok: false });
         throw toGraphQLError(error);
       }
     },

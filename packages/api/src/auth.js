@@ -72,6 +72,47 @@ export const ensureThatUserHasRole = (context, allowedRoles = []) => {
 };
 
 /**
+ * Ensure the current principal (admin user or scoped service account) can access a scoped operation.
+ *
+ * @param {Object} context
+ * @param {string[]} requiredScopes
+ */
+export const ensureThatPrincipalHasServiceScope = (context, requiredScopes = []) => {
+  if (context.user?.role === "admin") {
+    return;
+  }
+
+  const principal = context.serviceAccount;
+  if (!principal) {
+    throw createGraphQLError("You must be authenticated to perform this action", {
+      extensions: { code: "UNAUTHENTICATED" },
+    });
+  }
+
+  const grantedScopes = new Set(
+    Array.isArray(principal.scopes)
+      ? principal.scopes.map((scope) =>
+          String(scope || "")
+            .trim()
+            .toLowerCase(),
+        )
+      : [],
+  );
+  const hasScope = requiredScopes.some((scope) =>
+    grantedScopes.has(
+      String(scope || "")
+        .trim()
+        .toLowerCase(),
+    ),
+  );
+  if (!hasScope) {
+    throw createGraphQLError("Service account scope does not allow this action", {
+      extensions: { code: "FORBIDDEN" },
+    });
+  }
+};
+
+/**
  * Retrieve the current user document based on the context.
  *
  * @param {Object} context - GraphQL resolver context containing user info.

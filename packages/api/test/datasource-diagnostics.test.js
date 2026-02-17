@@ -13,7 +13,7 @@ afterEach(() => {
   BrokerProfile.find = originalBrokerProfileFind;
 });
 
-test("adminDatasourceDiagnostics requires admin role", async () => {
+test("adminDatasourceDiagnostics requires admin principal or datasource diagnostics scope", async () => {
   await assert.rejects(
     () =>
       DatasourceDiagnosticsResolvers.Query.adminDatasourceDiagnostics(
@@ -21,8 +21,35 @@ test("adminDatasourceDiagnostics requires admin role", async () => {
         {},
         { user: { _id: "viewer-1", role: "viewer" } },
       ),
-    /administrator/i,
+    /authenticated|scope/i,
   );
+});
+
+test("adminDatasourceDiagnostics allows service account with datasource diagnostics scope", async () => {
+  Dashboard.find = () => ({
+    select: () => ({
+      lean: async () => [],
+    }),
+  });
+  BrokerProfile.find = () => ({
+    select: () => ({
+      lean: async () => [],
+    }),
+  });
+
+  const result = await DatasourceDiagnosticsResolvers.Query.adminDatasourceDiagnostics(
+    null,
+    {},
+    {
+      serviceAccount: {
+        _id: "svc-1",
+        scopes: ["datasource:diagnostics:read"],
+      },
+    },
+  );
+
+  assert.equal(result.totalDashboards, 0);
+  assert.equal(result.totalDatasources, 0);
 });
 
 test("adminDatasourceDiagnostics returns datasource rollup counts", async () => {

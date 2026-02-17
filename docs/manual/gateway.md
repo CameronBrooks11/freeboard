@@ -48,6 +48,11 @@ In default compose deployment, gateway is reached via UI reverse proxy at:
 - `http://<host>:8080/gateway/http/fetch`
 - `ws://<host>:8080/gateway/realtime`
 
+Internal operations endpoint:
+
+- `GET /internal/metrics`
+- Header: `Authorization: Bearer <GATEWAY_SERVICE_TOKEN>`
+
 ## HTTP Fetch Contract
 
 Request:

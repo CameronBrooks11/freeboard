@@ -43,6 +43,8 @@ It adds:
 - Usage workflow: `docs/manual/usage.md`
 - Datasource reference: `docs/manual/datasource-reference.md`
 - Gateway contract: `docs/manual/gateway.md`
+- Service accounts runbook: `docs/manual/service-accounts.md`
+- Runtime metrics guide: `docs/manual/runtime-metrics.md`
 - Deployment profiles: `docs/manual/deployment-profiles.md`
 - Kiosk + Ansible operations: `docs/manual/ansible.md`
 - Secrets runbook: `docs/manual/secrets-operations.md`

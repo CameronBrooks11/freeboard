@@ -20,6 +20,7 @@ import CredentialProfile from "./CredentialProfile.js";
 import BrokerProfile from "./BrokerProfile.js";
 import Datasource from "./Datasource.js";
 import DatasourceDiagnostics from "./DatasourceDiagnostics.js";
+import ServiceAccount from "./ServiceAccount.js";
 
 /**
  * Array of individual resolver objects to be merged.
@@ -34,6 +35,7 @@ const resolvers = [
   BrokerProfile,
   Datasource,
   DatasourceDiagnostics,
+  ServiceAccount,
 ];
 
 /**

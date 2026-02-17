@@ -24,6 +24,8 @@ Use this manual in two tracks:
 
 - [Architecture](/manual/architecture)
 - [Secrets Operations Runbook](/manual/secrets-operations)
+- [Service Accounts Runbook](/manual/service-accounts)
+- [Runtime Metrics](/manual/runtime-metrics)
 - [API](/manual/api)
 - [UI](/manual/ui)
 - [Datasource Gateway](/manual/gateway)

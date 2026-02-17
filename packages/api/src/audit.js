@@ -5,6 +5,7 @@
 
 import mongoose from "mongoose";
 import AuditEvent from "./models/AuditEvent.js";
+import { recordAuditWriteFailureMetric } from "./runtimeMetrics.js";
 
 /**
  * Persist an audit event. Errors are intentionally non-fatal.
@@ -42,6 +43,7 @@ export const recordAuditEvent = async ({
       metadata,
     }).save();
   } catch (error) {
+    recordAuditWriteFailureMetric();
     console.warn("Audit event persistence failed", error?.message || error);
   }
 };

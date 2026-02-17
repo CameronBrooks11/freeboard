@@ -33,6 +33,7 @@ import {
   getLoginThrottleState,
   recordFailedLoginAttempt,
 } from "../loginThrottle.js";
+import { recordAuthFailureMetric } from "../runtimeMetrics.js";
 import {
   clampExpiryHours,
   ensureAtLeastOneActiveAdminWillRemain,
@@ -247,6 +248,7 @@ export default /** @type {IResolvers} */ {
       const throttleKey = buildLoginThrottleKey(normalizedEmail, context?.clientIp);
       const throttleState = getLoginThrottleState(throttleKey);
       if (throttleState.blocked) {
+        recordAuthFailureMetric();
         const retryAfterSeconds = Math.max(1, Math.ceil(throttleState.retryAfterMs / 1000));
         await recordAuditEvent({
           actorUserId: null,
@@ -268,6 +270,7 @@ export default /** @type {IResolvers} */ {
       }
 
       const registerFailure = async () => {
+        recordAuthFailureMetric();
         const failure = recordFailedLoginAttempt(throttleKey);
         if (!failure.justLocked) {
           return;

@@ -17,6 +17,7 @@ import CredentialProfile from "./CredentialProfile.js";
 import BrokerProfile from "./BrokerProfile.js";
 import Datasource from "./Datasource.js";
 import DatasourceDiagnostics from "./DatasourceDiagnostics.js";
+import ServiceAccount from "./ServiceAccount.js";
 
 /**
  * Array of GraphQL SDL strings for each type module.
@@ -31,6 +32,7 @@ const typeDefs = [
   BrokerProfile,
   Datasource,
   DatasourceDiagnostics,
+  ServiceAccount,
 ];
 
 // NOTE: 2nd param is optional, and defaults to false

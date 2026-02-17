@@ -11,6 +11,11 @@ export const DASHBOARD_VISIBILITY_OPTIONS = Object.freeze(["private", "link", "p
 export const EXECUTION_MODE_OPTIONS = Object.freeze(["safe", "trusted"]);
 export const CREDENTIAL_PROFILE_TYPE_OPTIONS = Object.freeze(["none", "header", "bearer", "basic"]);
 export const BROKER_PROFILE_PROTOCOL_OPTIONS = Object.freeze(["mqtt"]);
+export const SERVICE_ACCOUNT_SCOPE_OPTIONS = Object.freeze([
+  "datasource:mint",
+  "datasource:diagnostics:read",
+  "ops:read",
+]);
 
 const normalizeOptionValue = (value, allowed, fallback) => {
   const normalized = String(value || "")
@@ -76,4 +81,19 @@ export const toBrokerProfileDraft = (profile = {}) => ({
   topicAllowlist: Array.isArray(profile.topicAllowlist) ? profile.topicAllowlist.join(", ") : "",
   tlsRejectUnauthorized:
     profile.tls?.rejectUnauthorized === undefined ? true : Boolean(profile.tls.rejectUnauthorized),
+});
+
+export const toServiceAccountDraft = (account = {}) => ({
+  name: String(account.name || ""),
+  description: String(account.description || ""),
+  active: account.active === undefined ? true : Boolean(account.active),
+  scopes: Array.isArray(account.scopes)
+    ? account.scopes
+        .map((scope) =>
+          String(scope || "")
+            .trim()
+            .toLowerCase(),
+        )
+        .filter(Boolean)
+    : [],
 });

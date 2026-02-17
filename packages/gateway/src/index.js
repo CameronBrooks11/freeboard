@@ -40,6 +40,7 @@ import {
 } from "./gatewayApiClient.js";
 import {
   ALLOW_INSECURE_TLS,
+  GATEWAY_SERVICE_TOKEN,
   HOST,
   IS_PRODUCTION,
   PORT,
@@ -72,6 +73,17 @@ import {
   REVOKED_TOKENS_MAX_BATCH,
   STREAM_ERROR_CODES,
 } from "./runtimeConfig.js";
+import {
+  getGatewayRuntimeMetricsSnapshot,
+  recordGatewayHttpRequest,
+  recordRealtimeConnectionAccepted,
+  recordRealtimeConnectionAttempt,
+  recordRealtimeConnectionClosed,
+  recordRealtimeConnectionRejected,
+  recordRealtimeError,
+  recordRealtimeMessageIn,
+  recordRealtimeMessageOut,
+} from "./runtimeMetrics.js";
 
 dns.setDefaultResultOrder?.("ipv4first");
 export { matchesMqttTopicPattern, parseTargetUrl, ensureResolvedDestinationIsAllowed };
@@ -226,6 +238,7 @@ export const createRealtimeGateway = ({
     }
 
     connection.ws.send(serialized);
+    recordRealtimeMessageOut();
     return true;
   };
 
@@ -1002,6 +1015,7 @@ export const createRealtimeGateway = ({
     incrementConnectionCountByIp(clientIp);
 
     ws.on("message", (rawPayload, isBinary) => {
+      recordRealtimeMessageIn();
       const payloadBuffer = Buffer.isBuffer(rawPayload) ? rawPayload : Buffer.from(rawPayload);
       if (payloadBuffer.byteLength > REALTIME_MAX_MESSAGE_BYTES) {
         sendError(connection, {
@@ -1051,10 +1065,12 @@ export const createRealtimeGateway = ({
     });
 
     ws.on("close", () => {
+      recordRealtimeConnectionClosed();
       void cleanupConnection(connection);
     });
 
     ws.on("error", () => {
+      recordRealtimeError();
       void cleanupConnection(connection);
     });
   });
@@ -1065,6 +1081,7 @@ export const createRealtimeGateway = ({
       socket.destroy();
       return;
     }
+    recordRealtimeConnectionAttempt();
 
     if (!REALTIME_ENABLED) {
       socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
@@ -1079,6 +1096,7 @@ export const createRealtimeGateway = ({
       REALTIME_CONNECT_RATE_LIMIT_IP_PER_MIN,
     );
     if (!connectRateLimit.allowed) {
+      recordRealtimeConnectionRejected();
       socket.write("HTTP/1.1 429 Too Many Requests\r\n\r\n");
       socket.destroy();
       return;
@@ -1086,6 +1104,7 @@ export const createRealtimeGateway = ({
 
     const activeConnectionsForIp = connectionCountByIp.get(clientIp) || 0;
     if (activeConnectionsForIp >= REALTIME_MAX_CLIENT_CONNECTIONS_PER_IP) {
+      recordRealtimeConnectionRejected();
       socket.write("HTTP/1.1 429 Too Many Requests\r\n\r\n");
       socket.destroy();
       return;
@@ -1093,6 +1112,7 @@ export const createRealtimeGateway = ({
 
     wss.handleUpgrade(request, socket, head, (ws) => {
       ws.__clientIp = clientIp;
+      recordRealtimeConnectionAccepted();
       wss.emit("connection", ws, request);
     });
   });
@@ -1133,7 +1153,31 @@ export const createGatewayApp = ({ lookup = dns.promises.lookup, fetchFn = fetch
   app.use(express.json({ limit: "256kb" }));
 
   const handler = createGatewayFetchHandler({ lookup, fetchFn });
-  app.post("/gateway/http/fetch", handler);
+  app.post(
+    "/gateway/http/fetch",
+    (req, res, next) => {
+      const startedAt = Date.now();
+      res.on("finish", () => {
+        recordGatewayHttpRequest({
+          statusCode: res.statusCode,
+          durationMs: Date.now() - startedAt,
+        });
+      });
+      next();
+    },
+    handler,
+  );
+  app.get("/internal/metrics", (req, res) => {
+    const authHeader = String(req.headers.authorization || "");
+    const serviceToken = authHeader.startsWith("Bearer ")
+      ? authHeader.slice("Bearer ".length).trim()
+      : "";
+    if (!serviceToken || serviceToken !== GATEWAY_SERVICE_TOKEN) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    res.status(200).json(getGatewayRuntimeMetricsSnapshot());
+  });
 
   return app;
 };

@@ -266,6 +266,105 @@ export const ADMIN_DATASOURCE_DIAGNOSTICS_QUERY = gql`
 `;
 
 /**
+ * Admin query for service account list.
+ * @constant {import('graphql').DocumentNode} ADMIN_SERVICE_ACCOUNTS_QUERY
+ */
+export const ADMIN_SERVICE_ACCOUNTS_QUERY = gql`
+  query AdminServiceAccounts {
+    adminServiceAccounts {
+      _id
+      name
+      description
+      active
+      scopes
+      tokenCount
+      createdAt
+      updatedAt
+      lastUsedAt
+    }
+  }
+`;
+
+/**
+ * Admin query for service account tokens.
+ * @constant {import('graphql').DocumentNode} ADMIN_SERVICE_ACCOUNT_TOKENS_QUERY
+ */
+export const ADMIN_SERVICE_ACCOUNT_TOKENS_QUERY = gql`
+  query AdminServiceAccountTokens($serviceAccountId: ID!) {
+    adminServiceAccountTokens(serviceAccountId: $serviceAccountId) {
+      _id
+      serviceAccountId
+      label
+      scopes
+      tokenPreview
+      expiresAt
+      revokedAt
+      createdAt
+      lastUsedAt
+    }
+  }
+`;
+
+/**
+ * Admin query for runtime metrics.
+ * @constant {import('graphql').DocumentNode} ADMIN_RUNTIME_METRICS_QUERY
+ */
+export const ADMIN_RUNTIME_METRICS_QUERY = gql`
+  query AdminRuntimeMetrics {
+    adminRuntimeMetrics {
+      collectedAt
+      api {
+        startedAt
+        collectedAt
+        uptimeSeconds
+        requestCount
+        errorCount
+        avgLatencyMs
+        p95LatencyMs
+        maxLatencyMs
+        authFailureCount
+        datasourceMintSuccessCount
+        datasourceMintFailureCount
+        auditWriteFailureCount
+      }
+      gateway {
+        startedAt
+        collectedAt
+        uptimeSeconds
+        httpRequestCount
+        httpErrorCount
+        httpAvgLatencyMs
+        realtimeConnectionAttempts
+        realtimeConnectionsAccepted
+        realtimeConnectionsRejected
+        realtimeActiveConnections
+        realtimeMessagesIn
+        realtimeMessagesOut
+        realtimeErrorCount
+      }
+    }
+  }
+`;
+
+/**
+ * Admin query for recent audit events.
+ * @constant {import('graphql').DocumentNode} ADMIN_AUDIT_EVENTS_QUERY
+ */
+export const ADMIN_AUDIT_EVENTS_QUERY = gql`
+  query AdminAuditEvents($limit: Int) {
+    adminAuditEvents(limit: $limit) {
+      _id
+      actorUserId
+      action
+      targetType
+      targetId
+      metadata
+      createdAt
+    }
+  }
+`;
+
+/**
  * Credential profile list for datasource configuration.
  * @constant {import('graphql').DocumentNode} CREDENTIAL_PROFILES_QUERY
  */
@@ -588,6 +687,125 @@ export const ADMIN_ISSUE_PASSWORD_RESET_MUTATION = gql`
       token
       expiresAt
     }
+  }
+`;
+
+/**
+ * Admin mutation for creating service accounts.
+ * @constant {import('graphql').DocumentNode} ADMIN_CREATE_SERVICE_ACCOUNT_MUTATION
+ */
+export const ADMIN_CREATE_SERVICE_ACCOUNT_MUTATION = gql`
+  mutation AdminCreateServiceAccount($input: ServiceAccountInput!) {
+    adminCreateServiceAccount(input: $input) {
+      _id
+      name
+      description
+      active
+      scopes
+      tokenCount
+      createdAt
+      updatedAt
+      lastUsedAt
+    }
+  }
+`;
+
+/**
+ * Admin mutation for updating service accounts.
+ * @constant {import('graphql').DocumentNode} ADMIN_UPDATE_SERVICE_ACCOUNT_MUTATION
+ */
+export const ADMIN_UPDATE_SERVICE_ACCOUNT_MUTATION = gql`
+  mutation AdminUpdateServiceAccount($id: ID!, $input: UpdateServiceAccountInput!) {
+    adminUpdateServiceAccount(_id: $id, input: $input) {
+      _id
+      name
+      description
+      active
+      scopes
+      tokenCount
+      createdAt
+      updatedAt
+      lastUsedAt
+    }
+  }
+`;
+
+/**
+ * Admin mutation for deleting service accounts.
+ * @constant {import('graphql').DocumentNode} ADMIN_DELETE_SERVICE_ACCOUNT_MUTATION
+ */
+export const ADMIN_DELETE_SERVICE_ACCOUNT_MUTATION = gql`
+  mutation AdminDeleteServiceAccount($id: ID!) {
+    adminDeleteServiceAccount(_id: $id) {
+      _id
+      name
+    }
+  }
+`;
+
+/**
+ * Admin mutation for issuing service account tokens.
+ * @constant {import('graphql').DocumentNode} ADMIN_ISSUE_SERVICE_ACCOUNT_TOKEN_MUTATION
+ */
+export const ADMIN_ISSUE_SERVICE_ACCOUNT_TOKEN_MUTATION = gql`
+  mutation AdminIssueServiceAccountToken(
+    $serviceAccountId: ID!
+    $label: String
+    $scopes: [ServiceAccountScope!]
+    $expiresInHours: Int
+  ) {
+    adminIssueServiceAccountToken(
+      serviceAccountId: $serviceAccountId
+      label: $label
+      scopes: $scopes
+      expiresInHours: $expiresInHours
+    ) {
+      token
+      tokenRecord {
+        _id
+        serviceAccountId
+        label
+        scopes
+        tokenPreview
+        expiresAt
+        revokedAt
+        createdAt
+        lastUsedAt
+      }
+    }
+  }
+`;
+
+/**
+ * Admin mutation for rotating service account tokens.
+ * @constant {import('graphql').DocumentNode} ADMIN_ROTATE_SERVICE_ACCOUNT_TOKEN_MUTATION
+ */
+export const ADMIN_ROTATE_SERVICE_ACCOUNT_TOKEN_MUTATION = gql`
+  mutation AdminRotateServiceAccountToken($id: ID!, $expiresInHours: Int) {
+    adminRotateServiceAccountToken(_id: $id, expiresInHours: $expiresInHours) {
+      token
+      tokenRecord {
+        _id
+        serviceAccountId
+        label
+        scopes
+        tokenPreview
+        expiresAt
+        revokedAt
+        createdAt
+        lastUsedAt
+      }
+    }
+  }
+`;
+
+/**
+ * Admin mutation for revoking service account tokens.
+ * @constant {import('graphql').DocumentNode} ADMIN_REVOKE_SERVICE_ACCOUNT_TOKEN_MUTATION
+ */
+export const ADMIN_REVOKE_SERVICE_ACCOUNT_TOKEN_MUTATION = gql`
+  mutation AdminRevokeServiceAccountToken($id: ID!) {
+    adminRevokeServiceAccountToken(_id: $id)
   }
 `;
 

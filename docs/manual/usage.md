@@ -7,6 +7,11 @@
 - Password policy requires 12+ chars with upper/lower/number/symbol.
 - Secret bootstrap/rotation guidance: [Secrets Operations Runbook](/manual/secrets-operations).
 
+## Machine integrations
+
+- For non-human automation, use scoped service accounts instead of user passwords.
+- Service account setup and rotation guidance: [Service Accounts Runbook](/manual/service-accounts).
+
 ## Core workflow
 
 1. Create dashboard

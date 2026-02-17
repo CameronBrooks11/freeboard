@@ -4,6 +4,7 @@ import { test } from "node:test";
 import jwt from "jsonwebtoken";
 
 import {
+  createGatewayApp,
   createGatewayFetchHandler,
   deriveClientIp,
   ensureResolvedDestinationIsAllowed,
@@ -11,6 +12,7 @@ import {
   matchesMqttTopicPattern,
   parseTargetUrl,
 } from "../src/index.js";
+import { GATEWAY_SERVICE_TOKEN } from "../src/runtimeConfig.js";
 
 const createSessionToken = ({
   dashboardId = "dash-1",
@@ -395,4 +397,35 @@ test("gateway fetch handler returns upstream text payload when parser=text", asy
 
   assert.equal(clientRes.statusCode, 200);
   assert.equal(clientRes.payload?.data, "service-ok");
+});
+
+test("internal metrics endpoint requires gateway service token", async () => {
+  const app = createGatewayApp();
+  const server = app.listen(0);
+  const port = server.address().port;
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/internal/metrics`);
+    assert.equal(response.status, 401);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("internal metrics endpoint returns snapshot with valid gateway service token", async () => {
+  const app = createGatewayApp();
+  const server = app.listen(0);
+  const port = server.address().port;
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/internal/metrics`, {
+      headers: {
+        Authorization: `Bearer ${GATEWAY_SERVICE_TOKEN}`,
+      },
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(typeof payload.httpRequestCount, "number");
+    assert.equal(typeof payload.realtimeConnectionAttempts, "number");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });

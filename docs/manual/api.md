@@ -28,7 +28,8 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
   - `pubsub` (created via `createPubSub`)
   - `models` (`Dashboard`, `User`)
   - `clientIp` (for auth throttling/audit context)
-  - `user` (if a valid `Authorization: Bearer <token>` header is present)
+  - `user` (if a valid JWT `Authorization: Bearer <token>` header is present)
+  - `serviceAccount` (if a valid service account bearer token `fsa_<id>.<secret>` is present)
 
 Token auth is validated against persisted user state (`active` + `sessionVersion`) so revoked tokens become invalid server-side.
 
@@ -58,6 +59,12 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
   - Fields: `email`, `password`, `role`, `active`, `sessionVersion`, `registrationDate`, `lastLogin`
   - Pre-save hook hashes `password` with `bcrypt`
   - Model-level validators enforce email and password policy (defense in depth)
+- **ServiceAccount** (`models/ServiceAccount.js`):
+  - Admin-managed machine principal with scoped permissions
+  - Tracks active state and last-used timestamp
+- **ServiceAccountToken** (`models/ServiceAccountToken.js`):
+  - One-way hashed bearer token records for service accounts
+  - Supports expiry, revocation, label metadata, and last-used timestamp
 
 ## Resolvers
 
@@ -84,8 +91,12 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
 - **Datasource Resolvers** (`resolvers/Datasource.js`):
   - Session token minting for datasource runtime (`mintDatasourceSessionToken`)
 - **Datasource Diagnostics Resolvers** (`resolvers/DatasourceDiagnostics.js`):
-  - Admin-only datasource configuration/health rollup (`adminDatasourceDiagnostics`)
+  - Datasource configuration/health rollup (`adminDatasourceDiagnostics`)
   - Includes realtime datasource types (`http`, `clock`, `static`, `sse`, `websocket`, `mqtt`)
+- **Service Account Resolvers** (`resolvers/ServiceAccount.js`):
+  - Admin service account CRUD + token lifecycle
+  - Admin audit event query surface
+  - Runtime metrics query for admin/scoped machine principals
 
 ## Input Validation (`validators.js`)
 

@@ -18,9 +18,11 @@ import {
   REGISTRATION_DEFAULT_ROLE_OPTIONS,
   REGISTRATION_MODE_OPTIONS,
   ROLE_OPTIONS,
+  SERVICE_ACCOUNT_SCOPE_OPTIONS,
   toBrokerProfileDraft,
   toCredentialProfileDraft,
   toPolicyDraft,
+  toServiceAccountDraft,
   toUserDraft,
 } from "../admin/adminConsoleState.js";
 import {
@@ -32,19 +34,30 @@ import {
   formatDateTime,
   registrationModeToEnum,
   roleToEnum,
+  serviceAccountScopeToEnum,
 } from "./adminConsoleFormHelpers.js";
 import {
+  ADMIN_AUDIT_EVENTS_QUERY,
   ADMIN_CREATE_BROKER_PROFILE_MUTATION,
   ADMIN_CREATE_CREDENTIAL_PROFILE_MUTATION,
   ADMIN_CREATE_INVITE_MUTATION,
+  ADMIN_CREATE_SERVICE_ACCOUNT_MUTATION,
   ADMIN_CREATE_USER_MUTATION,
   ADMIN_DELETE_BROKER_PROFILE_MUTATION,
   ADMIN_DELETE_CREDENTIAL_PROFILE_MUTATION,
+  ADMIN_DELETE_SERVICE_ACCOUNT_MUTATION,
   ADMIN_DELETE_USER_MUTATION,
   ADMIN_ISSUE_PASSWORD_RESET_MUTATION,
+  ADMIN_ISSUE_SERVICE_ACCOUNT_TOKEN_MUTATION,
   ADMIN_PENDING_INVITES_QUERY,
+  ADMIN_REVOKE_SERVICE_ACCOUNT_TOKEN_MUTATION,
   ADMIN_REVOKE_INVITE_MUTATION,
   ADMIN_DATASOURCE_DIAGNOSTICS_QUERY,
+  ADMIN_RUNTIME_METRICS_QUERY,
+  ADMIN_ROTATE_SERVICE_ACCOUNT_TOKEN_MUTATION,
+  ADMIN_SERVICE_ACCOUNTS_QUERY,
+  ADMIN_SERVICE_ACCOUNT_TOKENS_QUERY,
+  ADMIN_UPDATE_SERVICE_ACCOUNT_MUTATION,
   ADMIN_UPDATE_BROKER_PROFILE_MUTATION,
   ADMIN_UPDATE_CREDENTIAL_PROFILE_MUTATION,
   ADMIN_UPDATE_USER_MUTATION,
@@ -66,7 +79,9 @@ export const useAdminConsoleController = () => {
   const userDrafts = ref({});
   const credentialProfileDrafts = ref({});
   const brokerProfileDrafts = ref({});
+  const serviceAccountDrafts = ref({});
   const issuedInvite = ref(null);
+  const issuedServiceAccountTokenByAccount = ref({});
   const issuedResetByUser = ref({});
 
   const createUserInput = ref({
@@ -82,6 +97,13 @@ export const useAdminConsoleController = () => {
   });
   const createCredentialProfileInput = ref(toCredentialProfileDraft());
   const createBrokerProfileInput = ref(toBrokerProfileDraft());
+  const createServiceAccountInput = ref(toServiceAccountDraft({ scopes: ["ops:read"] }));
+  const createServiceAccountTokenInput = ref({
+    serviceAccountId: "",
+    label: "",
+    scopes: ["ops:read"],
+    expiresInHours: 720,
+  });
   const policyDraft = ref(toPolicyDraft());
 
   const {
@@ -114,6 +136,37 @@ export const useAdminConsoleController = () => {
     error: brokerProfilesError,
     refetch: refetchBrokerProfiles,
   } = useQuery(BROKER_PROFILES_QUERY, {}, { fetchPolicy: "network-only" });
+  const {
+    result: serviceAccountsResult,
+    loading: serviceAccountsLoading,
+    error: serviceAccountsError,
+    refetch: refetchServiceAccounts,
+  } = useQuery(ADMIN_SERVICE_ACCOUNTS_QUERY, {}, { fetchPolicy: "network-only" });
+  const serviceAccountTokensQueryEnabled = computed(
+    () => String(createServiceAccountTokenInput.value.serviceAccountId || "").trim().length > 0,
+  );
+  const {
+    result: serviceAccountTokensResult,
+    loading: serviceAccountTokensLoading,
+    error: serviceAccountTokensError,
+    refetch: refetchServiceAccountTokens,
+  } = useQuery(
+    ADMIN_SERVICE_ACCOUNT_TOKENS_QUERY,
+    () => ({ serviceAccountId: createServiceAccountTokenInput.value.serviceAccountId }),
+    { fetchPolicy: "network-only", enabled: serviceAccountTokensQueryEnabled },
+  );
+  const {
+    result: runtimeMetricsResult,
+    loading: runtimeMetricsLoading,
+    error: runtimeMetricsError,
+    refetch: refetchRuntimeMetrics,
+  } = useQuery(ADMIN_RUNTIME_METRICS_QUERY, {}, { fetchPolicy: "network-only" });
+  const {
+    result: auditEventsResult,
+    loading: auditEventsLoading,
+    error: auditEventsError,
+    refetch: refetchAuditEvents,
+  } = useQuery(ADMIN_AUDIT_EVENTS_QUERY, { limit: 100 }, { fetchPolicy: "network-only" });
   const {
     result: datasourceDiagnosticsResult,
     loading: datasourceDiagnosticsLoading,
@@ -155,6 +208,21 @@ export const useAdminConsoleController = () => {
   const { mutate: adminDeleteBrokerProfile, loading: deleteBrokerProfileLoading } = useMutation(
     ADMIN_DELETE_BROKER_PROFILE_MUTATION,
   );
+  const { mutate: adminCreateServiceAccount, loading: createServiceAccountLoading } = useMutation(
+    ADMIN_CREATE_SERVICE_ACCOUNT_MUTATION,
+  );
+  const { mutate: adminUpdateServiceAccount, loading: updateServiceAccountLoading } = useMutation(
+    ADMIN_UPDATE_SERVICE_ACCOUNT_MUTATION,
+  );
+  const { mutate: adminDeleteServiceAccount, loading: deleteServiceAccountLoading } = useMutation(
+    ADMIN_DELETE_SERVICE_ACCOUNT_MUTATION,
+  );
+  const { mutate: adminIssueServiceAccountToken, loading: issueServiceAccountTokenLoading } =
+    useMutation(ADMIN_ISSUE_SERVICE_ACCOUNT_TOKEN_MUTATION);
+  const { mutate: adminRotateServiceAccountToken, loading: rotateServiceAccountTokenLoading } =
+    useMutation(ADMIN_ROTATE_SERVICE_ACCOUNT_TOKEN_MUTATION);
+  const { mutate: adminRevokeServiceAccountToken, loading: revokeServiceAccountTokenLoading } =
+    useMutation(ADMIN_REVOKE_SERVICE_ACCOUNT_TOKEN_MUTATION);
 
   const users = computed(() => usersResult.value?.listAllUsers || []);
   const pendingInvites = computed(() => pendingInvitesResult.value?.listPendingInvites || []);
@@ -166,6 +234,12 @@ export const useAdminConsoleController = () => {
   const datasourceDiagnostics = computed(
     () => datasourceDiagnosticsResult.value?.adminDatasourceDiagnostics || null,
   );
+  const serviceAccounts = computed(() => serviceAccountsResult.value?.adminServiceAccounts || []);
+  const serviceAccountTokens = computed(
+    () => serviceAccountTokensResult.value?.adminServiceAccountTokens || [],
+  );
+  const runtimeMetrics = computed(() => runtimeMetricsResult.value?.adminRuntimeMetrics || null);
+  const auditEvents = computed(() => auditEventsResult.value?.adminAuditEvents || []);
   const issuedResetEntries = computed(() =>
     users.value
       .filter((user) => Boolean(issuedResetByUser.value[user._id]))
@@ -194,7 +268,17 @@ export const useAdminConsoleController = () => {
       deleteCredentialProfileLoading.value ||
       createBrokerProfileLoading.value ||
       updateBrokerProfileLoading.value ||
-      deleteBrokerProfileLoading.value,
+      deleteBrokerProfileLoading.value ||
+      createServiceAccountLoading.value ||
+      updateServiceAccountLoading.value ||
+      deleteServiceAccountLoading.value ||
+      issueServiceAccountTokenLoading.value ||
+      rotateServiceAccountTokenLoading.value ||
+      revokeServiceAccountTokenLoading.value ||
+      serviceAccountsLoading.value ||
+      serviceAccountTokensLoading.value ||
+      runtimeMetricsLoading.value ||
+      auditEventsLoading.value,
   );
   const isPolicyLocked = computed(() => policyDraft.value.policyEditLock === true);
   const hasLoadError = computed(
@@ -204,7 +288,11 @@ export const useAdminConsoleController = () => {
       pendingInvitesError.value ||
       credentialProfilesError.value ||
       brokerProfilesError.value ||
-      datasourceDiagnosticsError.value,
+      datasourceDiagnosticsError.value ||
+      serviceAccountsError.value ||
+      serviceAccountTokensError.value ||
+      runtimeMetricsError.value ||
+      auditEventsError.value,
   );
 
   watch(usersResult, () => {
@@ -246,6 +334,21 @@ export const useAdminConsoleController = () => {
     profileCatalogStore.setBrokerProfiles(profiles);
   });
 
+  watch(serviceAccountsResult, () => {
+    const nextDrafts = {};
+    serviceAccounts.value.forEach((account) => {
+      nextDrafts[account._id] = toServiceAccountDraft(account);
+    });
+    serviceAccountDrafts.value = nextDrafts;
+
+    if (
+      !createServiceAccountTokenInput.value.serviceAccountId &&
+      serviceAccounts.value.length > 0
+    ) {
+      createServiceAccountTokenInput.value.serviceAccountId = serviceAccounts.value[0]._id;
+    }
+  });
+
   watch(brokerProfilesError, () => {
     if (brokerProfilesError.value) {
       profileCatalogStore.clearBrokerProfiles();
@@ -262,6 +365,18 @@ export const useAdminConsoleController = () => {
     statusMessage.value = "";
     actionError.value = "";
   };
+
+  const normalizeServiceAccountScopeInput = (scopes = []) => [
+    ...new Set(
+      scopes
+        .map((scope) =>
+          String(scope || "")
+            .trim()
+            .toLowerCase(),
+        )
+        .filter(Boolean),
+    ),
+  ];
 
   const setErrorMessage = (error, fallback) => {
     actionError.value = extractErrorMessage(error, fallback);
@@ -361,6 +476,130 @@ export const useAdminConsoleController = () => {
       statusMessage.value = "User deleted.";
     } catch (error) {
       setErrorMessage(error, "Could not delete user.");
+    }
+  };
+
+  const createServiceAccount = async () => {
+    clearMessages();
+    try {
+      await adminCreateServiceAccount({
+        input: {
+          name: String(createServiceAccountInput.value.name || "").trim(),
+          description: String(createServiceAccountInput.value.description || "").trim(),
+          active: Boolean(createServiceAccountInput.value.active),
+          scopes: normalizeServiceAccountScopeInput(createServiceAccountInput.value.scopes).map(
+            serviceAccountScopeToEnum,
+          ),
+        },
+      });
+      createServiceAccountInput.value = toServiceAccountDraft({ scopes: ["ops:read"] });
+      await refetchServiceAccounts();
+      statusMessage.value = "Service account created.";
+    } catch (error) {
+      setErrorMessage(error, "Could not create service account.");
+    }
+  };
+
+  const saveServiceAccount = async (serviceAccountId) => {
+    clearMessages();
+    const draft = serviceAccountDrafts.value[serviceAccountId];
+    if (!draft) {
+      return;
+    }
+    try {
+      await adminUpdateServiceAccount({
+        id: serviceAccountId,
+        input: {
+          name: String(draft.name || "").trim(),
+          description: String(draft.description || "").trim(),
+          active: Boolean(draft.active),
+          scopes: normalizeServiceAccountScopeInput(draft.scopes).map(serviceAccountScopeToEnum),
+        },
+      });
+      await refetchServiceAccounts();
+      statusMessage.value = "Service account updated.";
+    } catch (error) {
+      setErrorMessage(error, "Could not update service account.");
+    }
+  };
+
+  const deleteServiceAccount = async (serviceAccount) => {
+    clearMessages();
+    const accepted = window.confirm(`Delete service account '${serviceAccount.name}'?`);
+    if (!accepted) {
+      return;
+    }
+    try {
+      await adminDeleteServiceAccount({ id: serviceAccount._id });
+      await refetchServiceAccounts();
+      statusMessage.value = "Service account deleted.";
+    } catch (error) {
+      setErrorMessage(error, "Could not delete service account.");
+    }
+  };
+
+  const issueServiceAccountToken = async () => {
+    clearMessages();
+    const serviceAccountId = String(
+      createServiceAccountTokenInput.value.serviceAccountId || "",
+    ).trim();
+    if (!serviceAccountId) {
+      actionError.value = "Select a service account before issuing a token.";
+      return;
+    }
+    try {
+      const result = await adminIssueServiceAccountToken({
+        serviceAccountId,
+        label: String(createServiceAccountTokenInput.value.label || "").trim() || null,
+        scopes: normalizeServiceAccountScopeInput(createServiceAccountTokenInput.value.scopes).map(
+          serviceAccountScopeToEnum,
+        ),
+        expiresInHours: Number(createServiceAccountTokenInput.value.expiresInHours) || null,
+      });
+      const issued = result?.data?.adminIssueServiceAccountToken;
+      if (issued) {
+        issuedServiceAccountTokenByAccount.value = {
+          ...issuedServiceAccountTokenByAccount.value,
+          [serviceAccountId]: issued,
+        };
+      }
+      await Promise.all([refetchServiceAccounts(), refetchServiceAccountTokens()]);
+      statusMessage.value = "Service account token issued.";
+    } catch (error) {
+      setErrorMessage(error, "Could not issue service account token.");
+    }
+  };
+
+  const rotateServiceAccountToken = async (tokenRecord) => {
+    clearMessages();
+    try {
+      const result = await adminRotateServiceAccountToken({
+        id: tokenRecord._id,
+        expiresInHours: Number(createServiceAccountTokenInput.value.expiresInHours) || null,
+      });
+      const issued = result?.data?.adminRotateServiceAccountToken;
+      const serviceAccountId = tokenRecord.serviceAccountId;
+      if (issued && serviceAccountId) {
+        issuedServiceAccountTokenByAccount.value = {
+          ...issuedServiceAccountTokenByAccount.value,
+          [serviceAccountId]: issued,
+        };
+      }
+      await refetchServiceAccountTokens();
+      statusMessage.value = "Service account token rotated.";
+    } catch (error) {
+      setErrorMessage(error, "Could not rotate service account token.");
+    }
+  };
+
+  const revokeServiceAccountToken = async (tokenRecord) => {
+    clearMessages();
+    try {
+      await adminRevokeServiceAccountToken({ id: tokenRecord._id });
+      await refetchServiceAccountTokens();
+      statusMessage.value = "Service account token revoked.";
+    } catch (error) {
+      setErrorMessage(error, "Could not revoke service account token.");
     }
   };
 
@@ -550,6 +789,7 @@ export const useAdminConsoleController = () => {
 
   return {
     BROKER_PROFILE_PROTOCOL_OPTIONS,
+    SERVICE_ACCOUNT_SCOPE_OPTIONS,
     CREDENTIAL_PROFILE_TYPE_OPTIONS,
     DASHBOARD_VISIBILITY_OPTIONS,
     EXECUTION_MODE_OPTIONS,
@@ -562,22 +802,34 @@ export const useAdminConsoleController = () => {
     userDrafts,
     credentialProfileDrafts,
     brokerProfileDrafts,
+    serviceAccountDrafts,
     issuedInvite,
+    issuedServiceAccountTokenByAccount,
     createUserInput,
     createInviteInput,
     createCredentialProfileInput,
     createBrokerProfileInput,
+    createServiceAccountInput,
+    createServiceAccountTokenInput,
     policyDraft,
     usersLoading,
     pendingInvitesLoading,
     credentialProfilesLoading,
     brokerProfilesLoading,
+    serviceAccountsLoading,
+    serviceAccountTokensLoading,
+    runtimeMetricsLoading,
+    auditEventsLoading,
     datasourceDiagnosticsLoading,
     users,
     pendingInvites,
     policy,
     credentialProfiles,
     brokerProfiles,
+    serviceAccounts,
+    serviceAccountTokens,
+    runtimeMetrics,
+    auditEvents,
     datasourceDiagnostics,
     issuedResetEntries,
     isBusy,
@@ -597,5 +849,13 @@ export const useAdminConsoleController = () => {
     createBrokerProfile,
     saveBrokerProfile,
     deleteBrokerProfile,
+    createServiceAccount,
+    saveServiceAccount,
+    deleteServiceAccount,
+    issueServiceAccountToken,
+    rotateServiceAccountToken,
+    revokeServiceAccountToken,
+    refetchRuntimeMetrics,
+    refetchAuditEvents,
   };
 };

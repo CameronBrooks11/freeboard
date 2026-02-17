@@ -3,7 +3,7 @@
  * @description Admin-only datasource diagnostics rollup resolver.
  */
 
-import { ensureThatUserIsAdministrator } from "../auth.js";
+import { ensureThatPrincipalHasServiceScope } from "../auth.js";
 import Dashboard from "../models/Dashboard.js";
 import BrokerProfile from "../models/BrokerProfile.js";
 
@@ -20,7 +20,7 @@ const normalizeType = (value) => {
 export default {
   Query: {
     adminDatasourceDiagnostics: async (parent, args, context) => {
-      ensureThatUserIsAdministrator(context);
+      ensureThatPrincipalHasServiceScope(context, ["datasource:diagnostics:read"]);
 
       const dashboards = await Dashboard.find({}).select("_id visibility datasources").lean();
 

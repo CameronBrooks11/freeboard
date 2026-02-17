@@ -7,6 +7,8 @@ import { createPubSub } from "graphql-yoga";
 import { validateAuthToken } from "./auth.js";
 import User from "./models/User.js";
 import Dashboard from "./models/Dashboard.js";
+import { authenticateServiceAccountToken } from "./serviceAccountAuth.js";
+import { recordAuthFailureMetric } from "./runtimeMetrics.js";
 
 /**
  * PubSub engine for subscriptions.
@@ -65,12 +67,33 @@ export const setContext = async ({ req }) => {
   let token = req.headers["authorization"];
 
   if (token && typeof token === "string") {
-    try {
-      const authenticationScheme = "Bearer ";
-      // Remove 'Bearer ' prefix if present
-      if (token.startsWith(authenticationScheme)) {
-        token = token.slice(authenticationScheme.length);
+    const authenticationScheme = "Bearer ";
+    // Remove 'Bearer ' prefix if present
+    if (token.startsWith(authenticationScheme)) {
+      token = token.slice(authenticationScheme.length);
+    }
+
+    if (token.startsWith("fsa_")) {
+      try {
+        const serviceAuth = await authenticateServiceAccountToken(token);
+        if (!serviceAuth) {
+          recordAuthFailureMetric();
+          return context;
+        }
+        context.serviceAccount = {
+          _id: serviceAuth.serviceAccount._id,
+          name: serviceAuth.serviceAccount.name,
+          active: serviceAuth.serviceAccount.active,
+          scopes: serviceAuth.scopes,
+          tokenId: serviceAuth.tokenRecord._id,
+        };
+      } catch {
+        recordAuthFailureMetric();
       }
+      return context;
+    }
+
+    try {
       // Validate JWT and attach user claims to context
       const user = await validateAuthToken(token);
       const persistedUser = await User.findOne({
@@ -78,6 +101,7 @@ export const setContext = async ({ req }) => {
         active: true,
       }).lean();
       if (!persistedUser) {
+        recordAuthFailureMetric();
         return context;
       }
       const persistedSessionVersion = Number(
@@ -85,6 +109,7 @@ export const setContext = async ({ req }) => {
       );
       const tokenSessionVersion = Number(user?.sv === undefined ? 0 : user.sv);
       if (persistedSessionVersion !== tokenSessionVersion) {
+        recordAuthFailureMetric();
         return context;
       }
       const normalizedRole =
@@ -102,9 +127,9 @@ export const setContext = async ({ req }) => {
         admin: normalizedRole === "admin",
         sessionVersion: persistedSessionVersion,
       };
-    } catch (e) {
-      // Invalid token: log and continue without user
-      console.warn(e);
+    } catch {
+      // Invalid token: continue without principal.
+      recordAuthFailureMetric();
     }
   }
 

@@ -27,6 +27,7 @@ import { decryptCredentialSecret } from "./credentialEncryption.js";
 import { consumeRateLimit } from "./rateLimit.js";
 import { recordAuditEvent } from "./audit.js";
 import { queryShareTokenRevocationFeed } from "./shareTokenRevocationFeed.js";
+import { recordApiHttpRequest } from "./runtimeMetrics.js";
 
 import dns from "dns";
 
@@ -281,6 +282,14 @@ const handleGatewayRevokedTokens = async (req, res) => {
  * @type {HTTPServer}
  */
 const server = createServer((req, res) => {
+  const requestStartedAt = Date.now();
+  res.on("finish", () => {
+    recordApiHttpRequest({
+      statusCode: res.statusCode,
+      durationMs: Date.now() - requestStartedAt,
+    });
+  });
+
   const requestUrl = new URL(req.url || "/", "http://localhost");
   if (requestUrl.pathname === INTERNAL_GATEWAY_INTROSPECTION_PATH) {
     handleGatewayIntrospection(req, res);

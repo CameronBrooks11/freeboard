@@ -12,6 +12,11 @@ export const dashboardVisibilityToEnum = (visibility) =>
 export const executionModeToEnum = (mode) => String(mode || "safe").toUpperCase();
 export const credentialProfileTypeToEnum = (type) => String(type || "none").toUpperCase();
 export const brokerProfileProtocolToEnum = (protocol) => String(protocol || "mqtt").toUpperCase();
+export const serviceAccountScopeToEnum = (scope) =>
+  String(scope || "")
+    .trim()
+    .replace(/[:.-]/g, "_")
+    .toUpperCase();
 
 export const buildCredentialProfileMutationInput = (draft, { includeSecrets = true } = {}) => {
   const type = normalizeCredentialProfileTypeValue(draft.type);

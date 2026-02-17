@@ -17,26 +17,39 @@ const {
   REGISTRATION_DEFAULT_ROLE_OPTIONS,
   REGISTRATION_MODE_OPTIONS,
   ROLE_OPTIONS,
+  SERVICE_ACCOUNT_SCOPE_OPTIONS,
   statusMessage,
   actionError,
   userDrafts,
   credentialProfileDrafts,
   brokerProfileDrafts,
+  serviceAccountDrafts,
   issuedInvite,
+  issuedServiceAccountTokenByAccount,
   createUserInput,
   createInviteInput,
   createCredentialProfileInput,
   createBrokerProfileInput,
+  createServiceAccountInput,
+  createServiceAccountTokenInput,
   policyDraft,
   usersLoading,
   pendingInvitesLoading,
   credentialProfilesLoading,
   brokerProfilesLoading,
+  serviceAccountsLoading,
+  serviceAccountTokensLoading,
+  runtimeMetricsLoading,
+  auditEventsLoading,
   datasourceDiagnosticsLoading,
   users,
   pendingInvites,
   credentialProfiles,
   brokerProfiles,
+  serviceAccounts,
+  serviceAccountTokens,
+  runtimeMetrics,
+  auditEvents,
   datasourceDiagnostics,
   issuedResetEntries,
   isBusy,
@@ -56,6 +69,14 @@ const {
   createBrokerProfile,
   saveBrokerProfile,
   deleteBrokerProfile,
+  createServiceAccount,
+  saveServiceAccount,
+  deleteServiceAccount,
+  issueServiceAccountToken,
+  rotateServiceAccountToken,
+  revokeServiceAccountToken,
+  refetchRuntimeMetrics,
+  refetchAuditEvents,
 } = useAdminConsoleController();
 </script>
 
@@ -256,6 +277,408 @@ const {
       <p v-if="isPolicyLocked" class="admin-console__hint">
         {{ $t("admin.policyLockedHint") }}
       </p>
+    </section>
+
+    <section class="admin-console__section">
+      <div class="admin-console__section-header">
+        <h2>{{ $t("admin.serviceAccountsTitle") }}</h2>
+        <button
+          type="button"
+          class="admin-console__button admin-console__button--primary"
+          :disabled="isBusy"
+          @click="createServiceAccount"
+        >
+          {{ $t("admin.createServiceAccountButton") }}
+        </button>
+      </div>
+
+      <div class="admin-console__form-grid">
+        <label class="admin-console__field">
+          {{ $t("form.labelName") }}
+          <input
+            v-model="createServiceAccountInput.name"
+            class="admin-console__input"
+            type="text"
+            :disabled="isBusy"
+          />
+        </label>
+        <label class="admin-console__field admin-console__field--full">
+          {{ $t("admin.description") }}
+          <input
+            v-model="createServiceAccountInput.description"
+            class="admin-console__input"
+            type="text"
+            :disabled="isBusy"
+          />
+        </label>
+        <label class="admin-console__checkbox">
+          <input
+            class="admin-console__checkbox-input"
+            type="checkbox"
+            v-model="createServiceAccountInput.active"
+            :disabled="isBusy"
+          />
+          <span>{{ $t("admin.active") }}</span>
+        </label>
+      </div>
+      <div class="admin-console__form-grid">
+        <label
+          v-for="scope in SERVICE_ACCOUNT_SCOPE_OPTIONS"
+          :key="`create-service-account-scope-${scope}`"
+          class="admin-console__checkbox"
+        >
+          <input
+            class="admin-console__checkbox-input"
+            type="checkbox"
+            :value="scope"
+            v-model="createServiceAccountInput.scopes"
+            :disabled="isBusy"
+          />
+          <span>{{ scope }}</span>
+        </label>
+      </div>
+
+      <div v-if="serviceAccountsLoading" class="admin-console__loading">
+        {{ $t("admin.loadingServiceAccounts") }}
+      </div>
+      <div v-else class="admin-console__table-wrap">
+        <table class="admin-console__table">
+          <thead>
+            <tr>
+              <th>{{ $t("form.labelName") }}</th>
+              <th>{{ $t("admin.description") }}</th>
+              <th>{{ $t("admin.scopes") }}</th>
+              <th>{{ $t("admin.active") }}</th>
+              <th>{{ $t("admin.tokens") }}</th>
+              <th>{{ $t("admin.lastUsedAt") }}</th>
+              <th>{{ $t("admin.actions") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="serviceAccount in serviceAccounts" :key="serviceAccount._id">
+              <td>
+                <input
+                  v-if="serviceAccountDrafts[serviceAccount._id]"
+                  v-model="serviceAccountDrafts[serviceAccount._id].name"
+                  class="admin-console__input"
+                  type="text"
+                  :disabled="isBusy"
+                />
+              </td>
+              <td>
+                <input
+                  v-if="serviceAccountDrafts[serviceAccount._id]"
+                  v-model="serviceAccountDrafts[serviceAccount._id].description"
+                  class="admin-console__input"
+                  type="text"
+                  :disabled="isBusy"
+                />
+              </td>
+              <td>
+                <div v-if="serviceAccountDrafts[serviceAccount._id]" class="admin-console__actions">
+                  <label
+                    v-for="scope in SERVICE_ACCOUNT_SCOPE_OPTIONS"
+                    :key="`${serviceAccount._id}-scope-${scope}`"
+                    class="admin-console__checkbox"
+                  >
+                    <input
+                      class="admin-console__checkbox-input"
+                      type="checkbox"
+                      :value="scope"
+                      v-model="serviceAccountDrafts[serviceAccount._id].scopes"
+                      :disabled="isBusy"
+                    />
+                    <span>{{ scope }}</span>
+                  </label>
+                </div>
+              </td>
+              <td>
+                <input
+                  v-if="serviceAccountDrafts[serviceAccount._id]"
+                  class="admin-console__checkbox-input"
+                  type="checkbox"
+                  v-model="serviceAccountDrafts[serviceAccount._id].active"
+                  :disabled="isBusy"
+                />
+              </td>
+              <td>{{ serviceAccount.tokenCount }}</td>
+              <td>{{ formatDateTime(serviceAccount.lastUsedAt) }}</td>
+              <td class="admin-console__actions">
+                <button
+                  type="button"
+                  class="admin-console__button admin-console__button--primary admin-console__button--small"
+                  :disabled="isBusy || !serviceAccountDrafts[serviceAccount._id]"
+                  @click="saveServiceAccount(serviceAccount._id)"
+                >
+                  {{ $t("admin.saveServiceAccount") }}
+                </button>
+                <button
+                  type="button"
+                  class="admin-console__button admin-console__button--danger admin-console__button--small"
+                  :disabled="isBusy"
+                  @click="deleteServiceAccount(serviceAccount)"
+                >
+                  {{ $t("admin.deleteServiceAccount") }}
+                </button>
+              </td>
+            </tr>
+            <tr v-if="serviceAccounts.length === 0">
+              <td colspan="7" class="admin-console__empty">
+                {{ $t("admin.noServiceAccounts") }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-console__section">
+      <div class="admin-console__section-header">
+        <h2>{{ $t("admin.serviceAccountTokensTitle") }}</h2>
+        <button
+          type="button"
+          class="admin-console__button admin-console__button--primary"
+          :disabled="isBusy"
+          @click="issueServiceAccountToken"
+        >
+          {{ $t("admin.issueServiceAccountTokenButton") }}
+        </button>
+      </div>
+
+      <div class="admin-console__form-grid">
+        <label class="admin-console__field">
+          {{ $t("admin.serviceAccount") }}
+          <select
+            v-model="createServiceAccountTokenInput.serviceAccountId"
+            class="admin-console__select"
+            :disabled="isBusy"
+          >
+            <option value="">{{ $t("admin.selectServiceAccount") }}</option>
+            <option
+              v-for="serviceAccount in serviceAccounts"
+              :key="`service-account-token-target-${serviceAccount._id}`"
+              :value="serviceAccount._id"
+            >
+              {{ serviceAccount.name }}
+            </option>
+          </select>
+        </label>
+        <label class="admin-console__field">
+          {{ $t("form.labelTitle") }}
+          <input
+            v-model="createServiceAccountTokenInput.label"
+            class="admin-console__input"
+            type="text"
+            :disabled="isBusy"
+          />
+        </label>
+        <label class="admin-console__field">
+          {{ $t("admin.expiresHours") }}
+          <input
+            v-model.number="createServiceAccountTokenInput.expiresInHours"
+            class="admin-console__input"
+            type="number"
+            min="1"
+            max="8760"
+            :disabled="isBusy"
+          />
+        </label>
+      </div>
+      <div class="admin-console__form-grid">
+        <label
+          v-for="scope in SERVICE_ACCOUNT_SCOPE_OPTIONS"
+          :key="`service-account-token-scope-${scope}`"
+          class="admin-console__checkbox"
+        >
+          <input
+            class="admin-console__checkbox-input"
+            type="checkbox"
+            :value="scope"
+            v-model="createServiceAccountTokenInput.scopes"
+            :disabled="isBusy"
+          />
+          <span>{{ scope }}</span>
+        </label>
+      </div>
+
+      <div
+        v-if="issuedServiceAccountTokenByAccount[createServiceAccountTokenInput.serviceAccountId]"
+        class="admin-console__token-card"
+      >
+        <div class="admin-console__token-row">
+          <strong>{{ $t("admin.serviceAccountToken") }}:</strong>
+          <code class="admin-console__mono">
+            {{
+              issuedServiceAccountTokenByAccount[createServiceAccountTokenInput.serviceAccountId]
+                .token
+            }}
+          </code>
+        </div>
+        <div class="admin-console__hint">
+          {{ $t("admin.serviceAccountTokenDisplayWarning") }}
+        </div>
+      </div>
+
+      <div v-if="serviceAccountTokensLoading" class="admin-console__loading">
+        {{ $t("admin.loadingServiceAccountTokens") }}
+      </div>
+      <div v-else class="admin-console__table-wrap">
+        <table class="admin-console__table">
+          <thead>
+            <tr>
+              <th>{{ $t("form.labelTitle") }}</th>
+              <th>{{ $t("admin.scopes") }}</th>
+              <th>{{ $t("admin.expiresAt") }}</th>
+              <th>{{ $t("admin.revokedAt") }}</th>
+              <th>{{ $t("admin.lastUsedAt") }}</th>
+              <th>{{ $t("admin.actions") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="tokenRecord in serviceAccountTokens" :key="tokenRecord._id">
+              <td>{{ tokenRecord.label || "-" }}</td>
+              <td>{{ tokenRecord.scopes.join(", ") }}</td>
+              <td>{{ formatDateTime(tokenRecord.expiresAt) }}</td>
+              <td>{{ formatDateTime(tokenRecord.revokedAt) }}</td>
+              <td>{{ formatDateTime(tokenRecord.lastUsedAt) }}</td>
+              <td class="admin-console__actions">
+                <button
+                  type="button"
+                  class="admin-console__button admin-console__button--small"
+                  :disabled="isBusy || Boolean(tokenRecord.revokedAt)"
+                  @click="rotateServiceAccountToken(tokenRecord)"
+                >
+                  {{ $t("admin.rotateToken") }}
+                </button>
+                <button
+                  type="button"
+                  class="admin-console__button admin-console__button--danger admin-console__button--small"
+                  :disabled="isBusy || Boolean(tokenRecord.revokedAt)"
+                  @click="revokeServiceAccountToken(tokenRecord)"
+                >
+                  {{ $t("admin.revokeToken") }}
+                </button>
+              </td>
+            </tr>
+            <tr v-if="serviceAccountTokens.length === 0">
+              <td colspan="6" class="admin-console__empty">
+                {{ $t("admin.noServiceAccountTokens") }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-console__section">
+      <div class="admin-console__section-header">
+        <h2>{{ $t("admin.runtimeMetricsTitle") }}</h2>
+        <button
+          type="button"
+          class="admin-console__button"
+          :disabled="isBusy"
+          @click="refetchRuntimeMetrics"
+        >
+          {{ $t("admin.refreshMetrics") }}
+        </button>
+      </div>
+      <div v-if="runtimeMetricsLoading" class="admin-console__loading">
+        {{ $t("admin.loadingRuntimeMetrics") }}
+      </div>
+      <template v-else-if="runtimeMetrics">
+        <div class="admin-console__stats-grid">
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">{{ $t("admin.apiRequests") }}</span>
+            <strong class="admin-console__stat-value">
+              {{ runtimeMetrics.api?.requestCount ?? 0 }}
+            </strong>
+          </article>
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">{{ $t("admin.apiErrors") }}</span>
+            <strong class="admin-console__stat-value">
+              {{ runtimeMetrics.api?.errorCount ?? 0 }}
+            </strong>
+          </article>
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">{{ $t("admin.apiP95LatencyMs") }}</span>
+            <strong class="admin-console__stat-value">
+              {{ runtimeMetrics.api?.p95LatencyMs ?? 0 }}
+            </strong>
+          </article>
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">{{ $t("admin.authFailures") }}</span>
+            <strong class="admin-console__stat-value">
+              {{ runtimeMetrics.api?.authFailureCount ?? 0 }}
+            </strong>
+          </article>
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">{{ $t("admin.gatewayRequests") }}</span>
+            <strong class="admin-console__stat-value">
+              {{ runtimeMetrics.gateway?.httpRequestCount ?? 0 }}
+            </strong>
+          </article>
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">{{ $t("admin.gatewayErrors") }}</span>
+            <strong class="admin-console__stat-value">
+              {{ runtimeMetrics.gateway?.httpErrorCount ?? 0 }}
+            </strong>
+          </article>
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">{{ $t("admin.realtimeConnections") }}</span>
+            <strong class="admin-console__stat-value">
+              {{ runtimeMetrics.gateway?.realtimeActiveConnections ?? 0 }}
+            </strong>
+          </article>
+          <article class="admin-console__stat-card">
+            <span class="admin-console__stat-label">{{ $t("admin.realtimeErrors") }}</span>
+            <strong class="admin-console__stat-value">
+              {{ runtimeMetrics.gateway?.realtimeErrorCount ?? 0 }}
+            </strong>
+          </article>
+        </div>
+      </template>
+    </section>
+
+    <section class="admin-console__section">
+      <div class="admin-console__section-header">
+        <h2>{{ $t("admin.auditEventsTitle") }}</h2>
+        <button
+          type="button"
+          class="admin-console__button"
+          :disabled="isBusy"
+          @click="refetchAuditEvents"
+        >
+          {{ $t("admin.refreshAuditEvents") }}
+        </button>
+      </div>
+      <div v-if="auditEventsLoading" class="admin-console__loading">
+        {{ $t("admin.loadingAuditEvents") }}
+      </div>
+      <div v-else class="admin-console__table-wrap">
+        <table class="admin-console__table">
+          <thead>
+            <tr>
+              <th>{{ $t("admin.action") }}</th>
+              <th>{{ $t("admin.target") }}</th>
+              <th>{{ $t("admin.actor") }}</th>
+              <th>{{ $t("admin.createdAt") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="event in auditEvents" :key="event._id">
+              <td>{{ event.action }}</td>
+              <td>{{ `${event.targetType || "-"}:${event.targetId || "-"}` }}</td>
+              <td>{{ event.actorUserId || "-" }}</td>
+              <td>{{ formatDateTime(event.createdAt) }}</td>
+            </tr>
+            <tr v-if="auditEvents.length === 0">
+              <td colspan="4" class="admin-console__empty">
+                {{ $t("admin.noAuditEvents") }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section class="admin-console__section">
