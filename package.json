@@ -81,7 +81,7 @@
     "cross-env": "^10.0.0",
     "eslint": "^9.15.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-vue": "^9.32.0",
+    "eslint-plugin-vue": "^10.8.0",
     "@playwright/test": "^1.54.2",
     "prettier": "^3.6.2",
     "globals": "^15.12.0",
