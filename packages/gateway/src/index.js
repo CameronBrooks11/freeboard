@@ -1145,8 +1145,8 @@ export const createRealtimeGateway = ({
 /**
  * Create and configure the gateway Express app.
  *
- * @param {{lookup?: Function, fetchFn?: Function}} [options]
- * @returns {import('express').Express}
+ * @param {Object} [options]
+ * @returns {Object}
  */
 export const createGatewayApp = ({ lookup = dns.promises.lookup, fetchFn = fetch } = {}) => {
   const app = express();
@@ -1185,8 +1185,8 @@ export const createGatewayApp = ({ lookup = dns.promises.lookup, fetchFn = fetch
 /**
  * Start gateway HTTP server.
  *
- * @param {{port?: number, host?: string, lookup?: Function, fetchFn?: Function}} [options]
- * @returns {import('http').Server}
+ * @param {Object} [options]
+ * @returns {Object}
  */
 export const startGatewayServer = ({
   port = PORT,

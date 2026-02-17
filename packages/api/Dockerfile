@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:24.13.1-alpine AS deps
+ARG NODE_IMAGE=node:24.13.1-alpine
+
+FROM ${NODE_IMAGE} AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -8,7 +10,7 @@ COPY packages/api/package.json packages/api/package.json
 RUN npm ci --omit=dev --workspace=packages/api --include-workspace-root=false \
   && npm cache clean --force
 
-FROM node:24.13.1-alpine AS runtime
+FROM ${NODE_IMAGE} AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 

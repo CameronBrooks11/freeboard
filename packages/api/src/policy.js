@@ -3,22 +3,22 @@
  * @description Shared policy constants and normalization helpers.
  */
 
-/** @type {readonly string[]} */
+/** @type {string[]} */
 export const USER_ROLES = Object.freeze(["viewer", "editor", "admin"]);
 
-/** @type {readonly string[]} */
+/** @type {string[]} */
 export const REGISTRATION_MODES = Object.freeze(["disabled", "invite", "open"]);
 
-/** @type {readonly string[]} */
+/** @type {string[]} */
 export const NON_ADMIN_USER_ROLES = Object.freeze(["viewer", "editor"]);
 
-/** @type {readonly string[]} */
+/** @type {string[]} */
 export const EXECUTION_MODES = Object.freeze(["safe", "trusted"]);
 
-/** @type {readonly string[]} */
+/** @type {string[]} */
 export const DASHBOARD_VISIBILITIES = Object.freeze(["private", "link", "public"]);
 
-/** @type {readonly string[]} */
+/** @type {string[]} */
 export const DASHBOARD_ACCESS_LEVELS = Object.freeze(["viewer", "editor"]);
 
 /**

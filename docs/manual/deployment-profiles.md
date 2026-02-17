@@ -50,6 +50,30 @@ Security contract:
 - Use `link/public` only for low-sensitivity signage
 - On device compromise: rotate share token or deactivate kiosk account immediately
 
+Container image architecture contract:
+
+- Prefer 64-bit Raspberry Pi OS and mainline images (`latest`, `v*`, `sha-*`).
+- 32-bit Raspberry Pi OS uses legacy `-armv7` image tags.
+- Legacy `-armv7` tags are intentionally separated to avoid blocking mainline runtime upgrades.
+- `arm/v6` is intentionally unsupported.
+
+Architecture verification command:
+
+```bash
+docker buildx imagetools inspect node:24.13.1-alpine
+```
+
+Reference links:
+
+- Docker Raspberry Pi OS install guidance:
+  - https://docs.docker.com/engine/install/raspberry-pi-os/
+- Docker Engine 29 release notes (32-bit Pi context):
+  - https://docs.docker.com/engine/release-notes/29/
+- Node Docker image upstream (platform support varies per tag/variant):
+  - https://github.com/nodejs/docker-node
+- armv7 Node compatibility track:
+  - https://hub.docker.com/r/arm32v7/node
+
 ### Kiosk Provisioning Subprofiles (Ansible)
 
 Kiosk deployments include three provisioning subprofiles:
