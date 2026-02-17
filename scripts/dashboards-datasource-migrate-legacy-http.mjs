@@ -32,7 +32,7 @@ const cloneDatasource = (datasource) =>
 const cloneSettings = (settings) =>
   settings && typeof settings === "object" && !Array.isArray(settings) ? { ...settings } : {};
 
-const normalizeDashboardForPhase5 = (dashboard) => {
+const normalizeDashboardForLegacyHttp = (dashboard) => {
   const nextDatasources = [];
   const sourceDatasources = Array.isArray(dashboard?.datasources) ? dashboard.datasources : [];
 
@@ -117,7 +117,7 @@ const run = async () => {
   let normalizedHttpDefaultsCount = 0;
 
   for (const dashboard of dashboards) {
-    const normalized = normalizeDashboardForPhase5(dashboard);
+    const normalized = normalizeDashboardForLegacyHttp(dashboard);
     if (!normalized.changed) {
       continue;
     }
@@ -134,12 +134,12 @@ const run = async () => {
   }
 
   console.log(
-    `[dashboards-datasource-phase5-migrate] dashboards=${dashboards.length} pending_updates=${updates.length} converted_json=${convertedLegacyJsonCount} removed_auth_provider_refs=${removedLegacyAuthProviderRefsCount} normalized_http_defaults=${normalizedHttpDefaultsCount} apply=${options.apply}`,
+    `[dashboards-datasource-legacy-http-migrate] dashboards=${dashboards.length} pending_updates=${updates.length} converted_json=${convertedLegacyJsonCount} removed_auth_provider_refs=${removedLegacyAuthProviderRefsCount} normalized_http_defaults=${normalizedHttpDefaultsCount} apply=${options.apply}`,
   );
 
   if (!options.apply) {
     console.log(
-      "[dashboards-datasource-phase5-migrate] dry run only. Re-run with --apply to persist.",
+      "[dashboards-datasource-legacy-http-migrate] dry run only. Re-run with --apply to persist.",
     );
     await mongoose.disconnect();
     return;
@@ -155,13 +155,13 @@ const run = async () => {
     await Dashboard.updateOne({ _id: update._id }, payload, { strict: false });
   }
 
-  console.log("[dashboards-datasource-phase5-migrate] updates applied successfully");
+  console.log("[dashboards-datasource-legacy-http-migrate] updates applied successfully");
 
   await mongoose.disconnect();
 };
 
 run().catch(async (error) => {
-  console.error("[dashboards-datasource-phase5-migrate] failed:", error?.message || error);
+  console.error("[dashboards-datasource-legacy-http-migrate] failed:", error?.message || error);
   try {
     await mongoose.disconnect();
   } catch {

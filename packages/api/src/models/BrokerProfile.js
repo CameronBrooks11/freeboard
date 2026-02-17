@@ -1,6 +1,6 @@
 /**
  * @module models/BrokerProfile
- * @description Mongoose model for broker connection metadata (Phase 6 realtime).
+ * @description Mongoose model for realtime broker connection metadata.
  */
 
 import mongoose from "mongoose";

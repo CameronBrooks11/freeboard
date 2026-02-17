@@ -75,7 +75,7 @@ Typical settings:
 
 ## MQTT (`mqtt`)
 
-- Gateway-backed MQTT subscription stream (receive-only in this phase).
+- Gateway-backed MQTT subscription stream (currently receive-only).
 - Requires selecting a broker profile (`brokerProfileId`).
 - Broker profile holds broker endpoint/policy metadata and optional credential profile reference.
 - Parser modes: `json`, `text`.

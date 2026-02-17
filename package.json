@@ -49,7 +49,7 @@
     "check:ui:store-boundaries": "node scripts/check-ui-store-boundaries.mjs",
     "security:audit:prod": "npm audit --omit=dev --audit-level=high",
     "credentials:reencrypt": "node scripts/credentials-reencrypt.mjs",
-    "dashboards:datasource:migrate-phase5": "node scripts/dashboards-datasource-migrate-phase5.mjs",
+    "dashboards:datasource:migrate-legacy-http": "node scripts/dashboards-datasource-migrate-legacy-http.mjs",
     "dashboards:visibility:migrate-legacy": "node scripts/dashboard-visibility-migrate-from-published.mjs",
     "dashboards:visibility:enforce-private": "node scripts/dashboard-visibility-enforce-private.mjs",
     "ci": "npm run format:check && npm run lint && npm run check:ui:store-boundaries && npm run test && npm run build:verify",

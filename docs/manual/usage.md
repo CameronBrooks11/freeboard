@@ -71,9 +71,9 @@ In private -> external (`link/public`) transitions, share tokens are rotated.
 - Migrate legacy `published` dashboards to visibility model:
   - Dry run: `npm run dashboards:visibility:migrate-legacy`
   - Apply: `npm run dashboards:visibility:migrate-legacy -- --apply`
-- Migrate legacy datasource payloads (`json` type / embedded `authProviders`) to Phase 5 model:
-  - Dry run: `npm run dashboards:datasource:migrate-phase5`
-  - Apply: `npm run dashboards:datasource:migrate-phase5 -- --apply`
+- Migrate legacy datasource payloads (`json` type / embedded `authProviders`) to the current HTTP datasource model:
+  - Dry run: `npm run dashboards:datasource:migrate-legacy-http`
+  - Apply: `npm run dashboards:datasource:migrate-legacy-http -- --apply`
 - Force all dashboards to `private` (emergency containment):
   - Dry run: `npm run dashboards:visibility:enforce-private`
   - Apply: `npm run dashboards:visibility:enforce-private -- --apply`

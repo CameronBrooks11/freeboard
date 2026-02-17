@@ -44,7 +44,7 @@ const readSessionToken = async (page) =>
     }
   });
 
-test("phase 12 smoke flow covers login, datasource render, share view, and policy save", async ({
+test("smoke flow covers login, datasource render, share view, and policy save", async ({
   page,
   browser,
 }) => {

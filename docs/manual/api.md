@@ -85,7 +85,7 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
   - Session token minting for datasource runtime (`mintDatasourceSessionToken`)
 - **Datasource Diagnostics Resolvers** (`resolvers/DatasourceDiagnostics.js`):
   - Admin-only datasource configuration/health rollup (`adminDatasourceDiagnostics`)
-  - Includes Phase 6 datasource types (`http`, `clock`, `static`, `sse`, `websocket`, `mqtt`)
+  - Includes realtime datasource types (`http`, `clock`, `static`, `sse`, `websocket`, `mqtt`)
 
 ## Input Validation (`validators.js`)
 

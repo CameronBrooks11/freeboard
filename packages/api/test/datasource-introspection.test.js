@@ -45,7 +45,7 @@ test("buildCanonicalDatasourceIntent normalizes parser/method/timeout and header
           method: "invalid",
           parser: "invalid",
           timeoutMs: "oops",
-          headers: '{"X-Test":"phase5"}',
+          headers: '{"X-Test":"introspection"}',
           body: { ping: true },
         },
       },
@@ -60,7 +60,7 @@ test("buildCanonicalDatasourceIntent normalizes parser/method/timeout and header
   assert.equal(intent.method, "GET");
   assert.equal(intent.parser, "json");
   assert.equal(intent.timeoutMs, config.fetchTimeoutMs);
-  assert.deepEqual(intent.headers, { "X-Test": "phase5" });
+  assert.deepEqual(intent.headers, { "X-Test": "introspection" });
   assert.equal(intent.body, '{"ping":true}');
 });
 
@@ -105,7 +105,7 @@ test("resolveGatewayIntrospection returns canonical gateway intent for valid pub
           headers: {
             "X-Client": "freeboard",
           },
-          body: '{"from":"phase5"}',
+          body: '{"from":"introspection"}',
         },
       },
     ],
@@ -138,7 +138,7 @@ test("resolveGatewayIntrospection returns canonical gateway intent for valid pub
   assert.equal(resolved.intent.parser, "csv");
   assert.equal(resolved.intent.timeoutMs, 2500);
   assert.equal(resolved.intent.headers["X-Client"], "freeboard");
-  assert.equal(resolved.intent.body, '{"from":"phase5"}');
+  assert.equal(resolved.intent.body, '{"from":"introspection"}');
 });
 
 test("resolveGatewayIntrospection returns streaming intent for websocket datasource", async () => {

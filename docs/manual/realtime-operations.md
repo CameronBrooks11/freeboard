@@ -1,6 +1,6 @@
 # Realtime Operations Runbook
 
-This runbook covers day-2 operations for Phase 6 realtime datasources (`sse`, `websocket`, `mqtt`).
+This runbook covers day-2 operations for realtime datasources (`sse`, `websocket`, `mqtt`).
 
 ## Scope
 
