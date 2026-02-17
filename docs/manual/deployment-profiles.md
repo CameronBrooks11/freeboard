@@ -71,8 +71,8 @@ Reference links:
   - https://docs.docker.com/engine/release-notes/29/
 - Node Docker image upstream (platform support varies per tag/variant):
   - https://github.com/nodejs/docker-node
-- armv7 Node compatibility track:
-  - https://hub.docker.com/r/arm32v7/node
+- Node official tags (including legacy-friendly LTS lines):
+  - https://hub.docker.com/_/node
 
 ### Kiosk Provisioning Subprofiles (Ansible)
 
