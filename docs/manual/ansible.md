@@ -61,6 +61,16 @@ Commonly overridden:
 - `kiosk_url_check_mode` (`none|get|head`)
 - `kiosk_systemd_no_new_privileges` (default `false` for Xorg/startx compatibility)
 
+If using `appliance_with_runtime` profiles on 32-bit Raspberry Pi OS, pin image tags to the
+legacy armv7 track (`latest-armv7`, `v*-armv7`, or `sha-*-armv7`).
+
+External references for container architecture constraints:
+
+- https://docs.docker.com/engine/install/raspberry-pi-os/
+- https://docs.docker.com/engine/release-notes/29/
+- https://github.com/nodejs/docker-node
+- https://hub.docker.com/r/arm32v7/node
+
 Reference defaults: `ansible/vars.yml`
 
 ## Inventory setup

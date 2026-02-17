@@ -6,6 +6,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  MAINLINE_NODE_IMAGE: node:24.13.1-alpine
+  LEGACY_ARMV7_NODE_IMAGE: arm32v7/node:22-alpine
 
 # Intentionally no cancel-in-progress concurrency for publish builds:
 # rapid sequential pushes can otherwise skip changed-image publishes.
@@ -154,18 +156,51 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=v${{ steps.package.outputs.version }}
 
-      - name: Build and push Docker image
+      - name: Extract metadata (tags, labels) for Docker armv7 legacy track
+        if: steps.changes.outputs.changed == 'true'
+        id: meta_armv7
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ matrix.image }}
+          tags: |
+            type=raw,value=latest-armv7
+            type=raw,value=v${{ steps.package.outputs.version }}-armv7
+            type=sha,format=short,prefix=sha-,suffix=-armv7
+          labels: |
+            org.opencontainers.image.title=freeboard-${{ matrix.name }}-armv7
+            org.opencontainers.image.description=Freeboard ${{ matrix.name }} service image (legacy armv7)
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=v${{ steps.package.outputs.version }}-armv7
+
+      - name: Build and push Docker image (mainline amd64/arm64)
         if: steps.changes.outputs.changed == 'true'
         uses: docker/build-push-action@v6
         with:
-          # Node 24 Alpine images do not publish linux/arm/v6 manifests.
-          # Keep publish targets aligned with supported upstream runtime images.
-          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          # Mainline publish track: current runtime baseline.
+          platforms: linux/amd64,linux/arm64
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
+          build-args: |
+            NODE_IMAGE=${{ env.MAINLINE_NODE_IMAGE }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push Docker image (legacy armv7)
+        if: steps.changes.outputs.changed == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          # Legacy compatibility lane for 32-bit Raspberry Pi deployments.
+          platforms: linux/arm/v7
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          build-args: |
+            NODE_IMAGE=${{ env.LEGACY_ARMV7_NODE_IMAGE }}
+          push: true
+          tags: ${{ steps.meta_armv7.outputs.tags }}
+          labels: ${{ steps.meta_armv7.outputs.labels }}
 
       - name: Skipping build (no changes)
         if: steps.changes.outputs.changed == 'false'
