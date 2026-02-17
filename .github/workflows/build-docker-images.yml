@@ -7,7 +7,7 @@ on:
 env:
   REGISTRY: ghcr.io
   MAINLINE_NODE_IMAGE: node:24.13.1-alpine
-  LEGACY_ARMV7_NODE_IMAGE: arm32v7/node:22-alpine
+  LEGACY_ARMV7_NODE_IMAGE: node:22-alpine
 
 # Intentionally no cancel-in-progress concurrency for publish builds:
 # rapid sequential pushes can otherwise skip changed-image publishes.
