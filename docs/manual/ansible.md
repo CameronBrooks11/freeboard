@@ -183,6 +183,25 @@ ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i localhost, -c local ansib
 
 This stops the kiosk service, restores managed backups where present, removes managed service/env files, and reloads systemd.
 
+## Post-apply verification
+
+Pattern A (control node to remote host):
+
+```bash
+ansible -i ansible/inventory.ini kiosk -b -m shell -a "systemctl is-enabled freeboard-kiosk.service && systemctl is-active freeboard-kiosk.service"
+ansible -i ansible/inventory.ini kiosk -b -m shell -a "journalctl -u freeboard-kiosk.service -n 50 --no-pager"
+```
+
+Pattern B (inside kiosk host):
+
+```bash
+sudo systemctl is-enabled freeboard-kiosk.service
+sudo systemctl is-active freeboard-kiosk.service
+sudo journalctl -u freeboard-kiosk.service -n 50 --no-pager
+```
+
+When `kiosk_profile` includes boot tuning, schedule a controlled reboot window and validate service state again after reboot.
+
 ## Security notes
 
 - Do not run kiosk devices with admin/editor credentials.

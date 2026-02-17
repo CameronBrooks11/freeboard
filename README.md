@@ -1,116 +1,106 @@
 # freeboard
 
-This Freeboard is a fork of [Jim Heising's damn-sexy dashboard app](https://github.com/Freeboard/freeboard) with super-powers:
+[![CI](https://github.com/CameronBrooks11/freeboard/actions/workflows/ci.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/ci.yml)
+[![Docker Images](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-docker-images.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-docker-images.yml)
+[![Ansible Quality](https://github.com/CameronBrooks11/freeboard/actions/workflows/ansible-quality.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/ansible-quality.yml)
 
-- Persistent storage of dashboards in a **MongoDB**
-- **GraphQL** API backend
-- Distributable through **docker compose**
-- Modern **Vue.js** v3 frontend
-- Gateway-backed **HTTP datasource runtime** with egress controls
-- Gateway-backed realtime datasource runtime (**SSE**, **WebSocket**, **MQTT**)
-- Built-in widget set: **Base, Text, Indicator, Gauge, Pointer, Picture, HTML, Sparkline, Table, Bar Chart, Status List, Map**
-- **Monorepo** through `npm` workspaces
-- **Commit-Hooks** with `pre-commit`
-- **CSS-Variables** for all colors
+[![GitHub Pages](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-pages.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-pages.yml)
+[![Repository Metrics](https://github.com/CameronBrooks11/freeboard/actions/workflows/metrics.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/metrics.yml)
 
-> [Try Out](https://CameronBrooks11.github.io/freeboard)
+freeboard is a modern fork of [Jim Heising's Freeboard](https://github.com/Freeboard/freeboard) focused on secure, production-grade dashboard delivery for IoT and operations use cases.
+
+It adds:
+
+- persistent dashboard storage in MongoDB
+- GraphQL API backend
+- Vue 3 frontend
+- gateway-backed HTTP datasources with egress controls
+- gateway-backed realtime datasources (SSE, WebSocket, MQTT)
+- role-aware auth, sharing, and visibility model
+- built-in widget set (Base, Text, Indicator, Gauge, Pointer, Picture, HTML, Sparkline, Table, Bar Chart, Status List, Map)
+- Docker Compose runtime and Raspberry Pi kiosk automation
+
+![Node.js](https://img.shields.io/badge/Node.js-24.x-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![npm](https://img.shields.io/badge/npm-11.x-CB3837?style=for-the-badge&logo=npm&logoColor=white)
+![Vue](https://img.shields.io/badge/Vue-3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white)
+![GraphQL](https://img.shields.io/badge/GraphQL-API-E10098?style=for-the-badge&logo=graphql&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Ansible](https://img.shields.io/badge/Ansible-Automation-EE0000?style=for-the-badge&logo=ansible&logoColor=white)
+![MQTT](https://img.shields.io/badge/MQTT-Realtime-660066?style=for-the-badge&logo=eclipsemosquitto&logoColor=white)
+![Protocols](https://img.shields.io/badge/Protocols-HTTP%20%7C%20SSE%20%7C%20WebSocket%20%7C%20MQTT-0A0A0A?style=for-the-badge)
+
+> Live demo: [Try Out](https://CameronBrooks11.github.io/freeboard)
 
 ![Freeboard dashboard screenshot](freeboard.png)
 
+## Documentation
+
+- Manual home: `docs/manual/index.md`
+- Installation: `docs/manual/installation.md`
+- Usage workflow: `docs/manual/usage.md`
+- Datasource reference: `docs/manual/datasource-reference.md`
+- Gateway contract: `docs/manual/gateway.md`
+- Deployment profiles: `docs/manual/deployment-profiles.md`
+- Kiosk + Ansible operations: `docs/manual/ansible.md`
+- Secrets runbook: `docs/manual/secrets-operations.md`
+
 ## Requirements
 
-- Node.js: v24.x (LTS)
-- npm: v11+
-- Docker Engine: ≥ 20.10
-- Docker Compose: v2 (`docker compose` CLI)
-- Python: 3.8+ (for Raspberry Pi Ansible playbook)
-- Ansible: latest `via pip install ansible`
+- Node.js `24.13.1` to `<25` (see `.nvmrc`)
+- npm `11.10.0` to `<12`
+- Docker Engine `>=20.10`
+- Docker Compose v2 (`docker compose`)
+- Python `3.8+` and Ansible (only for kiosk automation)
 
-## Installation
+## Quick Start (Local Development)
 
 ```bash
-git clone git@github.com:CameronBrooks11/freeboard.git
+git clone https://github.com/CameronBrooks11/freeboard.git
 cd freeboard
-git checkout main
-# Optional: align to repo Node baseline via .nvmrc
 nvm use || nvm install
 npm install
-# quick local dev env
 cp .env.dev .env
-```
-
-## Usage
-
-**Login:** Use the credentials configured in `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`).
-For local bootstrap, set `CREATE_ADMIN=true` once, then log in with those values.
-`CREATE_ADMIN=true` now validates credentials strictly:
-
-- `ADMIN_EMAIL` must be `name@domain.ext`
-- `ADMIN_PASSWORD` must be at least 12 chars and include uppercase, lowercase, number, and symbol
-  The same email/password policy is enforced for `registerUser`.
-
-### Docker-Compose
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
-```
-
-For containerized production mode, set these in `.env` first:
-
-- `JWT_SECRET` (API required)
-- `JWT_GATEWAY_SECRET` (API+gateway shared datasource-session signing key)
-- `GATEWAY_SERVICE_TOKEN` (gateway -> API introspection auth token)
-- `CREDENTIAL_ENCRYPTION_KEY` (API credential-profile encryption key)
-- `EGRESS_ALLOWED_HOSTS` (gateway required allowlist)
-- `FREEBOARD_MONGO_URL` (API required Mongo connection string)
-- `MONGO_INITDB_ROOT_USERNAME` / `MONGO_INITDB_ROOT_PASSWORD` (Mongo bootstrap)
-- `MONGO_APP_USERNAME` / `MONGO_APP_PASSWORD` (application DB account)
-- `FREEBOARD_UI_IMAGE_TAG` / `FREEBOARD_API_IMAGE_TAG` / `FREEBOARD_GATEWAY_IMAGE_TAG` (optional service image pinning, default `latest`)
-
-For secret setup/rotation/incident workflow, follow `docs/manual/secrets-operations.md`.
-
-Version tags published by CI:
-
-- `latest`
-- `v<workspace-version>` (for example `v0.1.0`)
-- `sha-<short-commit>` (immutable build pin)
-
-Example pin + rollback flow:
-
-```bash
-# pin all services to a release tag
-FREEBOARD_UI_IMAGE_TAG=v0.1.0
-FREEBOARD_API_IMAGE_TAG=v0.1.0
-FREEBOARD_GATEWAY_IMAGE_TAG=v0.1.0
-
-docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
-
-# rollback by changing tags to a previous known-good release
-```
-
-### Development
-
-```bash
-# if needed (first setup on a machine)
-cp .env.dev .env
-
 npm run dev
 ```
 
-`npm run dev` now:
+Open:
 
-- Starts Mongo in Docker and waits for healthy status.
-- Starts UI/API/Gateway (without coupling Mongo log streaming into the process group).
-- On Ctrl+C, stops UI/API/Gateway and keeps Mongo running.
+- UI: `http://127.0.0.1:5173`
+- API: `http://127.0.0.1:4001/graphql`
+- Gateway: `http://127.0.0.1:8001`
 
-API env loading order is deterministic:
+### First login bootstrap
 
-1. existing process env (shell/CI)
-2. `packages/api/.env` (optional override file)
+- Set `CREATE_ADMIN=true` in `.env` for first bootstrap only.
+- Log in using `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
+- Then set `CREATE_ADMIN=false`.
+- Password policy: 12+ chars, uppercase, lowercase, number, symbol.
+
+## Environment Files
+
+- `.env.dev`: minimal local development configuration (copy to `.env` to start quickly)
+- `.env.example`: full variable reference and defaults
+- `.env.pi`: Raspberry Pi-focused overrides (including Mongo image pin guidance)
+
+API env precedence:
+
+1. process environment (shell/CI)
+2. `packages/api/.env` (optional local override)
 3. repo root `.env`
 4. code defaults
 
-Useful Mongo dev commands:
+## Runtime Modes
+
+### Local dev runtime
+
+`npm run dev` behavior:
+
+- starts Mongo via `docker-compose.mongo.yml` and waits for healthy status
+- starts UI/API/Gateway
+- on Ctrl+C, stops UI/API/Gateway and leaves Mongo running
+
+Helpful Mongo commands:
 
 ```bash
 npm run dev:mongo:up
@@ -120,13 +110,40 @@ npm run dev:mongo:down
 npm run dev:mongo:reset
 ```
 
-Recommended local loop:
+### Containerized runtime (Compose)
 
-1. `npm run dev` (or `npm run dev:mongo:up` + `npm run dev:services`)
-2. use `npm run dev:mongo:logs` only when troubleshooting Mongo
-3. use `npm run dev:mongo:reset` only when a clean DB is needed
+```bash
+docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
+```
 
-### Local Quality Checks
+Minimum required `.env` values before shared/staging/production use:
+
+- `JWT_SECRET`
+- `JWT_GATEWAY_SECRET`
+- `GATEWAY_SERVICE_TOKEN`
+- `CREDENTIAL_ENCRYPTION_KEY`
+- `FREEBOARD_MONGO_URL`
+- `EGRESS_ALLOWED_HOSTS`
+- `MONGO_INITDB_ROOT_USERNAME`
+- `MONGO_INITDB_ROOT_PASSWORD`
+- `MONGO_APP_USERNAME`
+- `MONGO_APP_PASSWORD`
+
+Optional image pinning:
+
+- `FREEBOARD_UI_IMAGE_TAG` (default `latest`)
+- `FREEBOARD_API_IMAGE_TAG` (default `latest`)
+- `FREEBOARD_GATEWAY_IMAGE_TAG` (default `latest`)
+
+Published tags:
+
+- `latest`
+- `v<workspace-version>`
+- `sha-<short-commit>`
+
+Use `docs/manual/secrets-operations.md` for setup, rotation, and incident workflow.
+
+## Quality Checks
 
 ```bash
 npm run format:check
@@ -136,13 +153,13 @@ npm run test
 npm run build:verify
 ```
 
-To apply formatting automatically:
+Format in place:
 
 ```bash
 npm run format
 ```
 
-### Realtime Demo Fixtures
+## Realtime Demo Fixtures
 
 ```bash
 npm run demo:realtime:up
@@ -156,64 +173,65 @@ One-shot integration run:
 npm run test:realtime:integration
 ```
 
-Related docs:
-
-- Datasource configuration: `docs/manual/datasource-reference.md`
-- Gateway contract/policy: `docs/manual/gateway.md`
-- Realtime operator runbook: `docs/manual/realtime-operations.md`
-- Secrets operations runbook: `docs/manual/secrets-operations.md`
-
-### CI Workflows
+## CI Workflows
 
 - `CI` (`.github/workflows/ci.yml`)
-  - Trigger: pull requests to `main` (and merge queue/manual dispatch).
-  - Path-aware: docs-only changes skip heavy lint/test/build jobs.
-  - Required check job: `Required CI` (stable branch-protection target).
-- `Deploy to GitHub Pages` (`.github/workflows/build-pages.yml`)
-  - Trigger: push to `main` for docs/demo-relevant paths only.
-  - Uses concurrency cancellation by branch/ref.
+  - pull requests to `main`, merge queue, manual dispatch
+  - docs-only changes skip heavy jobs
+  - stable required check: `Required CI`
 - `Build & publish docker images` (`.github/workflows/build-docker-images.yml`)
-  - Trigger: push to `main` and manual dispatch.
-  - Matrix builds skip unchanged packages.
-  - Concurrency auto-cancel is intentionally disabled to avoid missing publishes during rapid sequential pushes.
+  - push to `main`, manual dispatch
+  - package-aware matrix build skips unchanged images
+  - includes `latest`, `v*`, and `sha-*` tags
+- `Deploy to GitHub Pages` (`.github/workflows/build-pages.yml`)
+  - push to `main` for docs/demo-relevant paths, manual dispatch
 - `Ansible quality` (`.github/workflows/ansible-quality.yml`)
-  - Trigger: PRs touching kiosk automation paths, merge queue, and manual dispatch.
-  - Runs `ansible-lint` and playbook syntax checks for kiosk provisioning and rollback.
+  - validates kiosk automation changes via `ansible-lint` and syntax checks
+- `Repository Metrics` (`.github/workflows/metrics.yml`)
+  - runs on pushes/manual dispatch and publishes metrics artifacts
 
-## RaspberryPi
+## Raspberry Pi Kiosk Automation
+
+Create inventory:
+
+```bash
+cp ansible/inventory.ini.example ansible/inventory.ini
+```
+
+Pattern A (recommended): control node applies to remote kiosk hosts.
+
+```bash
+ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/playbook.yml \
+  -e "kiosk_profile=player_only kiosk_player_url=http://<freeboard-host>:8080/s/<share-token>" --check --diff
+ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/playbook.yml \
+  -e "kiosk_profile=player_only kiosk_player_url=http://<freeboard-host>:8080/s/<share-token>"
+```
+
+Pattern B: local self-provision on a single Pi.
 
 ```bash
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt
-cp ansible/inventory.ini.example ansible/inventory.ini
-ANSIBLE_CONFIG=ansible/ansible.cfg .venv/bin/ansible-playbook -i ansible/inventory.ini ansible/playbook.yml \
-  -e "kiosk_profile=player_only kiosk_player_url=http://<freeboard-host>:8080/s/<share-token>" \
-  --check --diff
-ANSIBLE_CONFIG=ansible/ansible.cfg .venv/bin/ansible-playbook -i ansible/inventory.ini ansible/playbook.yml \
-  -e "kiosk_profile=player_only kiosk_player_url=http://<freeboard-host>:8080/s/<share-token>"
-```
-
-Single-device bootstrap (SSH into the Pi and run locally):
-
-```bash
+ANSIBLE_CONFIG=ansible/ansible.cfg .venv/bin/ansible-playbook -i localhost, -c local ansible/playbook.yml \
+  -e "freeboard_target_group=all kiosk_profile=player_only kiosk_player_url=http://127.0.0.1:8080/s/<share-token>" --check --diff
 ANSIBLE_CONFIG=ansible/ansible.cfg .venv/bin/ansible-playbook -i localhost, -c local ansible/playbook.yml \
   -e "freeboard_target_group=all kiosk_profile=player_only kiosk_player_url=http://127.0.0.1:8080/s/<share-token>"
 ```
 
-If Mongo runs on Raspberry Pi 4, review `.env.pi` fallback pinning guidance:
-
-- `docs/manual/raspberry-pi-mongodb.md`
-- `docs/manual/ansible.md` (Pattern A vs Pattern B execution details)
-
 Rollback:
 
 ```bash
-ANSIBLE_CONFIG=ansible/ansible.cfg .venv/bin/ansible-playbook -i ansible/inventory.ini ansible/rollback.yml
+ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/rollback.yml
 ```
+
+Raspberry Pi MongoDB guidance:
+
+- `docs/manual/raspberry-pi-mongodb.md`
+- `docs/manual/ansible.md` (Pattern A vs Pattern B details)
 
 ## Acknowledgement
 
-Continues the work of [artificialhoney/freeboard](https://github.com/artificialhoney/freeboard) which is an archived prototype branch derived from the once-popular but long-unmaintained [Freeboard/freeboard](https://github.com/Freeboard/freeboard).
+Continues the work of [artificialhoney/freeboard](https://github.com/artificialhoney/freeboard), an archived prototype branch derived from the once-popular but long-unmaintained [Freeboard/freeboard](https://github.com/Freeboard/freeboard).
 
 ## Contributing
 
