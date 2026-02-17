@@ -1,9 +1,12 @@
 # syntax=docker/dockerfile:1.7
 
 ARG NODE_IMAGE=node:24.13.1-alpine
+ARG NPM_VERSION=11.10.0
 
 FROM ${NODE_IMAGE} AS deps
 WORKDIR /app
+
+RUN npm install -g npm@${NPM_VERSION}
 
 COPY package.json package-lock.json ./
 COPY packages/gateway/package.json packages/gateway/package.json
