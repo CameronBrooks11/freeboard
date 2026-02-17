@@ -114,7 +114,7 @@ export default /** @type {IResolvers} */ {
      * Register a new user if the user limit is not reached and credentials are valid.
      *
      * @param {any} parent
-     * @param {{ email: string, password: string }} args - User email and password.
+     * @param {Object} args - User email and password.
      * @returns {Promise<{ token: string }>} Signed JWT for the new user.
      * @throws {GraphQLError} When input data is invalid or user limit exceeded.
      */
@@ -171,7 +171,7 @@ export default /** @type {IResolvers} */ {
      * Accept invite token and register account.
      *
      * @param {any} parent
-     * @param {{ token: string, password: string }} args
+     * @param {Object} args
      * @returns {Promise<{ token: string }>}
      */
     acceptInvite: async (parent, { token, password }) => {
@@ -235,7 +235,7 @@ export default /** @type {IResolvers} */ {
      * Authenticate existing user and return a JWT token.
      *
      * @param {any} parent
-     * @param {{ email: string, password: string }} args - User email and password.
+     * @param {Object} args - User email and password.
      * @returns {Promise<{ token: string }>} Signed JWT for the authenticated user.
      * @throws {GraphQLError} When credentials are invalid or user not found.
      */
@@ -326,7 +326,7 @@ export default /** @type {IResolvers} */ {
      * Initiate password reset flow for an email.
      *
      * @param {any} parent
-     * @param {{ email: string }} args
+     * @param {Object} args
      * @returns {Promise<boolean>}
      */
     requestPasswordReset: async (parent, { email }) => {
@@ -365,7 +365,7 @@ export default /** @type {IResolvers} */ {
      * Complete password reset flow with one-time token.
      *
      * @param {any} parent
-     * @param {{ token: string, password: string }} args
+     * @param {Object} args
      * @returns {Promise<boolean>}
      */
     resetPassword: async (parent, { token, password }) => {
@@ -471,7 +471,7 @@ export default /** @type {IResolvers} */ {
      * Create a user account as administrator.
      *
      * @param {any} parent
-     * @param {{ email: string, password: string, role: string, active?: boolean }} args
+     * @param {Object} args
      * @param {Object} context
      * @returns {Promise<Object>}
      */
@@ -518,7 +518,7 @@ export default /** @type {IResolvers} */ {
      * Create invite token as administrator.
      *
      * @param {any} parent
-     * @param {{ email: string, role: string, expiresInHours?: number }} args
+     * @param {Object} args
      * @param {Object} context
      * @returns {Promise<{invite: Object, token: string}>}
      */
@@ -552,7 +552,7 @@ export default /** @type {IResolvers} */ {
      * Revoke invite token as administrator.
      *
      * @param {any} parent
-     * @param {{ _id: string }} args
+     * @param {Object} args
      * @param {Object} context
      * @returns {Promise<boolean>}
      */
@@ -589,7 +589,7 @@ export default /** @type {IResolvers} */ {
      * Update a user account as administrator.
      *
      * @param {any} parent
-     * @param {{ _id: string, role?: string, active?: boolean }} args
+     * @param {Object} args
      * @param {Object} context
      * @returns {Promise<Object>}
      */
@@ -661,7 +661,7 @@ export default /** @type {IResolvers} */ {
      * Delete a user account as administrator.
      *
      * @param {any} parent
-     * @param {{ _id: string }} args
+     * @param {Object} args
      * @param {Object} context
      * @returns {Promise<Object>}
      */
@@ -720,7 +720,7 @@ export default /** @type {IResolvers} */ {
      * Admin-only password reset token issuance.
      *
      * @param {any} parent
-     * @param {{ _id: string, expiresInHours?: number }} args
+     * @param {Object} args
      * @param {Object} context
      * @returns {Promise<{userId: string, token: string, expiresAt: Date}>}
      */

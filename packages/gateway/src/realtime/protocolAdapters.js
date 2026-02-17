@@ -9,7 +9,7 @@ import { URL } from "url";
  * Build a protocol adapter resolver with injected gateway dependencies.
  *
  * @param {Object} deps
- * @returns {(params: {intent: Object, onData: Function, onStatus: Function, onError: Function}) => Promise<{stop: Function}>}
+ * @returns {Function}
  */
 export const createProtocolAdapterFactory = (deps) => {
   const {

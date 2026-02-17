@@ -37,7 +37,7 @@ ObjectId.prototype.valueOf = function () {
  * @property {string} title             - Display title of the dashboard.
  * @property {string} visibility        - Visibility state (`private|link|public`).
  * @property {string} shareToken        - Opaque token for share-link access.
- * @property {{userId: string, accessLevel: string}[]} acl - Per-dashboard ACL entries.
+ * @property {Object[]} acl            - Per-dashboard ACL entries.
  * @property {string} [image]           - Optional URL of dashboard thumbnail.
  * @property {Object[]} [datasources]   - Array of datasource configurations.
  * @property {number} [columns]         - Number of layout columns.
