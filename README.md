@@ -165,8 +165,8 @@ References for this split:
   - https://docs.docker.com/engine/release-notes/29/
 - Node official image upstream:
   - https://github.com/nodejs/docker-node
-- armv7 Node image track used for legacy tags:
-  - https://hub.docker.com/r/arm32v7/node
+- Node official tags on Docker Hub:
+  - https://hub.docker.com/_/node
 
 Use `docs/manual/secrets-operations.md` for setup, rotation, and incident workflow.
 
