@@ -6,7 +6,8 @@
 import { createApp } from "vue";
 import { DefaultApolloClient } from "@vue/apollo-composable";
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/client/core";
-import { onError } from "apollo-link-error";
+import { onError } from "@apollo/client/link/error";
+import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import App from "./App.vue";
 import monaco from "./monaco.js";
 import { install as VueMonacoEditorPlugin } from "@guolao/vue-monaco-editor";
@@ -120,8 +121,14 @@ const getHeaders = () => {
 /**
  * Apollo Link to handle GraphQL auth errors: logs out user and redirects to login page.
  */
-const errorLink = onError(({ graphQLErrors }) => {
-  if (shouldForceLogoutOnGraphQLErrors(graphQLErrors)) {
+const errorLink = onError((errorContext) => {
+  const resolvedGraphQLErrors = Array.isArray(errorContext?.graphQLErrors)
+    ? errorContext.graphQLErrors
+    : CombinedGraphQLErrors.is(errorContext?.error)
+      ? errorContext.error.errors
+      : [];
+
+  if (shouldForceLogoutOnGraphQLErrors(resolvedGraphQLErrors)) {
     authStore.logout();
     profileCatalogStore.clearCredentialProfiles();
     profileCatalogStore.clearBrokerProfiles();
