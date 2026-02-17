@@ -5,11 +5,11 @@
 ### Datasource Setup
 
 1. Add datasource.
-2. Set `Type = JSON`.
+2. Set `Type = HTTP`.
 3. Set `Title = weatherBerlin`.
 4. Set `URL = https://api.open-meteo.com/v1/forecast?latitude=52.5200&longitude=13.4050&current_weather=true`.
 5. Set `Refresh = 60` seconds.
-6. You can enable `Use proxy` if you encounter CORS issues.
+6. You can enable `Use gateway` if you encounter CORS issues.
 7. Unless you have specific need, do not alter the http method or headers.
 8. If required, set authentication.
 9. Save.

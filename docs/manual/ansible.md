@@ -1,85 +1,210 @@
-# Ansible Guide — freeboard
+# Ansible Guide
 
 ## Purpose
 
-Provision a Debian-based host or Raspberry Pi for `freeboard`. Installs Docker Engine and Compose plugin, prepares MongoDB, configures boot UX, X11 kiosk deps, and installs a `freeboard.service`.
+Provision supported kiosk devices (Debian 12+ and Raspberry Pi OS Bookworm) for Freeboard with a profile-driven, modular workflow.
 
-## What the playbook does
+This automation is designed for production-safe operation:
 
-- Removes distro Docker packages, adds official Docker repo, installs `docker-ce`, `docker-ce-cli`, `docker-compose-plugin`.
-- Adds the deploy user to `docker` and other groups.
-- (Pi only) Downloads and loads a prebuilt MongoDB image archive.
-- Sets splash screen with Plymouth and tweaks framebuffer.
-- Updates `/boot/firmware/{config.txt,cmdline.txt}` for KMS, cgroups, quiet boot.
-- Disables swap.
-- Installs kiosk deps: `xinit`, `feh`, Chromium.
-- Optionally backs up and replaces X11 configs.
-- Installs and enables `freeboard.service`.
+- explicit profile selection
+- fail-fast preflight checks
+- optional high-risk roles (boot tuning, runtime, Mongo preload)
+- backup/rollback path for managed system files
 
 ## Supported targets
 
-- Debian 12+ x86_64
+- Debian 12+ (x86_64)
 - Raspberry Pi OS 64-bit (Bookworm) on Pi 4/5
 
-## Prerequisites
+## Architecture
 
-- Control node: Ansible 2.15+.
-- Managed node: Debian/PI with `sudo`, network, and Python 3.
-- SSH access to a non-root deploy user with `become` privileges.
+Main playbook: `ansible/playbook.yml`
 
-## Inventory and variables
+Roles:
 
-Define hosts and a deploy user. Keep secrets in `vars.yml`.
+- `kiosk_preflight`: validates platform + required settings
+- `kiosk_base`: service user + base directories/packages
+- `kiosk_display`: X11 + Chromium dependencies/config
+- `kiosk_player`: `player.sh` deployment + `/etc/freeboard/kiosk.env` + `freeboard-kiosk.service`
+- `container_runtime` (optional): Docker install
+- `mongo_preload` (optional): ARM Mongo image preload
+- `kiosk_boot_tuning` (optional): splash and boot tuning
 
-```ini
-[freeboard]
-pi4 ansible_host=192.168.1.50 ansible_user=pi
-debian-x86 ansible_host=192.168.1.60 ansible_user=deploy
+Rollback playbook: `ansible/rollback.yml`
 
-[freeboard:vars]
-ansible_python_interpreter=/usr/bin/python3
+## Profiles
+
+Set `kiosk_profile` in inventory/group vars or via `-e`:
+
+- `player_only` (default)
+  - player + display only
+  - no Docker/runtime changes
+  - no boot tuning
+- `appliance_with_runtime`
+  - includes `container_runtime`
+- `appliance_with_runtime_and_boot_tuning`
+  - includes runtime and boot tuning
+
+Per-role overrides are available (`kiosk_enable_*` booleans).
+
+## Required config
+
+Required variable:
+
+- `kiosk_player_url` (dashboard URL the device opens)
+
+Commonly overridden:
+
+- `kiosk_service_user`
+- `kiosk_player_script_source`
+- `kiosk_browser_binary`
+- `kiosk_url_check_mode` (`none|get|head`)
+- `kiosk_systemd_no_new_privileges` (default `false` for Xorg/startx compatibility)
+
+Reference defaults: `ansible/vars.yml`
+
+## Inventory setup
+
+Create inventory from the example:
+
+```bash
+cp ansible/inventory.ini.example ansible/inventory.ini
 ```
 
-```ini
-deploy_user: "{{ ansible_user_id }}"
-mongo_arm_tar_url: "https://github.com/themattman/mongodb-raspberrypi-docker/releases/download/r7.0.4-mongodb-raspberrypi-docker-unofficial/mongodb.ce.pi4.r7.0.4-mongodb-raspberrypi-docker-unofficial.tar.gz"
-mongo_arm_tar_path: "/tmp/mongodb.ce.pi4.r7.0.4.tar.gz"
+Then choose one pattern:
+
+1. Control-node pattern (recommended for production):
+
+- Set one or more remote hosts under `[kiosk]` (with `ansible_host` and `ansible_user`).
+
+2. Self-provision pattern (single-device bootstrap):
+
+- Use localhost with local connection:
+  - `localhost ansible_connection=local`
+
+## Execution patterns
+
+### Pattern A: Control Node to Remote Kiosk Hosts (Production)
+
+Run from your control machine (not from the Pi itself).
+
+```bash
+ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/playbook.yml -e "kiosk_profile=player_only kiosk_player_url=http://192.168.1.20:8080/s/abc123" --check --diff
 ```
 
-## Files expected in repo
+Apply after dry-run:
 
-- `playbook.yml` (this play)
-- `vars.yml`
-- `rc.local`
-- `freeboard.service.j2`
-- Plymouth theme files in `files/`: `freeboard.plymouth`, `freeboard.script`, `splashscreen.png`
+```bash
+ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/playbook.yml -e "kiosk_profile=player_only kiosk_player_url=http://192.168.1.20:8080/s/abc123"
+```
 
-## Running
+### Pattern B: Self-Provision on the Kiosk Device (Single Host)
 
-Dry run:
+SSH into the target Pi, then run Ansible locally:
 
-- `ansible-playbook -i inventory.ini playbook.yml -t docker,player -C`
+```bash
+python -m venv .venv
+.venv/bin/pip install -r requirements.txt
+ANSIBLE_CONFIG=ansible/ansible.cfg .venv/bin/ansible-playbook -i localhost, -c local ansible/playbook.yml -e "freeboard_target_group=all kiosk_profile=player_only kiosk_player_url=http://127.0.0.1:8080/s/abc123" --check --diff
+ANSIBLE_CONFIG=ansible/ansible.cfg .venv/bin/ansible-playbook -i localhost, -c local ansible/playbook.yml -e "freeboard_target_group=all kiosk_profile=player_only kiosk_player_url=http://127.0.0.1:8080/s/abc123"
+```
 
-Apply to all:
+Notes:
 
-- `ansible-playbook -i inventory.ini playbook.yml --tags all --ask-become-pass`
+- `freeboard_target_group=all` is required in localhost mode because `localhost,` is not in the default `kiosk` group.
+- Reboot is usually not required for `player_only`; use `sudo systemctl restart freeboard-kiosk.service` after config changes if needed.
 
-Targeted runs:
+## Role tags
 
-- `-t docker` only Docker setup
-- `-t mongo` only Mongo image load on Pi
-- `-t system` boot and kernel args
-- `-t splashscreen` Plymouth theme
-- `-t player` kiosk deps and service
+Target selected roles/tags if needed:
 
-## Service lifecycle
+- `preflight`
+- `kiosk_base`
+- `kiosk_display`
+- `kiosk_player`
+- `container_runtime`
+- `mongo_preload`
+- `kiosk_boot_tuning`
 
-- `systemctl status freeboard`
-- `journalctl -u freeboard -b`
+Example:
 
-## RPi Mongo Images
+```bash
+ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/playbook.yml -t preflight,kiosk_player -e "kiosk_player_url=http://192.168.1.20:8080/s/abc123"
+```
 
-The RPi 4 and below has problems running mongodb due to the broadcom chip used being arm8l but only supporting 32-bit instructions. The RPi 5's new chip supports arm64 instructions and can run the official Mongo image just fine. For the Pi 4 and below, use the unofficial images linked in the vars above, which are built from the same Mongo sources but with a custom build process to produce armv7l binaries that can run on the Pi's hardware. These images are not official and may have some limitations, but they should work for basic Freeboard use cases on Pi 4 and below. This has only been tested on the Pi 4B, but should work on the Pi 3 as well. The Pi 5 should be able to use the official Mongo image without issue.
+## Quality checks
 
-- [github.com/themattman/mongodb-raspberrypi-docker](https://github.com/themattman/mongodb-raspberrypi-docker)
-- [github.com/themattman/mongodb-raspberrypi-binaries](https://github.com/themattman/mongodb-raspberrypi-binaries)
+Local checks:
+
+```bash
+ansible-lint ansible/playbook.yml ansible/rollback.yml
+ansible-playbook -i localhost, ansible/playbook.yml --syntax-check -e "freeboard_target_group=all kiosk_player_url=http://localhost:8080/s/demo"
+ansible-playbook -i localhost, ansible/rollback.yml --syntax-check -e "freeboard_target_group=all"
+```
+
+CI check workflow: `.github/workflows/ansible-quality.yml`
+
+## Service contract
+
+The role installs:
+
+- env file: `/etc/freeboard/kiosk.env`
+- systemd unit: `/etc/systemd/system/freeboard-kiosk.service`
+- script: `/opt/freeboard/player.sh` (default)
+
+`player.sh` now supports bounded startup probing via:
+
+- `FREEBOARD_URL_CHECK_MODE`
+- `FREEBOARD_URL_CHECK_TIMEOUT_SECONDS`
+- `FREEBOARD_URL_CHECK_INTERVAL_SECONDS`
+- `FREEBOARD_URL_CHECK_MAX_ATTEMPTS`
+
+## Raspberry Pi Mongo preload note
+
+If you enable `mongo_preload`, this playbook uses the pinned community `themattman` Raspberry Pi Mongo release configured in `ansible/vars.yml`.
+
+For support tradeoffs, upgrade workflow, and links to upstream references, see:
+
+- [Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)
+
+## Rollback
+
+Rollback managed kiosk artifacts:
+
+```bash
+ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/rollback.yml
+```
+
+Rollback from inside the kiosk host (localhost/self-provision pattern):
+
+```bash
+ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i localhost, -c local ansible/rollback.yml -e "freeboard_target_group=all"
+```
+
+This stops the kiosk service, restores managed backups where present, removes managed service/env files, and reloads systemd.
+
+## Post-apply verification
+
+Pattern A (control node to remote host):
+
+```bash
+ansible -i ansible/inventory.ini kiosk -b -m shell -a "systemctl is-enabled freeboard-kiosk.service && systemctl is-active freeboard-kiosk.service"
+ansible -i ansible/inventory.ini kiosk -b -m shell -a "journalctl -u freeboard-kiosk.service -n 50 --no-pager"
+```
+
+Pattern B (inside kiosk host):
+
+```bash
+sudo systemctl is-enabled freeboard-kiosk.service
+sudo systemctl is-active freeboard-kiosk.service
+sudo journalctl -u freeboard-kiosk.service -n 50 --no-pager
+```
+
+When `kiosk_profile` includes boot tuning, schedule a controlled reboot window and validate service state again after reboot.
+
+## Security notes
+
+- Do not run kiosk devices with admin/editor credentials.
+- Prefer viewer-only accounts or share-token URLs for kiosk playback.
+- Keep execution mode `safe` for kiosk and IoT deployments unless explicitly justified.
+- Keep host key checking enabled for production automation.

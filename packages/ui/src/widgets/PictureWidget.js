@@ -3,7 +3,7 @@
  * @description Image widget with optional refresh cache-busting.
  */
 
-import { ReactiveWidget } from "./runtime/ReactiveWidget";
+import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
 const withCacheBust = (url) => {
   const base = String(url || "").trim();
@@ -130,9 +130,7 @@ export class PictureWidget extends ReactiveWidget {
 
   resolveInputs() {
     return {
-      header:
-        this.getBinding(this.currentSettings?.headerPath) ??
-        this.currentSettings?.headerText,
+      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
       src: this.getBinding(this.currentSettings?.srcPath),
       alt: this.getBinding(this.currentSettings?.altPath),
     };

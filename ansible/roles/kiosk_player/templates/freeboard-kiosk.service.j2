@@ -1,0 +1,28 @@
+[Unit]
+Description=Freeboard Kiosk Player
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User={{ kiosk_service_user }}
+Group={{ kiosk_service_group }}
+WorkingDirectory={{ kiosk_install_root }}
+EnvironmentFile={{ kiosk_env_file_path }}
+ExecStart=/usr/bin/bash {{ kiosk_player_script_path }}
+Restart=always
+RestartSec={{ kiosk_systemd_restart_sec }}
+{% if kiosk_systemd_start_limit_interval_sec | int > 0 %}
+StartLimitIntervalSec={{ kiosk_systemd_start_limit_interval_sec }}
+{% endif %}
+{% if kiosk_systemd_start_limit_burst | int > 0 %}
+StartLimitBurst={{ kiosk_systemd_start_limit_burst }}
+{% endif %}
+NoNewPrivileges={{ 'true' if kiosk_systemd_no_new_privileges | bool else 'false' }}
+ProtectKernelTunables=true
+ProtectControlGroups=true
+ProtectHostname=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

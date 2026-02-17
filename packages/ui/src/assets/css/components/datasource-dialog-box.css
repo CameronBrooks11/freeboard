@@ -16,3 +16,30 @@
   display: flex;
   flex-direction: column;
 }
+
+.datasource-dialog-box__broker-hint {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-foreground-2);
+  background: var(--color-background-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.datasource-dialog-box__broker-hint-copy {
+  margin: 0;
+  color: var(--color-foreground-2);
+}
+
+.datasource-dialog-box__broker-hint-action {
+  appearance: none;
+  border: 1px solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+}

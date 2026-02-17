@@ -3,14 +3,14 @@
  * @component ColumnToolbar
  * @description Toolbar for adjusting the dashboard’s maximum width (column count), rendered on both sides of the board.
  */
-defineOptions({ name: 'ColumnToolbar' });
+defineOptions({ name: "ColumnToolbar" });
 
 import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
 
 // Access dashboard state from the store
-const freeboardStore = useFreeboardStore();
-const { dashboard } = storeToRefs(freeboardStore);
+const dashboardStore = useDashboardStore();
+const { dashboard } = storeToRefs(dashboardStore);
 </script>
 
 <template>

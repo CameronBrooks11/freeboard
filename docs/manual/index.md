@@ -9,21 +9,29 @@ Use this manual in two tracks:
 
 1. [Installation](/manual/installation)
 2. [Usage](/manual/usage)
-3. [Datasource Reference](/manual/datasource-reference)
-4. [Widget Reference](/manual/widget-reference)
-5. [Widget Examples](/manual/widget-examples/)
+3. [Deployment Profiles](/manual/deployment-profiles)
+4. [Datasource Reference](/manual/datasource-reference)
+5. [Widget Reference](/manual/widget-reference)
+6. [Widget Examples](/manual/widget-examples/)
 
 ## Build Custom Widgets
 
 - [Base Widget Guide](/manual/widget-base-guide)
+- [Widget Developer Guide](/manual/widget-developer-guide)
 - [Widget Runtime](/manual/widget-runtime)
 
 ## Developer/Operator Path
 
 - [Architecture](/manual/architecture)
+- [Secrets Operations Runbook](/manual/secrets-operations)
+- [Service Accounts Runbook](/manual/service-accounts)
+- [Runtime Metrics](/manual/runtime-metrics)
 - [API](/manual/api)
 - [UI](/manual/ui)
-- [Proxy](/manual/proxy)
+- [Datasource Gateway](/manual/gateway)
+- [Realtime Operations Runbook](/manual/realtime-operations)
+- [Credential Key Rotation](/manual/credential-key-rotation)
 - [Ansible](/manual/ansible)
+- [Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)
 - [Documentation Site Setup](/manual/docs-site-setup)
 - [Development Misc](/manual/dev-misc)

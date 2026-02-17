@@ -10,21 +10,21 @@
  *
  */
 
-defineOptions({ name: 'SavedDashboardsDialogBox' });
+defineOptions({ name: "SavedDashboardsDialogBox" });
 
 import { useQuery } from "@vue/apollo-composable";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import DialogBox from "./DialogBox.vue";
-import { DASHBOARDS_LIST_QUERY, DASHBOARD_READ_QUERY } from "../gql";
-import { useFreeboardStore } from "../stores/freeboard";
+import { DASHBOARDS_LIST_QUERY, DASHBOARD_READ_QUERY } from "../gql.js";
+import { useDashboardStore } from "../stores/dashboard.js";
 
 // ===== Props =====
 const { onClose } = defineProps({ onClose: Function });
 
 // ===== Store & Router =====
 const router = useRouter();
-const freeboardStore = useFreeboardStore();
+const dashboardStore = useDashboardStore();
 
 // ===== Queries =====
 // List all dashboards
@@ -32,6 +32,17 @@ const { result, loading, error } = useQuery(DASHBOARDS_LIST_QUERY);
 
 // UI state to track if a dashboard is being opened
 const picking = ref(false);
+
+const visibilityLabelKey = (visibility) => {
+  const normalized = String(visibility || "").toLowerCase();
+  if (normalized === "public") {
+    return "savedDashboards.public";
+  }
+  if (normalized === "link") {
+    return "savedDashboards.link";
+  }
+  return "savedDashboards.private";
+};
 
 /**
  * @function openDashboard
@@ -52,7 +63,7 @@ const openDashboard = async (id) => {
     const { onResult } = useQuery(DASHBOARD_READ_QUERY, { id });
     await new Promise((resolve) => {
       onResult(({ data }) => {
-        if (data?.dashboard) freeboardStore.loadDashboard(data.dashboard);
+        if (data?.dashboard) dashboardStore.loadDashboard(data.dashboard);
         resolve();
       });
     });
@@ -65,12 +76,16 @@ const openDashboard = async (id) => {
 
 <template>
   <!-- Dialog container -->
-  <DialogBox :header="$t('savedDashboards.title')" :cancel="$t('dialogBox.buttonCancel')" @close="onClose">
+  <DialogBox
+    :header="$t('savedDashboards.title')"
+    :cancel="$t('dialogBox.buttonCancel')"
+    @close="onClose"
+  >
     <!-- Loading state -->
-    <div v-if="loading">{{ $t('savedDashboards.loading') }}</div>
+    <div v-if="loading">{{ $t("savedDashboards.loading") }}</div>
 
     <!-- Error state -->
-    <div v-else-if="error">{{ $t('savedDashboards.error') }}</div>
+    <div v-else-if="error">{{ $t("savedDashboards.error") }}</div>
 
     <!-- Saved dashboards list -->
     <ul v-else class="saved-dashboards">
@@ -78,14 +93,14 @@ const openDashboard = async (id) => {
         <button class="saved-dashboards__button" :disabled="picking" @click="openDashboard(d._id)">
           <span class="saved-dashboards__title">{{ d.title || d._id }}</span>
           <span class="saved-dashboards__meta">
-            {{ d.published ? $t('savedDashboards.published') : $t('savedDashboards.private') }}
+            {{ $t(visibilityLabelKey(d.visibility)) }}
           </span>
         </button>
       </li>
 
       <!-- Empty state -->
       <li v-if="(result?.dashboards || []).length === 0" class="saved-dashboards__empty">
-        {{ $t('savedDashboards.empty') }}
+        {{ $t("savedDashboards.empty") }}
       </li>
     </ul>
   </DialogBox>

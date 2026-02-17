@@ -27,4 +27,3 @@ export const generateModelId = (prefix = "id") => {
 
   return `${prefix}-${Date.now().toString(36)}-${randomChars(8)}`;
 };
-

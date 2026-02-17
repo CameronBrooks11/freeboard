@@ -4,7 +4,7 @@
  * @description Simple button styled as text for inline actions.
  * @slot default - Content rendered inside the button.
  */
-defineOptions({ name: 'TextButton' });
+defineOptions({ name: "TextButton" });
 </script>
 
 <template>

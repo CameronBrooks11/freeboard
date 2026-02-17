@@ -3,7 +3,12 @@
  * @description Generates configuration schema for dashboard settings forms.
  */
 
-import { MAX_COLUMNS, MIN_COLUMNS } from "./models/Dashboard";
+import {
+  DASHBOARD_THEME_PRESETS,
+  MAX_COLUMNS,
+  MIN_COLUMNS,
+  normalizeDashboardTheme,
+} from "./models/Dashboard.js";
 
 /**
  * Build settings panels and fields for the dashboard editor.
@@ -11,17 +16,19 @@ import { MAX_COLUMNS, MIN_COLUMNS } from "./models/Dashboard";
  * @param {Object} dashboard             - Dashboard object containing current values.
  * @param {string} dashboard.title       - Dashboard title.
  * @param {number} dashboard.columns     - Number of columns in layout.
- * @param {boolean} dashboard.published  - Publication status.
  * @param {Object} dashboard.settings    - Nested settings object.
  * @param {string} dashboard.settings.theme     - Theme setting.
  * @param {string} dashboard.settings.style     - Custom CSS style.
  * @param {string} dashboard.settings.script    - Custom JS script.
  * @param {Array<string>} dashboard.settings.resources - External resource URLs.
+ * @param {boolean} [allowTrustedExecution=true] - Whether trusted script/resource settings are editable.
  * @returns {Array<Object>} Array of settings sections for the UI form.
  */
-export default (dashboard) => {
-  return [
-    // General settings: title, columns, published flag
+export default (dashboard, { allowTrustedExecution = true } = {}) => {
+  const dashboardSettings = dashboard.settings || {};
+
+  const fields = [
+    // General settings: title and columns
     {
       label: "form.labelGeneral",
       icon: "hi-home",
@@ -29,7 +36,6 @@ export default (dashboard) => {
       settings: {
         title: dashboard.title,
         columns: dashboard.columns,
-        published: dashboard.published,
       },
       fields: [
         {
@@ -47,20 +53,15 @@ export default (dashboard) => {
             .filter((i) => i >= MIN_COLUMNS - 1)
             .map((i) => ({ value: i + 1, label: `form.labelColumn${i + 1}` })),
         },
-        {
-          name: "published",
-          label: "form.labelPublished",
-          type: "boolean",
-        },
       ],
     },
-    // Theme settings: auto, light, dark
+    // Theme settings
     {
       label: "form.labelTheme",
       icon: "hi-pencil-alt",
       name: "theme",
       settings: {
-        theme: dashboard.settings.theme,
+        theme: normalizeDashboardTheme(dashboardSettings.theme),
       },
       fields: [
         {
@@ -69,30 +70,54 @@ export default (dashboard) => {
           type: "option",
           default: "auto",
           required: true,
-          options: [
-            {
-              label: "form.labelThemeAuto",
-              value: "auto",
-            },
-            {
-              label: "form.labelThemeLight",
-              value: "light",
-            },
-            {
-              label: "form.labelThemeDark",
-              value: "dark",
-            },          
-          ],
+          options: DASHBOARD_THEME_PRESETS.map((themeValue) => ({
+            value: themeValue,
+            label:
+              {
+                auto: "form.labelThemeAuto",
+                light: "form.labelThemeLight",
+                dark: "form.labelThemeDark",
+                professional: "form.labelThemeProfessional",
+                "high-contrast": "form.labelThemeHighContrast",
+                colorblind: "form.labelThemeColorblind",
+                warm: "form.labelThemeWarm",
+                cool: "form.labelThemeCool",
+              }[themeValue] || "form.labelThemeAuto",
+          })),
         },
       ],
     },
+    {
+      label: "form.labelMobile",
+      icon: "hi-solid-chevron-down",
+      name: "mobile",
+      settings: {
+        allowMobileEdit: dashboardSettings.allowMobileEdit ?? false,
+      },
+      fields: [
+        {
+          name: "allowMobileEdit",
+          label: "form.labelAllowMobileEdit",
+          type: "boolean",
+          default: false,
+          description: "form.descriptionAllowMobileEdit",
+        },
+      ],
+    },
+  ];
+
+  if (!allowTrustedExecution) {
+    return fields;
+  }
+
+  fields.push(
     // Style settings: custom CSS
     {
       label: "form.labelStyle",
       icon: "hi-beaker",
       name: "style",
       settings: {
-        style: dashboard.settings.style,
+        style: dashboardSettings.style,
       },
       fields: [
         {
@@ -109,7 +134,7 @@ export default (dashboard) => {
       icon: "hi-variable",
       name: "script",
       settings: {
-        script: dashboard.settings.script,
+        script: dashboardSettings.script,
       },
       fields: [
         {
@@ -126,7 +151,7 @@ export default (dashboard) => {
       icon: "hi-archive",
       name: "resources",
       settings: {
-        resources: dashboard.settings.resources,
+        resources: dashboardSettings.resources,
       },
       fields: [
         {
@@ -144,12 +169,14 @@ export default (dashboard) => {
                   data.results.map((r) => ({
                     value: r.latest,
                     label: r.name,
-                  }))
+                  })),
                 ),
             },
           ],
         },
       ],
     },
-  ];
+  );
+
+  return fields;
 };

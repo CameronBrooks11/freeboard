@@ -56,11 +56,9 @@ export class ReactiveWidget {
     }
 
     this.context = {
-      changedDatasource:
-        context.changedDatasource ?? datasource?.id ?? datasource?.title ?? null,
+      changedDatasource: context.changedDatasource ?? datasource?.id ?? datasource?.title ?? null,
       changedDatasourceId: context.changedDatasourceId ?? datasource?.id ?? null,
-      changedDatasourceTitle:
-        context.changedDatasourceTitle ?? datasource?.title ?? null,
+      changedDatasourceTitle: context.changedDatasourceTitle ?? datasource?.title ?? null,
       snapshot: this.snapshot,
       timestamp: context.timestamp,
     };

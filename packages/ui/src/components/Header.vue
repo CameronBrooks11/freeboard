@@ -3,10 +3,12 @@
  * @component Header
  * @description Renders the application header with admin controls, dashboard tools, and column toolbar when in edit mode.
  */
-defineOptions({ name: 'Header' });
+defineOptions({ name: "Header" });
 
 import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
+import { computed, onBeforeUnmount, onMounted, watch } from "vue";
+import { useAuthStore } from "../stores/auth.js";
+import { useDashboardStore } from "../stores/dashboard.js";
 // Admin controls and toggles
 import DashboardControl from "./DashboardControl.vue";
 import FreeboardControl from "./FreeboardControl.vue";
@@ -15,8 +17,40 @@ import ColumnToolbar from "./ColumnToolbar.vue";
 import { RouterLink } from "vue-router";
 
 // Retrieve editing flags and dashboard instance
-const freeboardStore = useFreeboardStore();
-const { allowEdit, isEditing } = storeToRefs(freeboardStore);
+const authStore = useAuthStore();
+const dashboardStore = useDashboardStore();
+const { allowEdit, isEditing, dashboard } = storeToRefs(dashboardStore);
+const showAdminButton = computed(() => authStore.isAdmin());
+
+const onViewportResize = () => {
+  dashboardStore.syncEditingPermissions();
+};
+
+onMounted(() => {
+  if (typeof window !== "undefined") {
+    window.addEventListener("resize", onViewportResize);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (typeof window !== "undefined") {
+    window.removeEventListener("resize", onViewportResize);
+  }
+});
+
+watch(
+  () => dashboard.value?.width,
+  () => {
+    dashboardStore.syncEditingPermissions();
+  },
+);
+
+watch(
+  () => dashboard.value?.settings?.allowMobileEdit,
+  () => {
+    dashboardStore.syncEditingPermissions();
+  },
+);
 </script>
 
 <template>
@@ -31,6 +65,12 @@ const { allowEdit, isEditing } = storeToRefs(freeboardStore);
             </h1>
           </RouterLink>
           <div class="header__admin-bar__admin-menu__board-tools">
+            <div class="header__admin-bar__admin-menu__admin-link" v-if="showAdminButton">
+              <RouterLink to="/admin" class="header__admin-bar__admin-menu__admin-link__button">
+                <v-icon name="hi-briefcase" />
+                <span>{{ $t("admin.title") }}</span>
+              </RouterLink>
+            </div>
             <div class="header__admin-bar__admin-menu__board-tools__board-actions">
               <FreeboardControl />
               <DashboardControl />

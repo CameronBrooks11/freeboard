@@ -17,14 +17,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - context: ./packages/api
-            image: ghcr.io/CameronBrooks11/freeboard-api
+          - context: .
+            dockerfile: ./packages/api/Dockerfile
+            package_path: packages/api
+            image: ghcr.io/cameronbrooks11/freeboard-api
             name: api
-          - context: ./packages/proxy
-            image: ghcr.io/CameronBrooks11/freeboard-proxy
-            name: proxy
-          - context: ./packages/ui
-            image: ghcr.io/CameronBrooks11/freeboard-ui
+          - context: .
+            dockerfile: ./packages/gateway/Dockerfile
+            package_path: packages/gateway
+            image: ghcr.io/cameronbrooks11/freeboard-gateway
+            name: gateway
+          - context: .
+            dockerfile: ./packages/ui/Dockerfile
+            package_path: packages/ui
+            image: ghcr.io/cameronbrooks11/freeboard-ui
             name: ui
 
     permissions:
@@ -41,10 +47,10 @@ jobs:
         id: changes
         shell: bash
         run: |
-          echo "Checking for changes in ${{ matrix.context }} for event '${{ github.event_name }}'"
+          echo "Checking for changes in ${{ matrix.package_path }} for event '${{ github.event_name }}'"
 
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "Manual dispatch: forcing rebuild for ${{ matrix.context }}"
+            echo "Manual dispatch: forcing rebuild for ${{ matrix.package_path }}"
             echo "changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -63,14 +69,34 @@ jobs:
             fi
           fi
 
-          CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA" -- "${{ matrix.context }}")"
-          if [[ -z "$CHANGED_FILES" ]]; then
-            echo "No changes in ${{ matrix.context }}"
+          mapfile -t CHANGED_FILES < <(git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA")
+          if [[ "${#CHANGED_FILES[@]}" -eq 0 ]]; then
+            echo "No changed files detected."
             echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Changes detected in ${{ matrix.context }}:"
-            echo "$CHANGED_FILES"
+            exit 0
+          fi
+
+          PACKAGE_CHANGED=false
+          for file in "${CHANGED_FILES[@]}"; do
+            if [[ "$file" == "${{ matrix.package_path }}"/* ]]; then
+              PACKAGE_CHANGED=true
+              break
+            fi
+            case "$file" in
+              package.json|package-lock.json|.dockerignore)
+                PACKAGE_CHANGED=true
+                break
+                ;;
+            esac
+          done
+
+          if [[ "$PACKAGE_CHANGED" == "true" ]]; then
+            echo "Changes detected affecting ${{ matrix.package_path }} build."
+            printf '%s\n' "${CHANGED_FILES[@]}"
             echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No relevant changes for ${{ matrix.package_path }}."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Docker
@@ -97,12 +123,36 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         uses: docker/setup-qemu-action@v3
 
+      - name: Resolve package version
+        if: steps.changes.outputs.changed == 'true'
+        id: package
+        shell: bash
+        run: |
+          VERSION="$(node -e "const fs=require('node:fs'); const pkg=JSON.parse(fs.readFileSync('${{ matrix.package_path }}/package.json','utf8')); process.stdout.write(String(pkg.version || ''));")"
+          if [[ -z "$VERSION" ]]; then
+            echo "Failed to resolve version from ${{ matrix.package_path }}/package.json"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved package version for ${{ matrix.name }}: v$VERSION"
+
       - name: Extract metadata (tags, labels) for Docker
         if: steps.changes.outputs.changed == 'true'
         id: meta
         uses: docker/metadata-action@v4
         with:
           images: ${{ matrix.image }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=v${{ steps.package.outputs.version }}
+            type=sha,format=short,prefix=sha-
+          labels: |
+            org.opencontainers.image.title=freeboard-${{ matrix.name }}
+            org.opencontainers.image.description=Freeboard ${{ matrix.name }} service image
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=v${{ steps.package.outputs.version }}
 
       - name: Build and push Docker image
         if: steps.changes.outputs.changed == 'true'
@@ -110,7 +160,7 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
           context: ${{ matrix.context }}
-          file: ${{ matrix.context }}/Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

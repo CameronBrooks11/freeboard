@@ -2,6 +2,14 @@ import globals from "globals";
 import js from "@eslint/js";
 import pluginVue from "eslint-plugin-vue";
 
+let eslintConfigPrettier = null;
+try {
+  const prettierModule = await import("eslint-config-prettier");
+  eslintConfigPrettier = prettierModule.default ?? prettierModule;
+} catch {
+  // Allow lint to run even before local dependencies are fully synchronized.
+}
+
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
@@ -12,7 +20,7 @@ export default [
   {
     languageOptions: {
       globals: {
-        ...globals.node,        // add Node globals like `process`
+        ...globals.node, // add Node globals like `process`
       },
     },
     rules: {
@@ -52,4 +60,5 @@ export default [
       "vue/no-mutating-props": "off",
     },
   },
+  ...(eslintConfigPrettier ? [eslintConfigPrettier] : []),
 ];

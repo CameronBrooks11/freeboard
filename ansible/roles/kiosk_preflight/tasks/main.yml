@@ -1,0 +1,71 @@
+---
+- name: Validate target operating system
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution in kiosk_supported_distributions
+      - ansible_architecture in kiosk_supported_architectures
+      - ansible_distribution_major_version | int >= kiosk_min_supported_debian_major_version | int
+    fail_msg: >-
+      Unsupported target {{ ansible_distribution }} {{ ansible_distribution_major_version }}
+      ({{ ansible_architecture }}).
+      Supported distributions={{ kiosk_supported_distributions | join(', ') }},
+      supported major version >= {{ kiosk_min_supported_debian_major_version }},
+      supported architectures={{ kiosk_supported_architectures | join(', ') }}.
+
+- name: Validate required player URL
+  ansible.builtin.assert:
+    that:
+      - kiosk_player_url | length > 0
+    fail_msg: "kiosk_player_url is required (set in group_vars/host_vars or -e)."
+  when: kiosk_enable_player | bool
+
+- name: Validate kiosk service account choices
+  ansible.builtin.assert:
+    that:
+      - kiosk_service_user | length > 0
+      - kiosk_service_group | length > 0
+      - kiosk_service_user != 'root'
+    fail_msg: "kiosk_service_user must be a non-root account."
+
+- name: Validate URL probe mode
+  ansible.builtin.assert:
+    that:
+      - kiosk_url_check_mode in ['none', 'get', 'head']
+    fail_msg: "kiosk_url_check_mode must be one of: none, get, head"
+
+- name: Validate URL probe numeric values
+  ansible.builtin.assert:
+    that:
+      - kiosk_url_check_timeout_seconds | int > 0
+      - kiosk_url_check_interval_seconds | int > 0
+      - kiosk_url_check_max_attempts | int >= 0
+    fail_msg: >-
+      URL probe values must be numeric and valid:
+      timeout>0, interval>0, max_attempts>=0.
+
+- name: Validate player source script path
+  ansible.builtin.stat:
+    path: "{{ kiosk_player_script_source }}"
+  delegate_to: localhost
+  become: false
+  register: kiosk_preflight_player_script_source_stat
+  run_once: true
+  when: kiosk_enable_player | bool
+
+- name: Fail when local player script source is missing
+  ansible.builtin.assert:
+    that:
+      - kiosk_preflight_player_script_source_stat.stat.exists
+    fail_msg: >-
+      Player script source not found at {{ kiosk_player_script_source }}.
+      Update kiosk_player_script_source to point to this repo's player.sh.
+  when: kiosk_enable_player | bool
+
+- name: Validate Mongo preload architecture gate
+  ansible.builtin.assert:
+    that:
+      - ansible_architecture in mongo_arm_supported_architectures
+    fail_msg: >-
+      mongo_preload is only supported on {{ mongo_arm_supported_architectures | join(', ') }};
+      current architecture is {{ ansible_architecture }}.
+  when: kiosk_enable_mongo_preload | bool

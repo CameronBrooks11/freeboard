@@ -4,13 +4,25 @@
  */
 
 /**
- * Validate that a required field has a truthy value.
+ * Validate that a required field has a non-empty value.
  *
  * @param {*} value - The input value to check.
  * @returns {Object} Empty object if valid, otherwise an error descriptor.
  */
 export const validateRequired = (value) => {
-  return value ? {} : { error: "This is required." };
+  if (value === null || value === undefined) {
+    return { error: "This is required." };
+  }
+
+  if (typeof value === "string") {
+    return value.trim().length ? {} : { error: "This is required." };
+  }
+
+  if (Array.isArray(value)) {
+    return value.length ? {} : { error: "This is required." };
+  }
+
+  return {};
 };
 
 /**
@@ -30,7 +42,5 @@ export const validateInteger = (value) => {
  * @returns {Object} Empty object if valid number, otherwise an error descriptor.
  */
 export const validateNumber = (value) => {
-  return !isNaN(parseFloat(value)) && isFinite(value)
-    ? {}
-    : { error: "Must be a number." };
+  return !isNaN(parseFloat(value)) && isFinite(value) ? {} : { error: "Must be a number." };
 };

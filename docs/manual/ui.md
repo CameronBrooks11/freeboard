@@ -7,7 +7,7 @@ The UI is a Vue 3 SPA (`packages/ui`) that lets users:
 - authenticate against GraphQL API
 - configure datasources and widgets
 - save/load dashboards
-- render real-time updates through SSE subscriptions
+- render realtime dashboard data through gateway-backed datasource transports (`http`, `sse`, `websocket`, `mqtt`)
 
 Core stack:
 
@@ -19,9 +19,16 @@ Core stack:
 
 ## Key Paths
 
-- Entry/bootstrap: `packages/ui/src/main.js`
+- Entry/bootstrap: `packages/ui/src/main.js`, `packages/ui/src/bootstrap/appBootstrap.js`
 - Router: `packages/ui/src/router/index.js`
-- Global store: `packages/ui/src/stores/freeboard.js`
+- Stores:
+  - `packages/ui/src/stores/auth.js`
+  - `packages/ui/src/stores/dashboard.js`
+  - `packages/ui/src/stores/pluginRegistry.js`
+  - `packages/ui/src/stores/profileCatalog.js`
+- Runtime context and UI services:
+  - `packages/ui/src/runtime/runtimeContext.js`
+  - `packages/ui/src/ui/modalHost.js`
 - Models: `packages/ui/src/models/*`
 - Datasources: `packages/ui/src/datasources/*`
 - Widgets: `packages/ui/src/widgets/*`
@@ -30,9 +37,12 @@ Core stack:
 
 ## Runtime Behavior
 
-1. UI authenticates and stores token in local storage.
+1. UI authenticates and stores token in session storage.
+   - Session token is persisted in `sessionStorage` (legacy localStorage entries are migrated).
 2. Dashboard data is fetched from GraphQL.
-3. Datasources emit updates.
+3. Datasources emit updates:
+   - GraphQL dashboard subscriptions use SSE.
+   - Realtime datasource plugins share a dashboard-level `StreamingManager` socket to `/gateway/realtime`.
 4. Dashboard snapshot is normalized.
 5. Widget runtime resolves bindings/templates per widget.
 6. Widget errors are isolated to avoid global dashboard failure.
@@ -43,7 +53,7 @@ See [Widget Runtime](/manual/widget-runtime) for lifecycle details.
 
 - Vite dev proxy routes:
   - `/graphql` -> API (`localhost:4001`)
-  - `/proxy` -> Proxy (`localhost:8001`)
+  - `/gateway` -> Gateway (`localhost:8001`)
 - Static build mode:
   - `FREEBOARD_STATIC=1` and `FREEBOARD_BASE_PATH` for static deployments (e.g. GitHub Pages)
 
@@ -51,7 +61,6 @@ See [Widget Runtime](/manual/widget-runtime) for lifecycle details.
 
 - New datasources: `packages/ui/src/datasources/`
 - New widgets: `packages/ui/src/widgets/`
-- New auth providers: `packages/ui/src/auth/`
 
 User-facing docs:
 
@@ -59,6 +68,7 @@ User-facing docs:
 - [Widget Reference](/manual/widget-reference)
 - [Widget Examples](/manual/widget-examples/)
 - [Base Widget Guide](/manual/widget-base-guide)
+- [Widget Developer Guide](/manual/widget-developer-guide)
 
 ## Developer Commands
 
@@ -67,6 +77,7 @@ npm run dev --workspace=packages/ui
 npm run build --workspace=packages/ui
 npm run lint:ui
 npm run test:ui
+npm run check:ui:store-boundaries
 ```
 
 UI runtime tests live in `packages/ui/test/*.test.js` and target binding resolution, plugin validation, and reactive widget runtime behavior.

@@ -1,0 +1,10 @@
+{
+  "name": "freeboard-realtime-fixtures",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "dependencies": {
+    "mqtt": "^5.10.4",
+    "ws": "^8.18.0"
+  }
+}

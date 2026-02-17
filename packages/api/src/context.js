@@ -5,8 +5,10 @@
 
 import { createPubSub } from "graphql-yoga";
 import { validateAuthToken } from "./auth.js";
-import User from "./types/User.js";
-import Dashboard from "./types/Dashboard.js";
+import User from "./models/User.js";
+import Dashboard from "./models/Dashboard.js";
+import { authenticateServiceAccountToken } from "./serviceAccountAuth.js";
+import { recordAuthFailureMetric } from "./runtimeMetrics.js";
 
 /**
  * PubSub engine for subscriptions.
@@ -45,30 +47,89 @@ import Dashboard from "./types/Dashboard.js";
  * @returns {Promise<Context>}       The context object passed to all resolvers.
  */
 export const setContext = async ({ req }) => {
+  const forwardedForHeader = req?.headers?.["x-forwarded-for"];
+  const forwardedFor =
+    typeof forwardedForHeader === "string"
+      ? forwardedForHeader.split(",")[0]?.trim() || null
+      : null;
+  const clientIp = forwardedFor || req?.socket?.remoteAddress || req?.ip || null;
+
   const context = {
     pubsub: createPubSub(),
     models: {
       Dashboard,
       User,
     },
+    clientIp,
   };
 
   // Extract the Authorization header
   let token = req.headers["authorization"];
 
   if (token && typeof token === "string") {
-    try {
-      const authenticationScheme = "Bearer ";
-      // Remove 'Bearer ' prefix if present
-      if (token.startsWith(authenticationScheme)) {
-        token = token.slice(authenticationScheme.length);
+    const authenticationScheme = "Bearer ";
+    // Remove 'Bearer ' prefix if present
+    if (token.startsWith(authenticationScheme)) {
+      token = token.slice(authenticationScheme.length);
+    }
+
+    if (token.startsWith("fsa_")) {
+      try {
+        const serviceAuth = await authenticateServiceAccountToken(token);
+        if (!serviceAuth) {
+          recordAuthFailureMetric();
+          return context;
+        }
+        context.serviceAccount = {
+          _id: serviceAuth.serviceAccount._id,
+          name: serviceAuth.serviceAccount.name,
+          active: serviceAuth.serviceAccount.active,
+          scopes: serviceAuth.scopes,
+          tokenId: serviceAuth.tokenRecord._id,
+        };
+      } catch {
+        recordAuthFailureMetric();
       }
+      return context;
+    }
+
+    try {
       // Validate JWT and attach user claims to context
       const user = await validateAuthToken(token);
-      context.user = user; // Add to Apollo Server context the user who is doing the request if auth token is provided and it's a valid token
-    } catch (e) {
-      // Invalid token: log and continue without user
-      console.warn(e);
+      const persistedUser = await User.findOne({
+        _id: user?._id,
+        active: true,
+      }).lean();
+      if (!persistedUser) {
+        recordAuthFailureMetric();
+        return context;
+      }
+      const persistedSessionVersion = Number(
+        persistedUser.sessionVersion === undefined ? 0 : persistedUser.sessionVersion,
+      );
+      const tokenSessionVersion = Number(user?.sv === undefined ? 0 : user.sv);
+      if (persistedSessionVersion !== tokenSessionVersion) {
+        recordAuthFailureMetric();
+        return context;
+      }
+      const normalizedRole =
+        typeof persistedUser?.role === "string"
+          ? persistedUser.role.toLowerCase()
+          : user?.admin
+            ? "admin"
+            : "viewer";
+      context.user = {
+        ...user,
+        _id: persistedUser._id,
+        email: persistedUser.email,
+        active: persistedUser.active,
+        role: normalizedRole,
+        admin: normalizedRole === "admin",
+        sessionVersion: persistedSessionVersion,
+      };
+    } catch {
+      // Invalid token: continue without principal.
+      recordAuthFailureMetric();
     }
   }
 

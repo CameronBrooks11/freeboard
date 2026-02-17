@@ -5,9 +5,9 @@
  *
  * @prop {Object} pane - Pane model instance containing title, layout, and widgets.
  */
-defineOptions({ name: 'Pane' });
+defineOptions({ name: "Pane" });
 
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
 import { storeToRefs } from "pinia";
 import ConfirmDialogBox from "./ConfirmDialogBox.vue";
 import PaneDialogBox from "./PaneDialogBox.vue";
@@ -16,11 +16,12 @@ import Widget from "./Widget.vue";
 import { Widget as _Widget } from "../models/Widget";
 import { getCurrentInstance } from "vue";
 import { useI18n } from "vue-i18n";
+import { openModal } from "../ui/modalHost.js";
 
 const { t } = useI18n();
 
-const freeboardStore = useFreeboardStore();
-const { isEditing, dashboard } = storeToRefs(freeboardStore);
+const dashboardStore = useDashboardStore();
+const { isEditing, dashboard } = storeToRefs(dashboardStore);
 
 /**
  * Open dialog to edit the pane’s title.
@@ -28,7 +29,7 @@ const { isEditing, dashboard } = storeToRefs(freeboardStore);
  * @param {Object} pane - Pane instance to edit.
  */
 const openPaneEditDialogBox = (pane) => {
-  freeboardStore.createComponent(PaneDialogBox, instance.appContext, {
+  openModal(PaneDialogBox, instance.appContext, {
     header: t("pane.titleEdit"),
     onOk: (newSettings) => {
       pane.title = newSettings.settings.name;
@@ -43,7 +44,7 @@ const openPaneEditDialogBox = (pane) => {
  * @param {Object} pane - Pane instance to delete.
  */
 const openPaneDeleteDialogBox = (pane) => {
-  freeboardStore.createComponent(ConfirmDialogBox, instance.appContext, {
+  openModal(ConfirmDialogBox, instance.appContext, {
     title: t("pane.titleDelete"),
     onOk: () => dashboard.value.deletePane(pane),
   });
@@ -55,7 +56,7 @@ const openPaneDeleteDialogBox = (pane) => {
  * @param {Object} pane - Pane instance to add the widget into.
  */
 const openWidgetAddDialogBox = (pane) => {
-  freeboardStore.createComponent(WidgetDialogBox, instance.appContext, {
+  openModal(WidgetDialogBox, instance.appContext, {
     header: t("pane.titleAdd"),
     onOk: (newSettings) => {
       const newViewModel = new _Widget();
@@ -90,7 +91,10 @@ const instance = getCurrentInstance();
               <v-icon name="hi-clipboard-list" />
             </i>
           </li>
-          <li @click="() => openPaneDeleteDialogBox(pane)" class="pane__header__board-toolbar__item">
+          <li
+            @click="() => openPaneDeleteDialogBox(pane)"
+            class="pane__header__board-toolbar__item"
+          >
             <i class="pane__header__board-toolbar__item__icon">
               <v-icon name="hi-trash" />
             </i>

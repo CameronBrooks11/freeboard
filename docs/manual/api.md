@@ -15,14 +15,23 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
   - `mongoUrl` (MongoDB connection string)
   - `port` (HTTP port)
   - `jwtSecret`, `jwtTimeExpiration`
+  - `jwtGatewaySecret`, `gatewayServiceToken`, `credentialEncryptionKey`
   - `userLimit`, `adminEmail`, `adminPassword`, `createAdmin`
+  - auth/runtime policy defaults (`registrationMode`, `editorCanPublish`, `executionMode`, etc.)
+  - login abuse controls (`authLoginMaxAttempts`, `authLoginWindowSeconds`, `authLoginLockSeconds`)
+  - datasource token/introspection controls (`datasourceTokenMintRateLimit*`, `gatewayIntrospectionRateLimitPerMin`)
+  - datasource session/revocation controls (`datasourceSessionTtlSeconds`, `gatewayRevokedTokens*`, `realtimeRevokeEventRetentionSeconds`)
 
 ## Request Context (`context.js`)
 
 - `setContext({ req })` returns a context object containing:
   - `pubsub` (created via `createPubSub`)
   - `models` (`Dashboard`, `User`)
-  - `user` (if a valid `Authorization: Bearer <token>` header is present)
+  - `clientIp` (for auth throttling/audit context)
+  - `user` (if a valid JWT `Authorization: Bearer <token>` header is present)
+  - `serviceAccount` (if a valid service account bearer token `fsa_<id>.<secret>` is present)
+
+Token auth is validated against persisted user state (`active` + `sessionVersion`) so revoked tokens become invalid server-side.
 
 ## GraphQL Schema (`gql.js`)
 
@@ -35,28 +44,59 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
 
 - **Dashboard** (`models/Dashboard.js`):
   - Uses `nanoid` for string `_id`
-  - Fields: `user`, `version`, `title`, `published`, `image`, `datasources`, `columns`, `width`, `panes`, `authProviders`, `settings`
+  - Fields include: `user`, `version`, `title`, `visibility`, `shareToken`, `shareTokenVersion`, `acl`, `image`, `datasources`, `columns`, `width`, `panes`, `settings`
   - Timestamps enabled
+- **CredentialProfile** (`models/CredentialProfile.js`):
+  - Server-managed datasource credential profile metadata + encrypted secret payload
+  - Supports type-specific secret resolution for gateway execution
+- **BrokerProfile** (`models/BrokerProfile.js`):
+  - Admin-managed broker metadata for realtime transports (`mqtt`)
+  - Holds broker endpoint/policy data and references optional credential profile
+- **ShareTokenRevocationEvent** (`models/ShareTokenRevocationEvent.js`):
+  - Durable event feed used by gateway for public/link stream revocation polling
 - **User** (`models/User.js`):
   - `_id` via `nanoid`
-  - Fields: `email`, `password`, `admin`, `active`, `registrationDate`, `lastLogin`
+  - Fields: `email`, `password`, `role`, `active`, `sessionVersion`, `registrationDate`, `lastLogin`
   - Pre-save hook hashes `password` with `bcrypt`
   - Model-level validators enforce email and password policy (defense in depth)
+- **ServiceAccount** (`models/ServiceAccount.js`):
+  - Admin-managed machine principal with scoped permissions
+  - Tracks active state and last-used timestamp
+- **ServiceAccountToken** (`models/ServiceAccountToken.js`):
+  - One-way hashed bearer token records for service accounts
+  - Supports expiry, revocation, label metadata, and last-used timestamp
 
 ## Resolvers
 
 - **Dashboard Resolvers** (`resolvers/Dashboard.js`):
-  - `Query.dashboard(_id)` and `Query.dashboards()`
+  - `Query.dashboard(_id)`, `dashboardByShareToken`, `dashboards`, `dashboardCollaborators`
+  - Visibility/share/collaboration mutations (`setDashboardVisibility`, `rotateDashboardShareToken`, ACL, ownership transfer)
   - `Mutation.createDashboard`, `updateDashboard`, `deleteDashboard`
   - `Subscription.dashboard(_id)`
-  - Helper `getDashboard` applies access rules and calls `transformDashboard`
+  - Access policy and safe/trusted payload enforcement are server-side validated
 - **User Resolvers** (`resolvers/User.js`):
-  - `Query.listAllUsers()`
-  - `Mutation.registerUser(email, password)`
-  - `Mutation.authUser(email, password)`
-  - `Mutation.deleteMyUserAccount()`
+  - `Query.listAllUsers()`, `me`, invite listing
+  - Registration/invite flows + password reset flows
+  - Login throttling with audit events
+  - Admin lifecycle flows (create/update/deactivate/delete, invites, reset issuance)
+  - Session revocation paths on role/active/password transitions
 - **Merge Utility** (`resolvers/merge.js`):
   - `transformDashboard(u)` converts Mongoose doc to GraphQL object
+- **Credential Profile Resolvers** (`resolvers/CredentialProfile.js`):
+  - Admin CRUD for credential profiles
+  - Redacted secret metadata only in API responses
+- **Broker Profile Resolvers** (`resolvers/BrokerProfile.js`):
+  - Admin CRUD for broker profiles
+  - Editor/admin read access for datasource configuration
+- **Datasource Resolvers** (`resolvers/Datasource.js`):
+  - Session token minting for datasource runtime (`mintDatasourceSessionToken`)
+- **Datasource Diagnostics Resolvers** (`resolvers/DatasourceDiagnostics.js`):
+  - Datasource configuration/health rollup (`adminDatasourceDiagnostics`)
+  - Includes realtime datasource types (`http`, `clock`, `static`, `sse`, `websocket`, `mqtt`)
+- **Service Account Resolvers** (`resolvers/ServiceAccount.js`):
+  - Admin service account CRUD + token lifecycle
+  - Admin audit event query surface
+  - Runtime metrics query for admin/scoped machine principals
 
 ## Input Validation (`validators.js`)
 
@@ -77,6 +117,10 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
 - Sets up HTTP server with `createYoga`:
   - `landingPage: false`
   - `schema`, `context`, `useGraphQLSSE` plugin
+- Exposes internal service-auth introspection endpoint for gateway:
+  - `POST /internal/gateway/datasource-introspect`
+- Exposes internal service-auth revocation feed endpoint for gateway:
+  - `POST /internal/gateway/revoked-tokens`
 - Listens on `config.port` (`0.0.0.0`)
 
 ## Running & Docs

@@ -3,16 +3,9 @@
  * @description Lightweight sparkline widget with single or multi-series support.
  */
 
-import { ReactiveWidget } from "./runtime/ReactiveWidget";
+import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
-const DEFAULT_COLORS = [
-  "#f59e0b",
-  "#22d3ee",
-  "#a3e635",
-  "#f43f5e",
-  "#e879f9",
-  "#38bdf8",
-];
+const DEFAULT_COLORS = ["#f59e0b", "#22d3ee", "#a3e635", "#f43f5e", "#e879f9", "#38bdf8"];
 
 const toFiniteNumber = (value) => {
   const parsed = Number(value);
@@ -100,8 +93,7 @@ export class SparklineWidget extends ReactiveWidget {
           name: "valuePath",
           label: "Value Path",
           type: "text",
-          description:
-            "Single-series path. If empty, `Series Paths` or array values are used.",
+          description: "Single-series path. If empty, `Series Paths` or array values are used.",
         },
         {
           name: "seriesPaths",
@@ -122,6 +114,7 @@ export class SparklineWidget extends ReactiveWidget {
     super(settings);
     this.seriesHistory = [];
     this.latestSeriesCount = 1;
+    this.isNarrow = false;
 
     this.widgetElement.style.display = "flex";
     this.widgetElement.style.flexDirection = "column";
@@ -151,6 +144,7 @@ export class SparklineWidget extends ReactiveWidget {
     this.legendElement.style.opacity = "0.95";
 
     this.widgetElement.append(this.headerElement, this.canvasWrap, this.legendElement);
+    this.applyResponsiveSizing();
   }
 
   resolveInputs() {
@@ -169,9 +163,7 @@ export class SparklineWidget extends ReactiveWidget {
     }
 
     return {
-      header:
-        this.getBinding(this.currentSettings?.headerPath) ??
-        this.currentSettings?.headerText,
+      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
       series: Array.isArray(series) ? series : [series],
     };
   }
@@ -187,8 +179,17 @@ export class SparklineWidget extends ReactiveWidget {
     this.draw();
   }
 
-  onResize() {
+  onResize(size = {}) {
+    this.applyResponsiveSizing(size);
     this.draw();
+  }
+
+  applyResponsiveSizing(size = {}) {
+    const width = Number(size.width);
+    this.isNarrow = Number.isFinite(width) && width > 0 && width < 320;
+    this.headerElement.style.fontSize = this.isNarrow ? "11px" : "12px";
+    this.headerElement.style.marginBottom = this.isNarrow ? "6px" : "8px";
+    this.legendElement.style.fontSize = this.isNarrow ? "10px" : "11px";
   }
 
   pushSeriesValues(values) {
@@ -196,7 +197,7 @@ export class SparklineWidget extends ReactiveWidget {
       2,
       Number.isFinite(Number(this.currentSettings?.historyLength))
         ? Math.ceil(Number(this.currentSettings.historyLength))
-        : 100
+        : 100,
     );
 
     while (this.seriesHistory.length < values.length) {
@@ -246,7 +247,10 @@ export class SparklineWidget extends ReactiveWidget {
       return;
     }
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr =
+      typeof window !== "undefined" && Number(window.devicePixelRatio) > 0
+        ? Number(window.devicePixelRatio)
+        : 1;
     this.canvas.width = Math.floor(width * dpr);
     this.canvas.height = Math.floor(height * dpr);
     const context = this.canvas.getContext("2d");
@@ -279,8 +283,7 @@ export class SparklineWidget extends ReactiveWidget {
           return;
         }
 
-        const x =
-          longest <= 1 ? 0 : (pointIndex / (longest - 1)) * Math.max(1, width - 1);
+        const x = longest <= 1 ? 0 : (pointIndex / (longest - 1)) * Math.max(1, width - 1);
         const y = height - ((point - min) / (max - min)) * Math.max(1, height - 1);
 
         if (!started) {
@@ -316,9 +319,15 @@ export class SparklineWidget extends ReactiveWidget {
       item.style.display = "inline-flex";
       item.style.alignItems = "center";
       item.style.gap = "4px";
-      item.innerHTML = `<span style="color:${DEFAULT_COLORS[index % DEFAULT_COLORS.length]}">●</span>${
-        labels[index] || `Series ${index + 1}`
-      }`;
+
+      const marker = document.createElement("span");
+      marker.textContent = "●";
+      marker.style.color = DEFAULT_COLORS[index % DEFAULT_COLORS.length];
+
+      const label = document.createElement("span");
+      label.textContent = labels[index] || `Series ${index + 1}`;
+
+      item.append(marker, label);
       this.legendElement.append(item);
     }
   }

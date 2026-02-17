@@ -1,0 +1,58 @@
+---
+- name: Install base kiosk packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - sudo
+    state: present
+    update_cache: true
+
+- name: Ensure kiosk service group exists
+  ansible.builtin.group:
+    name: "{{ kiosk_service_group }}"
+    system: true
+
+- name: Ensure kiosk service user exists
+  ansible.builtin.user:
+    name: "{{ kiosk_service_user }}"
+    group: "{{ kiosk_service_group }}"
+    shell: "{{ kiosk_service_shell }}"
+    home: "{{ kiosk_service_home }}"
+    create_home: true
+    system: false
+
+- name: Gather group database
+  ansible.builtin.getent:
+    database: group
+
+- name: Resolve existing supplemental groups
+  ansible.builtin.set_fact:
+    kiosk_base_existing_supplemental_groups: >-
+      {{ kiosk_supplemental_groups
+         | select('in', ansible_facts.getent_group.keys() | list)
+         | list }}
+
+- name: Ensure kiosk service user has available supplemental groups
+  ansible.builtin.user:
+    name: "{{ kiosk_service_user }}"
+    groups: "{{ kiosk_base_existing_supplemental_groups }}"
+    append: true
+  when: kiosk_base_existing_supplemental_groups | length > 0
+
+- name: Create kiosk directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default(kiosk_service_user) }}"
+    group: "{{ item.group | default(kiosk_service_group) }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ kiosk_install_root }}"
+      mode: "0755"
+    - path: "{{ kiosk_env_dir }}"
+      owner: root
+      group: root
+      mode: "0750"
+    - path: "{{ kiosk_log_dir }}"
+      mode: "0755"

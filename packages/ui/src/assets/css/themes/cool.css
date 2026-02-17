@@ -1,0 +1,24 @@
+body.cool {
+  --color-primary: #06b6d4;
+  --color-accent: #0ea5e9;
+  --color-secondary: #2563eb;
+  --color-error: #ef4444;
+  --color-foreground: #dbeafe;
+  --color-background: #0b1120;
+
+  --color-shade-0: #060a14;
+  --color-shade-1: #0b1120;
+  --color-shade-2: #152238;
+  --color-shade-3: #1e304e;
+  --color-shade-4: #284466;
+  --color-shade-5: #356084;
+  --color-shade-6: #4580a8;
+  --color-shade-7: #60a5d6;
+  --color-shade-8: #90c5e8;
+  --color-shade-9: #bfdef4;
+  --color-shade-10: #ebf6ff;
+
+  --color-overlay: rgba(6, 10, 20, 0.88);
+  --color-shadow: rgba(2, 6, 23, 0.48);
+  --color-highlight: rgba(14, 165, 233, 0.4);
+}

@@ -1,0 +1,49 @@
+---
+- name: Roll back Freeboard kiosk managed artifacts
+  hosts: "{{ freeboard_target_group }}"
+  become: true
+  gather_facts: true
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Stop kiosk service if present
+      ansible.builtin.systemd:
+        name: "{{ kiosk_service_name }}.service"
+        state: stopped
+        enabled: false
+        daemon_reload: true
+      failed_when: false
+
+    - name: Restore backed up system files when backups exist
+      ansible.builtin.copy:
+        src: "{{ item.backup }}"
+        dest: "{{ item.path }}"
+        remote_src: true
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - path: "{{ kiosk_xwrapper_config_dest }}"
+          backup: "{{ kiosk_xwrapper_config_dest }}{{ kiosk_config_backup_suffix }}"
+        - path: "{{ kiosk_xorg_config_dest }}"
+          backup: "{{ kiosk_xorg_config_dest }}{{ kiosk_config_backup_suffix }}"
+        - path: "{{ kiosk_boot_config_path }}"
+          backup: "{{ kiosk_boot_config_path }}{{ kiosk_boot_backup_suffix }}"
+        - path: "{{ kiosk_boot_cmdline_path }}"
+          backup: "{{ kiosk_boot_cmdline_path }}{{ kiosk_boot_backup_suffix }}"
+      loop_control:
+        label: "{{ item.path }}"
+      failed_when: false
+
+    - name: Remove managed service and env files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/etc/systemd/system/{{ kiosk_service_name }}.service"
+        - "{{ kiosk_env_file_path }}"
+
+    - name: Reload systemd daemon after rollback
+      ansible.builtin.systemd:
+        daemon_reload: true

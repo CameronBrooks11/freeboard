@@ -6,7 +6,9 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Freeboard from "../components/Freeboard.vue";
 import Login from "../components/Login.vue";
-import { useFreeboardStore } from "../stores/freeboard";
+import AdminConsole from "../components/AdminConsole.vue";
+import { useAuthStore } from "../stores/auth.js";
+import { resolveNavigationGuard } from "./authGuard.js";
 
 /** @type {import('vue-router').Router} */
 let router;
@@ -38,11 +40,59 @@ if (__FREEBOARD_STATIC__) {
         sensitive: true,
       },
       {
+        path: "/invite/:token",
+        name: "InviteAccept",
+        redirect: (to) => ({
+          name: "Login",
+          query: {
+            invite: to.params.token,
+          },
+        }),
+      },
+      {
+        path: "/reset-password/:token",
+        name: "PasswordReset",
+        redirect: (to) => ({
+          name: "Login",
+          query: {
+            reset: to.params.token,
+          },
+        }),
+      },
+      {
+        path: "/s/:shareToken",
+        name: "SharedDashboard",
+        component: Freeboard,
+        props: (to) => ({
+          shareToken: String(to.params.shareToken || ""),
+        }),
+        sensitive: true,
+      },
+      {
+        path: "/p/:id",
+        name: "PublicDashboard",
+        component: Freeboard,
+        props: (to) => ({
+          id: String(to.params.id || ""),
+        }),
+        sensitive: true,
+      },
+      {
         path: "/",
         name: "Home",
         component: Freeboard,
         props: true,
         sensitive: true,
+      },
+      {
+        path: "/admin",
+        name: "Admin",
+        component: AdminConsole,
+        props: true,
+        sensitive: true,
+        meta: {
+          requiresAdmin: true,
+        },
       },
       {
         path: "/:id",
@@ -61,14 +111,15 @@ if (__FREEBOARD_STATIC__) {
    * - Redirect authenticated users away from Login to Home.
    */
   router.beforeEach(async (to) => {
-    const freeboardStore = useFreeboardStore();
-    freeboardStore.loadSettingsFromLocalStorage();
+    const authStore = useAuthStore();
 
-    const isLoginRoute = to.name === "Login";
-    if (!freeboardStore.isLoggedIn() && !isLoginRoute) {
-      return { name: "Login" };
-    } else if (freeboardStore.isLoggedIn() && isLoginRoute) {
-      return { name: "Home" };
+    const redirect = resolveNavigationGuard({
+      to,
+      isLoggedIn: authStore.isLoggedIn(),
+      isAdmin: authStore.isAdmin(),
+    });
+    if (redirect) {
+      return redirect;
     }
   });
 }

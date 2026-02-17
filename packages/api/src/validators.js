@@ -3,8 +3,7 @@
  * @description Utilities for validating user input such as email format and password strength.
  */
 
-export const EMAIL_POLICY_MESSAGE =
-  "Email must be in valid format: name@domain.ext";
+export const EMAIL_POLICY_MESSAGE = "Email must be in valid format: name@domain.ext";
 
 export const PASSWORD_POLICY_MESSAGE =
   "Password must be at least 12 characters and include uppercase, lowercase, number, and symbol";

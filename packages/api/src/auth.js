@@ -14,9 +14,7 @@ import jwt from "jsonwebtoken";
  * @param {number} numberOfCurrentlyUsersRegistered - Current count of registered users.
  * @throws {GraphQLError} When the user limit has been reached.
  */
-export const ensureLimitOfUsersIsNotReached = (
-  numberOfCurrentlyUsersRegistered,
-) => {
+export const ensureLimitOfUsersIsNotReached = (numberOfCurrentlyUsersRegistered) => {
   const usersLimit = config.userLimit;
   if (usersLimit === 0) {
     return;
@@ -37,10 +35,9 @@ export const ensureLimitOfUsersIsNotReached = (
  */
 export const ensureThatUserIsLogged = (context) => {
   if (!context.user) {
-    throw createGraphQLError(
-      "You must be logged in to perform this action",
-      {},
-    );
+    throw createGraphQLError("You must be logged in to perform this action", {
+      extensions: { code: "UNAUTHENTICATED" },
+    });
   }
 };
 
@@ -51,10 +48,67 @@ export const ensureThatUserIsLogged = (context) => {
  * @throws {GraphQLError} When the user is not an administrator.
  */
 export const ensureThatUserIsAdministrator = (context) => {
-  if (!context.user || !context.user.admin) {
-    throw createGraphQLError(
-      "You must be an administrator to perform this action",
-    );
+  ensureThatUserIsLogged(context);
+  if (context.user.role !== "admin") {
+    throw createGraphQLError("You must be an administrator to perform this action", {
+      extensions: { code: "FORBIDDEN" },
+    });
+  }
+};
+
+/**
+ * Ensure the authenticated user has one of the allowed roles.
+ *
+ * @param {Object} context - GraphQL resolver context containing user info.
+ * @param {string[]} allowedRoles - Allowed role values.
+ */
+export const ensureThatUserHasRole = (context, allowedRoles = []) => {
+  ensureThatUserIsLogged(context);
+  if (!allowedRoles.includes(context.user.role)) {
+    throw createGraphQLError("You do not have access to perform this action", {
+      extensions: { code: "FORBIDDEN" },
+    });
+  }
+};
+
+/**
+ * Ensure the current principal (admin user or scoped service account) can access a scoped operation.
+ *
+ * @param {Object} context
+ * @param {string[]} requiredScopes
+ */
+export const ensureThatPrincipalHasServiceScope = (context, requiredScopes = []) => {
+  if (context.user?.role === "admin") {
+    return;
+  }
+
+  const principal = context.serviceAccount;
+  if (!principal) {
+    throw createGraphQLError("You must be authenticated to perform this action", {
+      extensions: { code: "UNAUTHENTICATED" },
+    });
+  }
+
+  const grantedScopes = new Set(
+    Array.isArray(principal.scopes)
+      ? principal.scopes.map((scope) =>
+          String(scope || "")
+            .trim()
+            .toLowerCase(),
+        )
+      : [],
+  );
+  const hasScope = requiredScopes.some((scope) =>
+    grantedScopes.has(
+      String(scope || "")
+        .trim()
+        .toLowerCase(),
+    ),
+  );
+  if (!hasScope) {
+    throw createGraphQLError("Service account scope does not allow this action", {
+      extensions: { code: "FORBIDDEN" },
+    });
   }
 };
 
@@ -83,15 +137,30 @@ export const getUser = async (context) => {
  * Create a signed JWT for authentication.
  *
  * @param {string} email       - User email address.
- * @param {boolean} admin      - Whether the user has admin privileges.
+ * @param {string} role        - User role.
  * @param {boolean} active     - Whether the user account is active.
  * @param {string} _id         - User document _id.
+ * @param {number} [sessionVersion=0] - Session version for revocation checks.
  * @returns {string}           Signed JWT token.
  */
-export const createAuthToken = (email, admin, active, _id) => {
-  return jwt.sign({ email, admin, active, _id }, config.jwtSecret, {
-    expiresIn: config.jwtTimeExpiration,
-  });
+export const createAuthToken = (email, role, active, _id, sessionVersion = 0) => {
+  const normalizedRole = String(role || "").toLowerCase();
+  return jwt.sign(
+    {
+      email,
+      role: normalizedRole,
+      admin: normalizedRole === "admin",
+      active,
+      _id,
+      sv: Number.isFinite(Number(sessionVersion))
+        ? Math.max(0, Math.floor(Number(sessionVersion)))
+        : 0,
+    },
+    config.jwtSecret,
+    {
+      expiresIn: config.jwtTimeExpiration,
+    },
+  );
 };
 
 /**

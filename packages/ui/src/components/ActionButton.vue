@@ -10,7 +10,7 @@
  * @description A button for triggering actions, rendering default slot content.
  * @slot default - Content displayed inside the button (e.g., label or icon).
  */
-defineOptions({ name: 'ActionButton' });
+defineOptions({ name: "ActionButton" });
 </script>
 
 <style lang="css" scoped>

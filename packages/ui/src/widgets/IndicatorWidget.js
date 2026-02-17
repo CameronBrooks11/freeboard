@@ -3,7 +3,7 @@
  * @description Binary indicator widget with configurable labels and colors.
  */
 
-import { ReactiveWidget } from "./runtime/ReactiveWidget";
+import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
 /**
  * Indicator widget implementation.
@@ -97,6 +97,7 @@ export class IndicatorWidget extends ReactiveWidget {
 
   constructor(settings) {
     super(settings);
+    this.isNarrow = false;
 
     this.widgetElement.style.display = "flex";
     this.widgetElement.style.flexDirection = "column";
@@ -110,10 +111,10 @@ export class IndicatorWidget extends ReactiveWidget {
     this.headerElement.style.textTransform = "uppercase";
     this.headerElement.style.letterSpacing = "0.04em";
 
-    const row = document.createElement("div");
-    row.style.display = "flex";
-    row.style.alignItems = "center";
-    row.style.gap = "10px";
+    this.rowElement = document.createElement("div");
+    this.rowElement.style.display = "flex";
+    this.rowElement.style.alignItems = "center";
+    this.rowElement.style.gap = "10px";
 
     this.lightElement = document.createElement("div");
     this.lightElement.style.width = "18px";
@@ -124,23 +125,32 @@ export class IndicatorWidget extends ReactiveWidget {
     this.labelElement = document.createElement("div");
     this.labelElement.style.fontSize = "16px";
 
-    row.append(this.lightElement, this.labelElement);
-    this.widgetElement.append(this.headerElement, row);
+    this.rowElement.append(this.lightElement, this.labelElement);
+    this.widgetElement.append(this.headerElement, this.rowElement);
 
     this.onSettingsChanged(settings);
   }
 
+  applyResponsiveSizing() {
+    const lightSize = this.isNarrow ? "14px" : "18px";
+    this.lightElement.style.width = lightSize;
+    this.lightElement.style.height = lightSize;
+    this.labelElement.style.fontSize = this.isNarrow ? "13px" : "16px";
+    this.headerElement.style.fontSize = this.isNarrow ? "11px" : "12px";
+    this.headerElement.style.marginBottom = this.isNarrow ? "5px" : "8px";
+    this.rowElement.style.gap = this.isNarrow ? "7px" : "10px";
+  }
+
+  onSettingsChanged(newSettings) {
+    super.onSettingsChanged(newSettings);
+    this.applyResponsiveSizing();
+  }
+
   resolveInputs() {
     return {
-      header:
-        this.getBinding(this.currentSettings?.headerPath) ??
-        this.currentSettings?.headerText,
-      onText:
-        this.getBinding(this.currentSettings?.onTextPath) ??
-        this.currentSettings?.onText,
-      offText:
-        this.getBinding(this.currentSettings?.offTextPath) ??
-        this.currentSettings?.offText,
+      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
+      onText: this.getBinding(this.currentSettings?.onTextPath) ?? this.currentSettings?.onText,
+      offText: this.getBinding(this.currentSettings?.offTextPath) ?? this.currentSettings?.offText,
       value: this.getBinding(this.currentSettings?.valuePath),
     };
   }
@@ -159,8 +169,12 @@ export class IndicatorWidget extends ReactiveWidget {
       ? `0 0 10px ${this.currentSettings?.onColor || "#16a34a"}`
       : "none";
 
-    this.labelElement.textContent = isOn
-      ? inputs.onText || "On"
-      : inputs.offText || "Off";
+    this.labelElement.textContent = isOn ? inputs.onText || "On" : inputs.offText || "Off";
+  }
+
+  onResize(size = {}) {
+    const width = Number(size.width);
+    this.isNarrow = Number.isFinite(width) && width > 0 && width < 240;
+    this.applyResponsiveSizing();
   }
 }

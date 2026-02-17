@@ -1,28 +1,33 @@
 <script setup lang="ts">
 /**
  * @component DashboardControl
- * @description Renders dashboard action toolbar and inline settings form for title, columns, and publish flag.
+ * @description Renders dashboard action toolbar and inline settings form for title/columns.
  */
-defineOptions({ name: 'DashboardControl' });
+defineOptions({ name: "DashboardControl" });
 
 import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useAuthStore } from "../stores/auth.js";
+import { useDashboardStore } from "../stores/dashboard.js";
 import Form from "./Form.vue";
-import { getCurrentInstance, ref, watch } from "vue";
+import { computed, getCurrentInstance, ref, watch } from "vue";
 import DatasourcesDialogBox from "./DatasourcesDialogBox.vue";
-import AuthProvidersDialogBox from "./AuthProvidersDialogBox.vue";
 import SettingsDialogBox from "./SettingsDialogBox.vue";
+import ShareDialogBox from "./ShareDialogBox.vue";
 import createSettings from "../settings";
+import { openModal } from "../ui/modalHost.js";
 
-const freeboardStore = useFreeboardStore();
-const { dashboard } = storeToRefs(freeboardStore);
+const authStore = useAuthStore();
+const dashboardStore = useDashboardStore();
+const { dashboard } = storeToRefs(dashboardStore);
 
 // Inline settings schema and current values
-const fields = ref(createSettings(dashboard.value)[0].fields);
+const fields = computed(
+  () =>
+    createSettings(dashboard.value, {
+      allowTrustedExecution: authStore.isTrustedExecutionMode(),
+    })[0].fields,
+);
 const settings = ref({});
-
-// Reference to the form component for potential validation
-const form = ref(null);
 
 // Sync settings when the dashboard object changes
 watch(
@@ -32,46 +37,43 @@ watch(
   },
   {
     immediate: true,
-  }
+  },
 );
 
 /** Open the settings dialog and apply changes on OK */
 const openSettingsDialogBox = () => {
-  freeboardStore.createComponent(SettingsDialogBox, instance.appContext, {
+  openModal(SettingsDialogBox, instance.appContext, {
     onOk: (newSettings) => {
       dashboard.value.settings = newSettings.settings;
       settings.value = {
         title: newSettings.title,
         columns: newSettings.columns,
-        published: newSettings.published,
       };
       onChange(settings.value);
-      freeboardStore.loadDashboardAssets();
-      freeboardStore.loadDashboardTheme();
-      freeboardStore.saveSettingsToLocalStorage();
+      dashboardStore.loadDashboardAssets();
+      dashboardStore.loadDashboardTheme();
     },
   });
 };
 
 /** Open the datasources management dialog */
 const openDatasourcesDialogBox = () => {
-  freeboardStore.createComponent(DatasourcesDialogBox, instance.appContext);
+  openModal(DatasourcesDialogBox, instance.appContext);
 };
 
-/** Open the auth providers management dialog */
-const openAuthProvidersDialogBox = () => {
-  freeboardStore.createComponent(AuthProvidersDialogBox, instance.appContext);
+/** Open the dashboard share/collaboration dialog */
+const openShareDialogBox = () => {
+  openModal(ShareDialogBox, instance.appContext);
 };
 
 /**
  * Apply inline form changes to the dashboard model.
  *
- * @param {{ title: string; columns: string; published: boolean }} s
+ * @param {{ title: string; columns: string }} s
  */
 const onChange = (s) => {
-  dashboard.value.columns = parseInt(s.columns);
+  dashboard.value.columns = parseInt(s.columns, 10);
   dashboard.value.title = s.title;
-  dashboard.value.published = s.published;
 };
 
 const instance = getCurrentInstance();
@@ -81,32 +83,32 @@ const instance = getCurrentInstance();
   <div class="dashboard-control">
     <ul class="dashboard-control__board-toolbar dashboard-control__board-toolbar">
       <li @click="() => openSettingsDialogBox()" class="dashboard-control__board-toolbar__item">
-        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-solid-cog" /></i><label
-          class="dashboard-control__board-toolbar__item__label">{{
-            $t("dashboardControl.labelSettings")
-          }}</label>
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-solid-cog" /></i
+        ><label class="dashboard-control__board-toolbar__item__label">{{
+          $t("dashboardControl.labelSettings")
+        }}</label>
       </li>
       <li @click="() => openDatasourcesDialogBox()" class="dashboard-control__board-toolbar__item">
-        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-database" /></i><label
-          class="dashboard-control__board-toolbar__item__label">{{
-            $t("dashboardControl.labelDatasources")
-          }}</label>
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-database" /></i
+        ><label class="dashboard-control__board-toolbar__item__label">{{
+          $t("dashboardControl.labelDatasources")
+        }}</label>
       </li>
-      <li @click="() => openAuthProvidersDialogBox()" class="dashboard-control__board-toolbar__item">
-        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-eye" /></i><label
-          class="dashboard-control__board-toolbar__item__label">{{
-            $t("dashboardControl.labelAuth")
-          }}</label>
+      <li @click="() => openShareDialogBox()" class="dashboard-control__board-toolbar__item">
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-collection" /></i
+        ><label class="dashboard-control__board-toolbar__item__label">{{
+          $t("dashboardControl.labelShare")
+        }}</label>
       </li>
       <li @click="() => dashboard.createPane()" class="dashboard-control__board-toolbar__item">
-        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-plus-circle" /></i><label
-          class="dashboard-control__board-toolbar__item__label">{{
-            $t("dashboardControl.labelAddPane")
-          }}</label>
+        <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-plus-circle" /></i
+        ><label class="dashboard-control__board-toolbar__item__label">{{
+          $t("dashboardControl.labelAddPane")
+        }}</label>
       </li>
     </ul>
     <div class="dashboard-control__form">
-      <Form ref="form" :settings="settings" :fields="fields" @change="onChange" />
+      <Form :settings="settings" :fields="fields" @change="onChange" />
     </div>
   </div>
 </template>

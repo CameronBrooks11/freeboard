@@ -10,26 +10,18 @@
  *
  * @emits change - Emitted with the form’s current values whenever any field changes.
  */
-defineOptions({ name: 'Form' });
+defineOptions({ name: "Form" });
 
-import {
-  markRaw,
-  ref,
-  toRef,
-  watch,
-} from "vue";
+import { markRaw, ref, toRef, watch } from "vue";
 import InputFormElement from "./InputFormElement.vue";
-import {
-  validateInteger,
-  validateNumber,
-  validateRequired,
-} from "../validators";
+import { validateInteger, validateNumber, validateRequired } from "../validators";
 import SwitchFormElement from "./SwitchFormElement.vue";
 import SelectFormElement from "./SelectFormElement.vue";
 import ArrayFormElement from "./ArrayFormElement.vue";
 import CodeEditorFormElement from "./CodeEditorFormElement.vue";
 import { useI18n } from "vue-i18n";
 import ListFormElement from "./ListFormElement.vue";
+import { resolveFieldModelValue } from "../formModel";
 
 const { t } = useI18n();
 
@@ -70,6 +62,20 @@ const getValue = () => {
  */
 const storeComponentRef = (name, el) => {
   components.value[name] = el;
+};
+
+/**
+ * Programmatically set a field value by name.
+ *
+ * @param {string} name
+ * @param {any} value
+ */
+const setFieldValue = (name, value) => {
+  const field = formFields.value.find((entry) => entry.name === name);
+  if (!field) {
+    return;
+  }
+  field.model = value;
 };
 
 // Track validation errors keyed by field name
@@ -130,7 +136,7 @@ const listFormElementRef = markRaw(ListFormElement);
  */
 const resolveFieldOptions = async (field) => {
   const promises = [];
-  if (typeof field.options === 'object') {
+  if (typeof field.options === "object") {
     promises.push(field.options);
   }
 
@@ -183,9 +189,7 @@ const translateField = (field) => {
  */
 const fieldToFormElement = (field) => {
   const validators = [];
-  const customValidators = Array.isArray(field.validators)
-    ? field.validators
-    : [];
+  const customValidators = Array.isArray(field.validators) ? field.validators : [];
   let type = null;
   if (field.type === "number") {
     if (field.required) {
@@ -237,13 +241,22 @@ const fieldToFormElement = (field) => {
     type = listFormElementRef;
   }
 
-  return { ...field, component: type, validators: [...customValidators, ...validators] };
+  const normalizedField = {
+    ...field,
+    component: type,
+    validators: [...customValidators, ...validators],
+  };
+  if (!normalizedField.id) {
+    normalizedField.id = `form-field-${field.name}`;
+  }
+  return normalizedField;
 };
 
 // Expose methods for parent components (DialogBox) to call
 defineExpose({
   getValue,
   hasErrors,
+  setFieldValue,
 });
 
 // Reactive reference for processed fields
@@ -253,40 +266,53 @@ const formFields = ref([]);
 const f = toRef(props, "fields");
 const s = toRef(props, "settings");
 
-watch([f, s], async () => {
-  // Build, translate, and resolve each field definition
-  formFields.value = await Promise.all(
-    (f.value || [])
-      .map(fieldToFormElement)
-      .map(translateField)
-      .map(resolveFieldOptions)
-  );
-  // Initialize each field’s model and watch for changes
-  formFields.value.forEach((field) => {
-    const value = field.model?.value || s.value[field.name] || field.default;
-    const r = ref(value);
-    field.model = r;
-    watch(r, onUpdate);
-  });
-}, {
-  immediate: true
-});
+watch(
+  [f, s],
+  async () => {
+    // Build, translate, and resolve each field definition
+    formFields.value = await Promise.all(
+      (f.value || []).map(fieldToFormElement).map(translateField).map(resolveFieldOptions),
+    );
+    // Initialize each field’s model and watch for changes
+    formFields.value.forEach((field) => {
+      const value = resolveFieldModelValue(field, s.value || {});
+      const r = ref(value);
+      field.model = r;
+      watch(r, onUpdate);
+    });
+  },
+  {
+    immediate: true,
+  },
+);
 </script>
 
 <template>
   <div class="form">
     <div class="form__row" v-for="field in formFields" :key="field.name">
       <div class="form__row__label" v-if="!hideLabels">
-        <label>{{ field.label }}</label>
+        <label :for="field.id">{{ field.label }}</label>
       </div>
       <div class="form__row__value">
         <div class="form__row__value__container">
-          <component :ref="(el) => storeComponentRef(field.name, el)" :is="field.component" :disabled="field.disabled"
-            v-model="field.model" :options="field.options || field.settings" :placeholder="field.placeholder"
-            :secret="field.type === 'password'" :language="field.language"></component>
+          <component
+            :ref="(el) => storeComponentRef(field.name, el)"
+            :is="field.component"
+            :disabled="field.disabled"
+            v-model="field.model"
+            :id="field.id"
+            :options="field.options || field.settings"
+            :placeholder="field.placeholder"
+            :secret="field.type === 'password'"
+            :language="field.language"
+          ></component>
         </div>
         <template v-if="errors[field.name]">
-          <div class="form__row__value__error" v-for="error in errors[field.name]" :key="`${field.name}-${error}`">
+          <div
+            class="form__row__value__error"
+            v-for="error in errors[field.name]"
+            :key="`${field.name}-${error}`"
+          >
             {{ error }}
           </div>
         </template>

@@ -1,0 +1,24 @@
+body.warm {
+  --color-primary: #c2410c;
+  --color-accent: #f59e0b;
+  --color-secondary: #9a3412;
+  --color-error: #dc2626;
+  --color-foreground: #fef3c7;
+  --color-background: #1c1917;
+
+  --color-shade-0: #120f0d;
+  --color-shade-1: #1c1917;
+  --color-shade-2: #292524;
+  --color-shade-3: #3f332c;
+  --color-shade-4: #55433a;
+  --color-shade-5: #6b564a;
+  --color-shade-6: #8b6f5f;
+  --color-shade-7: #b08968;
+  --color-shade-8: #d6ae7f;
+  --color-shade-9: #f5d7a6;
+  --color-shade-10: #fff4dd;
+
+  --color-overlay: rgba(28, 25, 23, 0.88);
+  --color-shadow: rgba(12, 10, 9, 0.48);
+  --color-highlight: rgba(245, 158, 11, 0.45);
+}

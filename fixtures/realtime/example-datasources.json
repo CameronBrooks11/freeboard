@@ -1,0 +1,40 @@
+[
+  {
+    "id": "ds_sse_demo",
+    "title": "SSE Demo",
+    "type": "sse",
+    "enabled": true,
+    "settings": {
+      "url": "http://127.0.0.1:18081/stream",
+      "parser": "json",
+      "idleTimeoutMs": 120000,
+      "staleAfterSeconds": 90
+    }
+  },
+  {
+    "id": "ds_ws_demo",
+    "title": "WS Demo",
+    "type": "websocket",
+    "enabled": true,
+    "settings": {
+      "url": "ws://127.0.0.1:18082/stream",
+      "parser": "json",
+      "idleTimeoutMs": 300000,
+      "staleAfterSeconds": 120
+    }
+  },
+  {
+    "id": "ds_mqtt_demo",
+    "title": "MQTT Demo",
+    "type": "mqtt",
+    "enabled": true,
+    "settings": {
+      "brokerProfileId": "replace-with-broker-profile-id",
+      "topic": "factory/line1/status",
+      "qos": 1,
+      "parser": "json",
+      "keepaliveSeconds": 60,
+      "staleAfterSeconds": 120
+    }
+  }
+]

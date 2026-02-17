@@ -1,210 +1,517 @@
 /**
  * @module resolvers/Dashboard
- * @description GraphQL resolver implementations for Dashboard operations.
- */
-
-/**
- * @typedef {Object} IResolvers
- *   Alias for the resolver map type from @graphql-tools/utils.
- *
- * @typedef {Object} GraphQLResolveInfo
- *   Alias for GraphQLResolveInfo from graphql.
+ * @description GraphQL resolver implementations for dashboard visibility, sharing, and ACL flows.
  */
 
 import { createGraphQLError, createPubSub } from "graphql-yoga";
-import { ensureThatUserIsLogged } from "../auth.js";
+import { ensureThatUserHasRole, ensureThatUserIsLogged } from "../auth.js";
+import { recordAuditEvent } from "../audit.js";
 import Dashboard from "../models/Dashboard.js";
-
-import { transformDashboard } from "./merge.js";
+import User from "../models/User.js";
+import { getAuthPolicyState } from "../policyStore.js";
+import {
+  buildCollaboratorView,
+  ensureDashboardDeletable,
+  ensureDashboardEditable,
+  ensureDashboardOwnershipTransferAllowed,
+  ensureDashboardPayloadAllowedByExecutionMode,
+  ensureDashboardReadable,
+  ensureDashboardShareManageable,
+  ensureVisibilityTransitionAllowed,
+  generateShareToken,
+  getDashboardOrNotFound,
+  getDashboardVisibility,
+  recordShareTokenRevocation,
+  resolveCreateVisibility,
+  resolveDashboardPermissions,
+  sanitizeDashboardInput,
+  toComparableId,
+  transformDashboardForContext,
+  uniqueAclEntries,
+  validateDashboardDatasources,
+} from "./dashboardHelpers.js";
+import { normalizeDashboardAccessLevel, normalizeDashboardVisibility } from "../policy.js";
+import { isValidEmail, normalizeEmail } from "../validators.js";
 
 const pubSub = createPubSub();
-const DASHBOARD_MUTABLE_FIELDS = new Set([
-  "title",
-  "version",
-  "published",
-  "image",
-  "datasources",
-  "columns",
-  "width",
-  "panes",
-  "authProviders",
-  "settings",
-]);
+const EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES = new Set(["link", "public"]);
 
-const sanitizeDashboardInput = (dashboard = {}) => {
-  const sanitized = {};
-  for (const [key, value] of Object.entries(dashboard || {})) {
-    if (DASHBOARD_MUTABLE_FIELDS.has(key)) {
-      sanitized[key] = value;
-    }
-  }
-  return sanitized;
-};
-
-const canReadDashboard = (dashboard, context) => {
-  if (!dashboard) {
-    return false;
-  }
-
-  if (dashboard.published) {
-    return true;
-  }
-
-  if (!context.user) {
-    return false;
-  }
-
-  return dashboard.user === context.user._id;
-};
-
-const canManageDashboard = (dashboard, context) => {
-  if (!dashboard || !context.user) {
-    return false;
-  }
-
-  return dashboard.user === context.user._id;
-};
-
-/**
- * Transform and filter a Dashboard document based on read authorization.
- *
- * @param {Object} res - Raw Mongoose Dashboard document.
- * @param {Object} context - GraphQL context, may include authenticated user.
- * @returns {Object} Transformed dashboard data appropriate for the user.
- * @throws {GraphQLError} If dashboard not found or access denied.
- */
-const getDashboard = (res, context) => {
-  if (!canReadDashboard(res, context)) {
-    throw createGraphQLError("Dashboard not found");
-  }
-
-  return transformDashboard(res);
-};
-
-export default /** @type {IResolvers} */ {
+export default {
+  DashboardVisibility: {
+    PRIVATE: "private",
+    LINK: "link",
+    PUBLIC: "public",
+  },
+  DashboardAccessLevel: {
+    VIEWER: "viewer",
+    EDITOR: "editor",
+  },
   Query: {
-    /**
-     * Fetch a single dashboard by its ID.
-     *
-     * @param {any} parent
-     * @param {{ _id: string }} args - Dashboard ID.
-     * @param {Object} context - GraphQL context containing user info.
-     * @returns {Promise<Object>} The requested dashboard.
-     */
     dashboard: async (parent, { _id }, context) => {
-      const dashboard = await Dashboard.findOne({ _id }).lean();
-      return getDashboard(dashboard, context);
+      const dashboard = await getDashboardOrNotFound(_id);
+      const permissions = ensureDashboardReadable(dashboard, context);
+      return transformDashboardForContext(dashboard, context, permissions);
     },
 
-    /**
-     * Fetch all dashboards belonging to the authenticated user.
-     *
-     * @param {any} parent
-     * @param {any} args
-     * @param {Object} context - GraphQL context containing user info.
-     * @returns {Promise<Object[]>} List of user's dashboards.
-     */
+    dashboardByShareToken: async (parent, { shareToken }, context) => {
+      const normalizedToken = String(shareToken || "").trim();
+      if (!normalizedToken) {
+        throw createGraphQLError("Dashboard not found");
+      }
+
+      const dashboard = await Dashboard.findOne({ shareToken: normalizedToken }).lean();
+      if (!dashboard) {
+        throw createGraphQLError("Dashboard not found");
+      }
+
+      const permissions = ensureDashboardReadable(dashboard, context, {
+        shareTokenMatched: true,
+      });
+      return transformDashboardForContext(dashboard, context, permissions);
+    },
+
     dashboards: async (parent, args, context) => {
       ensureThatUserIsLogged(context);
-      const res = await Dashboard.find({ user: context.user._id })
-        .populate()
-        .exec();
 
-      return res.map(transformDashboard);
+      const userId = toComparableId(context.user._id);
+      let filter = {};
+      if (context.user.role !== "admin") {
+        const authPolicy = await getAuthPolicyState();
+        const scopedFilters = [{ user: userId }, { acl: { $elemMatch: { userId } } }];
+        if (authPolicy.dashboardPublicListingEnabled) {
+          scopedFilters.push({ visibility: "public" });
+        }
+        filter = { $or: scopedFilters };
+      }
+
+      const dashboards = await Dashboard.find(filter).lean();
+      return dashboards
+        .map((dashboard) => {
+          const permissions = resolveDashboardPermissions(dashboard, context);
+          if (!permissions.canRead) {
+            return null;
+          }
+          return transformDashboardForContext(dashboard, context, permissions);
+        })
+        .filter(Boolean);
+    },
+
+    dashboardCollaborators: async (parent, { _id }, context) => {
+      ensureThatUserIsLogged(context);
+      const dashboard = await getDashboardOrNotFound(_id);
+      ensureDashboardShareManageable(dashboard, context);
+      return buildCollaboratorView(dashboard);
     },
   },
 
   Mutation: {
-    /**
-     * Create a new dashboard for the authenticated user.
-     *
-     * @param {any} parent
-     * @param {{ dashboard: any }} args - Dashboard input data.
-     * @param {Object} context - GraphQL context containing user info.
-     * @returns {Promise<Object>} The created dashboard.
-     */
     createDashboard: async (parent, { dashboard }, context) => {
-      ensureThatUserIsLogged(context);
+      ensureThatUserHasRole(context, ["editor", "admin"]);
 
-      const sanitizedDashboard = sanitizeDashboardInput(dashboard);
-      const newDashboard = new Dashboard({
-        ...sanitizedDashboard,
-        user: context.user._id,
+      const sanitizedInput = sanitizeDashboardInput(dashboard);
+      validateDashboardDatasources(sanitizedInput.datasources);
+      await ensureDashboardPayloadAllowedByExecutionMode({
+        inputDashboard: sanitizedInput,
       });
-      try {
-        return newDashboard.save().then(transformDashboard);
-      } catch (error) {
-        console.error(error);
-        throw error;
-      }
-    },
+      const visibility = await resolveCreateVisibility(sanitizedInput, context);
+      delete sanitizedInput.visibility;
 
-    /**
-     * Update an existing dashboard and publish change event.
-     *
-     * @param {any} parent
-     * @param {{ _id: string, dashboard: any }} args - Dashboard ID and update data.
-     * @param {Object} context - GraphQL context containing user info.
-     * @returns {Promise<Object>} The updated dashboard.
-     */
-    updateDashboard: async (parent, { _id, dashboard }, context) => {
-      ensureThatUserIsLogged(context);
+      const created = await new Dashboard({
+        ...sanitizedInput,
+        visibility,
+        user: context.user._id,
+      }).save();
 
-      const sanitizedDashboard = sanitizeDashboardInput(dashboard);
-      const updated = await Dashboard.findOneAndUpdate(
-        { _id, user: context.user._id },
-        { $set: sanitizedDashboard },
-        { new: true, runValidators: true }
-      ).lean();
-
-      if (!updated || !canManageDashboard(updated, context)) {
+      const createdDashboard = await Dashboard.findOne({ _id: created._id }).lean();
+      if (!createdDashboard) {
         throw createGraphQLError("Dashboard not found");
       }
 
-      const transformed = transformDashboard(updated);
-      // Notify owner-scoped subscribers of dashboard updates.
+      await recordAuditEvent({
+        actorUserId: context.user._id,
+        action: "dashboard.created",
+        targetType: "dashboard",
+        targetId: createdDashboard._id,
+        metadata: { visibility: createdDashboard.visibility },
+      });
+
+      const permissions = resolveDashboardPermissions(createdDashboard, context);
+      const transformed = transformDashboardForContext(createdDashboard, context, permissions);
+      return transformed;
+    },
+
+    updateDashboard: async (parent, { _id, dashboard }, context) => {
+      ensureThatUserHasRole(context, ["editor", "admin"]);
+
+      const existing = await getDashboardOrNotFound(_id);
+      ensureDashboardEditable(existing, context);
+
+      const sanitizedInput = sanitizeDashboardInput(dashboard);
+      validateDashboardDatasources(sanitizedInput.datasources);
+      await ensureDashboardPayloadAllowedByExecutionMode({
+        inputDashboard: sanitizedInput,
+        existingDashboard: existing,
+      });
+      const updatePayload = { ...sanitizedInput };
+      let nextShareTokenVersion = null;
+
+      if (Object.prototype.hasOwnProperty.call(sanitizedInput, "visibility")) {
+        const previousVisibility = getDashboardVisibility(existing);
+        const nextVisibility = normalizeDashboardVisibility(sanitizedInput.visibility);
+        await ensureVisibilityTransitionAllowed({
+          context,
+          previousVisibility,
+          nextVisibility,
+        });
+        updatePayload.visibility = nextVisibility;
+        const shouldExposeExternally =
+          EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES.has(nextVisibility);
+        const shouldRotateShareToken = shouldExposeExternally && previousVisibility === "private";
+        const visibilityChanged = nextVisibility !== previousVisibility;
+        if (shouldExposeExternally && (shouldRotateShareToken || !existing.shareToken)) {
+          updatePayload.shareToken = generateShareToken();
+        }
+        if (visibilityChanged) {
+          nextShareTokenVersion = Math.max(0, Number(existing.shareTokenVersion) || 0) + 1;
+          updatePayload.shareTokenVersion = nextShareTokenVersion;
+        }
+      }
+
+      const updated = await Dashboard.findOneAndUpdate(
+        { _id },
+        { $set: updatePayload },
+        { new: true, runValidators: true },
+      ).lean();
+      if (!updated) {
+        throw createGraphQLError("Dashboard not found");
+      }
+
+      if (nextShareTokenVersion !== null) {
+        await recordShareTokenRevocation({
+          dashboardId: updated._id,
+          shareTokenVersion: nextShareTokenVersion,
+        });
+      }
+
+      await recordAuditEvent({
+        actorUserId: context.user._id,
+        action: "dashboard.updated",
+        targetType: "dashboard",
+        targetId: updated._id,
+        metadata: { fields: Object.keys(updatePayload) },
+      });
+
+      const permissions = resolveDashboardPermissions(updated, context);
+      const transformed = transformDashboardForContext(updated, context, permissions);
       pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
       return transformed;
     },
 
-    /**
-     * Delete a dashboard owned by the authenticated user.
-     *
-     * @param {any} parent
-     * @param {{ _id: string }} args - Dashboard ID.
-     * @param {Object} context - GraphQL context containing user info.
-     * @returns {Promise<Object>} The deleted dashboard data.
-     */
     deleteDashboard: async (parent, { _id }, context) => {
-      ensureThatUserIsLogged(context);
+      ensureThatUserHasRole(context, ["editor", "admin"]);
+      const existing = await getDashboardOrNotFound(_id);
+      ensureDashboardDeletable(existing, context);
 
-      const deleted = await Dashboard.findOneAndDelete({
-        _id,
-        user: context.user._id,
-      }).lean();
-
-      if (!deleted || !canManageDashboard(deleted, context)) {
+      const deleted = await Dashboard.findOneAndDelete({ _id }).lean();
+      if (!deleted) {
         throw createGraphQLError("Dashboard not found");
       }
 
-      return transformDashboard(deleted);
+      await recordAuditEvent({
+        actorUserId: context.user._id,
+        action: "dashboard.deleted",
+        targetType: "dashboard",
+        targetId: deleted._id,
+        metadata: { visibility: getDashboardVisibility(deleted) },
+      });
+
+      const permissions = resolveDashboardPermissions(deleted, context);
+      return transformDashboardForContext(deleted, context, permissions);
+    },
+
+    setDashboardVisibility: async (parent, { _id, visibility }, context) => {
+      ensureThatUserHasRole(context, ["editor", "admin"]);
+
+      const existing = await getDashboardOrNotFound(_id);
+      ensureDashboardShareManageable(existing, context);
+
+      const previousVisibility = getDashboardVisibility(existing);
+      const nextVisibility = normalizeDashboardVisibility(visibility);
+      await ensureVisibilityTransitionAllowed({
+        context,
+        previousVisibility,
+        nextVisibility,
+      });
+      const shouldExposeExternally = EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES.has(nextVisibility);
+      const shouldRotateShareToken = shouldExposeExternally && previousVisibility === "private";
+      const visibilityChanged = nextVisibility !== previousVisibility;
+      const shareTokenUpdate =
+        shouldExposeExternally && (shouldRotateShareToken || !existing.shareToken)
+          ? { shareToken: generateShareToken() }
+          : {};
+      const nextShareTokenVersion = visibilityChanged
+        ? Math.max(0, Number(existing.shareTokenVersion) || 0) + 1
+        : null;
+      const shareTokenVersionUpdate =
+        nextShareTokenVersion === null ? {} : { shareTokenVersion: nextShareTokenVersion };
+
+      const updated = await Dashboard.findOneAndUpdate(
+        { _id },
+        {
+          $set: {
+            visibility: nextVisibility,
+            ...shareTokenUpdate,
+            ...shareTokenVersionUpdate,
+          },
+        },
+        { new: true, runValidators: true },
+      ).lean();
+      if (!updated) {
+        throw createGraphQLError("Dashboard not found");
+      }
+
+      if (nextShareTokenVersion !== null) {
+        await recordShareTokenRevocation({
+          dashboardId: updated._id,
+          shareTokenVersion: nextShareTokenVersion,
+        });
+      }
+
+      await recordAuditEvent({
+        actorUserId: context.user._id,
+        action: "dashboard.visibility.updated",
+        targetType: "dashboard",
+        targetId: updated._id,
+        metadata: {
+          from: previousVisibility,
+          to: nextVisibility,
+        },
+      });
+
+      const permissions = resolveDashboardPermissions(updated, context);
+      const transformed = transformDashboardForContext(updated, context, permissions);
+      pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
+      return transformed;
+    },
+
+    rotateDashboardShareToken: async (parent, { _id }, context) => {
+      ensureThatUserHasRole(context, ["editor", "admin"]);
+      const existing = await getDashboardOrNotFound(_id);
+      ensureDashboardShareManageable(existing, context);
+      const nextShareTokenVersion = Math.max(0, Number(existing.shareTokenVersion) || 0) + 1;
+
+      const updated = await Dashboard.findOneAndUpdate(
+        { _id },
+        {
+          $set: {
+            shareToken: generateShareToken(),
+            shareTokenVersion: nextShareTokenVersion,
+          },
+        },
+        { new: true, runValidators: true },
+      ).lean();
+      if (!updated) {
+        throw createGraphQLError("Dashboard not found");
+      }
+
+      await recordShareTokenRevocation({
+        dashboardId: updated._id,
+        shareTokenVersion: nextShareTokenVersion,
+      });
+
+      await recordAuditEvent({
+        actorUserId: context.user._id,
+        action: "dashboard.share_token.rotated",
+        targetType: "dashboard",
+        targetId: updated._id,
+        metadata: { visibility: updated.visibility },
+      });
+
+      const permissions = resolveDashboardPermissions(updated, context);
+      const transformed = transformDashboardForContext(updated, context, permissions);
+      pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
+      return transformed;
+    },
+
+    upsertDashboardAccess: async (parent, { _id, email, accessLevel }, context) => {
+      ensureThatUserHasRole(context, ["editor", "admin"]);
+      const existing = await getDashboardOrNotFound(_id);
+      ensureDashboardShareManageable(existing, context);
+
+      const normalizedEmail = normalizeEmail(email);
+      if (!isValidEmail(normalizedEmail)) {
+        throw createGraphQLError("The email is not valid");
+      }
+      const user = await User.findOne({ email: normalizedEmail, active: true }).lean();
+      if (!user) {
+        throw createGraphQLError("User not found or login not allowed");
+      }
+
+      const ownerUserId = toComparableId(existing.user);
+      const targetUserId = toComparableId(user._id);
+      if (ownerUserId === targetUserId) {
+        throw createGraphQLError("Owner access is managed through ownership only", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      const normalizedAccessLevel = normalizeDashboardAccessLevel(accessLevel);
+      const nextAcl = uniqueAclEntries([
+        ...(existing.acl || []).filter((entry) => toComparableId(entry.userId) !== targetUserId),
+        {
+          userId: targetUserId,
+          accessLevel: normalizedAccessLevel,
+          grantedBy: context.user._id,
+          grantedAt: new Date(),
+        },
+      ]);
+
+      const updated = await Dashboard.findOneAndUpdate(
+        { _id },
+        { $set: { acl: nextAcl } },
+        { new: true, runValidators: true },
+      ).lean();
+      if (!updated) {
+        throw createGraphQLError("Dashboard not found");
+      }
+
+      await recordAuditEvent({
+        actorUserId: context.user._id,
+        action: "dashboard.acl.upserted",
+        targetType: "dashboard",
+        targetId: updated._id,
+        metadata: {
+          userId: targetUserId,
+          accessLevel: normalizedAccessLevel,
+        },
+      });
+
+      const permissions = resolveDashboardPermissions(updated, context);
+      const transformed = transformDashboardForContext(updated, context, permissions);
+      pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
+      return transformed;
+    },
+
+    revokeDashboardAccess: async (parent, { _id, userId }, context) => {
+      ensureThatUserHasRole(context, ["editor", "admin"]);
+      const existing = await getDashboardOrNotFound(_id);
+      ensureDashboardShareManageable(existing, context);
+
+      const ownerUserId = toComparableId(existing.user);
+      const targetUserId = toComparableId(userId);
+      if (ownerUserId === targetUserId) {
+        throw createGraphQLError("Owner access cannot be revoked from ACL", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      const previousCount = Array.isArray(existing.acl) ? existing.acl.length : 0;
+      const nextAcl = (existing.acl || []).filter(
+        (entry) => toComparableId(entry.userId) !== targetUserId,
+      );
+
+      const updated = await Dashboard.findOneAndUpdate(
+        { _id },
+        { $set: { acl: nextAcl } },
+        { new: true, runValidators: true },
+      ).lean();
+      if (!updated) {
+        throw createGraphQLError("Dashboard not found");
+      }
+
+      if (nextAcl.length !== previousCount) {
+        await recordAuditEvent({
+          actorUserId: context.user._id,
+          action: "dashboard.acl.revoked",
+          targetType: "dashboard",
+          targetId: updated._id,
+          metadata: { userId: targetUserId },
+        });
+      }
+
+      const permissions = resolveDashboardPermissions(updated, context);
+      const transformed = transformDashboardForContext(updated, context, permissions);
+      pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
+      return transformed;
+    },
+
+    transferDashboardOwnership: async (parent, { _id, newOwnerUserId }, context) => {
+      ensureThatUserHasRole(context, ["editor", "admin"]);
+      const existing = await getDashboardOrNotFound(_id);
+      ensureDashboardOwnershipTransferAllowed(existing, context);
+
+      const nextOwner = await User.findOne({
+        _id: newOwnerUserId,
+        active: true,
+      }).lean();
+      if (!nextOwner) {
+        throw createGraphQLError("User not found or login not allowed");
+      }
+
+      const currentOwnerUserId = toComparableId(existing.user);
+      const targetOwnerUserId = toComparableId(nextOwner._id);
+      if (currentOwnerUserId === targetOwnerUserId) {
+        const permissions = resolveDashboardPermissions(existing, context);
+        return transformDashboardForContext(existing, context, permissions);
+      }
+
+      const nextAcl = uniqueAclEntries([
+        ...(existing.acl || []).filter((entry) => {
+          const entryUserId = toComparableId(entry.userId);
+          return entryUserId !== currentOwnerUserId && entryUserId !== targetOwnerUserId;
+        }),
+        {
+          userId: currentOwnerUserId,
+          accessLevel: "editor",
+          grantedBy: context.user._id,
+          grantedAt: new Date(),
+        },
+      ]);
+
+      const updated = await Dashboard.findOneAndUpdate(
+        { _id },
+        {
+          $set: {
+            user: targetOwnerUserId,
+            acl: nextAcl,
+          },
+        },
+        { new: true, runValidators: true },
+      ).lean();
+      if (!updated) {
+        throw createGraphQLError("Dashboard not found");
+      }
+
+      await recordAuditEvent({
+        actorUserId: context.user._id,
+        action: "dashboard.ownership.transferred",
+        targetType: "dashboard",
+        targetId: updated._id,
+        metadata: {
+          fromUserId: currentOwnerUserId,
+          toUserId: targetOwnerUserId,
+        },
+      });
+
+      const permissions = resolveDashboardPermissions(updated, context);
+      const transformed = transformDashboardForContext(updated, context, permissions);
+      pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
+      return transformed;
     },
   },
 
   Subscription: {
     dashboard: {
-      /**
-       * Subscribe to real-time updates for a specific dashboard.
-       *
-      * @param {any} _
-      * @param {{ _id: string }} args - Dashboard ID.
-      * @returns {AsyncIterable<any>} Subscription iterator.
-      */
       subscribe: async (_, args, context) => {
         ensureThatUserIsLogged(context);
 
         const dashboard = await Dashboard.findOne({ _id: args._id }).lean();
-        if (!canManageDashboard(dashboard, context)) {
+        if (!dashboard) {
+          throw createGraphQLError("Dashboard not found");
+        }
+
+        const permissions = resolveDashboardPermissions(dashboard, context);
+        if (!permissions.canRead) {
           throw createGraphQLError("Dashboard not found");
         }
 

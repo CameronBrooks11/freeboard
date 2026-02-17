@@ -7,19 +7,26 @@
  * @prop {Function} onOk        - Callback when the dialog is confirmed with new settings.
  * @prop {Object} datasource    - Existing datasource configuration for editing.
  */
-defineOptions({ name: 'DatasourceDialogBox' });
+defineOptions({ name: "DatasourceDialogBox" });
 
 import { computed, ref, watch } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
+import { usePluginRegistryStore } from "../stores/pluginRegistry.js";
+import { useProfileCatalogStore } from "../stores/profileCatalog.js";
 import { storeToRefs } from "pinia";
 import TabNavigator from "./TabNavigator.vue";
 import TypeSelect from "./TypeSelect.vue";
+import router from "../router";
 
-const freeboardStore = useFreeboardStore();
+const dashboardStore = useDashboardStore();
+const pluginRegistryStore = usePluginRegistryStore();
+const profileCatalogStore = useProfileCatalogStore();
 // Retrieve available datasource plugins and dashboard instance from store
-const { datasourcePlugins, dashboard } = storeToRefs(freeboardStore);
+const { dashboard } = storeToRefs(dashboardStore);
+const { datasourcePlugins } = storeToRefs(pluginRegistryStore);
+const { credentialProfiles, brokerProfiles } = storeToRefs(profileCatalogStore);
 
 // Define props passed into this dialog
 const { header, onClose, onOk, datasource } = defineProps({
@@ -50,25 +57,21 @@ const validateUniqueDatasourceTitle = (value) => {
     return {};
   }
 
-  const duplicate = dashboard.value.hasDatasourceTitleConflict(
-    value,
-    datasource?.id
-  );
+  const duplicate = dashboard.value.hasDatasourceTitleConflict(value, datasource?.id);
 
-  return duplicate
-    ? { error: "Datasource title must be unique and not use reserved names." }
-    : {};
+  return duplicate ? { error: "Datasource title must be unique and not use reserved names." } : {};
 };
 
 // Rebuild fields schema whenever the selected type changes
 watch(
-  typeRef,
-  (newValue) => {
-    if (!newValue) {
+  [typeRef, credentialProfiles, brokerProfiles],
+  ([newValue]) => {
+    const plugin = datasourcePlugins.value[newValue];
+    if (!newValue || !plugin || typeof plugin.fields !== "function") {
       fields.value = [];
       return;
     }
-    fields.value = datasourcePlugins.value[newValue].fields(
+    fields.value = plugin.fields(
       datasource,
       dashboard.value,
       {
@@ -93,10 +96,14 @@ watch(
             type: "boolean",
           },
         ],
-      }
+      },
+      {
+        credentialProfiles: credentialProfiles.value,
+        brokerProfiles: brokerProfiles.value,
+      },
     );
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // Build select options for plugin types
@@ -104,8 +111,17 @@ const datasourcePluginsOptions = computed(() =>
   Object.keys(datasourcePlugins.value).map((key) => ({
     value: key,
     label: datasourcePlugins.value[key].label,
-  }))
+  })),
 );
+
+const showBrokerProfileQuickCreate = computed(
+  () => typeRef.value === "mqtt" && brokerProfiles.value.length === 0,
+);
+const adminBrokerProfilesHref = computed(() => router.resolve({ path: "/admin" }).href);
+
+const openAdminBrokerProfiles = () => {
+  window.open(adminBrokerProfilesHref.value, "_blank", "noopener");
+};
 
 /**
  * Confirm dialog: validate fields, assemble new config, invoke onOk, close modal.
@@ -133,8 +149,15 @@ const onDialogBoxOk = () => {
 </script>
 
 <template>
-  <DialogBox class="datasource-dialog-box" :header="header" :ok="$t('dialogBox.buttonOk')"
-    :cancel="$t('dialogBox.buttonCancel')" ref="dialog" @close="onClose" @ok="() => onDialogBoxOk()">
+  <DialogBox
+    class="datasource-dialog-box"
+    :header="header"
+    :ok="$t('dialogBox.buttonOk')"
+    :cancel="$t('dialogBox.buttonCancel')"
+    ref="dialog"
+    @close="onClose"
+    @ok="() => onDialogBoxOk()"
+  >
     <!-- Plugin type selector in header slot -->
     <template #header>
       <TypeSelect v-model="typeRef" :options="datasourcePluginsOptions" />
@@ -143,9 +166,26 @@ const onDialogBoxOk = () => {
     <!-- Dynamic form sections for plugin settings -->
     <TabNavigator v-if="typeRef" :fields="fields" ref="tabNavigator">
       <template v-for="field in fields" :key="field.name" #[field.name]>
-        <Form :ref="(el) => storeComponentRef(field.name, el)" :settings="field.settings" :fields="field.fields" />
+        <Form
+          :ref="(el) => storeComponentRef(field.name, el)"
+          :settings="field.settings"
+          :fields="field.fields"
+        />
       </template>
     </TabNavigator>
+
+    <div v-if="showBrokerProfileQuickCreate" class="datasource-dialog-box__broker-hint">
+      <p class="datasource-dialog-box__broker-hint-copy">
+        {{ $t("datasourceDialogBox.noBrokerProfilesHint") }}
+      </p>
+      <button
+        type="button"
+        class="datasource-dialog-box__broker-hint-action"
+        @click="openAdminBrokerProfiles"
+      >
+        {{ $t("datasourceDialogBox.openAdminBrokerProfiles") }}
+      </button>
+    </div>
   </DialogBox>
 </template>
 

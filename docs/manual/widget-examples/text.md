@@ -5,7 +5,7 @@
 ### Datasource Setup
 
 1. Add datasource.
-2. Set `Type = JSON`.
+2. Set `Type = HTTP`.
 3. Set `Title = weatherLondon`.
 4. Set `URL = https://api.open-meteo.com/v1/forecast?latitude=51.5072&longitude=-0.1276&current_weather=true`.
 5. Set `Refresh = 60` seconds.
@@ -30,7 +30,7 @@ Expected output: current London temperature in Celsius.
 ### Datasource Setup
 
 1. Add datasource.
-2. Set `Type = JSON`.
+2. Set `Type = HTTP`.
 3. Set `Title = btcUsd`.
 4. Set `URL = https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd`.
 5. Set `Refresh = 30` seconds.
@@ -49,4 +49,3 @@ Expected output: current London temperature in Celsius.
 9. Save.
 
 Expected output: live BTC/USD spot price.
-

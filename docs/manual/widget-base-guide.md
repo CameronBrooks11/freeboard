@@ -62,10 +62,7 @@ window.addEventListener("message", (event) => {
   const msg = event.data;
   if (msg?.type !== "datasource:update") return;
 
-  const text =
-    typeof msg.value === "object"
-      ? JSON.stringify(msg.value)
-      : String(msg.value);
+  const text = typeof msg.value === "object" ? JSON.stringify(msg.value) : String(msg.value);
 
   document.getElementById("out").textContent = text;
 });
@@ -78,6 +75,32 @@ window.addEventListener("message", (event) => {
 - avoid long-running loops/timers
 - sanitize/validate any HTML before injecting
 - use `snapshot` for cross-datasource composition
+
+## Widget Responsive Rendering Guidelines
+
+All built-in widgets should remain readable in narrow panes and `sm` mobile layouts.
+
+Runtime contract:
+
+- `Widget.vue` forwards pane size through `onResize({ width, height })`.
+- Widgets should treat `width < ~320px` as narrow and simplify layout.
+- Prefer visual degradation over truncation or overflow.
+
+Built-in behavior baseline:
+
+- `Table`: reduces font size and enables horizontal scroll at narrow widths.
+- `Status List`: switches to compact row spacing and tighter type at narrow widths.
+- `Bar Chart`: reduces labels and suppresses value labels in narrow panes to prevent overlap.
+- `Text`, `Indicator`, `Gauge`, `Pointer`: scale typography/visual size down for narrow panes.
+- `Sparkline`: reduces label typography and keeps trend rendering legible in small panes.
+
+Authoring recommendations:
+
+- Keep header/value content independent so headers can hide without breaking data display.
+- Treat optional UI (legends, value labels, units) as degradable at narrow widths.
+- Avoid fixed pixel dimensions when container-relative sizing works.
+- Use `overflow: auto` only for content that must remain accessible (tables/lists), not for core value glyphs.
+- Keep `getPreferredRows()` realistic so pane min-height remains predictable on desktop and mobile.
 
 ## When Not to Use Base
 

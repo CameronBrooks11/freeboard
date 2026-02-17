@@ -3,9 +3,28 @@
  * @description Client-side model for dashboard datasources, handling configuration, lifecycle, and data updates.
  */
 
-import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
-import { generateModelId } from "./id";
+import { generateModelId } from "./id.js";
+import {
+  getDashboardId,
+  getDatasourcePlugin,
+  processDatasourceUpdate,
+} from "../runtime/runtimeContext.js";
+
+const cloneMutableSettings = (value) => {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  if (typeof structuredClone === "function") {
+    try {
+      return structuredClone(value);
+    } catch {
+      // Fallback below.
+    }
+  }
+
+  return JSON.parse(JSON.stringify(value));
+};
 
 /**
  * Wrapper around a datasource plugin instance, managing settings, type, and data flow.
@@ -27,8 +46,22 @@ export class Datasource {
   _type = null;
   /** @type {Date|null} Timestamp of last successful update. */
   lastUpdated = null;
+  /** @type {Date|null} Timestamp of last received message. */
+  lastMessageAt = null;
+  /** @type {Date|null} Timestamp of last error. */
+  lastErrorAt = null;
   /** @type {Error|null} Last encountered error, if any. */
   lastError = null;
+  /** @type {string} Runtime status. */
+  status = "idle";
+  /** @type {string|null} Runtime error code. */
+  errorCode = null;
+  /** @type {{messageCount: number, errorCount: number, retryCount: number}} Runtime metrics snapshot. */
+  metrics = {
+    messageCount: 0,
+    errorCount: 0,
+    retryCount: 0,
+  };
 
   /**
    * Update datasource settings and notify plugin instance if available.
@@ -38,11 +71,12 @@ export class Datasource {
   set settings(newValue) {
     const nextValue = newValue || {};
 
-    if (
-      this.datasourceInstance !== undefined &&
-      typeof this.datasourceInstance.onSettingsChanged === "function"
-    ) {
-      this.datasourceInstance.onSettingsChanged(nextValue);
+    if (this.datasourceInstance !== undefined) {
+      if (typeof this.datasourceInstance.applySettings === "function") {
+        this.datasourceInstance.applySettings(nextValue);
+      } else if (typeof this.datasourceInstance.onSettingsChanged === "function") {
+        this.datasourceInstance.onSettingsChanged(nextValue);
+      }
     }
     this._settings = nextValue;
   }
@@ -92,9 +126,7 @@ export class Datasource {
       return;
     }
 
-    const freeboardStore = useFreeboardStore();
-    const { datasourcePlugins } = storeToRefs(freeboardStore);
-    const datasourceType = datasourcePlugins.value[this._type];
+    const datasourceType = getDatasourcePlugin(this._type);
 
     if (!datasourceType || typeof datasourceType.newInstance !== "function") {
       return;
@@ -106,14 +138,17 @@ export class Datasource {
         (datasourceInstance) => {
           this.datasourceInstance = datasourceInstance;
           this.lastError = null;
-          if (typeof datasourceInstance.updateNow === "function") {
-            datasourceInstance.updateNow();
-          }
         },
-        (newData) => this.updateCallback(newData)
+        (newData) => this.updateCallback(newData),
+        (statusPayload) => this.statusCallback(statusPayload),
+        {
+          datasourceId: this.id,
+          dashboardId: getDashboardId(),
+        },
       );
     } catch (error) {
       this.lastError = error;
+      this.status = "error";
       console.error(`Datasource '${this._type}' failed to initialize`, error);
     }
   }
@@ -146,9 +181,10 @@ export class Datasource {
       if (typeof this.datasourceInstance.onDispose === "function") {
         this.datasourceInstance.onDispose();
       }
-      
+
       this.datasourceInstance = undefined;
     }
+    this.status = this.enabled ? "idle" : "disabled";
   }
 
   /**
@@ -161,13 +197,46 @@ export class Datasource {
       return;
     }
 
-    const freeboardStore = useFreeboardStore();
-    const { dashboard } = storeToRefs(freeboardStore);
-
     this.latestData = newData;
     this.lastUpdated = new Date();
+    this.lastMessageAt = this.lastUpdated;
     this.lastError = null;
-    dashboard.value.processDatasourceUpdate(this);
+    this.errorCode = null;
+    this.status = "connected";
+    processDatasourceUpdate(this);
+  }
+
+  /**
+   * Callback invoked by datasource runtime for status/health updates.
+   *
+   * @param {Object} statusPayload
+   */
+  statusCallback(statusPayload = {}) {
+    if (statusPayload.status) {
+      this.status = statusPayload.status;
+    }
+
+    if (statusPayload.lastMessageAt) {
+      this.lastMessageAt = new Date(statusPayload.lastMessageAt);
+    }
+    if (statusPayload.lastUpdatedAt) {
+      this.lastUpdated = new Date(statusPayload.lastUpdatedAt);
+    }
+    if (statusPayload.lastErrorAt) {
+      this.lastErrorAt = new Date(statusPayload.lastErrorAt);
+    }
+    if (statusPayload.errorCode !== undefined) {
+      this.errorCode = statusPayload.errorCode || null;
+    }
+    if (statusPayload.error !== undefined) {
+      this.lastError = statusPayload.error ? new Error(String(statusPayload.error)) : null;
+    }
+    if (statusPayload.metrics && typeof statusPayload.metrics === "object") {
+      this.metrics = {
+        ...this.metrics,
+        ...statusPayload.metrics,
+      };
+    }
   }
 
   /**
@@ -194,7 +263,7 @@ export class Datasource {
     this.id = object.id || generateModelId("ds");
     this.title = object.title;
     this.enabled = object.enabled !== undefined ? !!object.enabled : true;
-    this.settings = object.settings;
+    this.settings = cloneMutableSettings(object.settings);
     this.type = object.type;
   }
 

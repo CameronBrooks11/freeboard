@@ -1,0 +1,46 @@
+name: Ansible quality
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "ansible/**"
+      - "player.sh"
+      - "requirements.txt"
+      - ".ansible-lint"
+      - "docs/manual/ansible.md"
+      - "docs/manual/deployment-profiles.md"
+  merge_group:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ansible-lint-and-syntax:
+    name: Ansible lint and syntax check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible tooling
+        run: pip install -r requirements.txt
+
+      - name: Lint Ansible
+        run: ansible-lint ansible/playbook.yml ansible/rollback.yml
+
+      - name: Syntax check playbooks
+        run: |
+          ansible-playbook -i localhost, ansible/playbook.yml --syntax-check \
+            -e "freeboard_target_group=all kiosk_player_url=http://localhost:8080/s/demo"
+          ansible-playbook -i localhost, ansible/rollback.yml --syntax-check \
+            -e "freeboard_target_group=all"

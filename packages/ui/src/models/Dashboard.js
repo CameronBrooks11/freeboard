@@ -1,11 +1,10 @@
 /**
  * @module models/Dashboard
- * @description Client-side model for Freeboard Dashboard, managing panes, datasources, auth providers, and serialization.
+ * @description Client-side model for Freeboard Dashboard, managing panes, datasources, and serialization.
  */
 
-import { AuthProvider } from "./AuthProvider";
-import { Datasource } from "./Datasource";
-import { Pane } from "./Pane";
+import { Datasource } from "./Datasource.js";
+import { Pane } from "./Pane.js";
 import {
   buildDatasourceSnapshot,
   clampPaneLayoutHeights,
@@ -15,7 +14,8 @@ import {
   replaceDatasourceReferences,
   serializeDashboardState,
 } from "./dashboardRuntime.js";
-import { generateModelId } from "./id";
+import { generateModelId } from "./id.js";
+import { resolveDashboardIsOwner } from "./ownership.js";
 
 /**
  * Minimum number of columns allowed for dashboard layout.
@@ -30,6 +30,88 @@ export const MIN_COLUMNS = 3;
 export const MAX_COLUMNS = 12;
 
 /**
+ * Supported dashboard width presets.
+ * @constant {readonly string[]}
+ */
+export const DASHBOARD_WIDTH_PRESETS = Object.freeze(["sm", "md", "lg", "xl"]);
+
+/**
+ * Default dashboard width preset.
+ * @constant {string}
+ */
+export const DEFAULT_DASHBOARD_WIDTH = "md";
+
+/**
+ * Normalize dashboard width values from persisted payloads/settings.
+ *
+ * @param {string} value
+ * @returns {"sm"|"md"|"lg"|"xl"}
+ */
+export const normalizeDashboardWidth = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (DASHBOARD_WIDTH_PRESETS.includes(normalized)) {
+    return normalized;
+  }
+  return DEFAULT_DASHBOARD_WIDTH;
+};
+
+/**
+ * Supported dashboard theme presets.
+ * @constant {readonly string[]}
+ */
+export const DASHBOARD_THEME_PRESETS = Object.freeze([
+  "auto",
+  "light",
+  "dark",
+  "professional",
+  "high-contrast",
+  "colorblind",
+  "warm",
+  "cool",
+]);
+
+/**
+ * Default dashboard theme preset.
+ * @constant {string}
+ */
+export const DEFAULT_DASHBOARD_THEME = "auto";
+
+/**
+ * Normalize dashboard theme values from persisted payloads/settings.
+ *
+ * @param {string} value
+ * @returns {"auto"|"light"|"dark"|"professional"|"high-contrast"|"colorblind"|"warm"|"cool"}
+ */
+export const normalizeDashboardTheme = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (DASHBOARD_THEME_PRESETS.includes(normalized)) {
+    return normalized;
+  }
+  return DEFAULT_DASHBOARD_THEME;
+};
+
+const normalizeBooleanSetting = (value, fallback = false) => {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  if (typeof value === "boolean") {
+    return value;
+  }
+  const normalized = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+};
+
+/**
  * Represents a Freeboard dashboard with layout, content, and settings.
  *
  * @class Dashboard
@@ -39,26 +121,35 @@ export class Dashboard {
   _id = null;
   /** @type {string} Dashboard title. */
   title = "Dashboard";
-  /** @type {boolean} Publication status. */
-  published = true;
+  /** @type {string} Visibility status. */
+  visibility = "private";
+  /** @type {string|null} Opaque share token for link access. */
+  shareToken = null;
+  /** @type {number} Monotonic share token version for public/link revoke semantics. */
+  shareTokenVersion = 0;
+  /** @type {Array<{userId: string, accessLevel: string}>} Dashboard ACL entries. */
+  acl = [];
   /** @type {string|null} Optional image URL. */
   image = null;
   /** @type {number} Number of columns in layout. */
   columns = MIN_COLUMNS;
   /** @type {string} Layout width specifier. */
-  width = "md";
+  width = DEFAULT_DASHBOARD_WIDTH;
   /** @type {Array} Collection of datasource instances. */
   datasources = [];
   /** @type {Array} Collection of pane instances. */
   panes = [];
-  /** @type {Array} Collection of auth provider instances. */
-  authProviders = [];
   /** @type {Object} Dashboard settings (theme, style, etc.). */
   settings = {
-    theme: "auto",
+    theme: DEFAULT_DASHBOARD_THEME,
+    allowMobileEdit: false,
   };
   /** @type {boolean} Whether the current user is the owner. */
   isOwner = true;
+  /** @type {boolean} Whether current user can edit this dashboard. */
+  canEdit = true;
+  /** @type {boolean} Whether current user can manage sharing/collaborators. */
+  canManageSharing = true;
 
   /**
    * Get the layout array mapped from pane layouts.
@@ -85,28 +176,22 @@ export class Dashboard {
    * Decrease the dashboard's maximum width setting.
    */
   decreaseMaxWidth() {
-    if (this.width === "md") {
+    const index = DASHBOARD_WIDTH_PRESETS.indexOf(normalizeDashboardWidth(this.width));
+    if (index <= 0) {
       return;
     }
-    if (this.width === "lg") {
-      this.width = "md";
-    } else {
-      this.width = "lg";
-    }
+    this.width = DASHBOARD_WIDTH_PRESETS[index - 1];
   }
 
   /**
    * Increase the dashboard's maximum width setting.
    */
   increaseMaxWidth() {
-    if (this.width === "xl") {
+    const index = DASHBOARD_WIDTH_PRESETS.indexOf(normalizeDashboardWidth(this.width));
+    if (index >= DASHBOARD_WIDTH_PRESETS.length - 1) {
       return;
     }
-    if (this.width === "lg") {
-      this.width = "xl";
-    } else {
-      this.width = "lg";
-    }
+    this.width = DASHBOARD_WIDTH_PRESETS[index + 1];
   }
 
   /**
@@ -129,16 +214,24 @@ export class Dashboard {
     this.title = object.title;
     this.columns = object.columns;
     this.image = object.image;
-    this.width = object.width;
-    this.published = !!object.published;
-    this.settings = object.settings || {};
-    this.isOwner = !object.user;
-
-    object.authProviders?.forEach((providerConfig) => {
-      const authProvider = new AuthProvider();
-      authProvider.deserialize(providerConfig);
-      this.addAuthProvider(authProvider);
-    });
+    this.width = normalizeDashboardWidth(object.width);
+    this.visibility = typeof object.visibility === "string" ? object.visibility : "private";
+    this.shareToken = object.shareToken || null;
+    this.shareTokenVersion = Number.isFinite(Number(object.shareTokenVersion))
+      ? Math.max(0, Math.floor(Number(object.shareTokenVersion)))
+      : 0;
+    this.acl = Array.isArray(object.acl) ? object.acl : [];
+    const rawSettings =
+      object.settings && typeof object.settings === "object" ? object.settings : {};
+    this.settings = {
+      ...rawSettings,
+      theme: normalizeDashboardTheme(rawSettings.theme),
+      allowMobileEdit: normalizeBooleanSetting(rawSettings.allowMobileEdit, false),
+    };
+    this.isOwner = resolveDashboardIsOwner(object);
+    this.canEdit = object.canEdit === undefined ? this.isOwner : Boolean(object.canEdit);
+    this.canManageSharing =
+      object.canManageSharing === undefined ? this.isOwner : Boolean(object.canManageSharing);
 
     object.datasources?.forEach((datasourceConfig) => {
       const datasource = new Datasource();
@@ -165,26 +258,6 @@ export class Dashboard {
 
     this.panes?.forEach((pane) => {
       pane.widgets?.forEach((widget) => widget.processDatasourceUpdate(null, context));
-    });
-  }
-
-  /**
-   * Add an authentication provider to the dashboard.
-   *
-   * @param {AuthProvider} authProvider - Provider instance to add.
-   */
-  addAuthProvider(authProvider) {
-    this.authProviders = [...this.authProviders, authProvider];
-  }
-
-  /**
-   * Remove an authentication provider from the dashboard.
-   *
-   * @param {AuthProvider} authProvider - Provider instance to remove.
-   */
-  deleteAuthProvider(authProvider) {
-    this.authProviders = this.authProviders.filter((item) => {
-      return item !== authProvider;
     });
   }
 
@@ -225,6 +298,7 @@ export class Dashboard {
    * @param {Pane} pane - Pane instance to add.
    */
   addPane(pane) {
+    this.ensurePaneWidgetIds(pane);
     this.ensurePaneLayoutId(pane);
     this.panes = [...this.panes, pane];
     this.clampPaneLayoutHeights();
@@ -415,7 +489,7 @@ export class Dashboard {
       this.panes
         .map((item) => item?.layout?.i)
         .filter((value) => value !== undefined && value !== null)
-        .map((value) => String(value))
+        .map((value) => String(value)),
     );
 
     const currentId = pane.layout.i;
@@ -434,14 +508,43 @@ export class Dashboard {
   }
 
   /**
-   * Retrieve an auth provider instance by its title.
+   * Ensure every widget in a pane has a unique identifier across the dashboard.
    *
-   * @param {string} title - Title of the auth provider.
-   * @returns {any} The auth provider instance or undefined.
+   * @param {Pane} pane
    */
-  getAuthProviderByName(title) {
-    return this.authProviders.find((a) => a.title === title)
-      ?.authProviderInstance;
+  ensurePaneWidgetIds(pane) {
+    if (!Array.isArray(pane.widgets)) {
+      pane.widgets = [];
+      return;
+    }
+
+    const existingIds = new Set(
+      this.panes
+        .flatMap((item) => item?.widgets || [])
+        .map((widget) => widget?.id)
+        .filter((value) => value !== undefined && value !== null)
+        .map((value) => String(value)),
+    );
+    const paneIds = new Set();
+
+    pane.widgets.forEach((widget) => {
+      if (!widget) {
+        return;
+      }
+
+      widget.pane = pane;
+      let candidate = widget.id === undefined || widget.id === null ? "" : String(widget.id);
+
+      if (!candidate || existingIds.has(candidate) || paneIds.has(candidate)) {
+        candidate = generateModelId("w");
+        while (existingIds.has(candidate) || paneIds.has(candidate)) {
+          candidate = generateModelId("w");
+        }
+      }
+
+      widget.id = candidate;
+      paneIds.add(candidate);
+    });
   }
 
   /**

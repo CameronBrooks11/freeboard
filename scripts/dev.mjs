@@ -1,3 +1,8 @@
+/**
+ * @file Development bootstrap script.
+ * @description Starts Mongo via Docker Compose, then launches UI/API/Gateway services.
+ */
+
 import { spawn } from "node:child_process";
 
 const isWindows = process.platform === "win32";
@@ -5,9 +10,23 @@ const dockerCommand = isWindows ? "docker.exe" : "docker";
 const composeArgs = ["compose", "-f", "docker-compose.mongo.yml"];
 const npmExecPath = process.env.npm_execpath;
 const npmNodeExecPath = process.env.npm_node_execpath || process.execPath;
+const HELP_FLAGS = new Set(["--help", "-h"]);
+const LOG_PREFIX = "[dev]";
 
 let servicesProcess = null;
 let isShuttingDown = false;
+
+const printUsage = () => {
+  console.log("Usage: npm run dev");
+  console.log("");
+  console.log("Starts Mongo via docker compose, then starts UI/API/Gateway dev services.");
+  console.log("On shutdown, dev services stop and Mongo remains running.");
+};
+
+if (process.argv.some((arg) => HELP_FLAGS.has(arg))) {
+  printUsage();
+  process.exit(0);
+}
 
 const getNpmRunCommand = (scriptName) => {
   // Preferred cross-platform path when launched via `npm run ...`.
@@ -150,8 +169,8 @@ const main = async () => {
   console.log("Development services:");
   console.log("- UI:    http://localhost:5173/");
   console.log("- API:   http://127.0.0.1:4001/graphql");
-  console.log("- Proxy: http://127.0.0.1:8001/");
-  console.log("- Mongo: mongodb://freeboard:unsecure@127.0.0.1:27017/freeboard");
+  console.log("- Gateway: http://127.0.0.1:8001/");
+  console.log("- Mongo: mongodb://127.0.0.1:27017/freeboard (credentials from .env)");
   console.log("");
 
   const npmRunDevServices = getNpmRunCommand("dev:services");
@@ -161,7 +180,7 @@ const main = async () => {
   });
 
   servicesProcess.on("error", async (error) => {
-    console.error("Failed to start development services", error);
+    console.error(`${LOG_PREFIX} Failed to start development services.`, error);
     await shutdown(1);
   });
 
@@ -180,4 +199,9 @@ const main = async () => {
   });
 };
 
-await main();
+try {
+  await main();
+} catch (error) {
+  console.error(`${LOG_PREFIX} Development bootstrap failed.`, error);
+  process.exit(1);
+}

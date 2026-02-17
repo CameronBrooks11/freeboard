@@ -41,3 +41,28 @@
   align-items: center;
   justify-content: center;
 }
+
+.datasources-list .datasources-list__status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--color-shade-4);
+}
+
+.datasources-list .datasources-list__status--connected {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.datasources-list .datasources-list__status--error {
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.datasources-list .datasources-list__status--stale {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}

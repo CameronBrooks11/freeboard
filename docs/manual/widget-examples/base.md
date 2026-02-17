@@ -26,10 +26,7 @@ body {
 
 ```js
 window.addEventListener("message", (event) => {
-  if (
-    event.data?.type === "datasource:update" &&
-    event.data.datasource === "clockSource"
-  ) {
+  if (event.data?.type === "datasource:update" && event.data.datasource === "clockSource") {
     const date = new Date(event.data.data);
     const options = {
       timeZone: "America/New_York",
@@ -131,15 +128,9 @@ window.addEventListener("message", (event) => {
     const minuteDeg = minutes * 6 + seconds * 0.1 - 90;
     const hourDeg = (hours % 12) * 30 + minutes * 0.5 - 90;
 
-    document.querySelector(
-      ".hand.second"
-    ).style.transform = `rotate(${secondDeg}deg)`;
-    document.querySelector(
-      ".hand.minute"
-    ).style.transform = `rotate(${minuteDeg}deg)`;
-    document.querySelector(
-      ".hand.hour"
-    ).style.transform = `rotate(${hourDeg}deg)`;
+    document.querySelector(".hand.second").style.transform = `rotate(${secondDeg}deg)`;
+    document.querySelector(".hand.minute").style.transform = `rotate(${minuteDeg}deg)`;
+    document.querySelector(".hand.hour").style.transform = `rotate(${hourDeg}deg)`;
   }
 });
 ```
@@ -163,7 +154,7 @@ window.addEventListener("message", (event) => {
 - Title: `randomFact`
 - Enabled: `true`
 - URL: `https://uselessfacts.jsph.pl/api/v2/facts/random?language=en`
-- Use proxy: `true`
+- Use gateway: `true`
 - Refresh: `15s`
 
 ### Widget CSS
@@ -217,10 +208,7 @@ body {
 
 ```js
 window.addEventListener("message", (event) => {
-  if (
-    event.data.type === "datasource:update" &&
-    event.data.datasource === "randomFact"
-  ) {
+  if (event.data.type === "datasource:update" && event.data.datasource === "randomFact") {
     const dto = event.data.data;
     const text = dto.text || JSON.stringify(dto);
     document.getElementById("factText").textContent = text;
@@ -245,7 +233,7 @@ window.addEventListener("message", (event) => {
 - Enabled: `true`
 - URL:
   `https://api.open-meteo.com/v1/forecast?latitude=42.9837&longitude=-81.2497&hourly=temperature_2m&current_weather=true`
-- Use proxy: `true`
+- Use gateway: `true`
 - Refresh: `60s`
 
 ### Widget CSS
@@ -285,13 +273,7 @@ function drawGauge(temp) {
   ctx.clearRect(0, 0, size, size);
 
   ctx.beginPath();
-  ctx.arc(
-    size / 2,
-    size / 2,
-    size * 0.4,
-    Math.PI * 0.75,
-    Math.PI * 0.75 + Math.PI * 1.5
-  );
+  ctx.arc(size / 2, size / 2, size * 0.4, Math.PI * 0.75, Math.PI * 0.75 + Math.PI * 1.5);
   ctx.strokeStyle = "#eee";
   ctx.lineWidth = size * 0.05;
   ctx.stroke();
@@ -313,16 +295,11 @@ function drawGauge(temp) {
   ctx.stroke();
   ctx.restore();
 
-  document.getElementById("temp-label").innerText = `${temp.toFixed(
-    1
-  )} C`;
+  document.getElementById("temp-label").innerText = `${temp.toFixed(1)} C`;
 }
 
 window.addEventListener("message", (event) => {
-  if (
-    event.data.type === "datasource:update" &&
-    event.data.datasource === "localTemp"
-  ) {
+  if (event.data.type === "datasource:update" && event.data.datasource === "localTemp") {
     const temp = event.data.data.current_weather.temperature;
     drawGauge(temp);
   }
@@ -333,8 +310,5 @@ window.addEventListener("message", (event) => {
 
 ```html
 <canvas id="gauge"></canvas>
-<div
-  id="temp-label"
-  style="text-align:center;font-size:2em;margin-top:-50px;"
-></div>
+<div id="temp-label" style="text-align:center;font-size:2em;margin-top:-50px;"></div>
 ```

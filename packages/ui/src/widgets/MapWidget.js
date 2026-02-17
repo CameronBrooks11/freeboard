@@ -3,7 +3,7 @@
  * @description Map widget with provider abstraction (OpenStreetMap implementation).
  */
 
-import { ReactiveWidget } from "./runtime/ReactiveWidget";
+import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -136,9 +136,7 @@ export class MapWidget extends ReactiveWidget {
 
   resolveInputs() {
     return {
-      header:
-        this.getBinding(this.currentSettings?.headerPath) ??
-        this.currentSettings?.headerText,
+      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
       lat: this.getBinding(this.currentSettings?.latPath),
       lon: this.getBinding(this.currentSettings?.lonPath),
       label: this.getBinding(this.currentSettings?.labelPath),
@@ -165,7 +163,7 @@ export class MapWidget extends ReactiveWidget {
         ? Math.floor(Number(this.currentSettings.zoom))
         : 13,
       1,
-      19
+      19,
     );
 
     const src = provider.buildEmbedUrl({
@@ -181,7 +179,7 @@ export class MapWidget extends ReactiveWidget {
 
     const label = inputs.label ? ` · ${inputs.label}` : "";
     this.statusElement.textContent = `${provider.label} · ${lat.toFixed(5)}, ${lon.toFixed(
-      5
+      5,
     )}${label}`;
   }
 

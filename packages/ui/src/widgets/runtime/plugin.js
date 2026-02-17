@@ -20,10 +20,7 @@ export const defaultWidgetFields = (_widget, _dashboard, general) => [general];
  * @returns {Object}
  */
 export const validateWidgetPlugin = (plugin) => {
-  if (
-    !plugin ||
-    (typeof plugin !== "object" && typeof plugin !== "function")
-  ) {
+  if (!plugin || (typeof plugin !== "object" && typeof plugin !== "function")) {
     throw new Error("Widget plugin must be an object or class");
   }
 
@@ -33,16 +30,14 @@ export const validateWidgetPlugin = (plugin) => {
   plugin.typeName = plugin.typeName.trim();
 
   if (typeof plugin.newInstance !== "function") {
-    throw new Error(
-      `Widget plugin '${plugin.typeName}' requires a 'newInstance' function`
-    );
+    throw new Error(`Widget plugin '${plugin.typeName}' requires a 'newInstance' function`);
   }
 
   if (plugin.fields === undefined) {
     plugin.fields = defaultWidgetFields;
   } else if (typeof plugin.fields !== "function") {
     throw new Error(
-      `Widget plugin '${plugin.typeName}' requires a 'fields(widget, dashboard, general)' function`
+      `Widget plugin '${plugin.typeName}' requires a 'fields(widget, dashboard, general)' function`,
     );
   }
 

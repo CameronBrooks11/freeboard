@@ -3,9 +3,23 @@
  * @description Client-side model for dashboard panes, managing widget layout, ordering, and lifecycle.
  */
 
-import { storeToRefs } from "pinia";
-import { Widget } from "../models/Widget";
-import { useFreeboardStore } from "../stores/freeboard";
+import { Widget } from "../models/Widget.js";
+
+const cloneMutableObject = (value, fallback) => {
+  if (!value || typeof value !== "object") {
+    return fallback;
+  }
+
+  if (typeof structuredClone === "function") {
+    try {
+      return structuredClone(value);
+    } catch {
+      // Fallback below.
+    }
+  }
+
+  return JSON.parse(JSON.stringify(value));
+};
 
 /**
  * Represents a dashboard pane containing widgets and layout configuration.
@@ -89,16 +103,15 @@ export class Pane {
    * @param {{ title: string, layout?: Object, widgets?: Object[] }} object - Serialized pane data.
    */
   deserialize(object) {
-    const freeboardStore = useFreeboardStore();
-    const { dashboard } = storeToRefs(freeboardStore);
-
     this.title = object.title;
-    this.layout = object.layout || {};
+    this.layout = cloneMutableObject(object.layout, {});
+    this.widgets = [];
 
     object.widgets?.forEach((widgetConfig) => {
       const widget = new Widget();
       widget.deserialize(widgetConfig);
-      dashboard.value.addWidget(this, widget);
+      widget.pane = this;
+      this.widgets.push(widget);
     });
   }
 

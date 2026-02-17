@@ -3,9 +3,8 @@
  * @description Client-side model for dashboard widgets, managing lifecycle, rendering, and data updates.
  */
 
-import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
-import { generateModelId } from "./id";
+import { generateModelId } from "./id.js";
+import { getWidgetPlugin } from "../runtime/runtimeContext.js";
 
 const toPositiveInteger = (value, fallback = 1) => {
   const parsed = Number(value);
@@ -13,6 +12,22 @@ const toPositiveInteger = (value, fallback = 1) => {
     return fallback;
   }
   return Math.max(1, Math.ceil(parsed));
+};
+
+const cloneMutableSettings = (value) => {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  if (typeof structuredClone === "function") {
+    try {
+      return structuredClone(value);
+    } catch {
+      // Fallback below.
+    }
+  }
+
+  return JSON.parse(JSON.stringify(value));
 };
 
 /**
@@ -59,9 +74,7 @@ export class Widget {
       return;
     }
 
-    const freeboardStore = useFreeboardStore();
-    const { widgetPlugins } = storeToRefs(freeboardStore);
-    const widgetType = widgetPlugins.value[this._type];
+    const widgetType = getWidgetPlugin(this._type);
 
     if (!widgetType || typeof widgetType.newInstance !== "function") {
       return;
@@ -191,10 +204,7 @@ export class Widget {
       return;
     }
 
-    if (
-      this.widgetInstance !== undefined &&
-      typeof this.widgetInstance.render === "function"
-    ) {
+    if (this.widgetInstance !== undefined && typeof this.widgetInstance.render === "function") {
       try {
         this.widgetInstance.render(element);
         this.syncRuntimeError();
@@ -237,7 +247,7 @@ export class Widget {
     this.id = object.id || generateModelId("w");
     this.title = object.title;
     this.enabled = object.enabled !== undefined ? !!object.enabled : true;
-    this.settings = object.settings;
+    this.settings = cloneMutableSettings(object.settings);
     this.type = object.type;
     this.shouldRender = true;
   }
@@ -255,7 +265,8 @@ export class Widget {
     };
 
     if (
-      this.enabled && this.widgetInstance !== undefined &&
+      this.enabled &&
+      this.widgetInstance !== undefined &&
       typeof this.widgetInstance.processDatasourceUpdate === "function"
     ) {
       try {
@@ -275,7 +286,8 @@ export class Widget {
    */
   onResize(size) {
     if (
-      this.enabled && this.widgetInstance !== undefined &&
+      this.enabled &&
+      this.widgetInstance !== undefined &&
       typeof this.widgetInstance.onResize === "function"
     ) {
       try {
@@ -308,10 +320,7 @@ export class Widget {
     try {
       if (typeof this.widgetInstance?.getPreferredRows === "function") {
         return toPositiveInteger(
-          this.widgetInstance.getPreferredRows(
-            this.settings,
-            this.lastContext?.snapshot || {}
-          )
+          this.widgetInstance.getPreferredRows(this.settings, this.lastContext?.snapshot || {}),
         );
       }
     } catch (error) {
@@ -320,8 +329,7 @@ export class Widget {
       return 1;
     }
 
-    const freeboardStore = useFreeboardStore();
-    const plugin = freeboardStore.widgetPlugins[this.type];
+    const plugin = getWidgetPlugin(this.type);
     return toPositiveInteger(plugin?.preferredRows ?? plugin?.minRows ?? 1);
   }
 }

@@ -8,7 +8,7 @@
  * @prop {Function} onOk     - Callback invoked with new settings when confirmed.
  * @prop {Object} settings   - Initial settings object containing the pane name.
  */
-defineOptions({ name: 'PaneDialogBox' });
+defineOptions({ name: "PaneDialogBox" });
 
 import { onMounted, ref } from "vue";
 import DialogBox from "./DialogBox.vue";
@@ -39,7 +39,7 @@ onMounted(() => {
       type: "text",
     },
   ];
-  
+
   fields.value = data;
 });
 
@@ -59,8 +59,14 @@ const onDialogBoxOk = () => {
 </script>
 
 <template>
-  <DialogBox :header="header" ref="dialog" :ok="$t('dialogBox.buttonOk')" :cancel="$t('dialogBox.buttonCancel')"
-    @close="onClose" @ok="() => onDialogBoxOk()">
+  <DialogBox
+    :header="header"
+    ref="dialog"
+    :ok="$t('dialogBox.buttonOk')"
+    :cancel="$t('dialogBox.buttonCancel')"
+    @close="onClose"
+    @ok="() => onDialogBoxOk()"
+  >
     <!-- Form for editing pane title -->
     <Form ref="form" :settings="settings" :fields="fields" />
   </DialogBox>

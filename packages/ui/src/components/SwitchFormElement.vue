@@ -8,7 +8,7 @@
  *
  * @emits update:modelValue   - Emitted when the switch value changes.
  */
-defineOptions({ name: 'SwitchFormElement' });
+defineOptions({ name: "SwitchFormElement" });
 
 import { ref } from "vue";
 
@@ -37,8 +37,15 @@ defineExpose({
 
 <template>
   <div class="switch-form-element">
-    <input :id="id" type="checkbox" name="switch" :checked="props.modelValue" class="switch-form-element__checkbox"
-      :disabled="props.disabled" @change="onChange($event.target.checked)" />
+    <input
+      :id="id"
+      type="checkbox"
+      name="switch"
+      :checked="props.modelValue"
+      class="switch-form-element__checkbox"
+      :disabled="props.disabled"
+      @change="onChange($event.target.checked)"
+    />
     <label class="switch-form-element__label" :for="id">
       <div class="switch-form-element__label__inner">
         <span class="switch-form-element__label__inner__on">

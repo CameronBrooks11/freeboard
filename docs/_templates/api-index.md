@@ -4,7 +4,7 @@ title: API Reference
 
 # API Reference
 
-Browse the generated API docs for the server and proxy packages.
+Browse the generated API docs for the API and gateway packages.
 
 <div style="max-width:800px; margin:1.25rem 0;">
 

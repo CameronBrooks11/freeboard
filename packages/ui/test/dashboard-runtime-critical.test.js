@@ -64,15 +64,12 @@ test("serializeDashboardState includes versioned payload and serialized child mo
     {
       _id: "dashboard-1",
       title: "Main",
-      published: false,
+      visibility: "private",
       image: null,
       columns: 6,
       width: "lg",
       settings: { theme: "dark" },
-      datasources: [
-        { serialize: () => ({ id: "ds1", title: "Weather", type: "json" }) },
-      ],
-      authProviders: [{ serialize: () => ({ id: "ap1", type: "header" }) }],
+      datasources: [{ serialize: () => ({ id: "ds1", title: "Weather", type: "http" }) }],
       panes: [
         {
           serialize: () => ({
@@ -83,20 +80,17 @@ test("serializeDashboardState includes versioned payload and serialized child mo
         },
       ],
     },
-    "test-version"
+    "test-version",
   );
 
   assert.equal(serialized.version, "test-version");
   assert.equal(serialized._id, "dashboard-1");
   assert.equal(serialized.title, "Main");
-  assert.equal(serialized.published, false);
+  assert.equal(serialized.visibility, "private");
   assert.equal(serialized.columns, 6);
   assert.equal(serialized.width, "lg");
   assert.deepEqual(serialized.settings, { theme: "dark" });
-  assert.deepEqual(serialized.datasources, [
-    { id: "ds1", title: "Weather", type: "json" },
-  ]);
-  assert.deepEqual(serialized.authProviders, [{ id: "ap1", type: "header" }]);
+  assert.deepEqual(serialized.datasources, [{ id: "ds1", title: "Weather", type: "http" }]);
   assert.deepEqual(serialized.panes, [
     {
       title: "Pane 1",

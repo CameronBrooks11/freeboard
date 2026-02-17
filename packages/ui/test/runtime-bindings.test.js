@@ -22,10 +22,7 @@ test("resolveBinding supports datasources.<id> paths", () => {
     },
   };
 
-  assert.equal(
-    resolveBinding("datasources.weather.current.temp_c", snapshot),
-    21.3
-  );
+  assert.equal(resolveBinding("datasources.weather.current.temp_c", snapshot), 21.3);
 });
 
 test("resolveBinding supports datasource title aliases when unambiguous", () => {
@@ -50,7 +47,7 @@ test("resolveTemplate substitutes bindings and blanks missing values", () => {
 
   const value = resolveTemplate(
     "CPU: {{ datasources.cpu.percent }}% / {{ datasources.cpu.missing }}",
-    snapshot
+    snapshot,
   );
   assert.equal(value, "CPU: 73% / ");
 });

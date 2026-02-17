@@ -5,7 +5,7 @@
 ### Datasource Setup
 
 1. Add datasource.
-2. Set `Type = JSON`.
+2. Set `Type = HTTP`.
 3. Set `Title = btcTicker`.
 4. Set `URL = https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd`.
 5. Set `Refresh = 15` seconds.
@@ -31,7 +31,7 @@ Expected output: one trend line showing recent BTC movement.
 ### Datasource Setup
 
 1. Add datasource.
-2. Set `Type = JSON`.
+2. Set `Type = HTTP`.
 3. Set `Title = weatherTrend`.
 4. Set `URL = https://api.open-meteo.com/v1/forecast?latitude=40.7128&longitude=-74.0060&current_weather=true`.
 5. Set `Refresh = 30` seconds.
@@ -51,4 +51,3 @@ Expected output: one trend line showing recent BTC movement.
 10. Save.
 
 Expected output: two colored trend lines (temperature and wind speed).
-

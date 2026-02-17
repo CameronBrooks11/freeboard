@@ -8,7 +8,7 @@
  *
  * @emits update:modelValue - Emitted when the array value is updated.
  */
-defineOptions({ name: 'ArrayFormElement' });
+defineOptions({ name: "ArrayFormElement" });
 
 import { ref, watch } from "vue";
 import Form from "./Form.vue";
@@ -29,7 +29,7 @@ watch(
     }
     value.value = [...v];
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 const onSettingChange = (index, v) => {
@@ -47,7 +47,7 @@ const onSettingRemove = (index) => {
 const onSettingAdd = () => {
   // Create a new empty object based on options and emit change
   const val = {};
-  
+
   props.options.forEach((o) => {
     val[o.name] = "";
   });
@@ -70,7 +70,9 @@ defineExpose({
       <thead class="array-form-element__table__head">
         <tr v-if="value.length" class="array-form-element__table__head__row">
           <th class="array-form-element__table__head__row__cell">
-            <span v-for="setting in options" :key="setting.name || setting.label">{{ setting.label }}</span>
+            <span v-for="setting in options" :key="setting.name || setting.label">{{
+              setting.label
+            }}</span>
           </th>
           <th>&nbsp;</th>
         </tr>
@@ -78,14 +80,21 @@ defineExpose({
       <tbody class="array-form-element__table__body">
         <tr v-for="(val, index) in value" :key="index" class="array-form-element__table__body__row">
           <td class="array-form-element__table__body__row__cell">
-            <Form :settings="val" :fields="options" :hideLabels="true" :skipTranslate="true"
-              @change="(v) => onSettingChange(index, v)" />
+            <Form
+              :settings="val"
+              :fields="options"
+              :hideLabels="true"
+              :skipTranslate="true"
+              @change="(v) => onSettingChange(index, v)"
+            />
           </td>
           <td class="array-form-element__table__body__row__cell">
             <ul class="array-form-element__table__body__row__cell__board-toolbar">
               <li class="array-form-element__table__body__row__cell__board-toolbar__item">
-                <i class="array-form-element__table__body__row__cell__board-toolbar__item__icon"
-                  @click="onSettingRemove(index)">
+                <i
+                  class="array-form-element__table__body__row__cell__board-toolbar__item__icon"
+                  @click="onSettingRemove(index)"
+                >
                   <v-icon name="hi-trash"></v-icon>
                 </i>
               </li>

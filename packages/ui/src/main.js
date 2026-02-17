@@ -5,15 +5,10 @@
 
 import { createApp } from "vue";
 import { DefaultApolloClient } from "@vue/apollo-composable";
-import {
-  ApolloClient,
-  ApolloLink,
-  HttpLink,
-  InMemoryCache,
-} from "@apollo/client/core";
+import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/client/core";
 import { onError } from "apollo-link-error";
 import App from "./App.vue";
-import monaco from "./monaco";
+import monaco from "./monaco.js";
 import { install as VueMonacoEditorPlugin } from "@guolao/vue-monaco-editor";
 import { OhVueIcon, addIcons } from "oh-vue-icons";
 import {
@@ -45,13 +40,17 @@ import {
   HiPause,
 } from "oh-vue-icons/icons";
 
-import { createPinia, storeToRefs } from "pinia";
-import router from "./router";
-import { useFreeboardStore } from "./stores/freeboard";
-import { SSELink } from "./sse";
+import { createPinia } from "pinia";
+import router from "./router/index.js";
+import { useAuthStore } from "./stores/auth.js";
+import { useDashboardStore } from "./stores/dashboard.js";
+import { useProfileCatalogStore } from "./stores/profileCatalog.js";
+import { bootstrapApp } from "./bootstrap/appBootstrap.js";
+import { SSELink } from "./sse.js";
 import { createHead } from "@unhead/vue";
 import { createI18n } from "vue-i18n";
-import { en } from "./i18n/en";
+import { en } from "./i18n/en.js";
+import { shouldForceLogoutOnGraphQLErrors } from "./apolloAuthError.js";
 
 // Register icon set for use throughout the app
 addIcons(
@@ -80,7 +79,7 @@ addIcons(
   HiBeaker,
   HiBriefcase,
   HiPlay,
-  HiPause
+  HiPause,
 );
 
 // Initialize internationalization
@@ -97,6 +96,9 @@ const head = createHead();
 
 // Initialize Pinia store
 const pinia = createPinia();
+const authStore = useAuthStore(pinia);
+const dashboardStore = useDashboardStore(pinia);
+const profileCatalogStore = useProfileCatalogStore(pinia);
 
 // Apollo cache instance
 const cache = new InMemoryCache();
@@ -108,22 +110,22 @@ const cache = new InMemoryCache();
  */
 const getHeaders = () => {
   const headers = {};
-  const freeboardStore = useFreeboardStore();
-  const { token } = storeToRefs(freeboardStore);
-  if (token.value) {
-    headers["Authorization"] = `Bearer ${token.value}`;
+  if (authStore.token) {
+    headers["Authorization"] = `Bearer ${authStore.token}`;
   }
   headers["Content-Type"] = "application/json";
   return headers;
 };
 
 /**
- * Apollo Link to handle GraphQL errors: logs out user and redirects to login page.
+ * Apollo Link to handle GraphQL auth errors: logs out user and redirects to login page.
  */
 const errorLink = onError(({ graphQLErrors }) => {
-  if (graphQLErrors) {
-    const store = useFreeboardStore();
-    store.logout();
+  if (shouldForceLogoutOnGraphQLErrors(graphQLErrors)) {
+    authStore.logout();
+    profileCatalogStore.clearCredentialProfiles();
+    profileCatalogStore.clearBrokerProfiles();
+    dashboardStore.syncEditingPermissions();
     router.push("/login");
   }
 });
@@ -160,11 +162,7 @@ const apolloClient = new ApolloClient({
   cache,
   link: ApolloLink.from([
     errorLink,
-    ApolloLink.split(
-      (operation) => operation.getContext().apiName === "stream",
-      sseLink,
-      httpLink
-    ),
+    ApolloLink.split((operation) => operation.getContext().apiName === "stream", sseLink, httpLink),
   ]),
 });
 
@@ -175,9 +173,10 @@ const apolloClient = new ApolloClient({
  */
 const app = createApp(App);
 app.provide(DefaultApolloClient, apolloClient);
+app.use(pinia);
+bootstrapApp({ pinia });
 
 app
-  .use(pinia)
   .use(router)
   .use(i18n)
   .use(head)

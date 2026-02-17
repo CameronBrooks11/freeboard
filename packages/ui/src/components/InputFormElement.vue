@@ -9,7 +9,7 @@
  *
  * @emits update:modelValue   - Emitted on input or focusout with the new value.
  */
-defineOptions({ name: 'InputFormElement' });
+defineOptions({ name: "InputFormElement" });
 
 const props = defineProps(["modelValue", "secret", "disabled"]);
 const emit = defineEmits(["update:modelValue"]);
@@ -25,8 +25,14 @@ const onInput = (value) => {
 </script>
 
 <template>
-  <input class="input-form-element" :type="props.secret ? 'password' : 'text'" :value="props.modelValue"
-    :disabled="props.disabled" @input="onInput($event.target.value)" @focusout="onInput($event.target.value)" />
+  <input
+    class="input-form-element"
+    :type="props.secret ? 'password' : 'text'"
+    :value="props.modelValue"
+    :disabled="props.disabled"
+    @input="onInput($event.target.value)"
+    @focusout="onInput($event.target.value)"
+  />
 </template>
 
 <style lang="css" scoped>

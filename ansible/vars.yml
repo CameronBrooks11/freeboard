@@ -1,1 +1,170 @@
-freeboard_player_url: http://localhost:8080
+# Inventory target group for kiosk provisioning.
+freeboard_target_group: kiosk
+
+# Deployment profile selects default role inclusion.
+kiosk_profile: player_only
+kiosk_profile_defaults:
+  player_only:
+    kiosk_enable_player: true
+    kiosk_enable_display: true
+    kiosk_enable_container_runtime: false
+    kiosk_enable_boot_tuning: false
+    kiosk_enable_mongo_preload: false
+  appliance_with_runtime:
+    kiosk_enable_player: true
+    kiosk_enable_display: true
+    kiosk_enable_container_runtime: true
+    kiosk_enable_boot_tuning: false
+    kiosk_enable_mongo_preload: false
+  appliance_with_runtime_and_boot_tuning:
+    kiosk_enable_player: true
+    kiosk_enable_display: true
+    kiosk_enable_container_runtime: true
+    kiosk_enable_boot_tuning: true
+    kiosk_enable_mongo_preload: false
+
+# Optional overrides (set to true/false in host/group vars if needed).
+kiosk_enable_player: ~
+kiosk_enable_display: ~
+kiosk_enable_container_runtime: ~
+kiosk_enable_boot_tuning: ~
+kiosk_enable_mongo_preload: ~
+
+# Supported platforms.
+kiosk_supported_distributions:
+  - Debian
+  - Raspbian
+kiosk_min_supported_debian_major_version: 12
+kiosk_supported_architectures:
+  - x86_64
+  - aarch64
+  - armv7l
+  - armv6l
+
+# Kiosk player runtime contract.
+kiosk_player_url: ""
+kiosk_service_name: freeboard-kiosk
+kiosk_legacy_service_name: freeboard.service
+kiosk_disable_legacy_service: true
+kiosk_service_user: freeboard
+kiosk_service_group: freeboard
+kiosk_service_shell: /bin/bash
+kiosk_service_home: "/home/{{ kiosk_service_user }}"
+kiosk_install_root: /opt/freeboard
+kiosk_player_script_source: "{{ playbook_dir }}/../player.sh"
+kiosk_player_script_path: "{{ kiosk_install_root }}/player.sh"
+kiosk_env_dir: /etc/freeboard
+kiosk_env_file_path: "{{ kiosk_env_dir }}/kiosk.env"
+kiosk_log_dir: /var/log/freeboard-kiosk
+
+kiosk_display_value: ":0.0"
+kiosk_player_window_width: 1920
+kiosk_player_window_height: 1080
+
+# URL probe mode for player startup: none|get|head
+kiosk_url_check_mode: head
+kiosk_url_check_timeout_seconds: 5
+kiosk_url_check_interval_seconds: 5
+# 0 = retry forever (service restart still applies on failures after launch)
+kiosk_url_check_max_attempts: 0
+
+# Browser/runtime tuning.
+kiosk_browser_binary: /usr/bin/chromium-browser
+kiosk_browser_flags_extra: ""
+
+# Systemd behavior.
+kiosk_systemd_restart_sec: 5
+kiosk_systemd_start_limit_interval_sec: 0
+kiosk_systemd_start_limit_burst: 0
+# Keep false by default to avoid breaking Xorg/startx privilege transitions.
+kiosk_systemd_no_new_privileges: false
+
+# Display dependencies.
+kiosk_display_packages:
+  - xinit
+  - x11-xserver-utils
+  - feh
+kiosk_supplemental_groups:
+  - video
+  - input
+  - render
+  - audio
+  - tty
+kiosk_browser_package: "{{ 'chromium' if ansible_architecture == 'x86_64' else 'chromium-browser' }}"
+kiosk_browser_package_fallback: "{{ 'chromium-browser' if kiosk_browser_package == 'chromium' else 'chromium' }}"
+kiosk_manage_x11_config: true
+kiosk_xwrapper_config_dest: /etc/X11/Xwrapper.config
+kiosk_xorg_config_dest: /etc/X11/xorg.conf
+kiosk_config_backup_suffix: .freeboard-kiosk.bak
+
+# Optional Docker runtime role.
+container_runtime_remove_legacy_packages: true
+container_runtime_legacy_packages:
+  - docker
+  - docker-engine
+  - docker.io
+  - containerd
+  - runc
+  - docker-compose
+container_runtime_users:
+  - "{{ kiosk_service_user }}"
+container_runtime_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+  armv7l: armhf
+  armv6l: armhf
+container_runtime_raspbian_architectures:
+  - aarch64
+  - armv7l
+  - armv6l
+container_runtime_debian_repo_base_url: https://download.docker.com/linux/debian
+container_runtime_raspbian_repo_base_url: https://download.docker.com/linux/raspbian
+container_runtime_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-compose-plugin
+
+# Optional Mongo preload role.
+# Community Raspberry Pi Mongo baseline:
+# docs/manual/raspberry-pi-mongodb.md
+mongo_preload_enabled: true
+mongo_arm_supported_architectures:
+  - aarch64
+  - armv7l
+  - armv6l
+mongo_arm_release_tag: r7.0.28-mongodb-raspberrypi-docker-unofficial
+# Asset naming can vary by release; override filename/tag if upstream changes.
+mongo_arm_tar_filename: "mongodb.ce.pi4.{{ mongo_arm_release_tag }}.tar.gz"
+mongo_arm_tar_url: "https://github.com/themattman/mongodb-raspberrypi-docker/releases/download/{{ mongo_arm_release_tag }}/{{ mongo_arm_tar_filename }}"
+mongo_arm_tar_path: "/tmp/{{ mongo_arm_tar_filename }}"
+
+# Optional boot tuning role.
+kiosk_boot_config_path: /boot/firmware/config.txt
+kiosk_boot_cmdline_path: /boot/firmware/cmdline.txt
+kiosk_boot_backup_suffix: .freeboard-kiosk.bak
+kiosk_boot_enable_plymouth: true
+kiosk_boot_theme_name: freeboard
+kiosk_boot_theme_dir: /usr/share/plymouth/themes/freeboard
+kiosk_boot_plymouth_packages:
+  - plymouth
+  - plymouth-themes
+  - plymouth-label
+kiosk_boot_config_lines:
+  - framebuffer_depth=32
+  - framebuffer_ignore_alpha=1
+  - gpu_mem_256=96
+  - gpu_mem_512=128
+  - gpu_mem_1024=196
+  - dtoverlay=vc4-kms-v3d
+kiosk_boot_remove_config_regexes:
+  - "^dtoverlay=vc4-fkms-v3d$"
+kiosk_boot_cmdline_required_tokens:
+  - splash
+  - vt.global_cursor_default=0
+  - plymouth.ignore-serial-consoles
+  - cgroup_enable=memory
+  - cgroup_memory=1
+
+# Optional hardening toggles for constrained devices.
+kiosk_disable_swap: false

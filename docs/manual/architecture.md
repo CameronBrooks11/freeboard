@@ -6,7 +6,7 @@ Freeboard is a monorepo with three runtime services and one shared data store.
 
 - UI (`packages/ui`): Vue 3 + Vite SPA
 - API (`packages/api`): GraphQL Yoga + Mongoose
-- Proxy (`packages/proxy`): HTTP fetch proxy for CORS-restricted upstreams
+- Gateway (`packages/gateway`): datasource execution boundary for HTTP + realtime protocols
 - MongoDB: persistence for users and dashboards
 
 ## Runtime Data Flow
@@ -14,8 +14,49 @@ Freeboard is a monorepo with three runtime services and one shared data store.
 1. UI authenticates with API (`/graphql`) and stores JWT token in local storage.
 2. UI queries/mutates dashboards through GraphQL.
 3. API persists dashboards/users in MongoDB.
-4. Datasource plugins in UI produce updates.
-5. Dashboard model normalizes datasource state and pushes updates to widgets.
+4. UI mints short-lived datasource session tokens from API.
+5. Datasource runtimes execute through gateway:
+   - HTTP polling via `POST /gateway/http/fetch`
+   - Realtime streams via `GET /gateway/realtime` (single dashboard-level WebSocket transport)
+6. Gateway validates token, introspects canonical intent from API, enforces egress policy, then connects upstream.
+7. For public/link streams, gateway applies revocation polling + periodic full revalidation to cut stale access.
+8. Dashboard model normalizes datasource state and pushes updates to widgets.
+
+## Realtime Transport Model
+
+Browser-facing transport:
+
+- One gateway WebSocket per dashboard runtime.
+- Multiplexed datasource subscriptions (`subscribe`/`unsubscribe` messages).
+- Session-token refresh uses re-subscribe on the same datasource id.
+
+Upstream adapters:
+
+- SSE adapter (`sse`)
+- WebSocket adapter (`websocket`)
+- MQTT adapter (`mqtt`) with broker connection pooling and topic policy enforcement
+
+Security boundaries:
+
+- Browser never sends upstream secrets.
+- Gateway resolves credential material from API introspection only.
+- Public/link subscriptions require explicit public-use profile policy.
+- Token expiry and share-token revocation are enforced server-side.
+
+Channel sketch:
+
+```text
+UI Datasources (sse/websocket/mqtt)
+  -> StreamingManager (1 WS per dashboard)
+  -> Gateway /gateway/realtime
+  -> API /internal/gateway/datasource-introspect
+  -> Upstream SSE/WS/MQTT target
+
+Public/link revoke path:
+API share-token revocation feed
+  -> Gateway polling + full revalidation
+  -> stale public subscriptions disconnected
+```
 
 ## Widget Runtime Flow
 
@@ -33,11 +74,12 @@ See: [Widget Runtime](/manual/widget-runtime)
 ## Key UI Models
 
 - `Dashboard` (`packages/ui/src/models/Dashboard.js`)
-  - owns panes, datasources, auth providers
+  - owns panes and datasources
   - handles serialization/deserialization
   - propagates datasource updates to widgets
 - `Datasource` (`packages/ui/src/models/Datasource.js`)
   - owns datasource plugin instance and update lifecycle
+  - delegates realtime lifecycle to per-dashboard `StreamingManager` for `sse`/`websocket`/`mqtt`
 - `Widget` (`packages/ui/src/models/Widget.js`)
   - owns widget plugin instance, rendering, errors, and resize forwarding
 
@@ -45,7 +87,7 @@ See: [Widget Runtime](/manual/widget-runtime)
 
 - UI: `5173`
 - API: `4001`
-- Proxy: `8001`
+- Gateway: `8001`
 - MongoDB: `27017`
 
 ## Configuration
@@ -54,32 +96,45 @@ Core env values:
 
 - `MONGO_URL` (API local development)
 - `FREEBOARD_MONGO_URL` (containerized API)
-- `PORT` (API/proxy workspace process port)
+- `PORT` (API/gateway workspace process port)
 - `FREEBOARD_MONGO_IMAGE` (Mongo image tag for dev compose)
+- Raspberry Pi note for `FREEBOARD_MONGO_IMAGE`: [Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)
+- `FREEBOARD_UI_IMAGE_TAG` / `FREEBOARD_API_IMAGE_TAG` / `FREEBOARD_GATEWAY_IMAGE_TAG` (runtime service image tag pinning)
 - `FREEBOARD_STATIC` (static UI build mode; only enable for static deploy builds)
 - `FREEBOARD_RUNTIME_ENV` (`production` for containerized runtime defaults)
 - `JWT_SECRET` (required for containerized API startup)
-- `PROXY_ALLOWED_HOSTS` (required for containerized proxy startup)
+- `JWT_GATEWAY_SECRET` (required API+gateway datasource session signing key)
+- `GATEWAY_SERVICE_TOKEN` (required gateway introspection auth token)
+- `CREDENTIAL_ENCRYPTION_KEY` (required API credential profile encryption key)
+- `EGRESS_ALLOWED_HOSTS` (required for containerized gateway startup)
+- `REALTIME_*` (required to tune realtime policy, limits, and protocol toggles)
+
+Secret setup/rotation workflow is centralized in [Secrets Operations Runbook](/manual/secrets-operations).
 
 ## Security Defaults
 
-- API and Proxy are hardened for production behavior when `NODE_ENV=production`.
+- API and gateway are hardened for production behavior when `NODE_ENV=production`.
 - Container artifacts default to production mode.
 - Docker Compose startup is fail-fast for missing critical env:
+  - API requires `FREEBOARD_MONGO_URL`
   - API requires `JWT_SECRET`
-  - Proxy requires `PROXY_ALLOWED_HOSTS`
+  - API requires `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`, `CREDENTIAL_ENCRYPTION_KEY`
+  - Gateway requires `EGRESS_ALLOWED_HOSTS`, `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`
+  - Gateway realtime policy defaults to enabled, with protocol toggles and per-IP/per-dashboard limits
 
 ## CI Topology
 
 - Required PR workflow: `.github/workflows/ci.yml`
-  - Jobs: `changes` -> conditional `lint`, `test-api`, `test-ui`, `build-verify` -> always-run `Required CI`.
+  - Jobs: `changes` -> conditional `lint`, `test-api`, `test-ui`, `test-gateway`, `build-verify` -> always-run `Required CI`.
   - Concurrency: cancels superseded PR runs using PR-number/ref keyed group.
   - Required check target for branch protection: `Required CI`.
 - Pages workflow: `.github/workflows/build-pages.yml`
-  - Runs only on docs/demo-relevant path changes on `dev`.
+  - Runs only on docs/demo-relevant path changes on `main`.
   - Concurrency cancellation enabled per ref.
 - Docker publish workflow: `.github/workflows/build-docker-images.yml`
-  - Runs on push to `dev` and manual dispatch.
-  - Per-package diff detection skips unchanged matrix entries.
+  - Runs on push to `main` and manual dispatch.
+  - Per-package diff detection skips unchanged matrix entries while still rebuilding on shared dependency/lockfile changes.
+  - Publishes `latest`, `v<workspace-version>`, and `sha-<short-commit>` tags per service image.
+  - Emits OCI labels including source URL, git revision, and package-derived version.
   - Manual dispatch forces full rebuild intentionally.
   - Concurrency cancellation is intentionally disabled to avoid skipped publishes on rapid sequential pushes.

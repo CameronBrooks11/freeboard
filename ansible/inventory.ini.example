@@ -1,0 +1,9 @@
+[kiosk]
+# Pattern A (recommended): remote managed host(s) from a control node.
+# rpi-kiosk-1 ansible_host=192.168.1.50 ansible_user=pi
+#
+# Pattern B (single-host bootstrap): run Ansible from inside the kiosk host.
+# localhost ansible_connection=local
+
+[all:vars]
+ansible_become=true

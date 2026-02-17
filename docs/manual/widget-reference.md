@@ -12,6 +12,9 @@ This page is for dashboard users configuring built-in widgets.
 - Picture
 - HTML
 - Sparkline
+- Table
+- Bar Chart
+- Status List
 - Map
 
 ## Text
@@ -39,7 +42,8 @@ This page is for dashboard users configuring built-in widgets.
 
 - Purpose: directional/angle visualization
 - Required binding: `anglePath`
-- Optional bindings: `valueTextPath`, `headerPath`, `unitPath`
+- Key settings: `valueText`, `unitText`, `angleUnitText` (default `°`)
+- Optional bindings: `valueTextPath`, `headerPath`, `unitPath`, `angleUnitPath`
 - Examples: [Pointer Widget Examples](/manual/widget-examples/pointer)
 
 ## Picture
@@ -65,6 +69,34 @@ This page is for dashboard users configuring built-in widgets.
   - Multi-series: `seriesPaths` (comma-separated)
 - Key settings: `historyLength`, `lineWidth`, `includeLegend`, `legendText`, `scaleMode`, `minValue`, `maxValue`
 - Examples: [Sparkline Widget Examples](/manual/widget-examples/sparkline)
+
+## Table
+
+- Purpose: display array data in a configurable tabular view
+- Required binding: `valuePath` (must resolve to an array)
+- Key settings: `columns`, `rowsPerPage` (`0` = no pagination), `sortable`, `striped`, `compact`
+- Column fields: `field`, `header`, optional `width`, `align`, `format`
+- Field paths are row-root (`metrics.cpu.usage`, `items[0].value`, `meta['sensor.name']`)
+- Responsive behavior: horizontal scroll is enabled for narrow panes/viewports
+- Examples: [Table Widget Examples](/manual/widget-examples/table)
+
+## Bar Chart
+
+- Purpose: compare categorical values with vertical or horizontal bars
+- Required binding: `valuePath` (must resolve to an array of rows)
+- Key settings: `orientation`, `showValues`, `showGrid`, `animated`, `colors`
+- Field mapping: `labelField`, `valueField`, optional `seriesFields` (comma-separated for grouped bars)
+- Preferred rows: vertical defaults to 8, horizontal scales with row count
+- Examples: [Bar Chart Widget Examples](/manual/widget-examples/bar-chart)
+
+## Status List
+
+- Purpose: compact multi-item operational status list (label, value, status)
+- Required binding: `valuePath` (must resolve to an array of items)
+- Key settings: `labelField`, `valueField`, `statusField`, `statusColors`, `showIcons`, `compact`
+- Status colors: JSON map merged with defaults (`ok`, `warn`, `error`, `offline`, `unknown`)
+- Preferred rows: `min(itemCount, 8) + 1`
+- Examples: [Status List Widget Examples](/manual/widget-examples/status-list)
 
 ## Map
 

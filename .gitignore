@@ -28,6 +28,8 @@ node_modules/.vite/
 packages/*/dist/
 packages/*/coverage/
 packages/*/.vite/
+playwright-report/
+test-results/
 *.log
 
 # Auto-generated documentation
@@ -46,6 +48,7 @@ docs/.vitepress/cache/
 .envrc
 !.env.example
 !.env.pi
+!.env.dev
 
 # Docker / local data
 db/
@@ -57,3 +60,7 @@ docker-data/
 
 # Private planning docs
 planning/
+_archive/
+
+# Local Ansible inventory (contains environment-specific host details)
+ansible/inventory.ini

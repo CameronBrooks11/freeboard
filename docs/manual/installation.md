@@ -2,95 +2,123 @@
 
 ## Requirements
 
-- Node.js 18.x (LTS)
-- npm 8+
-- Docker Engine ≥ 20.10
+- Node.js 24.x (LTS)
+- npm 11+
+- Docker Engine >= 20.10
 - Docker Compose v2 (`docker compose`)
 - Git
-- (Optional) Python 3.8+ and Ansible for Raspberry Pi deployment
+- Optional: Python 3.8+ and Ansible for kiosk appliance setup
 
 ## Get the code
 
 ```bash
 git clone https://github.com/CameronBrooks11/freeboard.git
 cd freeboard
-git checkout dev
+git checkout main
+# Optional: align to repo Node baseline via .nvmrc
+nvm use || nvm install
 npm install
 ```
 
-## Environment
+## Environment setup
 
-Create a .env in the repo root (adjust if your compose uses different names):
+Copy `.env.example` to `.env` and set real secrets.
+
+For quick local development bootstrap, copy `.env.dev` to `.env` first.
+
+### Minimum production-safe values
 
 ```bash
-# Mongo
-FREEBOARD_MONGO_IMAGE=mongo:7
-FREEBOARD_MONGO_URL=mongodb://freeboard:unsecure@freeboard-mongo:27017/freeboard
-MONGO_URL=mongodb://freeboard:unsecure@127.0.0.1:27017/freeboard
-
-# Container runtime mode
+# API runtime
 FREEBOARD_RUNTIME_ENV=production
-
-# API auth (required outside local dev)
 JWT_SECRET=replace-with-a-long-random-secret-at-least-32-chars
+JWT_GATEWAY_SECRET=replace-with-a-long-random-gateway-secret-at-least-32-chars
+GATEWAY_SERVICE_TOKEN=replace-with-a-long-random-gateway-service-token-at-least-32-chars
+CREDENTIAL_ENCRYPTION_KEY=replace-with-base64-32-byte-key
 
-# Proxy destination allowlist (required for containerized production mode)
-PROXY_ALLOWED_HOSTS=api.open-meteo.com,api.coingecko.com
+# Optional runtime image tag pinning (default is latest)
+FREEBOARD_UI_IMAGE_TAG=latest
+FREEBOARD_API_IMAGE_TAG=latest
+FREEBOARD_GATEWAY_IMAGE_TAG=latest
 
-# Optional local one-time admin bootstrap
-ADMIN_EMAIL=admin@example.local
-ADMIN_PASSWORD=ChangeMe123!
-CREATE_ADMIN=true
+# Mongo for API
+FREEBOARD_MONGO_URL=mongodb://freeboard_app:replace-with-strong-app-password@freeboard-mongo:27017/freeboard
+
+# Mongo init credentials (docker-compose.mongo.yml)
+MONGO_INITDB_ROOT_USERNAME=replace-root-user
+MONGO_INITDB_ROOT_PASSWORD=replace-with-strong-root-password
+MONGO_APP_USERNAME=freeboard_app
+MONGO_APP_PASSWORD=replace-with-strong-app-password
+
+# Gateway egress allowlist (required in production)
+EGRESS_ALLOWED_HOSTS=api.open-meteo.com,api.coingecko.com
 ```
 
-## Local Dev Fast Path
+Secret storage/rotation patterns and incident response are documented in:
 
-1. Copy `.env.example` to `.env`.
-2. Set bootstrap credentials for first login:
-   - `ADMIN_EMAIL` in `name@domain.ext` format
-   - `ADMIN_PASSWORD` with 12+ chars including uppercase, lowercase, number, symbol
-   - `CREATE_ADMIN=true`
-3. Run `npm run dev`.
-4. Log in once, then set `CREATE_ADMIN=false`.
+- [Secrets Operations Runbook](/manual/secrets-operations)
 
-API env resolution order:
+### Optional local bootstrap admin
 
-1. process env (shell/CI)
-2. `packages/api/.env` (optional package-local override)
-3. repo root `.env`
+```bash
+CREATE_ADMIN=true
+ADMIN_EMAIL=admin@example.local
+ADMIN_PASSWORD=ChangeMe123!
+```
+
+After first successful login, set `CREATE_ADMIN=false`.
+
+## Local development
+
+1. `cp .env.dev .env`
+2. Set bootstrap credentials if needed (`CREATE_ADMIN=true`)
+3. Run `npm run dev`
+4. Login once and disable bootstrap (`CREATE_ADMIN=false`)
+
+API env precedence:
+
+1. Process environment (shell/CI)
+2. `packages/api/.env` (optional local override)
+3. Repo root `.env`
 4. API defaults
 
-When `CREATE_ADMIN=true`, API startup validates:
-
-- `ADMIN_EMAIL` format must be `name@domain.ext`
-- `ADMIN_PASSWORD` must be at least 12 chars and include uppercase, lowercase, number, and symbol
-
-Containerized deployment is now fail-fast:
-
-- API container will not start without `JWT_SECRET`.
-- Proxy container will not start without `PROXY_ALLOWED_HOSTS`.
-
-## Deployment Security Checklist
-
-- `FREEBOARD_RUNTIME_ENV=production`
-- strong `JWT_SECRET` (32+ chars)
-- strict `PROXY_ALLOWED_HOSTS` allowlist
-- keep `PROXY_ALLOW_INSECURE_TLS=false`
-- keep `PROXY_ALLOW_PRIVATE_DESTINATIONS=false`
-- keep `CREATE_ADMIN=false` after bootstrap
-
-## Run (Docker)
+## Run with Docker Compose
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
 ```
 
-This starts the MongoDB service and the packages (API, Proxy, UI).
-
-## Run (Dev)
+Pinning examples:
 
 ```bash
-npm run dev
+# release pin
+FREEBOARD_UI_IMAGE_TAG=v0.1.0
+FREEBOARD_API_IMAGE_TAG=v0.1.0
+FREEBOARD_GATEWAY_IMAGE_TAG=v0.1.0
+
+# immutable build pin
+FREEBOARD_UI_IMAGE_TAG=sha-abc1234
+FREEBOARD_API_IMAGE_TAG=sha-abc1234
+FREEBOARD_GATEWAY_IMAGE_TAG=sha-abc1234
 ```
 
-This starts Docker MongoDB service and the workspaces (API, Proxy, UI).
+Rollback is tag-based: switch to the prior known-good `v*` or `sha-*` tags and redeploy.
+
+Services:
+
+- UI: `http://localhost:8080`
+- API (via UI reverse proxy): `http://localhost:8080/graphql` (internal: `freeboard-api:4001`)
+- Gateway (via UI reverse proxy): `http://localhost:8080/gateway/http/fetch` (internal: `freeboard-gateway:8001`)
+
+## Security checks before go-live
+
+- Keep `FREEBOARD_RUNTIME_ENV=production`
+- Use strong `JWT_SECRET` (32+ chars)
+- Use strong `JWT_GATEWAY_SECRET` and `GATEWAY_SERVICE_TOKEN`
+- Set valid `CREDENTIAL_ENCRYPTION_KEY` (base64 32-byte key)
+- Keep `EGRESS_ALLOW_INSECURE_TLS=false`
+- Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false`
+- Set strict `EGRESS_ALLOWED_HOSTS`
+- Keep `CREATE_ADMIN=false` after bootstrap
+- Use non-default Mongo credentials
+- Follow [Secrets Operations Runbook](/manual/secrets-operations) for setup/rotation/incident workflow

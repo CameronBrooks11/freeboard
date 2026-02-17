@@ -3,23 +3,24 @@
  * @component ToggleHeaderButton
  * @description Button to toggle the dashboard header edit mode on and off.
  */
-defineOptions({ name: 'ToggleHeaderButton' });
+defineOptions({ name: "ToggleHeaderButton" });
 
 import { storeToRefs } from "pinia";
-import { useFreeboardStore } from "../stores/freeboard";
+import { useDashboardStore } from "../stores/dashboard.js";
 
 // Access the editing flag from the store
-const freeboardStore = useFreeboardStore();
-
-const { isEditing } = storeToRefs(freeboardStore);
+const dashboardStore = useDashboardStore();
+const { isEditing } = storeToRefs(dashboardStore);
 </script>
 
 <template>
   <!-- Toggle between edit and view modes by clicking -->
-  <div class="toggle-header-button" @click="() => (isEditing = !isEditing)">
+  <div class="toggle-header-button" @click="() => dashboardStore.toggleEditing()">
     <i class="toggle-header-button__icon">
-      <v-icon class="toggle-header-button__icon__svg"
-        :name="isEditing ? 'hi-solid-chevron-up' : 'hi-solid-cog'"></v-icon>
+      <v-icon
+        class="toggle-header-button__icon__svg"
+        :name="isEditing ? 'hi-solid-chevron-up' : 'hi-solid-cog'"
+      ></v-icon>
     </i>
   </div>
 </template>

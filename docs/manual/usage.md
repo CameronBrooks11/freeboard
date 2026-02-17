@@ -1,46 +1,90 @@
 # Usage
 
-## Login
+## First login
 
-- Email: `ADMIN_EMAIL` from API env config (`packages/api/.env` overrides root `.env`)
-- Password: `ADMIN_PASSWORD` from API env config (`packages/api/.env` overrides root `.env`)
-- For local first-run bootstrap: set `CREATE_ADMIN=true` temporarily.
-- `CREATE_ADMIN=true` requires:
-  - email format: `name@domain.ext`
-  - password: min 12 chars with uppercase, lowercase, number, and symbol
-- The same credential policy is enforced for `registerUser`.
+- Use `ADMIN_EMAIL` and `ADMIN_PASSWORD` from API env config.
+- For bootstrap only, set `CREATE_ADMIN=true`, log in once, then set `CREATE_ADMIN=false`.
+- Password policy requires 12+ chars with upper/lower/number/symbol.
+- Secret bootstrap/rotation guidance: [Secrets Operations Runbook](/manual/secrets-operations).
 
-If login fails on first setup:
+## Machine integrations
 
-1. verify API is reading the expected env file (`packages/api/.env` overrides root `.env`)
-2. verify `CREATE_ADMIN=true` and credentials meet policy
-3. restart API and check startup logs
-4. after successful first login, set `CREATE_ADMIN=false`
+- For non-human automation, use scoped service accounts instead of user passwords.
+- Service account setup and rotation guidance: [Service Accounts Runbook](/manual/service-accounts).
 
-## Common tasks
+## Core workflow
 
-- Start in dev: `npm run dev`
-- Start only app services (Mongo already running): `npm run dev:services`
-- Start Mongo only: `npm run dev:mongo:up`
-- Reset Mongo volume: `npm run dev:mongo:reset`
-- Tail Mongo logs: `npm run dev:mongo:logs`
-- Start with Docker only: `docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d`
-- For Docker mode, ensure `.env` sets `JWT_SECRET` and `PROXY_ALLOWED_HOSTS`
-- Stop Docker: `docker compose down`
+1. Create dashboard
+2. Add datasources
+3. Add widgets
+4. Save dashboard
+5. Configure visibility/collaborators in Share dialog
 
-## Build Dashboard Mashups Quickly
+## Visibility model
 
-1. Add datasources from [Datasource Reference](/manual/datasource-reference)
-2. Add widgets from [Widget Reference](/manual/widget-reference)
-3. Use [Widget Examples](/manual/widget-examples/) to copy known-good public API configs
-4. If an API has CORS issues, route via proxy (`Use Proxy = true`) and ensure the host is in `PROXY_ALLOWED_HOSTS`
-5. For custom behavior, use the [Base Widget Guide](/manual/widget-base-guide)
+- `private`: owner/collaborators only
+- `link`: accessible via share token URL
+- `public`: accessible via public route
 
-## Raspberry Pi (optional)
+In private -> external (`link/public`) transitions, share tokens are rotated.
 
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-ansible-playbook ansible/playbook.yml --become
-```
+## Publish behavior
+
+- Editors can publish only when policy `editorCanPublish=true`.
+- Admins can always publish.
+- If publishing is disabled for editors, create/save paths force private visibility.
+
+## Runtime execution modes
+
+- `safe` (default): trusted script/resource capabilities are blocked.
+- `trusted`: advanced script/resource features enabled for trusted environments.
+
+## Mobile (`sm`) layout behavior
+
+- Dashboard width preset `sm` renders panes as a forced single-column stack.
+- Use the width toolbar in edit mode to switch `md -> sm` for mobile-oriented layouts.
+- On mobile-size viewports, `sm` defaults to view-only mode.
+- Advanced override: enable `Allow Mobile Edit (Advanced)` in dashboard settings when in-device editing is required.
+- If mobile editing is not required, keep `Allow Mobile Edit (Advanced)` disabled.
+
+## Theme packs
+
+- Dashboard settings include: `auto`, `light`, `dark`, `professional`, `high-contrast`, `colorblind`, `warm`, `cool`.
+- `auto` follows the browser/system color scheme and resolves to `light` or `dark`.
+- Theme previews are available in the settings dialog so dashboards can be tuned quickly per environment (operator console, kiosk, control-room display).
+
+## Common commands
+
+- Full dev stack: `npm run dev`
+- Services only: `npm run dev:services`
+- Mongo only: `npm run dev:mongo:up`
+- Docker deploy: `docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d`
+- Quality gate: `npm run ci`
+
+## Container image pinning
+
+- Compose defaults to `latest` tags for UI/API/Gateway images.
+- To pin a release, set:
+  - `FREEBOARD_UI_IMAGE_TAG=v<version>`
+  - `FREEBOARD_API_IMAGE_TAG=v<version>`
+  - `FREEBOARD_GATEWAY_IMAGE_TAG=v<version>`
+- To pin an immutable build, use `sha-<short-commit>` tags from the publish workflow.
+- Rollback is tag-based: set prior known-good tags and redeploy with compose.
+
+## Dashboard maintenance commands
+
+- Migrate legacy `published` dashboards to visibility model:
+  - Dry run: `npm run dashboards:visibility:migrate-legacy`
+  - Apply: `npm run dashboards:visibility:migrate-legacy -- --apply`
+- Migrate legacy datasource payloads (`json` type / embedded `authProviders`) to the current HTTP datasource model:
+  - Dry run: `npm run dashboards:datasource:migrate-legacy-http`
+  - Apply: `npm run dashboards:datasource:migrate-legacy-http -- --apply`
+- Force all dashboards to `private` (emergency containment):
+  - Dry run: `npm run dashboards:visibility:enforce-private`
+  - Apply: `npm run dashboards:visibility:enforce-private -- --apply`
+
+## Next references
+
+- [Deployment Profiles](/manual/deployment-profiles)
+- [Datasource Reference](/manual/datasource-reference)
+- [Widget Reference](/manual/widget-reference)

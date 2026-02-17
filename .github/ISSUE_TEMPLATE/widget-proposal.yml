@@ -1,0 +1,72 @@
+name: Widget Proposal
+description: Propose a new built-in widget or a major widget enhancement.
+title: "[Widget Proposal] <name>"
+labels:
+  - enhancement
+  - widgets
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for widget additions/major upgrades. Keep the proposal scoped, testable, and aligned with display-only dashboard principles.
+
+  - type: input
+    id: use_case
+    attributes:
+      label: Primary use case
+      description: What user/operator problem does this widget solve?
+      placeholder: "Example: compact multi-sensor health rollup for production lines"
+    validations:
+      required: true
+
+  - type: textarea
+    id: datasource_model
+    attributes:
+      label: Datasource and binding model
+      description: Describe expected datasource shape and key binding fields.
+      placeholder: |
+        datasource shape:
+        [{ "label": "Pump A", "status": "ok", "value": 42 }]
+        binding fields:
+        valuePath, labelField, statusField
+    validations:
+      required: true
+
+  - type: textarea
+    id: display_scope
+    attributes:
+      label: Display-only scope confirmation
+      description: Confirm no direct editing/input behavior is required.
+      placeholder: "Describe output-only behavior and why."
+    validations:
+      required: true
+
+  - type: textarea
+    id: responsive_plan
+    attributes:
+      label: Responsive behavior plan
+      description: How should it behave in narrow panes and `sm` dashboard width?
+      placeholder: "Include thresholds and what degrades/hides first."
+    validations:
+      required: true
+
+  - type: textarea
+    id: security_considerations
+    attributes:
+      label: Security considerations
+      description: Confirm no unsafe runtime patterns.
+      placeholder: "No eval/dynamic execution, no direct network calls, no unsafe HTML injection."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: implementation_checklist
+    attributes:
+      label: Implementation checklist
+      options:
+        - label: Unit/runtime tests will be added
+          required: true
+        - label: Widget reference and example docs will be updated
+          required: true
+        - label: Plugin registry integration will be included
+          required: true
