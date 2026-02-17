@@ -2,7 +2,10 @@
 
 ARG NODE_IMAGE=node:24.13.1-alpine
 
-FROM ${NODE_IMAGE} AS build-stage
+# Build static assets on the builder's native architecture to avoid qemu OOM
+# during arm/v7 legacy image publication. The produced dist assets are
+# architecture-agnostic and copied into the target runtime image.
+FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS build-stage
 WORKDIR /app
 
 COPY package.json package-lock.json ./
