@@ -13,7 +13,7 @@
     "test:ci": "node --test --test-concurrency=1 --experimental-specifier-resolution=node"
   },
   "dependencies": {
-    "@apollo/client": "^3.11.10",
+    "@apollo/client": "^4.1.4",
     "@guolao/vue-monaco-editor": "^1.5.4",
     "@vue/apollo-composable": "^4.2.1",
     "@vueuse/core": "^12.0.0",
