@@ -1,12 +1,15 @@
 # syntax=docker/dockerfile:1.7
 
 ARG NODE_IMAGE=node:24.13.1-alpine
+ARG NPM_VERSION=11.10.0
 
 # Build static assets on the builder's native architecture to avoid qemu OOM
 # during arm/v7 legacy image publication. The produced dist assets are
 # architecture-agnostic and copied into the target runtime image.
 FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS build-stage
 WORKDIR /app
+
+RUN npm install -g npm@${NPM_VERSION}
 
 COPY package.json package-lock.json ./
 COPY packages/ui/package.json packages/ui/package.json
