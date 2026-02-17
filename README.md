@@ -44,6 +44,10 @@ It adds:
 - Deployment profiles: `docs/manual/deployment-profiles.md`
 - Kiosk + Ansible operations: `docs/manual/ansible.md`
 - Secrets runbook: `docs/manual/secrets-operations.md`
+- Package docs:
+  - API: `packages/api/README.md`
+  - Gateway: `packages/gateway/README.md`
+  - UI: `packages/ui/README.md`
 
 ## Requirements
 

@@ -24,6 +24,16 @@ import {
   toUserDraft,
 } from "../admin/adminConsoleState.js";
 import {
+  buildBrokerProfileMutationInput,
+  buildCredentialProfileMutationInput,
+  dashboardVisibilityToEnum,
+  executionModeToEnum,
+  extractErrorMessage,
+  formatDateTime,
+  registrationModeToEnum,
+  roleToEnum,
+} from "./adminConsoleFormHelpers.js";
+import {
   ADMIN_CREATE_BROKER_PROFILE_MUTATION,
   ADMIN_CREATE_CREDENTIAL_PROFILE_MUTATION,
   ADMIN_CREATE_INVITE_MUTATION,
@@ -44,13 +54,6 @@ import {
   CREDENTIAL_PROFILES_QUERY,
   SET_AUTH_POLICY_MUTATION,
 } from "../gql.js";
-
-const roleToEnum = (role) => String(role || "viewer").toUpperCase();
-const registrationModeToEnum = (mode) => String(mode || "disabled").toUpperCase();
-const dashboardVisibilityToEnum = (visibility) => String(visibility || "private").toUpperCase();
-const executionModeToEnum = (mode) => String(mode || "safe").toUpperCase();
-const credentialProfileTypeToEnum = (type) => String(type || "none").toUpperCase();
-const brokerProfileProtocolToEnum = (protocol) => String(protocol || "mqtt").toUpperCase();
 
 export const useAdminConsoleController = () => {
   const authStore = useAuthStore();
@@ -255,90 +258,13 @@ export const useAdminConsoleController = () => {
     }
   });
 
-  const buildCredentialProfileMutationInput = (draft, { includeSecrets = true } = {}) => {
-    const type = normalizeCredentialProfileTypeValue(draft.type);
-    const input = {
-      name: String(draft.name || "").trim(),
-      description: String(draft.description || "").trim(),
-      type: credentialProfileTypeToEnum(type),
-      allowPublicUse: Boolean(draft.allowPublicUse),
-      metadata: {},
-    };
-
-    if (type === "header") {
-      input.metadata = {
-        headerName: String(draft.metadataHeaderName || "").trim(),
-      };
-    }
-
-    if (!includeSecrets) {
-      return input;
-    }
-
-    const secret = {};
-    if (type === "bearer") {
-      if (draft.secretToken) {
-        secret.token = String(draft.secretToken);
-      }
-    } else if (type === "basic") {
-      if (draft.secretUsername) {
-        secret.username = String(draft.secretUsername);
-      }
-      if (draft.secretPassword) {
-        secret.password = String(draft.secretPassword);
-      }
-    } else if (type === "header") {
-      if (draft.secretHeaderValue) {
-        secret.headerValue = String(draft.secretHeaderValue);
-      }
-    }
-
-    if (Object.keys(secret).length > 0 || type === "none") {
-      input.secret = secret;
-    }
-
-    return input;
-  };
-
-  const buildBrokerProfileMutationInput = (draft) => {
-    const protocol = String(draft.protocol || "mqtt").toLowerCase();
-    const allowlist = String(draft.topicAllowlist || "")
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-
-    return {
-      name: String(draft.name || "").trim(),
-      description: String(draft.description || "").trim(),
-      protocol: brokerProfileProtocolToEnum(protocol),
-      brokerUrl: String(draft.brokerUrl || "").trim(),
-      credentialProfileId: String(draft.credentialProfileId || "").trim() || null,
-      allowPublicUse: Boolean(draft.allowPublicUse),
-      topicAllowlist: allowlist,
-      tls: {
-        rejectUnauthorized: Boolean(draft.tlsRejectUnauthorized),
-      },
-    };
-  };
-
   const clearMessages = () => {
     statusMessage.value = "";
     actionError.value = "";
   };
 
   const setErrorMessage = (error, fallback) => {
-    actionError.value = error?.graphQLErrors?.[0]?.message || error?.message || fallback;
-  };
-
-  const formatDateTime = (value) => {
-    if (!value) {
-      return "—";
-    }
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-      return String(value);
-    }
-    return parsed.toLocaleString();
+    actionError.value = extractErrorMessage(error, fallback);
   };
 
   const savePolicy = async () => {
