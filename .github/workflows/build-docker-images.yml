@@ -158,7 +158,9 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         uses: docker/build-push-action@v6
         with:
-          platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+          # Node 24 Alpine images do not publish linux/arm/v6 manifests.
+          # Keep publish targets aligned with supported upstream runtime images.
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: true

@@ -39,7 +39,7 @@ See also: [Widget Runtime](/manual/widget-runtime)
   - `<datasourceTitle>.path.to.value`
   - `datasources.<datasourceId>.path.to.value`
 - If a binding cannot resolve, render a safe empty value (for example `—`).
-- Template strings should use `{{ path.to.value }}` placeholders only.
+- Template strings should use `\{\{ path.to.value \}\}` placeholders only.
 
 ## Responsive Behavior Requirements
 

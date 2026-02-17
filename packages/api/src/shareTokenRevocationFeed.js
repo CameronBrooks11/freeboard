@@ -45,7 +45,7 @@ const toCursorPayload = (eventDoc) => ({
 /**
  * Record one share-token revocation event for gateway feed polling.
  *
- * @param {{dashboardId: string, shareTokenVersion: number, revokedAt?: Date|string}} params
+ * @param {Object} params
  * @returns {Promise<void>}
  */
 export const recordShareTokenRevocationEvent = async ({
@@ -78,8 +78,8 @@ export const recordShareTokenRevocationEvent = async ({
 /**
  * Query revocation feed using cursor-based pagination with retention window.
  *
- * @param {{sinceCursor?: string|null, limit?: number, retentionSeconds?: number}} params
- * @returns {Promise<{events: Array<{eventId: string, dashboardId: string, shareTokenVersion: number, revokedAt: string}>, nextCursor: string|null, cursorExpired: boolean}>}
+ * @param {Object} params
+ * @returns {Promise<Object>}
  */
 export const queryShareTokenRevocationFeed = async ({
   sinceCursor = null,
