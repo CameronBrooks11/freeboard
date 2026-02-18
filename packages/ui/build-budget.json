@@ -1,0 +1,6 @@
+{
+  "entryWarnKiB": 450,
+  "largestCoreWarnKiB": 1200,
+  "coreTotalWarnKiB": 3000,
+  "editorTotalWarnKiB": 14500
+}

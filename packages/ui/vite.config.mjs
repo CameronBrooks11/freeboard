@@ -67,24 +67,34 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (!id.includes("node_modules")) {
+            const normalizedId = id.replace(/\\/g, "/");
+            if (!normalizedId.includes("/node_modules/")) {
               return;
             }
-            if (id.includes("monaco-editor") || id.includes("@guolao/vue-monaco-editor")) {
-              return "vendor-monaco";
+            if (
+              normalizedId.includes("/monaco-editor/") ||
+              normalizedId.includes("/@guolao/vue-monaco-editor/")
+            ) {
+              return "editor-monaco";
             }
             if (
-              id.includes("@apollo") ||
-              id.includes("graphql") ||
-              id.includes("@vue/apollo-composable")
+              normalizedId.includes("/@apollo/") ||
+              normalizedId.includes("/graphql") ||
+              normalizedId.includes("/@vue/apollo-composable/")
             ) {
-              return "vendor-apollo";
+              return "data-graphql";
             }
-            if (id.includes("vue") || id.includes("pinia") || id.includes("vue-router")) {
-              return "vendor-vue";
+            if (
+              normalizedId.includes("/vue/") ||
+              normalizedId.includes("/pinia/") ||
+              normalizedId.includes("/vue-router/") ||
+              normalizedId.includes("/vue-i18n/") ||
+              normalizedId.includes("/@unhead/")
+            ) {
+              return "core-vue";
             }
-            if (id.includes("oh-vue-icons")) {
-              return "vendor-icons";
+            if (normalizedId.includes("/oh-vue-icons/")) {
+              return "visual-icons";
             }
           },
         },

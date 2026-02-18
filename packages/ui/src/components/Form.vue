@@ -12,13 +12,12 @@
  */
 defineOptions({ name: "Form" });
 
-import { markRaw, ref, toRef, watch } from "vue";
+import { defineAsyncComponent, markRaw, ref, toRef, watch } from "vue";
 import InputFormElement from "./InputFormElement.vue";
 import { validateInteger, validateNumber, validateRequired } from "../validators";
 import SwitchFormElement from "./SwitchFormElement.vue";
 import SelectFormElement from "./SelectFormElement.vue";
 import ArrayFormElement from "./ArrayFormElement.vue";
-import CodeEditorFormElement from "./CodeEditorFormElement.vue";
 import { useI18n } from "vue-i18n";
 import ListFormElement from "./ListFormElement.vue";
 import { resolveFieldModelValue } from "../formModel";
@@ -126,7 +125,9 @@ const inputFormElementRef = markRaw(InputFormElement);
 const switchFormElementRef = markRaw(SwitchFormElement);
 const selectFormElementRef = markRaw(SelectFormElement);
 const arrayFormElementRef = markRaw(ArrayFormElement);
-const codeEditorFormElementRef = markRaw(CodeEditorFormElement);
+const codeEditorFormElementRef = markRaw(
+  defineAsyncComponent(() => import("./CodeEditorFormElement.vue")),
+);
 const listFormElementRef = markRaw(ListFormElement);
 
 /**
