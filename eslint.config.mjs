@@ -13,7 +13,13 @@ try {
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
-    ignores: ["**/dist/**", "**/dist-ssr/**", "**/coverage/**"],
+    ignores: [
+      "**/dist/**",
+      "**/dist-ssr/**",
+      "**/coverage/**",
+      "docs/auto/**",
+      "docs/public/dev/**",
+    ],
   },
   js.configs.recommended,
   ...pluginVue.configs["flat/essential"],
