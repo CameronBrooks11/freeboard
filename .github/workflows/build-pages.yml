@@ -14,7 +14,7 @@ on:
       - ".nvmrc"
       - "packages/ui/src/**"
       - "packages/ui/index.html"
-      - "packages/ui/vite.config.js"
+      - "packages/ui/vite.config.mjs"
       - "packages/ui/package.json"
       - "packages/api/src/**"
       - "packages/gateway/src/**"

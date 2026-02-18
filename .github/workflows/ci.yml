@@ -51,7 +51,7 @@ jobs:
             ui:
               - 'packages/ui/src/**'
               - 'packages/ui/package.json'
-              - 'packages/ui/vite.config.js'
+              - 'packages/ui/vite.config.mjs'
               - 'packages/ui/index.html'
               - 'packages/ui/eslint.config.js'
             gateway:
