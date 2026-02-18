@@ -4,14 +4,15 @@
  */
 
 import { createRouter, createWebHistory } from "vue-router";
-import Freeboard from "../components/Freeboard.vue";
-import Login from "../components/Login.vue";
-import AdminConsole from "../components/AdminConsole.vue";
 import { useAuthStore } from "../stores/auth.js";
 import { resolveNavigationGuard } from "./authGuard.js";
 
 /** @type {import('vue-router').Router} */
 let router;
+
+const Freeboard = () => import("../components/Freeboard.vue");
+const Login = () => import("../components/Login.vue");
+const AdminConsole = () => import("../components/AdminConsole.vue");
 
 if (__FREEBOARD_STATIC__) {
   // Static deployment: only Home route

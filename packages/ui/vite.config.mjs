@@ -64,6 +64,31 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       chunkSizeWarningLimit: 7000,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) {
+              return;
+            }
+            if (id.includes("monaco-editor") || id.includes("@guolao/vue-monaco-editor")) {
+              return "vendor-monaco";
+            }
+            if (
+              id.includes("@apollo") ||
+              id.includes("graphql") ||
+              id.includes("@vue/apollo-composable")
+            ) {
+              return "vendor-apollo";
+            }
+            if (id.includes("vue") || id.includes("pinia") || id.includes("vue-router")) {
+              return "vendor-vue";
+            }
+            if (id.includes("oh-vue-icons")) {
+              return "vendor-icons";
+            }
+          },
+        },
+      },
     },
   };
 });
