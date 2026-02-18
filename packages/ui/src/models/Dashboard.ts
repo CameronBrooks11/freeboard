@@ -117,6 +117,8 @@ const normalizeBooleanSetting = (value, fallback = false) => {
  * @class Dashboard
  */
 export class Dashboard {
+  [key: string]: any;
+
   /** @type {string|null} Unique dashboard identifier. */
   _id = null;
   /** @type {string} Dashboard title. */

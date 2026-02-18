@@ -13,7 +13,8 @@ import { getAuthToken, getDashboardId, getRuntimeShareToken } from "../runtime/r
 const ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 const ALLOWED_PARSERS = ["json", "text", "csv"];
 const TRUTHY_ENV_VALUES = new Set(["1", "true", "yes", "on"]);
-const importMetaEnv = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
+const importMetaEnv: Record<string, any> =
+  typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
 const DIRECT_HTTP_ENABLED =
   Boolean(importMetaEnv.DEV) ||
   TRUTHY_ENV_VALUES.has(
@@ -100,7 +101,7 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
 
   static label = "HTTP";
 
-  static fields = (datasource, dashboard, general, runtimeContext = {}) => {
+  static fields = (datasource, dashboard, general, runtimeContext: any = {}) => {
     const credentialProfiles = Array.isArray(runtimeContext.credentialProfiles)
       ? runtimeContext.credentialProfiles
       : [];
@@ -256,13 +257,13 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
 
   requestInFlight = false;
 
-  constructor(settings, updateCallback, statusCallback, runtimeContext = {}) {
+  constructor(settings, updateCallback, statusCallback, runtimeContext: any = {}) {
     super(settings, updateCallback, statusCallback);
     this.runtimeContext = runtimeContext;
     this.onSettingsChanged(settings);
   }
 
-  onSettingsChanged(nextSettings = {}) {
+  onSettingsChanged(nextSettings: any = {}) {
     super.onSettingsChanged(nextSettings);
     if (this.retryTimer) {
       clearTimeout(this.retryTimer);

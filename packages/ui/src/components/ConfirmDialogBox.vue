@@ -8,15 +8,15 @@
  */
 defineOptions({ name: "ConfirmDialogBox" });
 
-import { ref } from "vue";
+import { ref, type PropType } from "vue";
 import DialogBox from "./DialogBox.vue";
 
-const dialog = ref(null);
+const dialog = ref<any>(null);
 
 const { title, onClose, onOk } = defineProps({
   title: String,
-  onClose: Function,
-  onOk: Function,
+  onClose: Function as PropType<() => any>,
+  onOk: Function as PropType<() => any>,
 });
 
 /**

@@ -89,6 +89,18 @@ dns.setDefaultResultOrder?.("ipv4first");
 export { matchesMqttTopicPattern, parseTargetUrl, ensureResolvedDestinationIsAllowed };
 export { createGatewayFetchHandler };
 
+type RealtimeGatewayOptions = {
+  server: http.Server;
+  lookup?: typeof dns.promises.lookup;
+  fetchFn?: typeof fetch;
+  wsServerFactory?: (options: ConstructorParameters<typeof WebSocketServer>[0]) => WebSocketServer;
+  wsClientFactory?: (
+    url: string,
+    protocols?: string | string[],
+    options?: ConstructorParameters<typeof WebSocket>[2],
+  ) => WebSocket;
+};
+
 const getSocketRemoteAddress = (request) => {
   const raw = String(request?.socket?.remoteAddress || "unknown-ip");
   return raw.startsWith("::ffff:") ? raw.slice(7) : raw;
@@ -206,7 +218,7 @@ export const createRealtimeGateway = ({
   fetchFn = fetch,
   wsServerFactory = (options) => new WebSocketServer(options),
   wsClientFactory = (url, protocols, options) => new WebSocket(url, protocols, options),
-} = {}) => {
+}: RealtimeGatewayOptions) => {
   const wss = wsServerFactory({
     noServer: true,
     maxPayload: REALTIME_MAX_MESSAGE_BYTES,
@@ -1135,7 +1147,7 @@ export const createRealtimeGateway = ({
       }
       mqttPool.clear();
 
-      await new Promise((resolve) => {
+      await new Promise<void>((resolve) => {
         wss.close(() => resolve());
       });
     },

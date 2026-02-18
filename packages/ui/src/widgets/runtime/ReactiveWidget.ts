@@ -9,18 +9,32 @@ import { resolveBinding, resolveTemplate } from "./bindings.js";
  * Base widget class with snapshot-aware update flow.
  */
 export class ReactiveWidget {
+  [key: string]: any;
+
   /** @type {Record<string, any>} */
-  snapshot = {};
+  snapshot: Record<string, any> = {};
 
   /** @type {{changedDatasource: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot: Record<string, any>, timestamp?: string}|null} */
-  context = null;
+  context: {
+    changedDatasource: string | null;
+    changedDatasourceId?: string | null;
+    changedDatasourceTitle?: string | null;
+    snapshot: Record<string, any>;
+    timestamp?: string;
+  } | null = null;
   /** @type {unknown|null} */
-  lastError = null;
+  lastError: unknown | null = null;
+
+  currentSettings: Record<string, any>;
+
+  widgetElement: HTMLDivElement;
+
+  element?: Element;
 
   /**
    * @param {Object} settings
    */
-  constructor(settings) {
+  constructor(settings: Record<string, any> = {}) {
     this.currentSettings = settings || {};
     this.widgetElement = document.createElement("div");
     this.widgetElement.style.width = "100%";
@@ -30,7 +44,7 @@ export class ReactiveWidget {
   /**
    * @param {Element} element
    */
-  render(element) {
+  render(element: Element) {
     if (this.element === element) {
       return;
     }
@@ -41,7 +55,7 @@ export class ReactiveWidget {
   /**
    * @param {Object} newSettings
    */
-  onSettingsChanged(newSettings) {
+  onSettingsChanged(newSettings: Record<string, any> = {}) {
     this.currentSettings = newSettings || {};
     this.refresh();
   }
@@ -50,7 +64,16 @@ export class ReactiveWidget {
    * @param {{title?: string}|null} datasource
    * @param {{changedDatasource?: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot?: Record<string, any>, timestamp?: string}} [context]
    */
-  processDatasourceUpdate(datasource, context = {}) {
+  processDatasourceUpdate(
+    datasource: { id?: string; title?: string } | null,
+    context: {
+      changedDatasource?: string | null;
+      changedDatasourceId?: string | null;
+      changedDatasourceTitle?: string | null;
+      snapshot?: Record<string, any>;
+      timestamp?: string;
+    } = {},
+  ) {
     if (context.snapshot && typeof context.snapshot === "object") {
       this.snapshot = context.snapshot;
     }
@@ -94,7 +117,10 @@ export class ReactiveWidget {
    * Apply input changes to the widget UI.
    * Subclasses should override.
    */
-  onInputsChanged() {}
+  onInputsChanged(_inputs?: any, _context?: any) {
+    void _inputs;
+    void _context;
+  }
 
   /**
    * Handle runtime widget errors without crashing the dashboard update loop.
@@ -128,7 +154,9 @@ export class ReactiveWidget {
   /**
    * Optional resize hook called by container runtime.
    */
-  onResize() {}
+  onResize(_size?: { width?: number; height?: number }) {
+    void _size;
+  }
 
   /**
    * Cleanup widget resources.

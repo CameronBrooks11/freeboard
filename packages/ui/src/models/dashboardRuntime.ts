@@ -15,11 +15,11 @@ const RESERVED_DATASOURCE_TITLES = new Set(["datasources", "datasourcetitles"]);
  * @returns {Record<string, any>}
  */
 export const buildDatasourceSnapshot = (datasources = []) => {
-  const snapshot = {
-    datasources: {},
-    datasourceTitles: {},
+  const snapshot: Record<string, any> = {
+    datasources: {} as Record<string, any>,
+    datasourceTitles: {} as Record<string, any>,
   };
-  const duplicateTitles = new Set();
+  const duplicateTitles = new Set<string>();
 
   datasources.forEach((datasource) => {
     if (!datasource?.id) {

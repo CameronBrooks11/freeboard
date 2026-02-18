@@ -35,10 +35,4 @@ const typeDefs = [
   ServiceAccount,
 ];
 
-// NOTE: 2nd param is optional, and defaults to false
-// Only use if you have defined the same type multiple times in
-// different files and wish to attempt merging them together.
-// Use { all: true } to merge duplicate type definitions across modules.
-export default /** @type {DocumentNodeAlias} */ mergeTypeDefs(typeDefs, {
-  all: true,
-});
+export default /** @type {DocumentNodeAlias} */ mergeTypeDefs(typeDefs);

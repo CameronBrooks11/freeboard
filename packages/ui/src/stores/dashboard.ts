@@ -19,8 +19,8 @@ const isMobileViewport = () => {
   return Number(window.innerWidth) > 0 && Number(window.innerWidth) <= MOBILE_EDIT_MAX_WIDTH_PX;
 };
 
-const createAsset = (type, value, inline) => {
-  let node = null;
+const createAsset = (type: string, value: string, inline?: boolean) => {
+  let node: any = null;
   if (inline) {
     if (type === "style") {
       const style = document.createElement("style");
@@ -66,7 +66,7 @@ export const useDashboardStore = defineStore("dashboard", {
     allowEdit(state) {
       const authStore = useAuthStore(this.$pinia);
       const staticMode =
-        typeof __FREEBOARD_STATIC__ !== "undefined" && __FREEBOARD_STATIC__ === true;
+        typeof __FREEBOARD_STATIC__ !== "undefined" && __FREEBOARD_STATIC__ === "true";
       const roleCanEdit = staticMode || authStore.canEditDashboards();
       const dashboardCanEdit = !state.isSaved || state.dashboard?.canEdit !== false;
       return roleCanEdit && dashboardCanEdit;
@@ -159,7 +159,7 @@ export const useDashboardStore = defineStore("dashboard", {
       this.showLoadingIndicator = true;
       disposeDashboardAssets(this.assets);
 
-      const assets = {};
+      const assets: Record<string, any> = {};
       const head = document.head || document.getElementsByTagName("head")[0];
       const authStore = useAuthStore(this.$pinia);
 
@@ -169,22 +169,28 @@ export const useDashboardStore = defineStore("dashboard", {
         return;
       }
 
-      if (this.dashboard.settings.script) {
+      if (this.dashboard.settings?.script) {
         const script = createAsset("script", this.dashboard.settings.script, true);
-        head.appendChild(script.node);
+        if (script.node) {
+          head.appendChild(script.node);
+        }
         assets.script = script;
       }
 
-      if (this.dashboard.settings.style) {
+      if (this.dashboard.settings?.style) {
         const style = createAsset("style", this.dashboard.settings.style, true);
-        head.appendChild(style.node);
+        if (style.node) {
+          head.appendChild(style.node);
+        }
         assets.style = style;
       }
 
-      if (Array.isArray(this.dashboard.settings.resources)) {
-        this.dashboard.settings.resources.forEach((element) => {
+      if (Array.isArray(this.dashboard.settings?.resources)) {
+        this.dashboard.settings.resources.forEach((element: any) => {
           const node = createAsset(element.type, element.url);
-          head.appendChild(node.node);
+          if (node.node) {
+            head.appendChild(node.node);
+          }
           assets[element.url] = node;
         });
       }
@@ -226,16 +232,20 @@ export const useDashboardStore = defineStore("dashboard", {
       if (window.File && window.FileReader && window.FileList && window.Blob) {
         const input = document.createElement("input");
         input.type = "file";
-        input.addEventListener("change", (event) => {
-          const files = event.target.files;
+        input.addEventListener("change", (event: Event) => {
+          const files = (event.target as HTMLInputElement | null)?.files;
 
           if (files && files.length > 0) {
             const file = files[0];
             const reader = new FileReader();
 
-            reader.addEventListener("load", (fileReaderEvent) => {
+            reader.addEventListener("load", (fileReaderEvent: ProgressEvent<FileReader>) => {
               const textFile = fileReaderEvent.target;
-              const jsonObject = JSON.parse(textFile.result);
+              const result = textFile?.result;
+              if (typeof result !== "string") {
+                return;
+              }
+              const jsonObject = JSON.parse(result);
 
               this.loadDashboard(jsonObject);
               this.isSaved = false;

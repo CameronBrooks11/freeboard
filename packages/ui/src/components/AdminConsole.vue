@@ -646,7 +646,7 @@ const {
           type="button"
           class="admin-console__button"
           :disabled="isBusy"
-          @click="refetchAuditEvents"
+          @click="() => void refetchAuditEvents()"
         >
           {{ $t("admin.refreshAuditEvents") }}
         </button>

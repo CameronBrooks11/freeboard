@@ -8,7 +8,7 @@
  */
 defineOptions({ name: "SettingsDialogBox" });
 
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, type PropType } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
 import { useAuthStore } from "../stores/auth.js";
@@ -23,16 +23,16 @@ const dashboardStore = useDashboardStore();
 const { dashboard } = storeToRefs(dashboardStore);
 
 // Store child form component refs for validation
-const components = ref({});
+const components = ref<Record<string, any>>({});
 
-const storeComponentRef = (name, el) => {
+const storeComponentRef = (name: string, el: any) => {
   components.value[name] = el;
 };
 
 // Props passed from parent
 const { onClose, onOk } = defineProps({
-  onClose: Function,
-  onOk: Function,
+  onClose: Function as PropType<() => any>,
+  onOk: Function as PropType<() => any>,
 });
 
 // Compute tab fields schema from current dashboard settings
@@ -97,14 +97,14 @@ watch(
   { immediate: true },
 );
 
-const onFormChange = (sectionName, formValue) => {
+const onFormChange = (sectionName: string, formValue: any) => {
   if (sectionName !== "theme") {
     return;
   }
   selectedTheme.value = String(formValue?.theme || "auto");
 };
 
-const onThemePreviewSelect = (themeValue) => {
+const onThemePreviewSelect = (themeValue: string) => {
   selectedTheme.value = themeValue;
   components.value.theme?.setFieldValue?.("theme", themeValue);
 };
@@ -131,8 +131,8 @@ const onDialogBoxOk = () => {
   if (fields.value.some((f) => components.value[f.name].hasErrors())) {
     return;
   }
-  const s = {};
-  const result = {};
+  const s: Record<string, any> = {};
+  const result: Record<string, any> = {};
   fields.value.forEach((f) => {
     const v = components.value[f.name].getValue();
     Object.keys(v).forEach((k) => {
@@ -143,7 +143,7 @@ const onDialogBoxOk = () => {
       }
     });
   });
-  onOk({ ...result, settings: s });
+  (onOk as any)({ ...result, settings: s });
   dialog.value.closeModal();
 };
 </script>

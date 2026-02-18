@@ -65,7 +65,7 @@ export const createUpstreamRequestOptions = ({
     }
   }
 
-  const options = {
+  const options: any = {
     protocol: target.protocol,
     hostname: resolvedDestination.address,
     family: resolvedDestination.family,

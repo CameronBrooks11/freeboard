@@ -1,6 +1,6 @@
 import renderComponent from "../render.js";
 
-export const openModal = (component, appContext, props = {}) => {
+export const openModal = (component: any, appContext: any, props: any = {}) => {
   const el = document.body.appendChild(document.createElement("div"));
   let mounted = null;
 

@@ -91,7 +91,7 @@ export const ensureAtLeastOneActiveAdminWillRemain = async (excludedUserId) => {
 };
 
 export const findFallbackActiveAdmin = async (excludedUserId = null) => {
-  const filter = {
+  const filter: Record<string, any> = {
     role: "admin",
     active: true,
   };

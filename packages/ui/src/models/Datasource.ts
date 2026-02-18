@@ -32,6 +32,8 @@ const cloneMutableSettings = (value) => {
  * @class Datasource
  */
 export class Datasource {
+  [key: string]: any;
+
   /** @type {string} Stable datasource identifier used in bindings. */
   id = generateModelId("ds");
   /** @type {string|null} Display title of the datasource. */
@@ -211,7 +213,7 @@ export class Datasource {
    *
    * @param {Object} statusPayload
    */
-  statusCallback(statusPayload = {}) {
+  statusCallback(statusPayload: any = {}) {
     if (statusPayload.status) {
       this.status = statusPayload.status;
     }

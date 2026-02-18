@@ -9,7 +9,7 @@
  */
 defineOptions({ name: "DatasourceDialogBox" });
 
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, type PropType } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
 import { useDashboardStore } from "../stores/dashboard.js";
@@ -31,9 +31,9 @@ const { credentialProfiles, brokerProfiles } = storeToRefs(profileCatalogStore);
 // Define props passed into this dialog
 const { header, onClose, onOk, datasource } = defineProps({
   header: String,
-  onClose: Function,
-  onOk: Function,
-  datasource: Object,
+  onClose: Function as PropType<() => any>,
+  onOk: Function as PropType<() => any>,
+  datasource: Object as PropType<any>,
 });
 
 // Reference to the DialogBox component
@@ -42,15 +42,15 @@ const dialog = ref(null);
 const tabNavigator = ref(null);
 
 // Store refs to child Form components for validation
-const components = ref({});
-const storeComponentRef = (name, el) => {
+const components = ref<Record<string, any>>({});
+const storeComponentRef = (name: string, el: any) => {
   components.value[name] = el;
 };
 
 // Track selected plugin type for the datasource
-const typeRef = ref(datasource ? datasource.type : null);
+const typeRef = ref<string | null>(datasource ? datasource.type : null);
 // Dynamic form fields based on selected plugin
-const fields = ref([]);
+const fields = ref<any[]>([]);
 
 const validateUniqueDatasourceTitle = (value) => {
   if (!String(value || "").trim()) {
@@ -143,7 +143,7 @@ const onDialogBoxOk = () => {
       }
     });
   });
-  onOk({ ...result, settings: s, type: typeRef.value });
+  (onOk as any)({ ...result, settings: s, type: typeRef.value });
   dialog.value.closeModal();
 };
 </script>

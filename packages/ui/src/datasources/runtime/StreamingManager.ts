@@ -103,7 +103,7 @@ export class StreamingManager {
       return this.connectPromise;
     }
 
-    this.connectPromise = new Promise((resolve, reject) => {
+    this.connectPromise = new Promise<void>((resolve, reject) => {
       const socket = new WebSocket(buildRealtimeSocketUrl());
       this.socket = socket;
 

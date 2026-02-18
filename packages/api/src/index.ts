@@ -111,7 +111,7 @@ const readJsonBody = async (req, maxBytes = 256 * 1024) => {
   for await (const chunk of req) {
     total += chunk.length;
     if (total > maxBytes) {
-      const error = new Error("Request body is too large");
+      const error = new Error("Request body is too large") as Error & { statusCode?: number };
       error.statusCode = 413;
       throw error;
     }
@@ -130,7 +130,7 @@ const readJsonBody = async (req, maxBytes = 256 * 1024) => {
   try {
     return JSON.parse(bodyText);
   } catch {
-    const error = new Error("Invalid JSON payload");
+    const error = new Error("Invalid JSON payload") as Error & { statusCode?: number };
     error.statusCode = 400;
     throw error;
   }
@@ -214,7 +214,7 @@ const handleGatewayIntrospection = async (req, res) => {
       decryptSecret: decryptCredentialSecret,
     });
     sendJson(res, 200, resolved);
-  } catch (error) {
+  } catch (error: any) {
     const statusCode = Number(error?.statusCode) || 500;
     const message = statusCode >= 500 ? "Datasource introspection failed" : error.message;
     sendJson(res, statusCode, { error: message });
@@ -270,7 +270,7 @@ const handleGatewayRevokedTokens = async (req, res) => {
     });
 
     sendJson(res, 200, feed);
-  } catch (error) {
+  } catch (error: any) {
     const statusCode = Number(error?.statusCode) || 500;
     const message = statusCode >= 500 ? "Revoked token feed request failed" : error.message;
     sendJson(res, statusCode, { error: message });

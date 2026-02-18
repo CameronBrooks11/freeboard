@@ -7,6 +7,6 @@
     "allowJs": false,
     "types": ["vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "test/**/*.ts", "vite.config.mjs"],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "vite.config.mjs"],
   "exclude": ["dist", "node_modules"]
 }

@@ -13,14 +13,14 @@
 defineOptions({ name: "SavedDashboardsDialogBox" });
 
 import { useQuery } from "@vue/apollo-composable";
-import { ref } from "vue";
+import { ref, type PropType } from "vue";
 import { useRouter } from "vue-router";
 import DialogBox from "./DialogBox.vue";
 import { DASHBOARDS_LIST_QUERY, DASHBOARD_READ_QUERY } from "../gql.js";
 import { useDashboardStore } from "../stores/dashboard.js";
 
 // ===== Props =====
-const { onClose } = defineProps({ onClose: Function });
+const { onClose } = defineProps({ onClose: Function as PropType<() => any> });
 
 // ===== Store & Router =====
 const router = useRouter();
@@ -61,7 +61,7 @@ const openDashboard = async (id) => {
   } catch {
     // Fallback: fetch dashboard directly if navigation fails
     const { onResult } = useQuery(DASHBOARD_READ_QUERY, { id });
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       onResult(({ data }) => {
         if (data?.dashboard) dashboardStore.loadDashboard(data.dashboard);
         resolve();

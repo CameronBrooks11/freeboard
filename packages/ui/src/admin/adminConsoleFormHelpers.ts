@@ -18,9 +18,12 @@ export const serviceAccountScopeToEnum = (scope) =>
     .replace(/[:.-]/g, "_")
     .toUpperCase();
 
-export const buildCredentialProfileMutationInput = (draft, { includeSecrets = true } = {}) => {
+export const buildCredentialProfileMutationInput = (
+  draft: any,
+  { includeSecrets = true }: { includeSecrets?: boolean } = {},
+) => {
   const type = normalizeCredentialProfileTypeValue(draft.type);
-  const input = {
+  const input: any = {
     name: String(draft.name || "").trim(),
     description: String(draft.description || "").trim(),
     type: credentialProfileTypeToEnum(type),
@@ -38,7 +41,7 @@ export const buildCredentialProfileMutationInput = (draft, { includeSecrets = tr
     return input;
   }
 
-  const secret = {};
+  const secret: Record<string, string> = {};
   if (type === "bearer") {
     if (draft.secretToken) {
       secret.token = String(draft.secretToken);
@@ -63,7 +66,7 @@ export const buildCredentialProfileMutationInput = (draft, { includeSecrets = tr
   return input;
 };
 
-export const buildBrokerProfileMutationInput = (draft) => {
+export const buildBrokerProfileMutationInput = (draft: any) => {
   const protocol = String(draft.protocol || "mqtt").toLowerCase();
   const allowlist = String(draft.topicAllowlist || "")
     .split(",")
@@ -84,7 +87,7 @@ export const buildBrokerProfileMutationInput = (draft) => {
   };
 };
 
-export const formatDateTime = (value) => {
+export const formatDateTime = (value: any) => {
   if (!value) {
     return "—";
   }
@@ -95,5 +98,5 @@ export const formatDateTime = (value) => {
   return parsed.toLocaleString();
 };
 
-export const extractErrorMessage = (error, fallback) =>
+export const extractErrorMessage = (error: any, fallback: string) =>
   error?.graphQLErrors?.[0]?.message || error?.message || fallback;

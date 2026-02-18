@@ -36,6 +36,8 @@ const cloneMutableSettings = (value) => {
  * @class Widget
  */
 export class Widget {
+  [key: string]: any;
+
   /** @type {string} Stable widget identifier for rendering and serialization. */
   id = generateModelId("w");
   /** @type {boolean} Whether the widget should be rendered. */
@@ -61,7 +63,7 @@ export class Widget {
    * @param {Object} settings - Initial settings object for the widget.
    * @param {string} type     - Widget type key.
    */
-  constructor(settings, type) {
+  constructor(settings: Record<string, any> = {}, type: string | null = null) {
     this.settings = settings;
     this.type = type;
   }
@@ -258,7 +260,7 @@ export class Widget {
    * @param {Object} datasource - Datasource instance providing new data.
    * @param {{changedDatasource?: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot?: Record<string, any>, timestamp?: string}} [context]
    */
-  processDatasourceUpdate(datasource, context = {}) {
+  processDatasourceUpdate(datasource, context: any = {}) {
     this.lastContext = {
       ...context,
       snapshot: context.snapshot,

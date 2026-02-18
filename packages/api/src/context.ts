@@ -54,7 +54,7 @@ export const setContext = async ({ req }) => {
       : null;
   const clientIp = forwardedFor || req?.socket?.remoteAddress || req?.ip || null;
 
-  const context = {
+  const context: any = {
     pubsub: createPubSub(),
     models: {
       Dashboard,

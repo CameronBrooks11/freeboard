@@ -256,7 +256,7 @@ export class BaseWidget {
    * @param {Object} datasource - Datasource instance providing the update.
    * @param {{ snapshot?: Record<string, any> }} [context] - Optional normalized datasource snapshot.
    */
-  processDatasourceUpdate(datasource, context = {}) {
+  processDatasourceUpdate(datasource, context: { snapshot?: Record<string, any> } = {}) {
     if (!datasource?.id && !datasource?.title) {
       return;
     }

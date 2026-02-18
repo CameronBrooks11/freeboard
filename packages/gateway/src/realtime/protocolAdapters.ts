@@ -393,7 +393,7 @@ export const createProtocolAdapterFactory = (deps) => {
       }
 
       poolEntry.topicRefCounts.set(topic, 1);
-      await new Promise((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         poolEntry.client.subscribe(topic, { qos }, (error) => {
           if (error) {
             poolEntry.topicRefCounts.delete(topic);
@@ -411,7 +411,7 @@ export const createProtocolAdapterFactory = (deps) => {
       const current = poolEntry.topicRefCounts.get(topic) || 0;
       if (current <= 1) {
         poolEntry.topicRefCounts.delete(topic);
-        await new Promise((resolve) => {
+        await new Promise<void>((resolve) => {
           poolEntry.client.unsubscribe(topic, () => resolve());
         });
         return;

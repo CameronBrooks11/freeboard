@@ -4,8 +4,10 @@
  */
 
 export class DatasourceRuntimeBase {
+  [key: string]: any;
+
   /** @type {Object} */
-  currentSettings = {};
+  currentSettings: Record<string, any> = {};
 
   /** @type {Object} */
   metrics = {
@@ -50,7 +52,7 @@ export class DatasourceRuntimeBase {
     this.currentSettings = settings || {};
   }
 
-  setStatus(status, patch = {}) {
+  setStatus(status: string, patch: any = {}) {
     this.status = status;
     this.emitStatus({
       status,
@@ -58,7 +60,7 @@ export class DatasourceRuntimeBase {
     });
   }
 
-  emitStatus(patch = {}) {
+  emitStatus(patch: any = {}) {
     if (patch.status) {
       this.status = patch.status;
     }
@@ -89,7 +91,7 @@ export class DatasourceRuntimeBase {
     });
   }
 
-  emitData(payload) {
+  emitData(payload: any) {
     const now = new Date();
     this.metrics.messageCount += 1;
     this.lastMessageAt = now;
@@ -106,7 +108,7 @@ export class DatasourceRuntimeBase {
     });
   }
 
-  emitError(error, errorCode = "runtime_error") {
+  emitError(error: unknown, errorCode = "runtime_error") {
     const now = new Date();
     this.metrics.errorCount += 1;
     this.lastErrorAt = now;
@@ -120,7 +122,7 @@ export class DatasourceRuntimeBase {
     });
   }
 
-  setPollingInterval(fn, intervalMs) {
+  setPollingInterval(fn: () => void, intervalMs: number) {
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
       this.pollInterval = null;
@@ -134,7 +136,7 @@ export class DatasourceRuntimeBase {
     this.pollInterval = setInterval(fn, safeInterval);
   }
 
-  setStaleMonitor(staleAfterMs) {
+  setStaleMonitor(staleAfterMs: number) {
     if (this.staleInterval) {
       clearInterval(this.staleInterval);
       this.staleInterval = null;
@@ -188,11 +190,11 @@ export class DatasourceRuntimeBase {
    *
    * @param {Object} nextSettings
    */
-  applySettings(nextSettings = {}) {
+  applySettings(nextSettings: Record<string, any> = {}) {
     this.currentSettings = nextSettings;
   }
 
-  onSettingsChanged(nextSettings = {}) {
+  onSettingsChanged(nextSettings: Record<string, any> = {}) {
     this.applySettings(nextSettings);
   }
 

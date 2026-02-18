@@ -15,6 +15,7 @@ import {
   canAcceptInviteForMode,
   canCreateAccountForMode,
   LOGIN_ACTION_MODES,
+  type LoginActionMode,
   resolveLoginActionMode,
 } from "../auth/loginMode";
 import {
@@ -36,7 +37,7 @@ const form = ref(null);
 const loginError = ref("");
 const infoMessageKey = ref("");
 const fields = ref([]);
-const actionMode = ref(MODES.login);
+const actionMode = ref<LoginActionMode>(MODES.login);
 
 const { mutate: authUser, loading: authLoading } = useMutation(USER_AUTH_MUTATION);
 const { mutate: registerUser, loading: registerLoading } = useMutation(USER_REGISTER_MUTATION);
@@ -222,7 +223,7 @@ const resetMessages = () => {
   infoMessageKey.value = "";
 };
 
-const switchMode = (nextMode) => {
+const switchMode = (nextMode: LoginActionMode) => {
   resetMessages();
   actionMode.value = nextMode;
 };

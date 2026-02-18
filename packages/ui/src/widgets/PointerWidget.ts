@@ -155,7 +155,7 @@ export class PointerWidget extends ReactiveWidget {
     this.applyResponsiveSizing();
   }
 
-  applyResponsiveSizing(size = {}) {
+  applyResponsiveSizing(size: { width?: number } = {}) {
     const width = Number(size.width);
     this.isNarrow = Number.isFinite(width) && width > 0 && width < 280;
 
@@ -210,7 +210,7 @@ export class PointerWidget extends ReactiveWidget {
     return PointerWidget.preferredRows;
   }
 
-  onResize(size = {}) {
+  onResize(size: { width?: number } = {}) {
     this.applyResponsiveSizing(size);
   }
 }

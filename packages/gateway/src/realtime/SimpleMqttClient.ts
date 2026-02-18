@@ -19,7 +19,7 @@ import {
 } from "./mqttCodec.js";
 
 const createClientError = (statusCode, message) => {
-  const error = new Error(message);
+  const error = new Error(message) as Error & { statusCode?: number };
   error.statusCode = statusCode;
   return error;
 };
@@ -303,7 +303,7 @@ export class SimpleMqttClient extends EventEmitter {
     }
   }
 
-  subscribe(topic, { qos = 0 } = {}, callback = () => {}) {
+  subscribe(topic, { qos = 0 } = {}, callback: (error?: unknown) => void = () => {}) {
     const normalizedTopic = String(topic || "").trim();
     if (!normalizedTopic) {
       callback(createClientError(400, "MQTT topic is required"));
@@ -332,7 +332,7 @@ export class SimpleMqttClient extends EventEmitter {
     }
   }
 
-  unsubscribe(topic, callback = () => {}) {
+  unsubscribe(topic, callback: (error?: unknown) => void = () => {}) {
     const normalizedTopic = String(topic || "").trim();
     if (!normalizedTopic) {
       callback(null);

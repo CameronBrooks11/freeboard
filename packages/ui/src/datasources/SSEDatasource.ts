@@ -30,7 +30,7 @@ export class SSEDatasource extends DatasourceRuntimeBase {
 
   static label = "SSE";
 
-  static fields = (datasource, dashboard, general, runtimeContext = {}) => {
+  static fields = (datasource, dashboard, general, runtimeContext: any = {}) => {
     const credentialProfiles = Array.isArray(runtimeContext.credentialProfiles)
       ? runtimeContext.credentialProfiles
       : [];
@@ -156,7 +156,7 @@ export class SSEDatasource extends DatasourceRuntimeBase {
     );
   }
 
-  runtimeContext = {};
+  runtimeContext: any = {};
 
   manager = null;
 
@@ -164,7 +164,7 @@ export class SSEDatasource extends DatasourceRuntimeBase {
 
   streamGeneration = 0;
 
-  constructor(settings, updateCallback, statusCallback, runtimeContext = {}) {
+  constructor(settings, updateCallback, statusCallback, runtimeContext: any = {}) {
     super(settings, updateCallback, statusCallback);
     this.runtimeContext = runtimeContext;
     this.onSettingsChanged(settings);
@@ -277,7 +277,7 @@ export class SSEDatasource extends DatasourceRuntimeBase {
     }
   }
 
-  onSettingsChanged(nextSettings = {}) {
+  onSettingsChanged(nextSettings: any = {}) {
     super.onSettingsChanged(nextSettings);
 
     const staleAfterSeconds = Math.max(5, Number(nextSettings.staleAfterSeconds) || 120);

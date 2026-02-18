@@ -242,7 +242,7 @@ export class StatusListWidget extends ReactiveWidget {
     });
   }
 
-  onResize(size = {}) {
+  onResize(size: { width?: number } = {}) {
     const width = Number(size.width);
     this.isNarrow = Number.isFinite(width) && width > 0 && width < 340;
     this.refresh();

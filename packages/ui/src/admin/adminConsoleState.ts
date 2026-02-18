@@ -17,7 +17,7 @@ export const SERVICE_ACCOUNT_SCOPE_OPTIONS = Object.freeze([
   "ops:read",
 ]);
 
-const normalizeOptionValue = (value, allowed, fallback) => {
+const normalizeOptionValue = (value: any, allowed: readonly string[], fallback: string) => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
@@ -44,12 +44,12 @@ export const normalizeCredentialProfileTypeValue = (value) =>
 export const normalizeBrokerProfileProtocolValue = (value) =>
   normalizeOptionValue(value, BROKER_PROFILE_PROTOCOL_OPTIONS, "mqtt");
 
-export const toUserDraft = (user = {}) => ({
+export const toUserDraft = (user: any = {}) => ({
   role: normalizeRoleValue(user.role),
   active: Boolean(user.active),
 });
 
-export const toPolicyDraft = (policy = {}) => ({
+export const toPolicyDraft = (policy: any = {}) => ({
   registrationMode: normalizeRegistrationModeValue(policy.registrationMode),
   registrationDefaultRole: normalizeRegistrationDefaultRoleValue(policy.registrationDefaultRole),
   editorCanPublish: Boolean(policy.editorCanPublish),
@@ -59,7 +59,7 @@ export const toPolicyDraft = (policy = {}) => ({
   policyEditLock: Boolean(policy.policyEditLock),
 });
 
-export const toCredentialProfileDraft = (profile = {}) => ({
+export const toCredentialProfileDraft = (profile: any = {}) => ({
   name: String(profile.name || ""),
   description: String(profile.description || ""),
   type: normalizeCredentialProfileTypeValue(profile.type),
@@ -71,7 +71,7 @@ export const toCredentialProfileDraft = (profile = {}) => ({
   secretHeaderValue: "",
 });
 
-export const toBrokerProfileDraft = (profile = {}) => ({
+export const toBrokerProfileDraft = (profile: any = {}) => ({
   name: String(profile.name || ""),
   description: String(profile.description || ""),
   protocol: normalizeBrokerProfileProtocolValue(profile.protocol),
@@ -83,7 +83,7 @@ export const toBrokerProfileDraft = (profile = {}) => ({
     profile.tls?.rejectUnauthorized === undefined ? true : Boolean(profile.tls.rejectUnauthorized),
 });
 
-export const toServiceAccountDraft = (account = {}) => ({
+export const toServiceAccountDraft = (account: any = {}) => ({
   name: String(account.name || ""),
   description: String(account.description || ""),
   active: account.active === undefined ? true : Boolean(account.active),

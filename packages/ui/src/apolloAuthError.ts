@@ -32,7 +32,7 @@ export const isAuthGraphQLError = (error) => {
  * @param {Object[]|undefined} graphQLErrors
  * @returns {boolean}
  */
-export const shouldForceLogoutOnGraphQLErrors = (graphQLErrors) => {
+export const shouldForceLogoutOnGraphQLErrors = (graphQLErrors: readonly unknown[] = []) => {
   if (!Array.isArray(graphQLErrors) || graphQLErrors.length === 0) {
     return false;
   }

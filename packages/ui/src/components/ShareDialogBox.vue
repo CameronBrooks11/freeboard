@@ -5,7 +5,7 @@
  */
 defineOptions({ name: "ShareDialogBox" });
 
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, type PropType } from "vue";
 import { useMutation, useQuery } from "@vue/apollo-composable";
 import { storeToRefs } from "pinia";
 import DialogBox from "./DialogBox.vue";
@@ -29,7 +29,7 @@ import {
 } from "../gql.js";
 
 const { onClose } = defineProps({
-  onClose: Function,
+  onClose: Function as PropType<() => any>,
 });
 
 const dashboardStore = useDashboardStore();

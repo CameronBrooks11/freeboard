@@ -24,10 +24,13 @@ import {
  * @param {boolean} [allowTrustedExecution=true] - Whether trusted script/resource settings are editable.
  * @returns {Array<Object>} Array of settings sections for the UI form.
  */
-export default (dashboard, { allowTrustedExecution = true } = {}) => {
+export default (
+  dashboard: any,
+  { allowTrustedExecution = true }: { allowTrustedExecution?: boolean } = {},
+) => {
   const dashboardSettings = dashboard.settings || {};
 
-  const fields = [
+  const fields: any[] = [
     // General settings: title and columns
     {
       label: "form.labelGeneral",

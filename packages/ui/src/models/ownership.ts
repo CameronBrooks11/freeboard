@@ -4,7 +4,7 @@
  * @param {Object} [dashboard={}] - Dashboard payload.
  * @returns {boolean}
  */
-export const resolveDashboardIsOwner = (dashboard = {}) => {
+export const resolveDashboardIsOwner = (dashboard: any = {}) => {
   if (typeof dashboard.isOwner === "boolean") {
     return dashboard.isOwner;
   }

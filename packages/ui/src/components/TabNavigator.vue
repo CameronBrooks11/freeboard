@@ -9,9 +9,13 @@ defineOptions({ name: "TabNavigator" });
 
 import { onMounted, ref } from "vue";
 
-const { fields } = defineProps({
-  fields: Array,
-});
+type TabField = {
+  name?: string;
+  icon?: string;
+  label?: string;
+};
+
+const { fields } = defineProps<{ fields: TabField[] }>();
 
 // Index of currently active tab
 const index = ref(0);

@@ -172,7 +172,7 @@ export class IndicatorWidget extends ReactiveWidget {
     this.labelElement.textContent = isOn ? inputs.onText || "On" : inputs.offText || "Off";
   }
 
-  onResize(size = {}) {
+  onResize(size: { width?: number } = {}) {
     const width = Number(size.width);
     this.isNarrow = Number.isFinite(width) && width > 0 && width < 240;
     this.applyResponsiveSizing();

@@ -50,7 +50,7 @@ const toComparableId = (value) => {
 };
 
 export const createClientError = (statusCode, message, code = null) => {
-  const error = new Error(message);
+  const error = new Error(message) as Error & { statusCode?: number; code?: string };
   error.statusCode = statusCode;
   if (code) {
     error.code = code;
@@ -304,7 +304,7 @@ export const buildCanonicalStreamingIntent = async ({ dashboard, datasourceId })
   );
 };
 
-const toHashableIntent = (intent = {}) => {
+const toHashableIntent = (intent: any = {}) => {
   const protocol = String(intent.protocol || "http").toLowerCase();
   if (protocol === "http") {
     return {
@@ -631,7 +631,7 @@ export const resolveGatewayIntrospection = async ({
     datasourceType,
   });
 
-  const canonicalIntent = await buildCanonicalIntentForDatasource({
+  const canonicalIntent: any = await buildCanonicalIntentForDatasource({
     dashboard,
     datasourceId,
   });

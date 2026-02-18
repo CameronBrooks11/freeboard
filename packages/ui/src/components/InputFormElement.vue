@@ -19,8 +19,12 @@ const emit = defineEmits(["update:modelValue"]);
  *
  * @param {string} value - New input value from the event.
  */
-const onInput = (value) => {
+const onInput = (value: string) => {
   emit("update:modelValue", value);
+};
+
+const readInputValue = (event: Event) => {
+  onInput((event.target as HTMLInputElement)?.value ?? "");
 };
 </script>
 
@@ -30,8 +34,8 @@ const onInput = (value) => {
     :type="props.secret ? 'password' : 'text'"
     :value="props.modelValue"
     :disabled="props.disabled"
-    @input="onInput($event.target.value)"
-    @focusout="onInput($event.target.value)"
+    @input="readInputValue"
+    @focusout="readInputValue"
   />
 </template>
 

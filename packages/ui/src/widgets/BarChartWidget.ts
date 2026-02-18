@@ -54,7 +54,7 @@ const requestFrame =
 const cancelFrame =
   typeof cancelAnimationFrame === "function" ? cancelAnimationFrame : (id) => clearTimeout(id);
 
-export const normalizeBarChartRows = (rows, settings = {}) => {
+export const normalizeBarChartRows = (rows: any, settings: any = {}) => {
   const arrayRows = Array.isArray(rows) ? rows : [];
   const labelField = String(settings.labelField || "label").trim() || "label";
   const valueField = String(settings.valueField || "value").trim() || "value";
@@ -303,7 +303,7 @@ export class BarChartWidget extends ReactiveWidget {
     this.draw(inputs);
   }
 
-  applyResponsiveSizing(size = {}) {
+  applyResponsiveSizing(size: { width?: number } = {}) {
     const width = Number(size.width);
     this.isNarrow = Number.isFinite(width) && width > 0 && width < 360;
     this.headerElement.style.fontSize = this.isNarrow ? "11px" : "12px";
@@ -312,7 +312,7 @@ export class BarChartWidget extends ReactiveWidget {
     this.canvasWrap.style.minHeight = this.isNarrow ? "100px" : "120px";
   }
 
-  onResize(size = {}) {
+  onResize(size: { width?: number } = {}) {
     this.applyResponsiveSizing(size);
     if (this.lastModel) {
       this.draw(this.lastModel);

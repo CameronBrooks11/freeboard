@@ -9,7 +9,9 @@ export const LOGIN_ACTION_MODES = Object.freeze({
   invite: "invite",
   requestReset: "requestReset",
   completeReset: "completeReset",
-});
+} as const);
+
+export type LoginActionMode = (typeof LOGIN_ACTION_MODES)[keyof typeof LOGIN_ACTION_MODES];
 
 const normalizeRegistrationMode = (registrationMode) => {
   const normalized = String(registrationMode || "").toLowerCase();

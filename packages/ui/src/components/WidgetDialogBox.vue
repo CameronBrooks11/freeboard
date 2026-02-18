@@ -10,7 +10,7 @@
  */
 defineOptions({ name: "WidgetDialogBox" });
 
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, type PropType } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
 import { useDashboardStore } from "../stores/dashboard.js";
@@ -27,21 +27,21 @@ const { widgetPlugins } = storeToRefs(pluginRegistryStore);
 // Props passed from parent component
 const { header, onClose, onOk, widget } = defineProps({
   header: String,
-  onClose: Function,
-  onOk: Function,
-  widget: Object,
+  onClose: Function as PropType<() => any>,
+  onOk: Function as PropType<() => any>,
+  widget: Object as PropType<any>,
 });
 
 // Reactive reference for selected widget type
-const typeRef = ref(widget ? widget.type : null);
+const typeRef = ref<string | null>(widget ? widget.type : null);
 
 // Dynamic fields schema based on selected type
-const fields = ref([]);
+const fields = ref<any[]>([]);
 
 // Store child Form component refs for validation
-const components = ref({});
+const components = ref<Record<string, any>>({});
 
-const storeComponentRef = (name, el) => {
+const storeComponentRef = (name: string, el: any) => {
   components.value[name] = el;
 };
 
@@ -109,7 +109,7 @@ const onDialogBoxOk = () => {
       }
     });
   });
-  onOk({ ...result, settings: s, type: typeRef.value });
+  (onOk as any)({ ...result, settings: s, type: typeRef.value });
   dialog.value.closeModal();
 };
 </script>

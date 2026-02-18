@@ -10,7 +10,7 @@
  */
 defineOptions({ name: "PaneDialogBox" });
 
-import { onMounted, ref } from "vue";
+import { onMounted, ref, type PropType } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
 import { useI18n } from "vue-i18n";
@@ -18,16 +18,16 @@ import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 
 // Reference to the Form component for validation and value retrieval
-const form = ref(null);
+const form = ref<any>(null);
 // Dynamic form fields for editing pane name
-const fields = ref([]);
+const fields = ref<any[]>([]);
 
 // Props passed from parent component
 const { header, onClose, onOk, settings } = defineProps({
   header: String,
-  onClose: Function,
-  onOk: Function,
-  settings: Object,
+  onClose: Function as PropType<() => any>,
+  onOk: Function as PropType<() => any>,
+  settings: Object as PropType<any>,
 });
 
 // Initialize form fields on mount
@@ -44,7 +44,7 @@ onMounted(() => {
 });
 
 // Reference to the DialogBox for closing the modal programmatically
-const dialog = ref(null);
+const dialog = ref<any>(null);
 
 /**
  * Handle the OK button: validate form, invoke onOk prop with new settings, then close modal.
@@ -53,7 +53,7 @@ const onDialogBoxOk = () => {
   if (form.value.hasErrors()) {
     return;
   }
-  onOk({ settings: form.value.getValue() });
+  (onOk as any)({ settings: form.value.getValue() });
   dialog.value.closeModal();
 };
 </script>

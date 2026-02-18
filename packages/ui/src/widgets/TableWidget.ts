@@ -481,7 +481,7 @@ export class TableWidget extends ReactiveWidget {
     this.applyResponsiveStyles(inputs.compact);
   }
 
-  onResize(size = {}) {
+  onResize(size: { width?: number } = {}) {
     const width = Number(size.width);
     this.isNarrow = Number.isFinite(width) && width > 0 && width < 520;
     this.applyResponsiveStyles(this.currentSettings?.compact === true);

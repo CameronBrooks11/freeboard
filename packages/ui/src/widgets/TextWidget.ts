@@ -117,6 +117,18 @@ export class TextWidget extends ReactiveWidget {
     newInstanceCallback(new TextWidget(settings));
   }
 
+  private isNarrow: boolean;
+
+  private headerElement: HTMLDivElement;
+
+  private valueElement: HTMLDivElement;
+
+  private unitElement: HTMLDivElement;
+
+  private animationFrame?: number | ReturnType<typeof setTimeout>;
+
+  private currentNumericValue?: number;
+
   constructor(settings) {
     super(settings);
     this.isNarrow = false;
@@ -262,7 +274,7 @@ export class TextWidget extends ReactiveWidget {
     super.onDispose();
   }
 
-  onResize(size = {}) {
+  onResize(size: { width?: number } = {}) {
     const width = Number(size.width);
     this.isNarrow = Number.isFinite(width) && width > 0 && width < 260;
     this.applyResponsiveSizing();

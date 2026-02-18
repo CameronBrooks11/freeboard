@@ -173,7 +173,7 @@ export class GaugeWidget extends ReactiveWidget {
     this.onSettingsChanged(settings);
   }
 
-  applyResponsiveSizing(size = {}) {
+  applyResponsiveSizing(size: { width?: number } = {}) {
     const width = Number(size.width);
     const isNarrow = Number.isFinite(width) && width > 0 && width < 260;
     this.isNarrow = isNarrow;
@@ -248,7 +248,7 @@ export class GaugeWidget extends ReactiveWidget {
     this.progress.setAttribute("stroke", `hsl(${hue} 70% 45%)`);
   }
 
-  onResize(size = {}) {
+  onResize(size: { width?: number } = {}) {
     this.applyResponsiveSizing(size);
   }
 }

@@ -179,12 +179,12 @@ export class SparklineWidget extends ReactiveWidget {
     this.draw();
   }
 
-  onResize(size = {}) {
+  onResize(size: { width?: number } = {}) {
     this.applyResponsiveSizing(size);
     this.draw();
   }
 
-  applyResponsiveSizing(size = {}) {
+  applyResponsiveSizing(size: { width?: number } = {}) {
     const width = Number(size.width);
     this.isNarrow = Number.isFinite(width) && width > 0 && width < 320;
     this.headerElement.style.fontSize = this.isNarrow ? "11px" : "12px";

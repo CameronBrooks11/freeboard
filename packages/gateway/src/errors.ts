@@ -3,8 +3,15 @@
  * @description Shared client-facing gateway error helpers.
  */
 
-export const createClientError = (statusCode, message, streamErrorCode = null) => {
-  const error = new Error(message);
+export const createClientError = (
+  statusCode: number,
+  message: string,
+  streamErrorCode: string | null = null,
+) => {
+  const error = new Error(message) as Error & {
+    statusCode?: number;
+    streamErrorCode?: string;
+  };
   error.statusCode = statusCode;
   if (streamErrorCode) {
     error.streamErrorCode = streamErrorCode;

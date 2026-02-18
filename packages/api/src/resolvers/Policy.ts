@@ -9,8 +9,8 @@ import { config } from "../config.js";
 import { recordAuditEvent } from "../audit.js";
 import { getAuthPolicyState, setAuthPolicyState } from "../policyStore.js";
 
-const toMutablePolicyInput = (args = {}) => {
-  const input = {};
+const toMutablePolicyInput = (args: any = {}) => {
+  const input: Record<string, any> = {};
   if (args.registrationMode !== undefined) {
     input.registrationMode = args.registrationMode;
   }

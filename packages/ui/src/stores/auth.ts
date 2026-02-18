@@ -36,7 +36,7 @@ const getLocalStorage = () => {
   return null;
 };
 
-const decodeBase64 = (value) => {
+const decodeBase64 = (value: string) => {
   if (typeof globalThis.atob === "function") {
     return globalThis.atob(value);
   }
@@ -46,7 +46,7 @@ const decodeBase64 = (value) => {
   throw new Error("No base64 decoder available");
 };
 
-const parseJwtPayload = (token) => {
+const parseJwtPayload = (token: string | null) => {
   if (!token || typeof token !== "string") {
     return null;
   }
@@ -77,7 +77,7 @@ const normalizeRole = (role) => {
   return "viewer";
 };
 
-const normalizePublicAuthPolicy = (policy = {}) => ({
+const normalizePublicAuthPolicy = (policy: any = {}) => ({
   registrationMode: ["disabled", "invite", "open"].includes(
     String(policy.registrationMode || "").toLowerCase(),
   )
@@ -211,7 +211,7 @@ export const useAuthStore = defineStore("auth", {
       }
 
       try {
-        const settings = JSON.parse(item);
+        const settings: any = JSON.parse(item);
         this.token = settings.token || null;
       } catch {
         this.token = null;
@@ -231,7 +231,7 @@ export const useAuthStore = defineStore("auth", {
     },
 
     saveSession() {
-      const settings = {};
+      const settings: Record<string, any> = {};
       if (this.token) {
         settings.token = this.token;
       }

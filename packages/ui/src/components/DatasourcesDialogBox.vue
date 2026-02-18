@@ -8,9 +8,10 @@ defineOptions({ name: "DatasourcesDialogBox" });
 
 import DialogBox from "./DialogBox.vue";
 import DatasourcesList from "./DatasourcesList.vue";
+import type { PropType } from "vue";
 
 const { onClose } = defineProps({
-  onClose: Function,
+  onClose: Function as PropType<() => any>,
 });
 </script>
 
