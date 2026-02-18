@@ -43,7 +43,7 @@ test("Datasource dialog exposes MQTT broker-profile quick-create path", () => {
 });
 
 test("Vite dev proxy enables websocket upgrades for /gateway realtime channel", () => {
-  const viteConfigSource = readProjectFile("../vite.config.cjs");
+  const viteConfigSource = readProjectFile("../vite.config.mjs");
 
   assert.match(
     viteConfigSource,
