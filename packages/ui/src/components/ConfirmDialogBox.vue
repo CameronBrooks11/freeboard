@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component ConfirmDialogBox
  * @description Modal dialog prompting the user to confirm an action.

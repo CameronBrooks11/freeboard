@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component ShareDialogBox
  * @description Dashboard visibility/share/collaboration management dialog.

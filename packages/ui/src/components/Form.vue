@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component Form
  * @description Renders a dynamic form from a fields schema, manages value updates and validation.

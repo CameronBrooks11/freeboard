@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component InputFormElement
  * @description Basic text or password input form element that syncs with v-model.

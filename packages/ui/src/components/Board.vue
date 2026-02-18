@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component Board
  * @description Renders the dashboard grid layout with panes. In editing mode, panes are draggable and resizable.

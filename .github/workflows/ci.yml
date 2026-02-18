@@ -28,6 +28,7 @@ jobs:
       run_ui_tests: ${{ steps.classify.outputs.run_ui_tests }}
       run_gateway_tests: ${{ steps.classify.outputs.run_gateway_tests }}
       run_build_verify: ${{ steps.classify.outputs.run_build_verify }}
+      run_typecheck: ${{ steps.classify.outputs.run_typecheck }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -46,21 +47,28 @@ jobs:
               - 'LICENSE'
             api:
               - 'packages/api/src/**'
+              - 'packages/api/test/**'
+              - 'packages/api/tsconfig*.json'
               - 'packages/api/package.json'
               - 'packages/api/Dockerfile'
             ui:
               - 'packages/ui/src/**'
+              - 'packages/ui/test/**'
+              - 'packages/ui/tsconfig*.json'
               - 'packages/ui/package.json'
               - 'packages/ui/vite.config.mjs'
               - 'packages/ui/index.html'
               - 'packages/ui/eslint.config.js'
             gateway:
               - 'packages/gateway/src/**'
+              - 'packages/gateway/test/**'
+              - 'packages/gateway/tsconfig*.json'
               - 'packages/gateway/package.json'
               - 'packages/gateway/Dockerfile'
             shared:
               - 'package.json'
               - 'package-lock.json'
+              - 'tsconfig*.json'
               - '.nvmrc'
               - '.editorconfig'
               - '.prettier*'
@@ -111,6 +119,11 @@ jobs:
             run_build_verify=true
           fi
 
+          run_typecheck=false
+          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$shared" == "true" ]]; then
+            run_typecheck=true
+          fi
+
           run_format_check=true
 
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
@@ -120,6 +133,7 @@ jobs:
           echo "run_ui_tests=$run_ui_tests" >> "$GITHUB_OUTPUT"
           echo "run_gateway_tests=$run_gateway_tests" >> "$GITHUB_OUTPUT"
           echo "run_build_verify=$run_build_verify" >> "$GITHUB_OUTPUT"
+          echo "run_typecheck=$run_typecheck" >> "$GITHUB_OUTPUT"
 
           echo "CI classification:"
           echo "  docs_only=$docs_only"
@@ -129,6 +143,7 @@ jobs:
           echo "  run_ui_tests=$run_ui_tests"
           echo "  run_gateway_tests=$run_gateway_tests"
           echo "  run_build_verify=$run_build_verify"
+          echo "  run_typecheck=$run_typecheck"
 
   format:
     name: Format check
@@ -246,6 +261,25 @@ jobs:
       - name: Build verify
         run: npm run build:verify
 
+  typecheck:
+    name: Typecheck
+    needs: changes
+    if: needs.changes.outputs.run_typecheck == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+
   required:
     name: Required CI
     if: always()
@@ -257,6 +291,7 @@ jobs:
       - test-ui
       - test-gateway
       - build-verify
+      - typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -288,6 +323,7 @@ jobs:
           check_required "${{ needs.changes.outputs.run_ui_tests }}" "${{ needs.test-ui.result }}" "test-ui"
           check_required "${{ needs.changes.outputs.run_gateway_tests }}" "${{ needs.test-gateway.result }}" "test-gateway"
           check_required "${{ needs.changes.outputs.run_build_verify }}" "${{ needs.build-verify.result }}" "build-verify"
+          check_required "${{ needs.changes.outputs.run_typecheck }}" "${{ needs.typecheck.result }}" "typecheck"
 
           if [[ "$status" -ne 0 ]]; then
             exit "$status"

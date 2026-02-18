@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component DatasourcesList
  * @description Displays and manages the list of datasources, allowing add, edit, delete, and manual refresh operations.

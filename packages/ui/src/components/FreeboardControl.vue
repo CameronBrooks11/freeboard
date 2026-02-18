@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component FreeboardControl
  * @description Toolbar for saving, importing, and exporting the Freeboard.

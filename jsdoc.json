@@ -5,7 +5,7 @@
   },
   "source": {
     "include": ["packages/api/src", "packages/gateway/src"],
-    "includePattern": "\\.(js|mjs|cjs)$",
+    "includePattern": "\\.(js|ts|mjs|cjs)$",
     "excludePattern": "(node_modules/|docs/|\\.vue$)"
   },
   "plugins": ["jsdoc-type-pratt-parser"],

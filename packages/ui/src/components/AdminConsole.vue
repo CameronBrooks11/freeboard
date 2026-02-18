@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component AdminConsole
  * @description Admin-only surface for user lifecycle and policy management.

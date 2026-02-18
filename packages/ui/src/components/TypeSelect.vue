@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component TypeSelect
  * @description Dropdown select for choosing a type, with label and placeholder support.

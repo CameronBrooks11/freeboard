@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component DialogBox
  * @description Generic modal dialog with header slot, content slot, and footer with OK/Cancel controls.

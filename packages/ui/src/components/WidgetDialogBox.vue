@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component WidgetDialogBox
  * @description Modal dialog for configuring a widget’s type, title, enabled flag, and settings.

@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component DatasourcesDialogBox
  * @description Modal dialog that displays and manages the list of datasources.

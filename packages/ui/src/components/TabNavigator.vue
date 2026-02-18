@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component TabNavigator
  * @description Renders a tabbed navigation interface for switching between multiple content sections.

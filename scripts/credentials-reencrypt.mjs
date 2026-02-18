@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import CredentialProfile from "../packages/api/src/models/CredentialProfile.js";
+import CredentialProfile from "../packages/api/src/models/CredentialProfile.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

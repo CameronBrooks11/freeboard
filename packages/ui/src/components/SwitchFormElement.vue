@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component SwitchFormElement
  * @description Toggle switch form element for boolean values.

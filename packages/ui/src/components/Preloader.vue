@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component Preloader
  * @description Loading indicator with animated bars for async operations.

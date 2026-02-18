@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component PaneDialogBox
  * @description Modal dialog for editing a pane’s title.

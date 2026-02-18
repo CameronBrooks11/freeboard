@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component Pane
  * @description Represents a dashboard pane, rendering its title, controls for editing/deleting the pane or adding widgets, and its widgets.

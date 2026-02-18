@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component DatasourceDialogBox
  * @description Modal dialog for configuring a datasource plugin and its settings.

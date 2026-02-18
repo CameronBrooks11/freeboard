@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component SelectFormElement
  * @description Dropdown select form element that initializes with a default option and emits updates.

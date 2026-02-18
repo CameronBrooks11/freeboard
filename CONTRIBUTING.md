@@ -22,6 +22,14 @@ npm run build:verify
 - Include docs updates in the same PR when behavior changes.
 - Include tests for regressions and new behavior.
 
+TypeScript migration PR policy:
+
+- Migration PRs must not include unrelated feature behavior changes.
+- Keep migration PRs scoped by package and boundary.
+- For Node ESM imports, use explicit `.js` specifiers for local module imports.
+- Any `@ts-expect-error` requires a short rationale and follow-up reference.
+- Do not start migrating the next package until the current package closeout criteria are met.
+
 ## Widget Contribution Process
 
 1. Open a **Widget Proposal** issue (use the issue template).

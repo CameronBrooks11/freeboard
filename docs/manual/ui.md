@@ -19,16 +19,16 @@ Core stack:
 
 ## Key Paths
 
-- Entry/bootstrap: `packages/ui/src/main.js`, `packages/ui/src/bootstrap/appBootstrap.js`
-- Router: `packages/ui/src/router/index.js`
+- Entry/bootstrap: `packages/ui/src/main.ts`, `packages/ui/src/bootstrap/appBootstrap.ts`
+- Router: `packages/ui/src/router/index.ts`
 - Stores:
-  - `packages/ui/src/stores/auth.js`
-  - `packages/ui/src/stores/dashboard.js`
-  - `packages/ui/src/stores/pluginRegistry.js`
-  - `packages/ui/src/stores/profileCatalog.js`
+  - `packages/ui/src/stores/auth.ts`
+  - `packages/ui/src/stores/dashboard.ts`
+  - `packages/ui/src/stores/pluginRegistry.ts`
+  - `packages/ui/src/stores/profileCatalog.ts`
 - Runtime context and UI services:
-  - `packages/ui/src/runtime/runtimeContext.js`
-  - `packages/ui/src/ui/modalHost.js`
+  - `packages/ui/src/runtime/runtimeContext.ts`
+  - `packages/ui/src/ui/modalHost.ts`
 - Models: `packages/ui/src/models/*`
 - Datasources: `packages/ui/src/datasources/*`
 - Widgets: `packages/ui/src/widgets/*`

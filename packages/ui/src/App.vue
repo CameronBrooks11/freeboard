@@ -1,4 +1,4 @@
-<script lang="js" setup>
+<script lang="ts" setup>
 /**
  * @component App
  * @description Root component that sets dynamic document title based on the current dashboard and renders the router view.

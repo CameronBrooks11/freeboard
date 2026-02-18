@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component ArrayFormElement
  * @description Renders and manages an array of objects in a table, with add/remove controls.

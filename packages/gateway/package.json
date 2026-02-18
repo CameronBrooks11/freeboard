@@ -1,13 +1,14 @@
 {
   "name": "@freeboard/gateway",
   "version": "0.1.0",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
-    "test": "node --test",
-    "test:ci": "node --test"
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "npm run build && node dist/index.js",
+    "test": "tsx --test",
+    "test:ci": "tsx --test"
   },
   "private": true,
   "dependencies": {

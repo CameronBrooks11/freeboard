@@ -35,3 +35,4 @@ Use this manual in two tracks:
 - [Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)
 - [Documentation Site Setup](/manual/docs-site-setup)
 - [Development Misc](/manual/dev-misc)
+- [TypeScript Migration Conventions](/manual/typescript-migration-conventions)

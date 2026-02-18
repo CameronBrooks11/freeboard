@@ -15,6 +15,7 @@
 - Run API tests: `npm run test:api`
 - Run UI runtime tests: `npm run test:ui`
 - Run all tests: `npm run test`
+- Run TypeScript type checks: `npm run typecheck`
 - Verify build/syntax: `npm run build:verify`
 - Full local CI pass: `npm run ci`
 - Start realtime fixture stack: `npm run demo:realtime:up`
@@ -35,13 +36,14 @@ npm run lint
 npm run check:ui:store-boundaries
 npm run test
 npm run build:verify
+npm run typecheck
 ```
 
 If your change is docs-only, run `npm run format:check` to verify Markdown/YAML formatting consistency.
 
 ## CI Troubleshooting (Quick)
 
-- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-ui`, `build-verify`).
+- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-ui`, `build-verify`, `typecheck`).
 - If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
 - If a job was expected but appears skipped, check `Classify changes` output in the `changes` job.
 - If Docker publish unexpectedly rebuilds all images, verify event type:

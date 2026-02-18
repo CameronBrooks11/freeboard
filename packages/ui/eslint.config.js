@@ -1,5 +1,7 @@
 import js from "@eslint/js";
 import pluginVue from "eslint-plugin-vue";
+import tsParser from "@typescript-eslint/parser";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
 
 let eslintConfigPrettier = null;
 try {
@@ -22,11 +24,42 @@ export default [
 
   js.configs.recommended,
   {
+    name: "app/typescript",
+    files: ["**/*.ts"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        sourceType: "module",
+        ecmaVersion: "latest",
+      },
+    },
+    plugins: {
+      "@typescript-eslint": tsPlugin,
+    },
+    rules: {
+      ...tsPlugin.configs.recommended.rules,
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+    },
+  },
+  {
+    name: "app/vue-typescript",
+    files: ["**/*.vue"],
+    languageOptions: {
+      parserOptions: {
+        parser: tsParser,
+        sourceType: "module",
+        ecmaVersion: "latest",
+      },
+    },
+  },
+  {
     name: "app/compile-time-globals",
     languageOptions: {
       globals: {
         __FREEBOARD_VERSION__: "readonly",
         __FREEBOARD_STATIC__: "readonly",
+        __FREEBOARD_BASE_PATH__: "readonly",
       },
     },
   },

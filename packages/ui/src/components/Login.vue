@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component Login
  * @description Policy-aware login/registration/invite/reset flow.

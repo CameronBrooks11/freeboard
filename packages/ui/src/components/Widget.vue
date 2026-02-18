@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component Widget
  * @description Renders a widget instance within a pane and provides edit/delete/move controls in edit mode.

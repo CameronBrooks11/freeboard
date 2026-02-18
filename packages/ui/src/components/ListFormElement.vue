@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component ListFormElement
  * @description Autocomplete list dropdown with fuzzy search to select a value.

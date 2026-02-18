@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component SettingsDialogBox
  * @description Modal dialog for editing dashboard settings (general, theme, style, etc.) via tabs.

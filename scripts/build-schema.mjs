@@ -15,7 +15,7 @@ const printUsage = () => {
   console.log("Usage: npm run docs:generate:graphql");
   console.log("");
   console.log(
-    "Reads GraphQLSchema export from packages/api/src/gql.js and writes SDL to docs/auto/graphql/schema.graphql.",
+    "Reads GraphQLSchema export from packages/api/src/gql.ts and writes SDL to docs/auto/graphql/schema.graphql.",
   );
 };
 
@@ -33,7 +33,7 @@ const fail = (message, error = null) => {
 };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const schemaModulePath = resolve(__dirname, "../packages/api/src/gql.js");
+const schemaModulePath = resolve(__dirname, "../packages/api/src/gql.ts");
 const outputPath = resolve(__dirname, "../docs/auto/graphql/schema.graphql");
 
 const main = async () => {
@@ -42,7 +42,7 @@ const main = async () => {
 
   if (!schema || typeof schema.getTypeMap !== "function") {
     throw new Error(
-      "packages/api/src/gql.js must export a GraphQLSchema as default export or named export `schema`.",
+      "packages/api/src/gql.ts must export a GraphQLSchema as default export or named export `schema`.",
     );
   }
 

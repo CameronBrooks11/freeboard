@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component CodeEditorFormElement
  * @description Form element for editing code using the Monaco Editor.
