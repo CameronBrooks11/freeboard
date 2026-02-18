@@ -8,8 +8,6 @@ import { DefaultApolloClient } from "@vue/apollo-composable";
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/client/core";
 import { onError } from "@apollo/client/link/error";
 import App from "./App.vue";
-import monaco from "./monaco.js";
-import { install as VueMonacoEditorPlugin } from "@guolao/vue-monaco-editor";
 import { OhVueIcon, addIcons } from "oh-vue-icons";
 import {
   HiDatabase,
@@ -176,10 +174,4 @@ app.provide(DefaultApolloClient, apolloClient);
 app.use(pinia);
 bootstrapApp({ pinia });
 
-app
-  .use(router)
-  .use(i18n)
-  .use(head)
-  .use(VueMonacoEditorPlugin, { monaco })
-  .component("v-icon", OhVueIcon)
-  .mount("#app");
+app.use(router).use(i18n).use(head).component("v-icon", OhVueIcon).mount("#app");

@@ -8,7 +8,6 @@ import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
-import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 
 /**
  * Global MonacoEnvironment configuration to provide language-specific web workers.
@@ -33,8 +32,10 @@ self.MonacoEnvironment = {
     if (label === "html" || label === "handlebars" || label === "razor") {
       return new htmlWorker();
     }
+    // Use generic editor worker for JS/TS modes to avoid bundling the heavy TS language-service worker.
+    // We retain syntax highlighting while intentionally skipping TS semantic tooling in dashboard editors.
     if (label === "typescript" || label === "javascript") {
-      return new tsWorker();
+      return new editorWorker();
     }
     return new editorWorker();
   },

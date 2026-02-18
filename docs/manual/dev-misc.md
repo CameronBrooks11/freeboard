@@ -6,9 +6,12 @@
 - Validate formatting: `npm run format:check`
 - Full lint: `npm run lint`
 - UI store boundary guardrail: `npm run check:ui:store-boundaries`
+- UI bundle budget guardrail (warn-first): `npm run check:ui:bundle-budget`
 - UI lint only: `npm run lint:ui`
 - API lint only: `npm run lint:api`
 - Build UI: `npm run build:ui`
+- Build UI + print bundle metrics baseline: `npm run build:ui:analyze`
+- Print bundle metrics for an existing build: `npm run build:ui:metrics`
 - Run API tests: `npm run test:api`
 - Run UI runtime tests: `npm run test:ui`
 - Run all tests: `npm run test`
@@ -137,3 +140,28 @@ On Windows, prefer the standalone binary:
 ```powershell
 winget install AlDanial.cloc
 ```
+
+## UI Build Baseline
+
+Use this when validating bundle and build-shape changes:
+
+```bash
+npm run build:ui:analyze
+```
+
+This prints:
+
+- total emitted UI asset size
+- total JS and CSS size
+- top 10 largest assets and top 10 largest JS assets
+
+Run it before and after bundle/loading architecture changes to compare impact with the same command.
+
+## UI Bundle Budget Guardrail
+
+`npm run check:ui:bundle-budget` runs after UI builds in `npm run build:verify`.
+
+- Default behavior: warning-only (does not fail CI).
+- Enforced mode (opt-in): set `FREEBOARD_ENFORCE_UI_BUNDLE_BUDGET=1` to fail only on core-route budget regressions.
+- Optional editor payload (Monaco/workers) is tracked and reported separately as warn-only so it does not mask core app health signals.
+- Budget thresholds live in `packages/ui/build-budget.json` and should be changed only when accompanied by fresh `npm run build:ui:analyze` baseline evidence.

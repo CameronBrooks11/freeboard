@@ -10,11 +10,16 @@
  */
 defineOptions({ name: "CodeEditorFormElement" });
 
-import { VueMonacoEditor } from "@guolao/vue-monaco-editor";
-import { reactive, ref, shallowRef } from "vue";
+import { defineAsyncComponent, reactive, ref, shallowRef } from "vue";
 
 const props = defineProps(["modelValue", "language"]);
 const emit = defineEmits(["update:modelValue"]);
+
+const MonacoEditor = defineAsyncComponent(async () => {
+  await import("../monaco.js");
+  const module = await import("@guolao/vue-monaco-editor");
+  return module.VueMonacoEditor;
+});
 
 // Validation errors for the form element
 const errors = ref([]);
@@ -57,7 +62,7 @@ defineExpose({
 </script>
 
 <template>
-  <vue-monaco-editor
+  <MonacoEditor
     class="code-editor-form-element"
     v-model:value="code"
     theme="vs-dark"
