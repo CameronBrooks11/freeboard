@@ -20,6 +20,7 @@
 - Realtime integration loop (up + smoke + down): `npm run test:realtime:integration`
 - Browser E2E smoke flow (bootstraps mongo + ui/api/gateway + Playwright): `npm run test:e2e:smoke`
 - Production dependency audit: `npm run security:audit:prod`
+- Full dependency audit (including dev/build tooling): `npm run security:audit:all`
 
 ## Pre-PR Checklist
 
@@ -99,6 +100,7 @@ Optional non-required deploy checks:
 - Patch policy:
   - prefer grouped minor/patch updates first
   - major updates require focused validation (lint, test, build, and smoke checks)
+  - never use `npm audit fix --force` in this repository; use targeted upgrades and explicit review
 - Closure criteria:
   - dependency PR merged or explicitly deferred with rationale in PR notes
   - failed audit workflow resolved or acknowledged with a bounded remediation plan

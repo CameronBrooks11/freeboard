@@ -27,7 +27,7 @@
     "start:gateway": "npm run start --workspace=packages/gateway",
     "build": "npm run build:all",
     "build:all": "npm run build:ui",
-    "build:ui": "npm run build --workspace=packages/ui",
+    "build:ui": "cross-env NODE_OPTIONS=--max-old-space-size=4096 npm run build --workspace=packages/ui",
     "check:syntax": "node --check packages/api/src/index.js && node --check packages/gateway/src/index.js && node --check scripts/dev.mjs && node --check scripts/site-stage.mjs && node --check scripts/build-schema.mjs",
     "build:verify": "npm run build:ui && npm run check:syntax",
     "format": "prettier --write .",
@@ -48,6 +48,7 @@
     "test:e2e": "playwright test --config playwright.e2e.config.mjs",
     "check:ui:store-boundaries": "node scripts/check-ui-store-boundaries.mjs",
     "security:audit:prod": "npm audit --omit=dev --audit-level=high",
+    "security:audit:all": "npm audit",
     "credentials:reencrypt": "node scripts/credentials-reencrypt.mjs",
     "dashboards:datasource:migrate-legacy-http": "node scripts/dashboards-datasource-migrate-legacy-http.mjs",
     "dashboards:visibility:migrate-legacy": "node scripts/dashboard-visibility-migrate-from-published.mjs",
@@ -74,8 +75,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
-    "@graphql-codegen/cli": "^5.0.0",
-    "@graphql-codegen/schema-ast": "^4.0.0",
     "clean-jsdoc-theme": "^4.3.0",
     "concurrently": "^9.1.0",
     "cross-env": "^10.0.0",
@@ -85,7 +84,6 @@
     "@playwright/test": "^1.54.2",
     "prettier": "^3.6.2",
     "globals": "^15.12.0",
-    "http-server": "^14.1.1",
     "jsdoc": "^4.0.3",
     "jsdoc-to-markdown": "^9.1.2",
     "jsdoc-type-pratt-parser": "^7.1.1",
@@ -96,6 +94,9 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.28.1"
+  },
+  "overrides": {
+    "esbuild": "^0.25.0"
   },
   "workspaces": [
     "packages/ui",

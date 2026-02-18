@@ -6,7 +6,7 @@
 import { createApp } from "vue";
 import { DefaultApolloClient } from "@vue/apollo-composable";
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/client/core";
-import { onError } from "apollo-link-error";
+import { onError } from "@apollo/client/link/error";
 import App from "./App.vue";
 import monaco from "./monaco.js";
 import { install as VueMonacoEditorPlugin } from "@guolao/vue-monaco-editor";
