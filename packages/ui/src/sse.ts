@@ -8,6 +8,7 @@ import { print } from "graphql";
 import { createClient } from "graphql-sse";
 import type { Client, ClientOptions } from "graphql-sse";
 import type { Operation, FetchResult } from "@apollo/client/core";
+import type { ExecutionResult } from "graphql";
 
 /**
  * ApolloLink subclass that uses SSE (via graphql-sse) for GraphQL subscriptions.
@@ -39,7 +40,9 @@ export class SSELink extends ApolloLink {
       return this.client.subscribe(
         { ...operation, query: print(operation.query) },
         {
-          next: sink.next.bind(sink),
+          next: (
+            value: ExecutionResult<Record<string, unknown> | undefined, Record<string, unknown>>,
+          ) => sink.next(value as FetchResult),
           complete: sink.complete.bind(sink),
           error: sink.error.bind(sink),
         },

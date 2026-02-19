@@ -15,6 +15,19 @@ type DashboardMutationPayload = {
   canEdit?: boolean;
   canManageSharing?: boolean;
 };
+type DashboardAsset = {
+  node: HTMLElement | null;
+  type: string;
+  value: string;
+  inline: boolean | undefined;
+};
+type DashboardStoreState = {
+  isSaved: boolean;
+  isEditing: boolean;
+  showLoadingIndicator: boolean;
+  dashboard: DashboardModel;
+  assets: Record<string, DashboardAsset>;
+};
 
 const asRecord = (value: unknown): UnknownRecord =>
   value && typeof value === "object" ? (value as UnknownRecord) : {};
@@ -73,7 +86,7 @@ const createAsset = (type: string, value: string, inline?: boolean) => {
 };
 
 export const useDashboardStore = defineStore("dashboard", {
-  state: () => ({
+  state: (): DashboardStoreState => ({
     isSaved: false,
     isEditing: false,
     showLoadingIndicator: true,
@@ -83,7 +96,7 @@ export const useDashboardStore = defineStore("dashboard", {
 
   getters: {
     allowEdit(state) {
-      const authStore = useAuthStore(this.$pinia);
+      const authStore = useAuthStore();
       const staticMode =
         typeof __FREEBOARD_STATIC__ !== "undefined" && __FREEBOARD_STATIC__ === "true";
       const roleCanEdit = staticMode || authStore.canEditDashboards();
@@ -139,7 +152,7 @@ export const useDashboardStore = defineStore("dashboard", {
         dashboard: UnknownRecord;
       }) => Promise<unknown>,
     ): Promise<string | null> {
-      const authStore = useAuthStore(this.$pinia);
+      const authStore = useAuthStore();
       let nextDashboardId = id || null;
 
       if (this.isSaved) {
@@ -151,7 +164,7 @@ export const useDashboardStore = defineStore("dashboard", {
           | DashboardMutationPayload
           | undefined;
         if (updated) {
-          this.dashboard.visibility = updated.visibility;
+          this.dashboard.visibility = updated.visibility || this.dashboard.visibility;
           this.dashboard.shareToken = updated.shareToken || null;
           this.dashboard.shareTokenVersion = Number.isFinite(Number(updated.shareTokenVersion))
             ? Math.max(0, Math.floor(Number(updated.shareTokenVersion)))
@@ -176,7 +189,7 @@ export const useDashboardStore = defineStore("dashboard", {
         this.isSaved = true;
         this.dashboard._id = created._id;
         nextDashboardId = created._id;
-        this.dashboard.visibility = created.visibility;
+        this.dashboard.visibility = created.visibility || this.dashboard.visibility;
         this.dashboard.shareToken = created.shareToken || null;
         this.dashboard.shareTokenVersion = Number.isFinite(Number(created.shareTokenVersion))
           ? Math.max(0, Math.floor(Number(created.shareTokenVersion)))
@@ -193,9 +206,9 @@ export const useDashboardStore = defineStore("dashboard", {
       this.showLoadingIndicator = true;
       disposeDashboardAssets(this.assets);
 
-      const assets: Record<string, { node: HTMLElement | null; type: string; value: string }> = {};
+      const assets: Record<string, DashboardAsset> = {};
       const head = document.head || document.getElementsByTagName("head")[0];
-      const authStore = useAuthStore(this.$pinia);
+      const authStore = useAuthStore();
 
       if (!authStore.isTrustedExecutionMode()) {
         this.assets = assets;
@@ -204,7 +217,7 @@ export const useDashboardStore = defineStore("dashboard", {
       }
 
       if (this.dashboard.settings?.script) {
-        const script = createAsset("script", this.dashboard.settings.script, true);
+        const script = createAsset("script", String(this.dashboard.settings.script), true);
         if (script.node) {
           head.appendChild(script.node);
         }
@@ -212,7 +225,7 @@ export const useDashboardStore = defineStore("dashboard", {
       }
 
       if (this.dashboard.settings?.style) {
-        const style = createAsset("style", this.dashboard.settings.style, true);
+        const style = createAsset("style", String(this.dashboard.settings.style), true);
         if (style.node) {
           head.appendChild(style.node);
         }
@@ -248,12 +261,8 @@ export const useDashboardStore = defineStore("dashboard", {
     loadDashboard(dashboardData: Record<string, unknown>) {
       this.showLoadingIndicator = true;
 
-      if (this.dashboard) {
-        this.dashboard.clearDashboard();
-        this.dashboard = null;
-      }
-
-      this.dashboard = new Dashboard() as DashboardModel;
+      this.dashboard.clearDashboard();
+      this.dashboard = new Dashboard();
       this.dashboard.deserialize(dashboardData);
       this.isSaved = Boolean(this.dashboard._id);
       this.loadDashboardAssets();

@@ -4,6 +4,7 @@
  */
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+import type { WidgetRuntimeInstance } from "../types/runtime.js";
 import { isTrustedExecutionEnabled } from "../executionPolicy.js";
 type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 
@@ -77,7 +78,7 @@ export class HtmlWidget extends ReactiveWidget {
 
   static newInstance(
     settings: Record<string, unknown>,
-    newInstanceCallback: (instance: unknown) => void,
+    newInstanceCallback: (instance: WidgetRuntimeInstance) => void,
   ) {
     newInstanceCallback(new HtmlWidget(settings));
   }

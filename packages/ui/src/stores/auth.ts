@@ -1,7 +1,17 @@
 import { defineStore } from "pinia";
 import { setRuntimeExecutionMode } from "../executionPolicy.js";
 
-const DEFAULT_PUBLIC_AUTH_POLICY = Object.freeze({
+type PublicAuthPolicy = {
+  registrationMode: "disabled" | "invite" | "open";
+  registrationDefaultRole: "viewer" | "editor";
+  editorCanPublish: boolean;
+  dashboardDefaultVisibility: "private" | "link" | "public";
+  dashboardPublicListingEnabled: boolean;
+  executionMode: "safe" | "trusted";
+  policyEditLock: boolean;
+};
+
+const DEFAULT_PUBLIC_AUTH_POLICY: PublicAuthPolicy = Object.freeze({
   registrationMode: "disabled",
   registrationDefaultRole: "viewer",
   editorCanPublish: false,
@@ -15,6 +25,12 @@ const EDITOR_ROLES = new Set(["editor", "admin"]);
 const SETTINGS_STORAGE_KEY = "freeboard";
 type UserRole = "viewer" | "editor" | "admin";
 type AuthUser = { _id: string | null; email: string | null; role: UserRole; active: boolean };
+type AuthStoreState = {
+  token: string | null;
+  currentUser: AuthUser | null;
+  publicAuthPolicy: PublicAuthPolicy;
+  runtimeShareToken: string | null;
+};
 
 const getSessionStorage = () => {
   try {
@@ -91,33 +107,35 @@ const parseUserEmail = (value: unknown): string | null => {
   return typeof value === "string" ? value : null;
 };
 
-const normalizePublicAuthPolicy = (policy: Record<string, unknown> = {}) => ({
-  registrationMode: ["disabled", "invite", "open"].includes(
-    String(policy.registrationMode || "").toLowerCase(),
-  )
-    ? String(policy.registrationMode).toLowerCase()
-    : DEFAULT_PUBLIC_AUTH_POLICY.registrationMode,
-  registrationDefaultRole: ["viewer", "editor"].includes(
-    String(policy.registrationDefaultRole || "").toLowerCase(),
-  )
-    ? String(policy.registrationDefaultRole).toLowerCase()
-    : DEFAULT_PUBLIC_AUTH_POLICY.registrationDefaultRole,
+const normalizePublicAuthPolicy = (policy: Record<string, unknown> = {}): PublicAuthPolicy => ({
+  registrationMode:
+    String(policy.registrationMode || "").toLowerCase() === "invite"
+      ? "invite"
+      : String(policy.registrationMode || "").toLowerCase() === "open"
+        ? "open"
+        : DEFAULT_PUBLIC_AUTH_POLICY.registrationMode,
+  registrationDefaultRole:
+    String(policy.registrationDefaultRole || "").toLowerCase() === "editor"
+      ? "editor"
+      : DEFAULT_PUBLIC_AUTH_POLICY.registrationDefaultRole,
   editorCanPublish:
     policy.editorCanPublish === undefined
       ? DEFAULT_PUBLIC_AUTH_POLICY.editorCanPublish
       : Boolean(policy.editorCanPublish),
-  dashboardDefaultVisibility: ["private", "link", "public"].includes(
-    String(policy.dashboardDefaultVisibility || "").toLowerCase(),
-  )
-    ? String(policy.dashboardDefaultVisibility).toLowerCase()
-    : DEFAULT_PUBLIC_AUTH_POLICY.dashboardDefaultVisibility,
+  dashboardDefaultVisibility:
+    String(policy.dashboardDefaultVisibility || "").toLowerCase() === "link"
+      ? "link"
+      : String(policy.dashboardDefaultVisibility || "").toLowerCase() === "public"
+        ? "public"
+        : DEFAULT_PUBLIC_AUTH_POLICY.dashboardDefaultVisibility,
   dashboardPublicListingEnabled:
     policy.dashboardPublicListingEnabled === undefined
       ? DEFAULT_PUBLIC_AUTH_POLICY.dashboardPublicListingEnabled
       : Boolean(policy.dashboardPublicListingEnabled),
-  executionMode: ["safe", "trusted"].includes(String(policy.executionMode || "").toLowerCase())
-    ? String(policy.executionMode).toLowerCase()
-    : DEFAULT_PUBLIC_AUTH_POLICY.executionMode,
+  executionMode:
+    String(policy.executionMode || "").toLowerCase() === "trusted"
+      ? "trusted"
+      : DEFAULT_PUBLIC_AUTH_POLICY.executionMode,
   policyEditLock:
     policy.policyEditLock === undefined
       ? DEFAULT_PUBLIC_AUTH_POLICY.policyEditLock
@@ -125,10 +143,10 @@ const normalizePublicAuthPolicy = (policy: Record<string, unknown> = {}) => ({
 });
 
 export const useAuthStore = defineStore("auth", {
-  state: () => ({
+  state: (): AuthStoreState => ({
     token: null as string | null,
     currentUser: null as AuthUser | null,
-    publicAuthPolicy: { ...DEFAULT_PUBLIC_AUTH_POLICY },
+    publicAuthPolicy: { ...DEFAULT_PUBLIC_AUTH_POLICY } as PublicAuthPolicy,
     runtimeShareToken: null as string | null,
   }),
 

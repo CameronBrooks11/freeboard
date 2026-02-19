@@ -4,6 +4,7 @@
  */
 import { normalizeDatasourceValue } from "./runtime/bindings.js";
 import { isTrustedExecutionEnabled } from "../executionPolicy.js";
+import type { WidgetRuntimeContext } from "../types/runtime.js";
 type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 type BaseWidgetResource = { asset: string; label: string };
 type BaseWidgetSettings = {
@@ -13,6 +14,20 @@ type BaseWidgetSettings = {
   resources: BaseWidgetResource[];
 };
 type DatasourceUpdate = { id?: string; title?: string; latestData?: unknown };
+
+const normalizeDatasourceUpdate = (value: unknown): DatasourceUpdate => {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+  const record = value as Record<string, unknown>;
+  return {
+    ...(typeof record.id === "string" ? { id: record.id } : {}),
+    ...(typeof record.title === "string" ? { title: record.title } : {}),
+    ...(Object.prototype.hasOwnProperty.call(record, "latestData")
+      ? { latestData: record.latestData }
+      : {}),
+  };
+};
 
 const getWidgetSettings = (widget: WidgetFieldSource): Record<string, unknown> =>
   widget?.settings && typeof widget.settings === "object" ? widget.settings : {};
@@ -302,26 +317,24 @@ export class BaseWidget {
    * @param {Object} datasource - Datasource instance providing the update.
    * @param {{ snapshot?: Record<string, unknown> }} [context] - Optional normalized datasource snapshot.
    */
-  processDatasourceUpdate(
-    datasource: DatasourceUpdate,
-    context: { snapshot?: Record<string, unknown> } = {},
-  ) {
-    if (!datasource?.id && !datasource?.title) {
+  processDatasourceUpdate(datasource: unknown, context: WidgetRuntimeContext = {}) {
+    const normalizedDatasource = normalizeDatasourceUpdate(datasource);
+    if (!normalizedDatasource.id && !normalizedDatasource.title) {
       return;
     }
 
-    const value = normalizeDatasourceValue(datasource.latestData);
+    const value = normalizeDatasourceValue(normalizedDatasource.latestData);
 
     this.iframeElement.contentWindow?.postMessage({
       type: "datasource:update",
-      datasource: datasource.id ?? datasource.title,
-      datasourceId: datasource.id,
-      datasourceTitle: datasource.title,
+      datasource: normalizedDatasource.id ?? normalizedDatasource.title,
+      datasourceId: normalizedDatasource.id,
+      datasourceTitle: normalizedDatasource.title,
       value,
       snapshot: context.snapshot || {},
-      raw: datasource.latestData,
-      ...(datasource.latestData && typeof datasource.latestData === "object"
-        ? (datasource.latestData as Record<string, unknown>)
+      raw: normalizedDatasource.latestData,
+      ...(normalizedDatasource.latestData && typeof normalizedDatasource.latestData === "object"
+        ? (normalizedDatasource.latestData as Record<string, unknown>)
         : {}),
     });
   }

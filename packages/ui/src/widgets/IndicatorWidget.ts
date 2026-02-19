@@ -4,6 +4,7 @@
  */
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+import type { WidgetRuntimeInstance } from "../types/runtime.js";
 type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 
 /**
@@ -104,7 +105,7 @@ export class IndicatorWidget extends ReactiveWidget {
 
   static newInstance(
     settings: Record<string, unknown>,
-    newInstanceCallback: (instance: unknown) => void,
+    newInstanceCallback: (instance: WidgetRuntimeInstance) => void,
   ) {
     newInstanceCallback(new IndicatorWidget(settings));
   }

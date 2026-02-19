@@ -38,19 +38,19 @@ export type WidgetRuntimeInstance = {
 export type DatasourcePlugin = {
   typeName: string;
   label?: string;
-  fields?: (
+  fields?(
     datasource: unknown,
     dashboard: unknown,
     general: UnknownRecord,
     runtimeContext?: UnknownRecord,
-  ) => UnknownRecord[];
-  newInstance: (
+  ): UnknownRecord[];
+  newInstance(
     settings: UnknownRecord,
     newInstanceCallback: (instance: DatasourceLifecycleInstance) => void,
     updateCallback: (payload: unknown) => void,
     statusCallback: (payload: DatasourceStatusPayload) => void,
     runtimeContext?: UnknownRecord,
-  ) => void;
+  ): void;
 };
 
 export type WidgetPlugin = {
@@ -58,9 +58,6 @@ export type WidgetPlugin = {
   label?: string;
   minRows?: number;
   preferredRows?: number;
-  fields?: (widget: unknown, dashboard: unknown, general: UnknownRecord) => UnknownRecord[];
-  newInstance: (
-    settings: UnknownRecord,
-    callback: (instance: WidgetRuntimeInstance) => void,
-  ) => void;
+  fields?(widget: unknown, dashboard: unknown, general: UnknownRecord): UnknownRecord[];
+  newInstance(settings: UnknownRecord, callback: (instance: WidgetRuntimeInstance) => void): void;
 };

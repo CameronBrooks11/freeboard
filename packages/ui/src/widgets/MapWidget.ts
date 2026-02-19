@@ -4,6 +4,7 @@
  */
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+import type { WidgetRuntimeInstance } from "../types/runtime.js";
 type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 type MapInputs = { header: string; lat: unknown; lon: unknown; label: unknown };
 
@@ -122,7 +123,7 @@ export class MapWidget extends ReactiveWidget {
 
   static newInstance(
     settings: Record<string, unknown>,
-    newInstanceCallback: (instance: unknown) => void,
+    newInstanceCallback: (instance: WidgetRuntimeInstance) => void,
   ) {
     newInstanceCallback(new MapWidget(settings));
   }

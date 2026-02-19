@@ -59,27 +59,29 @@ export class ReactiveWidget {
   }
 
   /**
-   * @param {{title?: string}|null} datasource
+   * @param {unknown} datasource
    * @param {{changedDatasource?: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot?: Record<string, unknown>, timestamp?: string}} [context]
    */
-  processDatasourceUpdate(
-    datasource: { id?: string; title?: string } | null,
-    context: {
-      changedDatasource?: string | null;
-      changedDatasourceId?: string | null;
-      changedDatasourceTitle?: string | null;
-      snapshot?: Record<string, unknown>;
-      timestamp?: string;
-    } = {},
-  ) {
+  processDatasourceUpdate(datasource: unknown, context: WidgetRuntimeContext = {}) {
+    const datasourceRecord =
+      datasource && typeof datasource === "object"
+        ? (datasource as { id?: unknown; title?: unknown })
+        : null;
+    const datasourceId =
+      datasourceRecord && typeof datasourceRecord.id === "string" ? datasourceRecord.id : null;
+    const datasourceTitle =
+      datasourceRecord && typeof datasourceRecord.title === "string"
+        ? datasourceRecord.title
+        : null;
+
     if (context.snapshot && typeof context.snapshot === "object") {
       this.snapshot = context.snapshot;
     }
 
     this.context = {
-      changedDatasource: context.changedDatasource ?? datasource?.id ?? datasource?.title ?? null,
-      changedDatasourceId: context.changedDatasourceId ?? datasource?.id ?? null,
-      changedDatasourceTitle: context.changedDatasourceTitle ?? datasource?.title ?? null,
+      changedDatasource: context.changedDatasource ?? datasourceId ?? datasourceTitle ?? null,
+      changedDatasourceId: context.changedDatasourceId ?? datasourceId ?? null,
+      changedDatasourceTitle: context.changedDatasourceTitle ?? datasourceTitle ?? null,
       snapshot: this.snapshot,
       ...(context.timestamp ? { timestamp: context.timestamp } : {}),
     };

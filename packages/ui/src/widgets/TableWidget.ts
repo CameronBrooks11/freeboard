@@ -5,6 +5,7 @@
 
 import { toPathSegments } from "./runtime/bindings.js";
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+import type { WidgetRuntimeInstance } from "../types/runtime.js";
 import { setStylePropertyCompat } from "../utils/styleCompat.js";
 type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 type TableColumn = {
@@ -451,7 +452,7 @@ export class TableWidget extends ReactiveWidget {
 
   static newInstance(
     settings: Record<string, unknown>,
-    newInstanceCallback: (instance: unknown) => void,
+    newInstanceCallback: (instance: WidgetRuntimeInstance) => void,
   ) {
     newInstanceCallback(new TableWidget(settings));
   }

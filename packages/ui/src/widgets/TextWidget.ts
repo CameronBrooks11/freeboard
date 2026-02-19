@@ -4,6 +4,7 @@
  */
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+import type { WidgetRuntimeInstance } from "../types/runtime.js";
 type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 type TextInputs = { header: string; unit: string; value: unknown };
 
@@ -123,7 +124,7 @@ export class TextWidget extends ReactiveWidget {
 
   static newInstance(
     settings: Record<string, unknown>,
-    newInstanceCallback: (instance: unknown) => void,
+    newInstanceCallback: (instance: WidgetRuntimeInstance) => void,
   ) {
     newInstanceCallback(new TextWidget(settings));
   }
