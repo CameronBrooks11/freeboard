@@ -186,6 +186,8 @@ jobs:
         run: npm run check:ui:store-boundaries
       - name: Validate TS source debt
         run: npm run check:ts:debt
+      - name: Validate TS migration artifacts
+        run: npm run check:ts:migration-artifacts
 
   test-api:
     name: Test API

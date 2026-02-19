@@ -2,7 +2,7 @@
 
 ## Immediate / High Priority
 
-- [ ] TypeScript migration: Incrementally migrate codebase to TypeScript for improved type safety and developer experience.
+- [ ] TypeScript governance maintenance: keep strict TS/lint/debt/artifact guardrails green and treat regressions as release blockers.
 
 ## Deferred / Re-evaluate Later
 

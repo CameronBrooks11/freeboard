@@ -5,6 +5,7 @@
 
 import { resolveTableRowValue } from "./TableWidget.js";
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+import { setStylePropertyCompat } from "../utils/styleCompat.js";
 
 const DEFAULT_STATUS_COLORS = {
   ok: "#16a34a",
@@ -165,12 +166,7 @@ export class StatusListWidget extends ReactiveWidget {
     this.listElement.style.gap = "4px";
     this.listElement.style.overflowY = "auto";
     this.listElement.style.flex = "1";
-    if (typeof this.listElement.style.setProperty === "function") {
-      this.listElement.style.setProperty("-webkit-overflow-scrolling", "touch");
-    } else {
-      (this.listElement.style as unknown as Record<string, string>).webkitOverflowScrolling =
-        "touch";
-    }
+    setStylePropertyCompat(this.listElement.style, "-webkit-overflow-scrolling", "touch");
     this.listElement.style.touchAction = "pan-y";
     this.listElement.setAttribute("role", "list");
 

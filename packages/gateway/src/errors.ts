@@ -19,7 +19,18 @@ export const createClientError = (
   return error;
 };
 
-export const writeError = (clientRes, error) => {
+type ErrorResponse = {
+  headersSent: boolean;
+  status: (statusCode: number) => { json: (payload: { error: string }) => void };
+  end: () => void;
+};
+
+type ErrorLike = {
+  statusCode?: number;
+  message?: string;
+};
+
+export const writeError = (clientRes: ErrorResponse, error: ErrorLike | null | undefined): void => {
   const statusCode = Number(error?.statusCode) || 500;
   const message = statusCode >= 500 ? "Gateway request failed" : error?.message;
   if (!clientRes.headersSent) {

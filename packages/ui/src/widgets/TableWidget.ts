@@ -5,6 +5,7 @@
 
 import { toPathSegments } from "./runtime/bindings.js";
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+import { setStylePropertyCompat } from "../utils/styleCompat.js";
 
 const DEFAULT_EMPTY_VALUE = "—";
 const DEFAULT_EMPTY_TABLE_TEXT = "No rows";
@@ -424,12 +425,7 @@ export class TableWidget extends ReactiveWidget {
     this.scrollWrap.style.minHeight = "70px";
     this.scrollWrap.style.overflowX = "auto";
     this.scrollWrap.style.overflowY = "auto";
-    if (typeof this.scrollWrap.style.setProperty === "function") {
-      this.scrollWrap.style.setProperty("-webkit-overflow-scrolling", "touch");
-    } else {
-      (this.scrollWrap.style as unknown as Record<string, string>).webkitOverflowScrolling =
-        "touch";
-    }
+    setStylePropertyCompat(this.scrollWrap.style, "-webkit-overflow-scrolling", "touch");
     this.scrollWrap.style.touchAction = "pan-y";
 
     this.tableElement = document.createElement("table");

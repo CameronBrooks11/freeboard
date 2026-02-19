@@ -21,7 +21,28 @@ const state = {
   },
 };
 
-export const recordGatewayHttpRequest = ({ statusCode, durationMs }) => {
+type HttpMetric = {
+  statusCode: number;
+  durationMs: number;
+};
+
+type RuntimeMetricsSnapshot = {
+  startedAt: string;
+  collectedAt: string;
+  uptimeSeconds: number;
+  httpRequestCount: number;
+  httpErrorCount: number;
+  httpAvgLatencyMs: number;
+  realtimeConnectionAttempts: number;
+  realtimeConnectionsAccepted: number;
+  realtimeConnectionsRejected: number;
+  realtimeActiveConnections: number;
+  realtimeMessagesIn: number;
+  realtimeMessagesOut: number;
+  realtimeErrorCount: number;
+};
+
+export const recordGatewayHttpRequest = ({ statusCode, durationMs }: HttpMetric): void => {
   state.http.requestCount += 1;
   if (Number(statusCode) >= 500) {
     state.http.errorCount += 1;
@@ -32,36 +53,36 @@ export const recordGatewayHttpRequest = ({ statusCode, durationMs }) => {
   state.http.latencyTotalMs += normalizedDuration;
 };
 
-export const recordRealtimeConnectionAttempt = () => {
+export const recordRealtimeConnectionAttempt = (): void => {
   state.realtime.connectionAttempts += 1;
 };
 
-export const recordRealtimeConnectionAccepted = () => {
+export const recordRealtimeConnectionAccepted = (): void => {
   state.realtime.connectionsAccepted += 1;
   state.realtime.activeConnections += 1;
 };
 
-export const recordRealtimeConnectionRejected = () => {
+export const recordRealtimeConnectionRejected = (): void => {
   state.realtime.connectionsRejected += 1;
 };
 
-export const recordRealtimeConnectionClosed = () => {
+export const recordRealtimeConnectionClosed = (): void => {
   state.realtime.activeConnections = Math.max(0, state.realtime.activeConnections - 1);
 };
 
-export const recordRealtimeMessageIn = () => {
+export const recordRealtimeMessageIn = (): void => {
   state.realtime.messagesIn += 1;
 };
 
-export const recordRealtimeMessageOut = () => {
+export const recordRealtimeMessageOut = (): void => {
   state.realtime.messagesOut += 1;
 };
 
-export const recordRealtimeError = () => {
+export const recordRealtimeError = (): void => {
   state.realtime.errorCount += 1;
 };
 
-export const getGatewayRuntimeMetricsSnapshot = () => {
+export const getGatewayRuntimeMetricsSnapshot = (): RuntimeMetricsSnapshot => {
   const now = new Date();
   const uptimeSeconds = Math.max(0, Math.floor((now.getTime() - state.startedAt.getTime()) / 1000));
   const avgLatencyMs =

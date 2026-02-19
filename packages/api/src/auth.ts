@@ -7,6 +7,34 @@ import { createGraphQLError } from "graphql-yoga";
 import User from "./models/User.js";
 import { config } from "./config.js";
 import jwt from "jsonwebtoken";
+import type { StringValue } from "ms";
+
+export type AuthTokenClaims = jwt.JwtPayload & {
+  _id: string;
+  email?: string;
+  role?: string;
+  admin?: boolean;
+  active?: boolean;
+  sv?: number;
+  sessionVersion?: number;
+};
+
+const normalizeJwtExpiry = (value: unknown): NonNullable<jwt.SignOptions["expiresIn"]> => {
+  const normalized = String(value ?? "").trim();
+  if (/^\d+$/.test(normalized)) {
+    return Number(normalized);
+  }
+  return normalized as StringValue;
+};
+
+const ensureJwtPayloadObject = (decoded: string | jwt.JwtPayload): jwt.JwtPayload => {
+  if (decoded && typeof decoded === "object") {
+    return decoded;
+  }
+  throw createGraphQLError("Authentication token payload is invalid", {
+    extensions: { code: "UNAUTHENTICATED" },
+  });
+};
 
 /**
  * Ensure the number of registered users does not exceed the configured limit.
@@ -145,6 +173,7 @@ export const getUser = async (context) => {
  */
 export const createAuthToken = (email, role, active, _id, sessionVersion = 0) => {
   const normalizedRole = String(role || "").toLowerCase();
+  const expiresIn = normalizeJwtExpiry(config.jwtTimeExpiration);
   return jwt.sign(
     {
       email,
@@ -158,7 +187,7 @@ export const createAuthToken = (email, role, active, _id, sessionVersion = 0) =>
     },
     config.jwtSecret,
     {
-      expiresIn: config.jwtTimeExpiration,
+      expiresIn,
     },
   );
 };
@@ -171,6 +200,7 @@ export const createAuthToken = (email, role, active, _id, sessionVersion = 0) =>
  * @throws {JsonWebTokenError} When the token is invalid or expired.
  */
 export const validateAuthToken = async (token) => {
-  const user = await jwt.verify(token, config.jwtSecret);
-  return user;
+  const decoded = await jwt.verify(token, config.jwtSecret);
+  const payload = ensureJwtPayloadObject(decoded);
+  return payload as AuthTokenClaims;
 };

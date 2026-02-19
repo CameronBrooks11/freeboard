@@ -6,13 +6,53 @@
 import * as http from "http";
 import * as https from "https";
 import dns from "dns";
+import type { Request, Response } from "express";
 import { ALLOW_INSECURE_TLS, MAX_RESPONSE_BYTES, REQUEST_TIMEOUT_MS } from "./runtimeConfig.js";
 import { createClientError, writeError } from "./errors.js";
-import { ensureResolvedDestinationIsAllowed, parseTargetUrl } from "./networkPolicy.js";
+import {
+  ensureResolvedDestinationIsAllowed,
+  parseTargetUrl,
+  type ResolvedDestination,
+} from "./networkPolicy.js";
 import { fetchIntrospection, validateSessionToken } from "./gatewayApiClient.js";
 
-export const normalizeRequestHeaders = (headers = {}) => {
-  const normalized = {};
+type HeaderMap = Record<string, string>;
+type LookupFn = (hostname: string, options: dns.LookupAllOptions) => Promise<dns.LookupAddress[]>;
+
+type UpstreamResolvedDestination = {
+  address: string;
+  family: 4 | 6;
+};
+
+type UpstreamRequestOptionsInput = {
+  target: URL;
+  port: number;
+  hostname: string;
+  resolvedDestination: UpstreamResolvedDestination;
+  bodyText: string;
+  headers?: Record<string, unknown>;
+  timeoutMs: number;
+};
+
+type StreamParser = "json" | "text" | "csv";
+type GatewayIntent = {
+  url: string;
+  method?: string;
+  parser?: StreamParser | string;
+  headers?: Record<string, unknown>;
+  body?: unknown;
+  timeoutMs?: number;
+};
+
+type FetchHandlerDeps = {
+  lookup?: LookupFn;
+  httpRequest?: typeof http.request;
+  httpsRequest?: typeof https.request;
+  fetchFn?: typeof fetch;
+};
+
+export const normalizeRequestHeaders = (headers: Record<string, unknown> = {}): HeaderMap => {
+  const normalized: HeaderMap = {};
   for (const [rawKey, rawValue] of Object.entries(headers || {})) {
     const key = String(rawKey || "").trim();
     if (!key) {
@@ -29,7 +69,15 @@ export const normalizeRequestHeaders = (headers = {}) => {
   return normalized;
 };
 
-const buildHostHeader = ({ hostname, port, defaultPort }) => {
+const buildHostHeader = ({
+  hostname,
+  port,
+  defaultPort,
+}: {
+  hostname: string;
+  port: number;
+  defaultPort: number;
+}): string => {
   if (port === defaultPort) {
     return hostname;
   }
@@ -44,14 +92,14 @@ export const createUpstreamRequestOptions = ({
   bodyText,
   headers,
   timeoutMs,
-}) => {
+}: UpstreamRequestOptionsInput): http.RequestOptions => {
   const isHttps = target.protocol === "https:";
   const hostHeader = buildHostHeader({
     hostname,
     port,
     defaultPort: isHttps ? 443 : 80,
   });
-  const outgoingHeaders = {
+  const outgoingHeaders: HeaderMap = {
     accept: "*/*",
     "user-agent": "freeboard-gateway/http",
     host: hostHeader,
@@ -69,7 +117,11 @@ export const createUpstreamRequestOptions = ({
     protocol: target.protocol,
     hostname: resolvedDestination.address,
     family: resolvedDestination.family,
-    lookup: (_unusedHostname, _unusedOptions, callback) => {
+    lookup: (
+      _unusedHostname: string,
+      _unusedOptions: dns.LookupOneOptions,
+      callback: (error: Error | null, address: string, family: number) => void,
+    ) => {
       callback(null, resolvedDestination.address, resolvedDestination.family);
     },
     port,
@@ -89,7 +141,7 @@ export const createUpstreamRequestOptions = ({
   return options;
 };
 
-const parseCsv = (csvText) => {
+const parseCsv = (csvText: string): Array<Record<string, string>> => {
   const lines = String(csvText || "")
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -102,7 +154,7 @@ const parseCsv = (csvText) => {
   const headers = lines[0].split(",").map((part) => part.trim());
   return lines.slice(1).map((line) => {
     const values = line.split(",").map((part) => part.trim());
-    const item = {};
+    const item: Record<string, string> = {};
     headers.forEach((header, index) => {
       if (!header) {
         return;
@@ -113,7 +165,13 @@ const parseCsv = (csvText) => {
   });
 };
 
-const parseGatewayResponse = ({ parser, payload }) => {
+const parseGatewayResponse = ({
+  parser,
+  payload,
+}: {
+  parser?: string;
+  payload: string;
+}): unknown => {
   const normalizedParser = String(parser || "json").toLowerCase();
   if (normalizedParser === "text") {
     return payload;
@@ -129,7 +187,7 @@ const parseGatewayResponse = ({ parser, payload }) => {
   }
 };
 
-export const parseStreamPayload = (raw, parser) => {
+export const parseStreamPayload = (raw: string, parser?: string): unknown => {
   const normalizedParser = String(parser || "json").toLowerCase();
   if (normalizedParser === "text") {
     return raw;
@@ -137,11 +195,24 @@ export const parseStreamPayload = (raw, parser) => {
   return JSON.parse(raw);
 };
 
-const executeIntentFetch = async ({ intent, lookup, httpRequest, httpsRequest }) => {
+const executeIntentFetch = async ({
+  intent,
+  lookup,
+  httpRequest,
+  httpsRequest,
+}: {
+  intent: GatewayIntent;
+  lookup: LookupFn;
+  httpRequest: typeof http.request;
+  httpsRequest: typeof https.request;
+}): Promise<unknown> => {
   const { target, port, hostname } = parseTargetUrl(intent.url);
-  const resolvedDestination = await ensureResolvedDestinationIsAllowed(hostname, {
-    lookup,
-  });
+  const resolvedDestination: ResolvedDestination = await ensureResolvedDestinationIsAllowed(
+    hostname,
+    {
+      lookup,
+    },
+  );
   const bodyText = intent.body === null || intent.body === undefined ? "" : String(intent.body);
   const timeoutMs = Number(intent.timeoutMs) > 0 ? Number(intent.timeoutMs) : REQUEST_TIMEOUT_MS;
 
@@ -158,19 +229,20 @@ const executeIntentFetch = async ({ intent, lookup, httpRequest, httpsRequest })
 
   const requestFn = target.protocol === "https:" ? httpsRequest : httpRequest;
 
-  const payload = await new Promise((resolve, reject) => {
+  const payload = await new Promise<string>((resolve, reject) => {
     const upstream = requestFn(options, (upstreamRes) => {
       const upstreamStatusCode = Number(upstreamRes.statusCode) || 0;
       let totalBytes = 0;
-      const chunks = [];
+      const chunks: Buffer[] = [];
 
-      upstreamRes.on("data", (chunk) => {
-        totalBytes += chunk.length;
+      upstreamRes.on("data", (chunk: Buffer | string) => {
+        const normalizedChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        totalBytes += normalizedChunk.length;
         if (totalBytes > MAX_RESPONSE_BYTES) {
           upstreamRes.destroy(createClientError(502, "Response exceeded fetch size limit"));
           return;
         }
-        chunks.push(chunk);
+        chunks.push(normalizedChunk);
       });
 
       upstreamRes.on("end", () => {
@@ -181,7 +253,7 @@ const executeIntentFetch = async ({ intent, lookup, httpRequest, httpsRequest })
         resolve(Buffer.concat(chunks).toString("utf8"));
       });
 
-      upstreamRes.on("error", (error) => {
+      upstreamRes.on("error", (error: unknown) => {
         reject(error);
       });
     });
@@ -190,11 +262,11 @@ const executeIntentFetch = async ({ intent, lookup, httpRequest, httpsRequest })
       upstream.destroy(createClientError(504, "Upstream request timed out"));
     });
 
-    upstream.on("error", (error) => {
+    upstream.on("error", (error: unknown) => {
       reject(error);
     });
 
-    if (["POST", "PUT", "PATCH", "DELETE"].includes(options.method) && bodyText) {
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(String(options.method)) && bodyText) {
       upstream.write(bodyText);
     }
     upstream.end();
@@ -208,12 +280,12 @@ const executeIntentFetch = async ({ intent, lookup, httpRequest, httpsRequest })
 
 export const createGatewayFetchHandler =
   ({
-    lookup = dns.promises.lookup,
+    lookup = dns.promises.lookup as LookupFn,
     httpRequest = http.request,
     httpsRequest = https.request,
     fetchFn = fetch,
-  } = {}) =>
-  async (clientReq, clientRes) => {
+  }: FetchHandlerDeps = {}) =>
+  async (clientReq: Request, clientRes: Response): Promise<void> => {
     try {
       const authHeader = String(clientReq.headers.authorization || "");
       const sessionToken = authHeader.startsWith("Bearer ")
@@ -250,13 +322,13 @@ export const createGatewayFetchHandler =
         fetchFn,
       });
 
-      const intent = introspection?.intent;
+      const intent = introspection.intent;
       if (!intent || typeof intent !== "object") {
         throw createClientError(502, "Introspection payload is invalid");
       }
 
       const data = await executeIntentFetch({
-        intent,
+        intent: intent as GatewayIntent,
         lookup,
         httpRequest,
         httpsRequest,

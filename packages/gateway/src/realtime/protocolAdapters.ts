@@ -4,6 +4,121 @@
  */
 
 import { URL } from "url";
+import type * as dns from "dns";
+import type * as http from "http";
+import type * as https from "https";
+import type WebSocket from "ws";
+
+type StreamStatus = "connecting" | "connected" | "disconnected" | "error";
+type StreamIntent = {
+  protocol?: string;
+  url?: string;
+  parser?: string;
+  headers?: Record<string, unknown>;
+  protocols?: string[];
+  idleTimeoutMs?: number;
+  brokerUrl?: string;
+  qos?: number;
+  topic?: string;
+  topicAllowlist?: string[];
+};
+type StreamAdapter = { stop: () => Promise<void> | void };
+type StreamCallbacks = {
+  intent: StreamIntent;
+  onData: (payload: unknown) => void;
+  onStatus: (status: StreamStatus) => void;
+  onError: (errorCode: string, message: string) => void;
+};
+
+type ParseRealtimeTargetUrl = (params: { rawTarget: string; protocol: string }) => {
+  target: URL;
+  port: number;
+  hostname: string;
+};
+
+type LookupFn = (hostname: string, options: dns.LookupAllOptions) => Promise<dns.LookupAddress[]>;
+
+type EnsureDestinationFn = (
+  hostname: string,
+  deps?: { lookup?: LookupFn },
+) => Promise<{ address: string; family: 4 | 6 }>;
+
+type MqttPoolEntry = {
+  client: {
+    subscribe: (
+      topic: string,
+      options: { qos: number },
+      callback: (error?: unknown) => void,
+    ) => void;
+    unsubscribe: (topic: string, callback: (error?: unknown) => void) => void;
+    on: (event: string, listener: (...args: unknown[]) => void) => void;
+    off: (event: string, listener: (...args: unknown[]) => void) => void;
+    connected: boolean;
+  };
+  topicRefCounts: Map<string, number>;
+};
+
+type AdapterFactoryDeps = {
+  parseRealtimeTargetUrl: ParseRealtimeTargetUrl;
+  ensureResolvedDestinationIsAllowed: EnsureDestinationFn;
+  lookup: LookupFn;
+  REALTIME_SSE_IDLE_TIMEOUT_MS: number;
+  REALTIME_MAX_MESSAGE_BYTES: number;
+  STREAM_ERROR_CODES: Record<string, string>;
+  parseStreamPayload: (raw: string, parser?: string) => unknown;
+  REALTIME_CONNECT_TIMEOUT_MS: number;
+  createUpstreamRequestOptions: (params: {
+    target: URL;
+    port: number;
+    hostname: string;
+    resolvedDestination: { address: string; family: 4 | 6 };
+    bodyText: string;
+    headers?: Record<string, unknown>;
+    timeoutMs: number;
+  }) => http.RequestOptions;
+  httpRequest: typeof http.request;
+  httpsRequest: typeof https.request;
+  wsClientFactory: (
+    url: string,
+    protocols?: string | string[],
+    options?: ConstructorParameters<typeof WebSocket>[2],
+  ) => WebSocket;
+  normalizeRequestHeaders: (headers?: Record<string, unknown>) => Record<string, string>;
+  REALTIME_WS_IDLE_TIMEOUT_MS: number;
+  REALTIME_WS_PING_INTERVAL_MS: number;
+  websocketOpenState?: number;
+  ALLOW_INSECURE_TLS: boolean;
+  REALTIME_MQTT_MAX_QOS: number;
+  REALTIME_MQTT_MAX_MESSAGE_BYTES: number;
+  createClientError: (statusCode: number, message: string, streamErrorCode?: string) => Error;
+  acquireMqttPoolEntry: (params: {
+    intent: StreamIntent;
+    resolvedDestination: { address: string; family: 4 | 6 };
+  }) => MqttPoolEntry;
+  releaseMqttPoolEntry: (entry: MqttPoolEntry) => void;
+  ensureMqttTopicPolicy: (params: { intent: StreamIntent }) => void;
+  REALTIME_SSE_ENABLED: boolean;
+  REALTIME_WS_ENABLED: boolean;
+  REALTIME_MQTT_ENABLED: boolean;
+};
+
+const toBufferPayload = (value: unknown): Buffer => {
+  if (Buffer.isBuffer(value)) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return Buffer.concat(
+      value.map((entry) => (Buffer.isBuffer(entry) ? entry : Buffer.from(entry))),
+    );
+  }
+  if (value instanceof ArrayBuffer) {
+    return Buffer.from(value);
+  }
+  if (ArrayBuffer.isView(value)) {
+    return Buffer.from(value.buffer, value.byteOffset, value.byteLength);
+  }
+  return Buffer.from(String(value));
+};
 
 /**
  * Build a protocol adapter resolver with injected gateway dependencies.
@@ -11,7 +126,7 @@ import { URL } from "url";
  * @param {Object} deps
  * @returns {Function}
  */
-export const createProtocolAdapterFactory = (deps) => {
+export const createProtocolAdapterFactory = (deps: AdapterFactoryDeps) => {
   const {
     parseRealtimeTargetUrl,
     ensureResolvedDestinationIsAllowed,
@@ -41,9 +156,9 @@ export const createProtocolAdapterFactory = (deps) => {
     REALTIME_MQTT_ENABLED,
   } = deps;
 
-  const createSseAdapter = async ({ intent, onData, onStatus, onError }) => {
+  const createSseAdapter = async ({ intent, onData, onStatus, onError }: StreamCallbacks) => {
     const { target, port, hostname } = parseRealtimeTargetUrl({
-      rawTarget: intent.url,
+      rawTarget: String(intent.url || ""),
       protocol: "sse",
     });
     const resolvedDestination = await ensureResolvedDestinationIsAllowed(hostname, {
@@ -55,10 +170,10 @@ export const createProtocolAdapterFactory = (deps) => {
       Number(intent.idleTimeoutMs) || REALTIME_SSE_IDLE_TIMEOUT_MS,
     );
 
-    let upstreamRequest = null;
-    let upstreamResponse = null;
+    let upstreamRequest: http.ClientRequest | null = null;
+    let upstreamResponse: http.IncomingMessage | null = null;
     let stopped = false;
-    let idleTimer = null;
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
     let eventBuffer = "";
 
     const clearIdleTimer = () => {
@@ -79,7 +194,7 @@ export const createProtocolAdapterFactory = (deps) => {
       }, idleTimeoutMs);
     };
 
-    const dispatchSseEvent = (rawEventBlock) => {
+    const dispatchSseEvent = (rawEventBlock: string): void => {
       const lines = rawEventBlock.split(/\r?\n/);
       const dataLines = [];
       for (const line of lines) {
@@ -101,7 +216,7 @@ export const createProtocolAdapterFactory = (deps) => {
       }
     };
 
-    const processSseBuffer = () => {
+    const processSseBuffer = (): boolean => {
       while (true) {
         const splitCandidates = [
           eventBuffer.indexOf("\r\n\r\n"),
@@ -133,7 +248,7 @@ export const createProtocolAdapterFactory = (deps) => {
       return true;
     };
 
-    const stop = () => {
+    const stop = (): void => {
       if (stopped) {
         return;
       }
@@ -164,7 +279,7 @@ export const createProtocolAdapterFactory = (deps) => {
     resetIdleTimer();
 
     const requestFn = target.protocol === "https:" ? httpsRequest : httpRequest;
-    upstreamRequest = requestFn(options, (response) => {
+    upstreamRequest = requestFn(options, (response: http.IncomingMessage) => {
       upstreamResponse = response;
       const statusCode = Number(response.statusCode) || 0;
       if (statusCode < 200 || statusCode >= 300) {
@@ -181,7 +296,7 @@ export const createProtocolAdapterFactory = (deps) => {
       onStatus("connected");
       resetIdleTimer();
 
-      response.on("data", (chunk) => {
+      response.on("data", (chunk: Buffer | string) => {
         const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
         if (bufferChunk.byteLength > REALTIME_MAX_MESSAGE_BYTES) {
           onError(STREAM_ERROR_CODES.MESSAGE_TOO_LARGE, "SSE message exceeded size limit");
@@ -234,9 +349,9 @@ export const createProtocolAdapterFactory = (deps) => {
     return { stop };
   };
 
-  const createWebSocketAdapter = async ({ intent, onData, onStatus, onError }) => {
+  const createWebSocketAdapter = async ({ intent, onData, onStatus, onError }: StreamCallbacks) => {
     const { hostname } = parseRealtimeTargetUrl({
-      rawTarget: intent.url,
+      rawTarget: String(intent.url || ""),
       protocol: "websocket",
     });
     const resolvedDestination = await ensureResolvedDestinationIsAllowed(hostname, {
@@ -249,9 +364,9 @@ export const createProtocolAdapterFactory = (deps) => {
     );
 
     let stopped = false;
-    let idleTimer = null;
-    let upstreamSocket = null;
-    let pingTimer = null;
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+    let upstreamSocket: WebSocket | null = null;
+    let pingTimer: ReturnType<typeof setInterval> | null = null;
 
     const clearIdleTimer = () => {
       if (idleTimer) {
@@ -271,7 +386,7 @@ export const createProtocolAdapterFactory = (deps) => {
       }, idleTimeoutMs);
     };
 
-    const stop = () => {
+    const stop = (): void => {
       if (stopped) {
         return;
       }
@@ -295,12 +410,15 @@ export const createProtocolAdapterFactory = (deps) => {
     onStatus("connecting");
     resetIdleTimer();
 
-    upstreamSocket = wsClientFactory(intent.url, intent.protocols || [], {
+    upstreamSocket = wsClientFactory(String(intent.url || ""), intent.protocols || [], {
       headers: normalizeRequestHeaders(intent.headers),
       handshakeTimeout: REALTIME_CONNECT_TIMEOUT_MS,
       rejectUnauthorized: !ALLOW_INSECURE_TLS,
-      servername: hostname,
-      lookup: (_unusedHostname, _unusedOptions, callback) => {
+      lookup: (
+        _unusedHostname: string,
+        _unusedOptions: dns.LookupOneOptions,
+        callback: (error: Error | null, address: string, family: number) => void,
+      ) => {
         callback(null, resolvedDestination.address, resolvedDestination.family);
       },
     });
@@ -319,12 +437,12 @@ export const createProtocolAdapterFactory = (deps) => {
       }, REALTIME_WS_PING_INTERVAL_MS);
     });
 
-    upstreamSocket.on("message", (payload, isBinary) => {
+    upstreamSocket.on("message", (payload: WebSocket.RawData, isBinary: boolean) => {
       if (stopped) {
         return;
       }
 
-      const payloadBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+      const payloadBuffer = toBufferPayload(payload);
       if (payloadBuffer.byteLength > REALTIME_MAX_MESSAGE_BYTES) {
         onError(STREAM_ERROR_CODES.MESSAGE_TOO_LARGE, "WebSocket message exceeded size limit");
         return;
@@ -366,9 +484,9 @@ export const createProtocolAdapterFactory = (deps) => {
     return { stop };
   };
 
-  const createMqttAdapter = async ({ intent, onData, onStatus, onError }) => {
-    parseRealtimeTargetUrl({ rawTarget: intent.brokerUrl, protocol: "mqtt" });
-    const mqttUrl = new URL(intent.brokerUrl);
+  const createMqttAdapter = async ({ intent, onData, onStatus, onError }: StreamCallbacks) => {
+    parseRealtimeTargetUrl({ rawTarget: String(intent.brokerUrl || ""), protocol: "mqtt" });
+    const mqttUrl = new URL(String(intent.brokerUrl || ""));
     const resolvedDestination = await ensureResolvedDestinationIsAllowed(mqttUrl.hostname, {
       lookup,
     });
@@ -438,12 +556,12 @@ export const createProtocolAdapterFactory = (deps) => {
       }
     };
 
-    const onMessage = (messageTopic, payload) => {
+    const onMessage = (messageTopic: unknown, payload: unknown) => {
       if (stopped || messageTopic !== topic) {
         return;
       }
 
-      const payloadBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+      const payloadBuffer = toBufferPayload(payload);
       if (payloadBuffer.byteLength > REALTIME_MQTT_MAX_MESSAGE_BYTES) {
         onError(STREAM_ERROR_CODES.MESSAGE_TOO_LARGE, "MQTT payload exceeded size limit");
         return;
@@ -497,7 +615,7 @@ export const createProtocolAdapterFactory = (deps) => {
     return { stop };
   };
 
-  return async ({ intent, onData, onStatus, onError }) => {
+  return async ({ intent, onData, onStatus, onError }: StreamCallbacks): Promise<StreamAdapter> => {
     const protocol = String(intent?.protocol || "").toLowerCase();
 
     if (protocol === "sse") {

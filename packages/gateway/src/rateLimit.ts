@@ -3,9 +3,17 @@
  * @description Sliding one-minute in-memory rate-limit buckets.
  */
 
-const rateLimitBuckets = new Map();
+type RateLimitBucket = {
+  count: number;
+  resetAt: number;
+};
 
-export const consumeRateLimit = (key, limitPerMinute) => {
+const rateLimitBuckets = new Map<string, RateLimitBucket>();
+
+export const consumeRateLimit = (
+  key: string,
+  limitPerMinute: number,
+): { allowed: boolean; retryAfterMs: number } => {
   if (!Number.isFinite(limitPerMinute) || limitPerMinute <= 0) {
     return { allowed: true, retryAfterMs: 0 };
   }

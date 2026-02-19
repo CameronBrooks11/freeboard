@@ -3,7 +3,7 @@
  * @description MQTT topic matching and packet codec helpers used by gateway realtime transport.
  */
 
-export const matchesMqttTopicPattern = (topic, pattern) => {
+export const matchesMqttTopicPattern = (topic: string, pattern: string): boolean => {
   const topicLevels = String(topic || "").split("/");
   const patternLevels = String(pattern || "").split("/");
 
@@ -31,25 +31,25 @@ export const matchesMqttTopicPattern = (topic, pattern) => {
   return topicLevels.length === patternLevels.length;
 };
 
-export const isMqttTopicAllowed = (topic, allowlist) =>
+export const isMqttTopicAllowed = (topic: string, allowlist: string[]): boolean =>
   Array.isArray(allowlist) && allowlist.some((pattern) => matchesMqttTopicPattern(topic, pattern));
 
-export const normalizeMqttAllowlist = (value) => {
+export const normalizeMqttAllowlist = (value: unknown): string[] => {
   if (!Array.isArray(value)) {
     return [];
   }
   return value.map((entry) => String(entry || "").trim()).filter(Boolean);
 };
 
-const encodeMqttString = (value) => {
+const encodeMqttString = (value: unknown): Buffer => {
   const encoded = Buffer.from(String(value || ""), "utf8");
   const header = Buffer.alloc(2);
   header.writeUInt16BE(encoded.length, 0);
   return Buffer.concat([header, encoded]);
 };
 
-const encodeMqttRemainingLength = (value) => {
-  const bytes = [];
+const encodeMqttRemainingLength = (value: number): Buffer => {
+  const bytes: number[] = [];
   let remaining = value;
   do {
     let digit = remaining % 128;
@@ -62,7 +62,10 @@ const encodeMqttRemainingLength = (value) => {
   return Buffer.from(bytes);
 };
 
-export const decodeMqttRemainingLength = (buffer, offset = 1) => {
+export const decodeMqttRemainingLength = (
+  buffer: Buffer,
+  offset = 1,
+): { value: number; bytesUsed: number } | null => {
   let multiplier = 1;
   let value = 0;
   let consumed = 0;
@@ -90,7 +93,17 @@ export const decodeMqttRemainingLength = (buffer, offset = 1) => {
   };
 };
 
-export const buildMqttConnectPacket = ({ clientId, username, password, keepaliveSeconds }) => {
+export const buildMqttConnectPacket = ({
+  clientId,
+  username,
+  password,
+  keepaliveSeconds,
+}: {
+  clientId: string;
+  username?: string;
+  password?: string;
+  keepaliveSeconds?: number;
+}): Buffer => {
   const protocolName = encodeMqttString("MQTT");
   const protocolLevel = Buffer.from([0x04]);
   let connectFlags = 0x02;
@@ -131,7 +144,15 @@ export const buildMqttConnectPacket = ({ clientId, username, password, keepalive
   return Buffer.concat([Buffer.from([0x10]), remainingLength, variableHeader, payload]);
 };
 
-export const buildMqttSubscribePacket = ({ packetId, topic, qos }) => {
+export const buildMqttSubscribePacket = ({
+  packetId,
+  topic,
+  qos,
+}: {
+  packetId: number;
+  topic: string;
+  qos?: number;
+}): Buffer => {
   const variableHeader = Buffer.alloc(2);
   variableHeader.writeUInt16BE(packetId, 0);
   const payload = Buffer.concat([
@@ -142,7 +163,13 @@ export const buildMqttSubscribePacket = ({ packetId, topic, qos }) => {
   return Buffer.concat([Buffer.from([0x82]), remainingLength, variableHeader, payload]);
 };
 
-export const buildMqttUnsubscribePacket = ({ packetId, topic }) => {
+export const buildMqttUnsubscribePacket = ({
+  packetId,
+  topic,
+}: {
+  packetId: number;
+  topic: string;
+}): Buffer => {
   const variableHeader = Buffer.alloc(2);
   variableHeader.writeUInt16BE(packetId, 0);
   const payload = encodeMqttString(topic);
@@ -153,7 +180,7 @@ export const buildMqttUnsubscribePacket = ({ packetId, topic }) => {
 export const buildMqttPingPacket = () => Buffer.from([0xc0, 0x00]);
 export const buildMqttDisconnectPacket = () => Buffer.from([0xe0, 0x00]);
 
-export const buildMqttPubAckPacket = (packetId) => {
+export const buildMqttPubAckPacket = (packetId: number): Buffer => {
   const packet = Buffer.alloc(4);
   packet[0] = 0x40;
   packet[1] = 0x02;

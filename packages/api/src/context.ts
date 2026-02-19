@@ -4,7 +4,7 @@
  */
 
 import { createPubSub } from "graphql-yoga";
-import { validateAuthToken } from "./auth.js";
+import { validateAuthToken, type AuthTokenClaims } from "./auth.js";
 import User from "./models/User.js";
 import Dashboard from "./models/Dashboard.js";
 import { authenticateServiceAccountToken } from "./serviceAccountAuth.js";
@@ -107,7 +107,7 @@ export const setContext = async ({ req }) => {
 
     try {
       // Validate JWT and attach user claims to context
-      const user = await validateAuthToken(token);
+      const user: AuthTokenClaims = await validateAuthToken(token);
       const persistedUser = await User.findOne({
         _id: user?._id,
         active: true,

@@ -3,7 +3,7 @@
  * @description Runtime config normalization and constants.
  */
 
-const toBoolean = (value, fallback = false) => {
+const toBoolean = (value: unknown, fallback = false): boolean => {
   if (value === undefined || value === null || value === "") {
     return fallback;
   }
@@ -17,7 +17,7 @@ const toBoolean = (value, fallback = false) => {
   return fallback;
 };
 
-const toPositiveInteger = (value, fallback) => {
+const toPositiveInteger = (value: unknown, fallback: number): number => {
   const normalized = Number(value);
   if (!Number.isFinite(normalized)) {
     return fallback;
@@ -30,10 +30,13 @@ const toPositiveInteger = (value, fallback) => {
 };
 
 const toBoundedInteger = (
-  value,
-  fallback,
-  { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER } = {},
-) => {
+  value: unknown,
+  fallback: number,
+  {
+    min = Number.MIN_SAFE_INTEGER,
+    max = Number.MAX_SAFE_INTEGER,
+  }: { min?: number; max?: number } = {},
+): number => {
   const normalized = Number(value);
   if (!Number.isFinite(normalized)) {
     return fallback;
@@ -45,7 +48,7 @@ const toBoundedInteger = (
   return floored;
 };
 
-const parseCsvList = (value) =>
+const parseCsvList = (value: unknown): string[] =>
   String(value || "")
     .split(",")
     .map((entry) => entry.trim())
@@ -197,7 +200,7 @@ export const STREAM_ERROR_CODES = Object.freeze({
   RATE_LIMITED: "STREAM_RATE_LIMITED",
 });
 
-const isWeakSecret = (secret) => {
+const isWeakSecret = (secret: unknown): boolean => {
   if (!secret || typeof secret !== "string") {
     return true;
   }

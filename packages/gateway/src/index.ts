@@ -9,6 +9,7 @@ import * as http from "http";
 import * as https from "https";
 import dns from "dns";
 import express from "express";
+import type { NextFunction, Request, Response } from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { URL } from "url";
@@ -26,6 +27,7 @@ import {
   ensureResolvedDestinationIsAllowed,
   parseOutboundUrl,
   parseTargetUrl,
+  type ResolvedDestination,
 } from "./networkPolicy.js";
 import {
   createGatewayFetchHandler,
@@ -37,6 +39,8 @@ import {
   fetchIntrospection,
   fetchRevokedTokens,
   validateSessionToken,
+  type DatasourceIntrospectionResponse,
+  type RevokedTokensFeedResponse,
 } from "./gatewayApiClient.js";
 import {
   ALLOW_INSECURE_TLS,
@@ -101,12 +105,100 @@ type RealtimeGatewayOptions = {
   ) => WebSocket;
 };
 
-const getSocketRemoteAddress = (request) => {
+type TokenClaims = Record<string, unknown>;
+type RealtimeEnvelope = Record<string, unknown>;
+type RealtimeIntent = {
+  protocol?: string;
+  url?: string;
+  parser?: string;
+  headers?: Record<string, unknown>;
+  protocols?: string[];
+  body?: unknown;
+  timeoutMs?: number;
+  idleTimeoutMs?: number;
+  brokerUrl?: string;
+  brokerProfileId?: string;
+  username?: string;
+  password?: string;
+  keepaliveSeconds?: number;
+  qos?: number;
+  topic?: string;
+  topicAllowlist?: string[];
+  tls?: Record<string, unknown>;
+};
+type RealtimeAdapter = {
+  stop: () => void | Promise<void>;
+};
+type RealtimeSubscription = {
+  dashboardId: string;
+  datasourceId: string;
+  sessionToken: string;
+  tokenClaims: TokenClaims;
+  introspection: DatasourceIntrospectionResponse;
+  adapter: RealtimeAdapter;
+  tokenExpiryTimer: ReturnType<typeof setTimeout> | null;
+};
+type RealtimeConnection = {
+  id: string;
+  ws: WebSocket & { __clientIp?: string };
+  ip: string;
+  subscriptions: Map<string, RealtimeSubscription>;
+  pendingSubscriptions: Set<string>;
+};
+type PublicSubscription = {
+  connectionId: string;
+  dashboardId: string;
+  datasourceId: string;
+  shareTokenVersion: number;
+  sessionToken: string;
+};
+type MqttPoolEntry = {
+  key: string;
+  brokerProfileId: string;
+  client: SimpleMqttClient;
+  refCount: number;
+  topicRefCounts: Map<string, number>;
+  idleTimer: ReturnType<typeof setTimeout> | null;
+};
+type RealtimeClientMessage = {
+  type?: string;
+  requestId?: string;
+  dashboardId?: string;
+  datasourceId?: string;
+  sessionToken?: string;
+};
+type AckPayload = {
+  requestId: string | null;
+  datasourceId?: string | null;
+  ok: boolean;
+  errorCode?: string | null;
+  message?: string | null;
+};
+
+const websocketRawDataToBuffer = (rawPayload: WebSocket.RawData): Buffer => {
+  if (Buffer.isBuffer(rawPayload)) {
+    return rawPayload;
+  }
+  if (Array.isArray(rawPayload)) {
+    return Buffer.concat(
+      rawPayload.map((entry) => (Buffer.isBuffer(entry) ? entry : Buffer.from(entry))),
+    );
+  }
+  if (rawPayload instanceof ArrayBuffer) {
+    return Buffer.from(rawPayload);
+  }
+  return Buffer.from(String(rawPayload));
+};
+
+const getSocketRemoteAddress = (request: http.IncomingMessage): string => {
   const raw = String(request?.socket?.remoteAddress || "unknown-ip");
   return raw.startsWith("::ffff:") ? raw.slice(7) : raw;
 };
 
-export const getTokenExpiryDelayMs = (tokenClaims, nowMs = Date.now()) => {
+export const getTokenExpiryDelayMs = (
+  tokenClaims: TokenClaims | null | undefined,
+  nowMs = Date.now(),
+): number | null => {
   const expSeconds = Number(tokenClaims?.exp);
   if (!Number.isFinite(expSeconds)) {
     return null;
@@ -114,7 +206,7 @@ export const getTokenExpiryDelayMs = (tokenClaims, nowMs = Date.now()) => {
   return Math.floor(expSeconds * 1000 - nowMs);
 };
 
-export const deriveClientIp = (request) => {
+export const deriveClientIp = (request: http.IncomingMessage): string => {
   const socketAddress = getSocketRemoteAddress(request);
   if (REALTIME_TRUST_PROXY_HOPS <= 0) {
     return socketAddress;
@@ -144,12 +236,19 @@ export const deriveClientIp = (request) => {
   return selected.startsWith("::ffff:") ? selected.slice(7) : selected;
 };
 
-const mapStreamErrorCode = (error, fallback = STREAM_ERROR_CODES.CONNECT_FAILED) => {
-  if (error?.streamErrorCode) {
-    return error.streamErrorCode;
+const mapStreamErrorCode = (
+  error: unknown,
+  fallback = STREAM_ERROR_CODES.CONNECT_FAILED,
+): string => {
+  const errorLike =
+    error && typeof error === "object"
+      ? (error as { streamErrorCode?: string; statusCode?: number })
+      : null;
+  if (errorLike?.streamErrorCode) {
+    return errorLike.streamErrorCode;
   }
 
-  const statusCode = Number(error?.statusCode) || 0;
+  const statusCode = Number(errorLike?.statusCode) || 0;
   if (statusCode === 401 || statusCode === 403) {
     return STREAM_ERROR_CODES.AUTH_FAILED;
   }
@@ -165,15 +264,25 @@ const mapStreamErrorCode = (error, fallback = STREAM_ERROR_CODES.CONNECT_FAILED)
   return fallback;
 };
 
-const sanitizeErrorMessage = (error, fallback) => {
-  const statusCode = Number(error?.statusCode) || 500;
+const sanitizeErrorMessage = (error: unknown, fallback: string): string => {
+  const errorLike =
+    error && typeof error === "object"
+      ? (error as { statusCode?: number; message?: string })
+      : null;
+  const statusCode = Number(errorLike?.statusCode) || 500;
   if (statusCode >= 500) {
     return fallback;
   }
-  return String(error?.message || fallback);
+  return String(errorLike?.message || fallback);
 };
 
-const parseRealtimeTargetUrl = ({ rawTarget, protocol }) => {
+const parseRealtimeTargetUrl = ({
+  rawTarget,
+  protocol,
+}: {
+  rawTarget: string;
+  protocol: string;
+}) => {
   if (protocol === "sse") {
     return parseTargetUrl(rawTarget);
   }
@@ -224,16 +333,19 @@ export const createRealtimeGateway = ({
     maxPayload: REALTIME_MAX_MESSAGE_BYTES,
   });
 
-  const connectionsById = new Map();
-  const connectionCountByIp = new Map();
-  const dashboardConnectionRefs = new Map();
-  const publicSubscriptions = new Map();
-  const mqttPool = new Map();
+  const connectionsById = new Map<string, RealtimeConnection>();
+  const connectionCountByIp = new Map<string, number>();
+  const dashboardConnectionRefs = new Map<string, Set<string>>();
+  const publicSubscriptions = new Map<string, PublicSubscription>();
+  const mqttPool = new Map<string, MqttPoolEntry>();
 
-  let revocationCursor = null;
+  let revocationCursor: string | null = null;
   let pollingRevocations = false;
 
-  const sendWsResponse = (connection, payload) => {
+  const sendWsResponse = (
+    connection: RealtimeConnection | null,
+    payload: RealtimeEnvelope,
+  ): boolean => {
     if (!connection || connection.ws.readyState !== WebSocket.OPEN) {
       return false;
     }
@@ -255,9 +367,9 @@ export const createRealtimeGateway = ({
   };
 
   const sendAck = (
-    connection,
-    { requestId, datasourceId = null, ok, errorCode = null, message = null },
-  ) => {
+    connection: RealtimeConnection,
+    { requestId, datasourceId = null, ok, errorCode = null, message = null }: AckPayload,
+  ): void => {
     sendWsResponse(connection, {
       type: "ack",
       requestId,
@@ -277,7 +389,10 @@ export const createRealtimeGateway = ({
     });
   };
 
-  const sendStatus = (connection, { datasourceId, status, errorCode = null, message = null }) => {
+  const sendStatus = (
+    connection: RealtimeConnection,
+    { datasourceId, status, errorCode = null, message = null }: Record<string, unknown>,
+  ): void => {
     sendWsResponse(connection, {
       type: "status",
       datasourceId,
@@ -296,7 +411,10 @@ export const createRealtimeGateway = ({
     });
   };
 
-  const sendError = (connection, { datasourceId, errorCode, message }) => {
+  const sendError = (
+    connection: RealtimeConnection,
+    { datasourceId, errorCode, message }: Record<string, unknown>,
+  ): void => {
     sendWsResponse(connection, {
       type: "error",
       datasourceId,
@@ -306,12 +424,12 @@ export const createRealtimeGateway = ({
     });
   };
 
-  const incrementConnectionCountByIp = (ip) => {
+  const incrementConnectionCountByIp = (ip: string): void => {
     const next = (connectionCountByIp.get(ip) || 0) + 1;
     connectionCountByIp.set(ip, next);
   };
 
-  const decrementConnectionCountByIp = (ip) => {
+  const decrementConnectionCountByIp = (ip: string): void => {
     const current = connectionCountByIp.get(ip) || 0;
     if (current <= 1) {
       connectionCountByIp.delete(ip);
@@ -320,7 +438,15 @@ export const createRealtimeGateway = ({
     connectionCountByIp.set(ip, current - 1);
   };
 
-  const ensureDashboardCapacity = ({ connection, dashboardId, datasourceId }) => {
+  const ensureDashboardCapacity = ({
+    connection,
+    dashboardId,
+    datasourceId,
+  }: {
+    connection: RealtimeConnection;
+    dashboardId: string;
+    datasourceId: string;
+  }): void => {
     const alreadySubscribedToDashboard = [...connection.subscriptions.values()].some(
       (subscription) =>
         subscription.dashboardId === dashboardId && subscription.datasourceId !== datasourceId,
@@ -342,13 +468,25 @@ export const createRealtimeGateway = ({
     }
   };
 
-  const attachDashboardRef = ({ connection, dashboardId }) => {
+  const attachDashboardRef = ({
+    connection,
+    dashboardId,
+  }: {
+    connection: RealtimeConnection;
+    dashboardId: string;
+  }): void => {
     const dashboardConnections = dashboardConnectionRefs.get(dashboardId) || new Set();
     dashboardConnections.add(connection.id);
     dashboardConnectionRefs.set(dashboardId, dashboardConnections);
   };
 
-  const detachDashboardRefIfUnused = ({ connection, dashboardId }) => {
+  const detachDashboardRefIfUnused = ({
+    connection,
+    dashboardId,
+  }: {
+    connection: RealtimeConnection;
+    dashboardId: string;
+  }): void => {
     const stillUsed = [...connection.subscriptions.values()].some(
       (subscription) => subscription.dashboardId === dashboardId,
     );
@@ -367,7 +505,13 @@ export const createRealtimeGateway = ({
     }
   };
 
-  const setPublicSubscriptionState = ({ connection, subscription }) => {
+  const setPublicSubscriptionState = ({
+    connection,
+    subscription,
+  }: {
+    connection: RealtimeConnection;
+    subscription: RealtimeSubscription;
+  }): void => {
     const key = `${connection.id}:${subscription.datasourceId}`;
     if (String(subscription.tokenClaims?.sub || "") !== "public") {
       publicSubscriptions.delete(key);
@@ -383,11 +527,17 @@ export const createRealtimeGateway = ({
     });
   };
 
-  const clearPublicSubscriptionState = ({ connectionId, datasourceId }) => {
+  const clearPublicSubscriptionState = ({
+    connectionId,
+    datasourceId,
+  }: {
+    connectionId: string;
+    datasourceId: string;
+  }): void => {
     publicSubscriptions.delete(`${connectionId}:${datasourceId}`);
   };
 
-  const buildMqttConnectionKey = (intent) => {
+  const buildMqttConnectionKey = (intent: RealtimeIntent): string => {
     const credentialHash = crypto
       .createHash("sha256")
       .update(`${intent.username || ""}\0${intent.password || ""}`)
@@ -395,10 +545,16 @@ export const createRealtimeGateway = ({
     return `${intent.brokerProfileId || "broker"}:${credentialHash}`;
   };
 
-  const getMqttBrokerConnectionCount = (brokerProfileId) =>
+  const getMqttBrokerConnectionCount = (brokerProfileId: string): number =>
     [...mqttPool.values()].filter((entry) => entry.brokerProfileId === brokerProfileId).length;
 
-  const acquireMqttPoolEntry = ({ intent, resolvedDestination = null }) => {
+  const acquireMqttPoolEntry = ({
+    intent,
+    resolvedDestination = null,
+  }: {
+    intent: RealtimeIntent;
+    resolvedDestination?: ResolvedDestination | null;
+  }): MqttPoolEntry => {
     const key = buildMqttConnectionKey(intent);
     const existing = mqttPool.get(key);
     if (existing) {
@@ -411,7 +567,7 @@ export const createRealtimeGateway = ({
     }
 
     if (
-      getMqttBrokerConnectionCount(intent.brokerProfileId) >=
+      getMqttBrokerConnectionCount(String(intent.brokerProfileId || "")) >=
       REALTIME_MQTT_MAX_CONNECTIONS_PER_BROKER
     ) {
       throw createClientError(
@@ -425,12 +581,12 @@ export const createRealtimeGateway = ({
       intent.tls && typeof intent.tls === "object" && !Array.isArray(intent.tls) ? intent.tls : {};
 
     const client = new SimpleMqttClient({
-      brokerUrl: intent.brokerUrl,
+      brokerUrl: String(intent.brokerUrl || ""),
       username: intent.username || undefined,
       password: intent.password || undefined,
       resolvedAddress: resolvedDestination?.address,
       resolvedFamily: resolvedDestination?.family,
-      tlsServername: new URL(intent.brokerUrl).hostname,
+      tlsServername: new URL(String(intent.brokerUrl || "")).hostname,
       keepaliveSeconds: Math.max(
         5,
         Math.floor(Number(intent.keepaliveSeconds) || REALTIME_MQTT_KEEPALIVE_SECONDS),
@@ -444,12 +600,12 @@ export const createRealtimeGateway = ({
       },
     });
     client.connect();
-    const created = {
+    const created: MqttPoolEntry = {
       key,
-      brokerProfileId: intent.brokerProfileId,
+      brokerProfileId: String(intent.brokerProfileId || ""),
       client,
       refCount: 1,
-      topicRefCounts: new Map(),
+      topicRefCounts: new Map<string, number>(),
       idleTimer: null,
     };
 
@@ -457,7 +613,7 @@ export const createRealtimeGateway = ({
     return created;
   };
 
-  const releaseMqttPoolEntry = (entry) => {
+  const releaseMqttPoolEntry = (entry: MqttPoolEntry): void => {
     entry.refCount -= 1;
     if (entry.refCount > 0) {
       return;
@@ -476,7 +632,7 @@ export const createRealtimeGateway = ({
     }, REALTIME_MQTT_IDLE_DISCONNECT_MS);
   };
 
-  const ensureMqttTopicPolicy = ({ intent }) => {
+  const ensureMqttTopicPolicy = ({ intent }: { intent: RealtimeIntent }): void => {
     const topic = String(intent.topic || "").trim();
     if (!topic) {
       throw createClientError(400, "MQTT topic is required", STREAM_ERROR_CODES.POLICY_BLOCKED);
@@ -549,7 +705,12 @@ export const createRealtimeGateway = ({
     datasourceId,
     errorCode = null,
     message = null,
-  }) => {
+  }: {
+    connection: RealtimeConnection;
+    datasourceId: string;
+    errorCode?: string | null;
+    message?: string | null;
+  }): Promise<void> => {
     const existing = connection.subscriptions.get(datasourceId);
     if (!existing) {
       return;
@@ -596,7 +757,15 @@ export const createRealtimeGateway = ({
     }
   };
 
-  const scheduleSubscriptionTokenExpiry = ({ connection, datasourceId, subscription }) => {
+  const scheduleSubscriptionTokenExpiry = ({
+    connection,
+    datasourceId,
+    subscription,
+  }: {
+    connection: RealtimeConnection;
+    datasourceId: string;
+    subscription: RealtimeSubscription;
+  }): void => {
     if (subscription.tokenExpiryTimer) {
       clearTimeout(subscription.tokenExpiryTimer);
       subscription.tokenExpiryTimer = null;
@@ -628,7 +797,7 @@ export const createRealtimeGateway = ({
     subscription.tokenExpiryTimer.unref?.();
   };
 
-  const cleanupConnection = async (connection) => {
+  const cleanupConnection = async (connection: RealtimeConnection): Promise<void> => {
     const subscriptions = [...connection.subscriptions.keys()];
     await Promise.all(
       subscriptions.map((datasourceId) =>
@@ -643,7 +812,15 @@ export const createRealtimeGateway = ({
     decrementConnectionCountByIp(connection.ip);
   };
 
-  const handlePublicSubscriptionRateLimit = ({ connection, dashboardId, tokenClaims }) => {
+  const handlePublicSubscriptionRateLimit = ({
+    connection,
+    dashboardId,
+    tokenClaims,
+  }: {
+    connection: RealtimeConnection;
+    dashboardId: string;
+    tokenClaims: TokenClaims;
+  }): void => {
     const ipBucket = consumeRateLimit(
       `realtime-public-subscribe-ip:${connection.ip}`,
       REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_IP_PER_MIN,
@@ -670,7 +847,13 @@ export const createRealtimeGateway = ({
     }
   };
 
-  const handleSubscribe = async ({ connection, message }) => {
+  const handleSubscribe = async ({
+    connection,
+    message,
+  }: {
+    connection: RealtimeConnection;
+    message: RealtimeClientMessage;
+  }): Promise<void> => {
     const requestId = String(message.requestId || "").trim();
     const dashboardId = String(message.dashboardId || "").trim();
     const datasourceId = String(message.datasourceId || "").trim();
@@ -715,7 +898,7 @@ export const createRealtimeGateway = ({
     try {
       const tokenClaims = validateSessionToken(sessionToken, {
         expectedScope: "datasource:stream",
-      });
+      }) as TokenClaims;
 
       if (
         String(tokenClaims.dashboardId || "") !== dashboardId ||
@@ -743,7 +926,7 @@ export const createRealtimeGateway = ({
         fetchFn,
       });
 
-      if (String(introspection?.scope || "") !== "datasource:stream") {
+      if (String(introspection.scope || "") !== "datasource:stream") {
         throw createClientError(
           403,
           "Datasource token scope mismatch",
@@ -751,7 +934,7 @@ export const createRealtimeGateway = ({
         );
       }
 
-      const intent = introspection?.intent;
+      const intent = introspection.intent as RealtimeIntent | undefined;
       if (!intent || typeof intent !== "object") {
         throw createClientError(
           502,
@@ -806,13 +989,13 @@ export const createRealtimeGateway = ({
         datasourceId,
       });
 
-      const nextSubscription = {
+      const nextSubscription: RealtimeSubscription = {
         dashboardId,
         datasourceId,
         sessionToken,
         tokenClaims,
         introspection,
-        adapter: null,
+        adapter: { stop: () => {} },
         tokenExpiryTimer: null,
       };
 
@@ -886,7 +1069,13 @@ export const createRealtimeGateway = ({
     }
   };
 
-  const handleUnsubscribe = async ({ connection, message }) => {
+  const handleUnsubscribe = async ({
+    connection,
+    message,
+  }: {
+    connection: RealtimeConnection;
+    message: RealtimeClientMessage;
+  }): Promise<void> => {
     const requestId = String(message.requestId || "").trim();
     const datasourceId = String(message.datasourceId || "").trim();
 
@@ -909,7 +1098,13 @@ export const createRealtimeGateway = ({
     });
   };
 
-  const handlePing = ({ connection, message }) => {
+  const handlePing = ({
+    connection,
+    message,
+  }: {
+    connection: RealtimeConnection;
+    message: RealtimeClientMessage;
+  }): void => {
     sendWsResponse(connection, {
       type: "pong",
       requestId: message.requestId || null,
@@ -917,7 +1112,7 @@ export const createRealtimeGateway = ({
     });
   };
 
-  const fullRevalidatePublicSubscriptions = async () => {
+  const fullRevalidatePublicSubscriptions = async (): Promise<void> => {
     const snapshot = [...publicSubscriptions.values()];
     for (const publicSubscription of snapshot) {
       const connection = connectionsById.get(publicSubscription.connectionId);
@@ -933,7 +1128,7 @@ export const createRealtimeGateway = ({
           fetchFn,
         });
 
-        if (String(introspection?.scope || "") !== "datasource:stream") {
+        if (String(introspection.scope || "") !== "datasource:stream") {
           throw createClientError(403, "Datasource token scope mismatch");
         }
       } catch {
@@ -947,14 +1142,14 @@ export const createRealtimeGateway = ({
     }
   };
 
-  const pollRevokedTokens = async () => {
+  const pollRevokedTokens = async (): Promise<void> => {
     if (pollingRevocations || publicSubscriptions.size === 0) {
       return;
     }
 
     pollingRevocations = true;
     try {
-      const feed = await fetchRevokedTokens({
+      const feed: RevokedTokensFeedResponse = await fetchRevokedTokens({
         sinceCursor: revocationCursor,
         limit: REVOKED_TOKENS_MAX_BATCH,
         fetchFn,
@@ -1014,22 +1209,23 @@ export const createRealtimeGateway = ({
     void fullRevalidatePublicSubscriptions();
   }, REALTIME_PUBLIC_FULL_REVALIDATE_INTERVAL_MS);
 
-  wss.on("connection", (ws, request) => {
-    const clientIp = ws.__clientIp || deriveClientIp(request);
-    const connection = {
+  wss.on("connection", (ws: WebSocket, request: http.IncomingMessage) => {
+    const socket = ws as WebSocket & { __clientIp?: string };
+    const clientIp = socket.__clientIp || deriveClientIp(request);
+    const connection: RealtimeConnection = {
       id: crypto.randomUUID(),
-      ws,
+      ws: socket,
       ip: clientIp,
-      subscriptions: new Map(),
-      pendingSubscriptions: new Set(),
+      subscriptions: new Map<string, RealtimeSubscription>(),
+      pendingSubscriptions: new Set<string>(),
     };
 
     connectionsById.set(connection.id, connection);
     incrementConnectionCountByIp(clientIp);
 
-    ws.on("message", (rawPayload, isBinary) => {
+    ws.on("message", (rawPayload: WebSocket.RawData, isBinary: boolean) => {
       recordRealtimeMessageIn();
-      const payloadBuffer = Buffer.isBuffer(rawPayload) ? rawPayload : Buffer.from(rawPayload);
+      const payloadBuffer = websocketRawDataToBuffer(rawPayload);
       if (payloadBuffer.byteLength > REALTIME_MAX_MESSAGE_BYTES) {
         sendError(connection, {
           datasourceId: null,
@@ -1042,9 +1238,9 @@ export const createRealtimeGateway = ({
 
       const rawText = isBinary ? payloadBuffer.toString("utf8") : String(rawPayload);
 
-      let message;
+      let message: RealtimeClientMessage;
       try {
-        message = JSON.parse(rawText);
+        message = JSON.parse(rawText) as RealtimeClientMessage;
       } catch {
         sendError(connection, {
           datasourceId: null,
@@ -1124,7 +1320,7 @@ export const createRealtimeGateway = ({
     }
 
     wss.handleUpgrade(request, socket, head, (ws) => {
-      ws.__clientIp = clientIp;
+      (ws as WebSocket & { __clientIp?: string }).__clientIp = clientIp;
       recordRealtimeConnectionAccepted();
       wss.emit("connection", ws, request);
     });
@@ -1161,14 +1357,22 @@ export const createRealtimeGateway = ({
  * @param {Object} [options]
  * @returns {Object}
  */
-export const createGatewayApp = ({ lookup = dns.promises.lookup, fetchFn = fetch } = {}) => {
+type GatewayAppOptions = {
+  lookup?: typeof dns.promises.lookup;
+  fetchFn?: typeof fetch;
+};
+
+export const createGatewayApp = ({
+  lookup = dns.promises.lookup,
+  fetchFn = fetch,
+}: GatewayAppOptions = {}) => {
   const app = express();
   app.use(express.json({ limit: "256kb" }));
 
   const handler = createGatewayFetchHandler({ lookup, fetchFn });
   app.post(
     "/gateway/http/fetch",
-    (req, res, next) => {
+    (req: Request, res: Response, next: NextFunction) => {
       const startedAt = Date.now();
       res.on("finish", () => {
         recordGatewayHttpRequest({
@@ -1180,7 +1384,7 @@ export const createGatewayApp = ({ lookup = dns.promises.lookup, fetchFn = fetch
     },
     handler,
   );
-  app.get("/internal/metrics", (req, res) => {
+  app.get("/internal/metrics", (req: Request, res: Response) => {
     const authHeader = String(req.headers.authorization || "");
     const serviceToken = authHeader.startsWith("Bearer ")
       ? authHeader.slice("Bearer ".length).trim()
@@ -1206,6 +1410,11 @@ export const startGatewayServer = ({
   host = HOST,
   lookup = dns.promises.lookup,
   fetchFn = fetch,
+}: {
+  port?: number;
+  host?: string;
+  lookup?: typeof dns.promises.lookup;
+  fetchFn?: typeof fetch;
 } = {}) => {
   const app = createGatewayApp({ lookup, fetchFn });
   const server = http.createServer(app);

@@ -12,10 +12,14 @@ const SOURCE_FILE_PATTERN = /\.(ts|vue)$/;
 
 const DEBT_PATTERNS = [
   { label: "as-any-cast", regex: /\bas\s+any\b/g },
+  { label: "as-unknown-as-cast", regex: /\bas\s+unknown\s+as\b/g },
   { label: "explicit-any-type", regex: /:\s*any\b/g },
   { label: "record-string-any", regex: /Record<string,\s*any>/g },
   { label: "index-signature-any", regex: /\[key:\s*string\]:\s*any/g },
+  { label: "index-signature-unknown", regex: /\[key:\s*string\]:\s*unknown\b/g },
   { label: "proptype-any", regex: /PropType<any>/g },
+  { label: "ts-ignore", regex: /@ts-ignore/g },
+  { label: "ts-nocheck", regex: /@ts-nocheck/g },
 ];
 
 const walkFiles = async (rootDir) => {

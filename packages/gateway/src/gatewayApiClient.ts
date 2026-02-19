@@ -14,7 +14,57 @@ import {
 } from "./runtimeConfig.js";
 import { createClientError } from "./errors.js";
 
-export const validateSessionToken = (token, { expectedScope = null } = {}) => {
+type JsonObject = Record<string, unknown>;
+
+type SessionClaims = jwt.JwtPayload & {
+  scope?: string;
+  dashboardId?: string;
+  datasourceId?: string;
+  sub?: string;
+  intentHash?: string;
+  shareTokenVersion?: number;
+};
+
+type FetchJsonParams = {
+  url: string;
+  body: JsonObject;
+  timeoutMs: number;
+  fetchFn?: typeof fetch;
+};
+
+type FetchIntrospectionParams = {
+  sessionToken: string;
+  dashboardId: string;
+  datasourceId: string;
+  fetchFn?: typeof fetch;
+};
+
+type FetchRevokedTokensParams = {
+  sinceCursor?: string | null;
+  limit: number;
+  fetchFn?: typeof fetch;
+};
+
+export type DatasourceIntrospectionResponse = {
+  scope?: string;
+  intent?: Record<string, unknown>;
+};
+
+export type RevokedTokenEvent = {
+  dashboardId?: string;
+  shareTokenVersion?: number;
+};
+
+export type RevokedTokensFeedResponse = {
+  nextCursor?: string | null;
+  cursorExpired?: boolean;
+  events?: RevokedTokenEvent[];
+};
+
+export const validateSessionToken = (
+  token: string,
+  { expectedScope = null }: { expectedScope?: string | null } = {},
+): SessionClaims => {
   let claims;
   try {
     claims = jwt.verify(token, JWT_GATEWAY_SECRET, {
@@ -26,14 +76,21 @@ export const validateSessionToken = (token, { expectedScope = null } = {}) => {
     throw createClientError(401, "Invalid datasource session token");
   }
 
-  if (expectedScope && String(claims?.scope || "") !== expectedScope) {
+  const resolvedClaims = claims as SessionClaims;
+
+  if (expectedScope && String(resolvedClaims.scope || "") !== expectedScope) {
     throw createClientError(403, "Datasource token scope mismatch");
   }
 
-  return claims;
+  return resolvedClaims;
 };
 
-const fetchJson = async ({ url, body, timeoutMs, fetchFn = fetch }) => {
+const fetchJson = async <T extends object>({
+  url,
+  body,
+  timeoutMs,
+  fetchFn = fetch,
+}: FetchJsonParams): Promise<T> => {
   const abortController = new AbortController();
   const timeout = setTimeout(
     () => {
@@ -67,12 +124,14 @@ const fetchJson = async ({ url, body, timeoutMs, fetchFn = fetch }) => {
     clearTimeout(timeout);
   }
 
-  const payload = await response.json().catch(() => ({}));
+  const payload = (await response.json().catch(() => ({}))) as JsonObject;
   if (!response.ok) {
-    throw createClientError(response.status, payload?.error || "Internal API request failed");
+    const errorMessage =
+      typeof payload.error === "string" ? payload.error : "Internal API request failed";
+    throw createClientError(response.status, errorMessage);
   }
 
-  return payload;
+  return payload as T;
 };
 
 export const fetchIntrospection = async ({
@@ -80,8 +139,8 @@ export const fetchIntrospection = async ({
   dashboardId,
   datasourceId,
   fetchFn = fetch,
-}) =>
-  fetchJson({
+}: FetchIntrospectionParams): Promise<DatasourceIntrospectionResponse> =>
+  fetchJson<DatasourceIntrospectionResponse>({
     url: GATEWAY_INTROSPECTION_URL,
     body: {
       sessionToken,
@@ -92,8 +151,12 @@ export const fetchIntrospection = async ({
     fetchFn,
   });
 
-export const fetchRevokedTokens = async ({ sinceCursor, limit, fetchFn = fetch }) =>
-  fetchJson({
+export const fetchRevokedTokens = async ({
+  sinceCursor,
+  limit,
+  fetchFn = fetch,
+}: FetchRevokedTokensParams): Promise<RevokedTokensFeedResponse> =>
+  fetchJson<RevokedTokensFeedResponse>({
     url: GATEWAY_REVOKED_TOKENS_URL,
     body: {
       sinceCursor,

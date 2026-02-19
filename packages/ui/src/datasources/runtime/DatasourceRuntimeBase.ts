@@ -4,7 +4,8 @@
  */
 
 export class DatasourceRuntimeBase {
-  [key: string]: unknown;
+  /** @type {boolean} */
+  enabled = true;
 
   /** @type {Object} */
   currentSettings: Record<string, unknown> = {};
@@ -180,10 +181,12 @@ export class DatasourceRuntimeBase {
   }
 
   start() {
+    this.enabled = true;
     this.setStatus("connecting");
   }
 
   stop() {
+    this.enabled = false;
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
       this.pollInterval = null;

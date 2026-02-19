@@ -18,7 +18,29 @@ import {
   decodeMqttRemainingLength,
 } from "./mqttCodec.js";
 
-const createClientError = (statusCode, message) => {
+type ClientError = Error & { statusCode?: number };
+
+type MqttClientOptions = {
+  brokerUrl: string;
+  username?: string;
+  password?: string;
+  resolvedAddress?: string;
+  resolvedFamily?: 4 | 6 | null;
+  tlsServername?: string;
+  keepaliveSeconds?: number;
+  connectTimeoutMs?: number;
+  reconnectMinMs?: number;
+  reconnectMaxMs?: number;
+  tlsOptions?: tls.ConnectionOptions;
+};
+
+type MqttSubscriptionOptions = {
+  qos?: number;
+};
+
+type MqttSocket = net.Socket | tls.TLSSocket;
+
+const createClientError = (statusCode: number, message: string): ClientError => {
   const error = new Error(message) as Error & { statusCode?: number };
   error.statusCode = statusCode;
   return error;
@@ -47,7 +69,7 @@ export class SimpleMqttClient extends EventEmitter {
 
   tlsOptions;
 
-  socket = null;
+  socket: MqttSocket | null = null;
 
   connected = false;
 
@@ -57,11 +79,11 @@ export class SimpleMqttClient extends EventEmitter {
 
   reconnectAttempt = 0;
 
-  reconnectTimer = null;
+  reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-  connectTimer = null;
+  connectTimer: ReturnType<typeof setTimeout> | null = null;
 
-  pingTimer = null;
+  pingTimer: ReturnType<typeof setInterval> | null = null;
 
   incomingBuffer = Buffer.alloc(0);
 
@@ -79,7 +101,7 @@ export class SimpleMqttClient extends EventEmitter {
     reconnectMinMs = 1000,
     reconnectMaxMs = 30000,
     tlsOptions = {},
-  }) {
+  }: MqttClientOptions) {
     super();
     this.brokerUrl = brokerUrl;
     this.username = String(username || "");
@@ -142,7 +164,7 @@ export class SimpleMqttClient extends EventEmitter {
     }
   }
 
-  connect() {
+  connect(): void {
     if (this.closed) {
       return;
     }
@@ -193,12 +215,12 @@ export class SimpleMqttClient extends EventEmitter {
       this.socket.write(packet);
     });
 
-    this.socket.on("data", (chunk) => {
+    this.socket.on("data", (chunk: Buffer | string) => {
       this.incomingBuffer = Buffer.concat([this.incomingBuffer, Buffer.from(chunk)]);
       this.processIncomingBuffer();
     });
 
-    this.socket.on("error", (error) => {
+    this.socket.on("error", (error: Error) => {
       this.emit("error", error);
     });
 
@@ -213,7 +235,7 @@ export class SimpleMqttClient extends EventEmitter {
     });
   }
 
-  scheduleReconnect() {
+  scheduleReconnect(): void {
     if (this.reconnectTimer || this.closed) {
       return;
     }
@@ -229,14 +251,14 @@ export class SimpleMqttClient extends EventEmitter {
     }, delay);
   }
 
-  sendPacket(packet) {
+  sendPacket(packet: Buffer): void {
     if (!this.socket || this.socket.destroyed) {
       throw createClientError(502, "MQTT socket is not connected");
     }
     this.socket.write(packet);
   }
 
-  processIncomingBuffer() {
+  processIncomingBuffer(): void {
     while (this.incomingBuffer.length >= 2) {
       const remainingLengthDecoded = decodeMqttRemainingLength(this.incomingBuffer, 1);
       if (!remainingLengthDecoded) {
@@ -303,7 +325,11 @@ export class SimpleMqttClient extends EventEmitter {
     }
   }
 
-  subscribe(topic, { qos = 0 } = {}, callback: (error?: unknown) => void = () => {}) {
+  subscribe(
+    topic: string,
+    { qos = 0 }: MqttSubscriptionOptions = {},
+    callback: (error?: unknown) => void = () => {},
+  ): void {
     const normalizedTopic = String(topic || "").trim();
     if (!normalizedTopic) {
       callback(createClientError(400, "MQTT topic is required"));
@@ -332,7 +358,7 @@ export class SimpleMqttClient extends EventEmitter {
     }
   }
 
-  unsubscribe(topic, callback: (error?: unknown) => void = () => {}) {
+  unsubscribe(topic: string, callback: (error?: unknown) => void = () => {}): void {
     const normalizedTopic = String(topic || "").trim();
     if (!normalizedTopic) {
       callback(null);
@@ -358,7 +384,7 @@ export class SimpleMqttClient extends EventEmitter {
     }
   }
 
-  resubscribeAll() {
+  resubscribeAll(): void {
     for (const [topic, qos] of this.subscriptions.entries()) {
       try {
         this.sendPacket(
@@ -374,7 +400,7 @@ export class SimpleMqttClient extends EventEmitter {
     }
   }
 
-  end(force = true) {
+  end(force = true): void {
     this.closed = true;
     this.clearConnectTimer();
     this.stopPingLoop();

@@ -1,46 +1,76 @@
-# TypeScript Migration Conventions
+# TypeScript Standards and Governance
 
-This guide defines the migration rules for Phase 17.
+This document defines the post-migration TypeScript baseline for Freeboard.
 
-## Scope Rules
+## Baseline Requirements
 
-- Migration PRs are for typing/runtime transition only.
-- Do not bundle feature work into migration PRs.
-- Keep PRs package-scoped and boundary-scoped.
+1. TypeScript strictness is the default posture.
+2. Product source lives in TS-first paths:
+   - `packages/ui/src`
+   - `packages/api/src`
+   - `packages/gateway/src`
+3. CI must enforce:
+   - lint,
+   - TS debt checks,
+   - migration-artifact checks,
+   - typecheck.
 
-## Import Rules (Node ESM)
+## Prohibited Patterns (Product Source)
 
-- Use explicit `.js` import specifiers for local module imports in Node ESM code.
-- Keep module boundaries stable while converting files (`.js` and `.ts` can coexist temporarily).
+1. `any` types and `as any` casts.
+2. `as unknown as` double-casts.
+3. `@ts-ignore` and `@ts-nocheck`.
+4. Catch-all index signatures used as escape hatches.
+5. Accessing unknown error properties without explicit narrowing.
 
-## Suppression Rules
+## Allowed Patterns
 
-- Prefer fixing the type issue over suppressing it.
-- `@ts-expect-error` requires a short rationale comment and a follow-up issue/task reference.
-- Do not use broad file-level disable directives as a default strategy.
+1. `unknown` at trust boundaries (network/input/plugin edges), followed by explicit guards.
+2. Narrow, local casts where there is no safe runtime alternative and a typed helper is used.
+3. Shared compatibility helpers preferred over repeated inline casts/hacks.
 
-## Type Safety Rules
+## Error Handling Rules
 
-- Do not use `any` in production source (`packages/*/src`).
-- Prefer `unknown` at trust boundaries, then narrow with explicit guards.
-- Prefer domain interfaces/types over unstructured mutable bags.
-- CI enforces a TS source debt check for unsafe typing patterns.
+1. `catch (error)` variables are treated as `unknown`.
+2. Narrow before property access:
+   - check object shape,
+   - extract known fields safely,
+   - provide fallback messages/codes.
 
-## Progression Gate
+## Script and Tooling Policy
 
-- Do not start migrating the next package until the current package completion criteria are met.
-- If CI/runtime stability regresses, roll back to the last green checkpoint before continuing.
+1. Scripts may remain `.mjs` when runtime portability and direct Node execution are preferred.
+2. All quality-critical scripts must be linted and run in CI.
+3. Migration-only scripts/config fragments must be removed once no longer needed.
+
+## Legacy and Exception Policy
+
+1. Non-TS or legacy artifacts kept intentionally must be documented with:
+   - reason,
+   - owner,
+   - reevaluation trigger.
+2. Track retained artifacts in `docs/manual/typescript-retained-legacy-manifest.md`.
+3. Temporary exceptions require:
+   - explicit note in PR,
+   - follow-up task,
+   - no silent carry-forward.
 
 ## Validation Baseline
 
-Run for migration PRs:
+Run for every TypeScript-sensitive change:
 
 ```bash
 npm run format:check
 npm run lint
+npm run check:ts:debt
+npm run check:ts:migration-artifacts
+npm run typecheck
 npm run test
 npm run build:verify
-npm run typecheck
 ```
 
-Add `npm run test:e2e:smoke` for UI-affecting slices.
+For UI/runtime-affecting changes also run:
+
+```bash
+npm run test:e2e:smoke
+```

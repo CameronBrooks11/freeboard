@@ -31,13 +31,27 @@ const blockedIpv4Ranges = [
   { start: "240.0.0.0", end: "255.255.255.255" },
 ];
 
-const ipToNumber = (ip) =>
+type HostLookup = (hostname: string, options: dns.LookupAllOptions) => Promise<dns.LookupAddress[]>;
+
+export type ResolvedDestination = {
+  address: string;
+  family: 4 | 6;
+};
+
+type OutboundParseParams = {
+  rawTarget: string;
+  allowedProtocols: Set<string>;
+  defaultPortByProtocol: Record<string, number>;
+  protocolErrorMessage: string;
+};
+
+const ipToNumber = (ip: string): number =>
   ip
     .split(".")
     .map((part) => Number(part))
     .reduce((acc, octet) => (acc << 8) + octet, 0) >>> 0;
 
-const isBlockedIpv4 = (ip) => {
+const isBlockedIpv4 = (ip: string): boolean => {
   const ipNumber = ipToNumber(ip);
   return blockedIpv4Ranges.some(({ start, end }) => {
     const startNumber = ipToNumber(start);
@@ -46,7 +60,7 @@ const isBlockedIpv4 = (ip) => {
   });
 };
 
-const isBlockedIpv6 = (ip) => {
+const isBlockedIpv6 = (ip: string): boolean => {
   const normalized = ip.toLowerCase();
   if (normalized === "::1" || normalized === "::") {
     return true;
@@ -72,7 +86,7 @@ const isBlockedIpv6 = (ip) => {
   return false;
 };
 
-const isBlockedIpAddress = (address) => {
+const isBlockedIpAddress = (address: string): boolean => {
   const family = net.isIP(address);
   if (family === 4) {
     return isBlockedIpv4(address);
@@ -83,7 +97,7 @@ const isBlockedIpAddress = (address) => {
   return true;
 };
 
-const isBlockedHostname = (hostname) => {
+const isBlockedHostname = (hostname: string): boolean => {
   const normalized = hostname.toLowerCase();
   if (
     normalized === "localhost" ||
@@ -96,7 +110,7 @@ const isBlockedHostname = (hostname) => {
   return !normalized.includes(".");
 };
 
-const hostMatchesPattern = (hostname, pattern) => {
+const hostMatchesPattern = (hostname: string, pattern: string): boolean => {
   if (pattern === "*") {
     return !IS_PRODUCTION;
   }
@@ -107,21 +121,21 @@ const hostMatchesPattern = (hostname, pattern) => {
   return hostname === pattern;
 };
 
-const isAllowedHost = (hostname) => {
+const isAllowedHost = (hostname: string): boolean => {
   if (ALLOWED_HOST_PATTERNS.length === 0) {
     return !IS_PRODUCTION;
   }
   return ALLOWED_HOST_PATTERNS.some((pattern) => hostMatchesPattern(hostname, pattern));
 };
 
-const hasAllowedPort = (port) => ALLOWED_PORTS.includes(port);
+const hasAllowedPort = (port: number): boolean => ALLOWED_PORTS.includes(port);
 
 export const parseOutboundUrl = ({
   rawTarget,
   allowedProtocols,
   defaultPortByProtocol,
   protocolErrorMessage,
-}) => {
+}: OutboundParseParams): { target: URL; port: number; hostname: string } => {
   if (!rawTarget || typeof rawTarget !== "string") {
     throw createClientError(400, "Target URL is required");
   }
@@ -159,7 +173,7 @@ export const parseOutboundUrl = ({
   return { target, port, hostname };
 };
 
-export const parseTargetUrl = (rawTarget) =>
+export const parseTargetUrl = (rawTarget: string) =>
   parseOutboundUrl({
     rawTarget,
     allowedProtocols: new Set(["http:", "https:"]),
@@ -171,9 +185,9 @@ export const parseTargetUrl = (rawTarget) =>
   });
 
 export const ensureResolvedDestinationIsAllowed = async (
-  hostname,
-  { lookup = dns.promises.lookup } = {},
-) => {
+  hostname: string,
+  { lookup = dns.promises.lookup as HostLookup }: { lookup?: HostLookup } = {},
+): Promise<ResolvedDestination> => {
   const resolved = await lookup(hostname, { all: true, verbatim: true });
   if (!Array.isArray(resolved) || resolved.length === 0) {
     throw createClientError(502, "Unable to resolve target host");
@@ -188,8 +202,9 @@ export const ensureResolvedDestinationIsAllowed = async (
   }
 
   const primaryRecord = resolved[0];
+  const family: 4 | 6 = Number(primaryRecord.family) === 6 ? 6 : 4;
   return {
     address: primaryRecord.address,
-    family: Number(primaryRecord.family) === 6 ? 6 : 4,
+    family,
   };
 };
