@@ -7,8 +7,8 @@
     "dev": "vite --config vite.config.mjs",
     "build": "vite build --config vite.config.mjs",
     "preview": "vite preview --config vite.config.mjs",
-    "lint": "eslint src --ext .js,.ts,.vue",
-    "lint:fix": "eslint src --ext .js,.ts,.vue --fix",
+    "lint": "eslint src --ext .ts,.vue",
+    "lint:fix": "eslint src --ext .ts,.vue --fix",
     "test": "tsx --test --test-concurrency=1",
     "test:ci": "tsx --test --test-concurrency=1"
   },

@@ -35,17 +35,17 @@ const main = async () => {
     .sort();
 
   if (legacyJsSourceFiles.length > 0) {
-    console.error("TS migration artifact check failed. Legacy JS source files remain:\n");
+    console.error("TS source artifact check failed. Legacy JS source files remain:\n");
     for (const filePath of legacyJsSourceFiles) {
       console.error(`- ${filePath}`);
     }
     process.exit(1);
   }
 
-  console.log("TS migration artifact check passed.");
+  console.log("TS source artifact check passed.");
 };
 
 main().catch((error) => {
-  console.error("Failed to run TS migration artifact check:", error);
+  console.error("Failed to run TS source artifact check:", error);
   process.exit(1);
 });

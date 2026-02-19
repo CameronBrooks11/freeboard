@@ -1,6 +1,6 @@
 # TypeScript Standards and Governance
 
-This document defines the post-migration TypeScript baseline for Freeboard.
+This document defines the TypeScript baseline and governance model for Freeboard.
 
 ## Baseline Requirements
 
@@ -12,7 +12,7 @@ This document defines the post-migration TypeScript baseline for Freeboard.
 3. CI must enforce:
    - lint,
    - TS debt checks,
-   - migration-artifact checks,
+   - source-artifact checks,
    - typecheck.
 
 ## Prohibited Patterns (Product Source)
@@ -41,7 +41,7 @@ This document defines the post-migration TypeScript baseline for Freeboard.
 
 1. Scripts may remain `.mjs` when runtime portability and direct Node execution are preferred.
 2. All quality-critical scripts must be linted and run in CI.
-3. Migration-only scripts/config fragments must be removed once no longer needed.
+3. Transitional scripts/config fragments must be removed once no longer needed.
 
 ## Legacy and Exception Policy
 
@@ -49,11 +49,19 @@ This document defines the post-migration TypeScript baseline for Freeboard.
    - reason,
    - owner,
    - reevaluation trigger.
-2. Track retained artifacts in `docs/manual/typescript-retained-legacy-manifest.md`.
-3. Temporary exceptions require:
+2. Temporary exceptions require:
    - explicit note in PR,
    - follow-up task,
    - no silent carry-forward.
+
+## Retained Artifacts
+
+Intentional non-TS artifacts:
+
+1. `scripts/*.mjs` (selected operational scripts)
+   - Reason: direct Node ESM execution and operational portability.
+   - Owner: repository maintainers.
+   - Reevaluate when: script maintenance burden or typing regressions justify TS conversion.
 
 ## Typed Ownership Map
 
@@ -89,7 +97,7 @@ Run for every TypeScript-sensitive change:
 npm run format:check
 npm run lint
 npm run check:ts:debt
-npm run check:ts:migration-artifacts
+npm run check:ts:source-artifacts
 npm run typecheck
 npm run test
 npm run build:verify
@@ -108,5 +116,5 @@ Apply this checklist to TS-sensitive PRs:
 1. No `any`, `as unknown as`, `@ts-ignore`, or `@ts-nocheck` introduced.
 2. New trust-boundary parsing starts at `unknown` and narrows with guards.
 3. New `.d.ts` additions include scope + owner in this document.
-4. `npm run lint`, `npm run check:ts:debt`, `npm run check:ts:migration-artifacts`, and `npm run typecheck` are all green.
+4. `npm run lint`, `npm run check:ts:debt`, `npm run check:ts:source-artifacts`, and `npm run typecheck` are all green.
 5. If runtime behavior changed, tests/docs were updated in the same PR.
