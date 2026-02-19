@@ -165,7 +165,7 @@ export class SparklineWidget extends ReactiveWidget {
     this.applyResponsiveSizing();
   }
 
-  resolveInputs() {
+  resolveInputs(): SparklineInputs {
     const configuredSeriesPaths = parseSeriesPaths(this.currentSettings?.seriesPaths);
     let series = null;
 
@@ -181,7 +181,9 @@ export class SparklineWidget extends ReactiveWidget {
     }
 
     return {
-      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
+      header: String(
+        this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText ?? "",
+      ),
       series: Array.isArray(series) ? series : [series],
     };
   }
@@ -241,7 +243,7 @@ export class SparklineWidget extends ReactiveWidget {
 
     const allValues = this.seriesHistory
       .flatMap((series) => series)
-      .filter((value) => Number.isFinite(value));
+      .filter((value): value is number => Number.isFinite(value));
 
     if (!allValues.length) {
       return { min: 0, max: 1 };
@@ -290,7 +292,8 @@ export class SparklineWidget extends ReactiveWidget {
     this.seriesHistory.forEach((series, seriesIndex) => {
       context.beginPath();
       context.lineWidth = lineWidth;
-      context.strokeStyle = DEFAULT_COLORS[seriesIndex % DEFAULT_COLORS.length];
+      context.strokeStyle =
+        DEFAULT_COLORS[seriesIndex % DEFAULT_COLORS.length] || DEFAULT_COLORS[0] || "#f59e0b";
       context.lineJoin = "round";
       context.lineCap = "round";
 
@@ -302,7 +305,8 @@ export class SparklineWidget extends ReactiveWidget {
         }
 
         const x = longest <= 1 ? 0 : (pointIndex / (longest - 1)) * Math.max(1, width - 1);
-        const y = height - ((point - min) / (max - min)) * Math.max(1, height - 1);
+        const pointValue = point ?? 0;
+        const y = height - ((pointValue - min) / (max - min)) * Math.max(1, height - 1);
 
         if (!started) {
           context.moveTo(x, y);
@@ -340,7 +344,8 @@ export class SparklineWidget extends ReactiveWidget {
 
       const marker = document.createElement("span");
       marker.textContent = "●";
-      marker.style.color = DEFAULT_COLORS[index % DEFAULT_COLORS.length];
+      marker.style.color =
+        DEFAULT_COLORS[index % DEFAULT_COLORS.length] || DEFAULT_COLORS[0] || "#f59e0b";
 
       const label = document.createElement("span");
       label.textContent = labels[index] || `Series ${index + 1}`;
@@ -351,6 +356,6 @@ export class SparklineWidget extends ReactiveWidget {
   }
 
   getPreferredRows() {
-    return this.currentSettings?.includeLegend ? 3 : 2;
+    return this.currentSettings?.includeLegend === true ? 3 : 2;
   }
 }

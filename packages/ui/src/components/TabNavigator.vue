@@ -10,7 +10,7 @@ defineOptions({ name: "TabNavigator" });
 import { onMounted, ref } from "vue";
 
 type TabField = {
-  name?: string;
+  name: string;
   icon?: string;
   label?: string;
 };
@@ -39,10 +39,10 @@ onMounted(() => {
           :class="{ 'tab-navigator__menu__board-toolbar__item--active': index === i }"
         >
           <i class="tab-navigator__menu__board-toolbar__item__icon">
-            <v-icon :name="field.icon" />
+            <v-icon :name="field.icon || 'hi-cog'" />
           </i>
           <label class="tab-navigator__menu__board-toolbar__item__label">
-            {{ $t(field.label) }}
+            {{ $t(field.label || "") }}
           </label>
         </li>
       </ul>
@@ -56,7 +56,7 @@ onMounted(() => {
         :style="{ display: index === i ? 'inherit' : 'none' }"
       >
         <!-- Render named slot for each tab -->
-        <slot :name="field.name" :key="field.name"></slot>
+        <slot :name="field.name || ''" :key="field.name || i"></slot>
       </div>
     </div>
   </div>

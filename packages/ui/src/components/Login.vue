@@ -32,6 +32,13 @@ type FormComponentRef = {
   hasErrors: () => boolean;
   getValue: () => Record<string, unknown>;
 };
+type LoginField = {
+  name: string;
+  label: string;
+  type: string;
+  required?: boolean;
+  disabled?: boolean;
+};
 
 const authStore = useAuthStore();
 const dashboardStore = useDashboardStore();
@@ -40,7 +47,7 @@ const route = useRoute();
 const form = ref<FormComponentRef | null>(null);
 const loginError = ref("");
 const infoMessageKey = ref("");
-const fields = ref([]);
+const fields = ref<LoginField[]>([]);
 const actionMode = ref<LoginActionMode>(MODES.login);
 
 const { mutate: authUser, loading: authLoading } = useMutation(USER_AUTH_MUTATION);
@@ -266,7 +273,7 @@ const onDialogBoxOk = async () => {
         email: value.email,
         password: value.password,
       });
-      const token = result.data?.authUser?.token;
+      const token = result?.data?.authUser?.token;
       if (!token) {
         loginError.value = "Invalid authentication response.";
         return;
@@ -285,7 +292,7 @@ const onDialogBoxOk = async () => {
         email: value.email,
         password: value.password,
       });
-      const token = result.data?.registerUser?.token;
+      const token = result?.data?.registerUser?.token;
       if (!token) {
         loginError.value = "Invalid authentication response.";
         return;
@@ -302,7 +309,7 @@ const onDialogBoxOk = async () => {
         token: value.token,
         password: value.password,
       });
-      const token = tokenResult.data?.acceptInvite?.token;
+      const token = tokenResult?.data?.acceptInvite?.token;
       if (!token) {
         loginError.value = "Invalid authentication response.";
         return;

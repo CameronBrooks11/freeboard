@@ -37,42 +37,45 @@ export class StaticDatasource extends DatasourceRuntimeBase {
     datasource: DatasourceFieldModel,
     dashboard: unknown,
     general: UnknownRecord & { fields: UnknownRecord[]; settings: UnknownRecord },
-  ) => [
-    {
-      ...general,
-      settings: {
-        ...general.settings,
-        refresh: datasource?.settings.refresh,
-      },
-      fields: [
-        ...general.fields,
-        {
-          name: "refresh",
-          label: "form.labelRefresh",
-          type: "number",
-          suffix: "form.suffixRefresh",
-          default: 0,
+  ) => {
+    const settings = datasource?.settings ?? {};
+    return [
+      {
+        ...general,
+        settings: {
+          ...general.settings,
+          refresh: settings.refresh,
         },
-      ],
-    },
-    {
-      label: "form.labelStatic",
-      icon: "hi-document",
-      name: "static",
-      settings: {
-        value: datasource?.settings.value,
+        fields: [
+          ...general.fields,
+          {
+            name: "refresh",
+            label: "form.labelRefresh",
+            type: "number",
+            suffix: "form.suffixRefresh",
+            default: 0,
+          },
+        ],
       },
-      fields: [
-        {
-          name: "value",
-          label: "form.labelStaticValue",
-          type: "code",
-          language: "json",
-          required: true,
+      {
+        label: "form.labelStatic",
+        icon: "hi-document",
+        name: "static",
+        settings: {
+          value: settings.value,
         },
-      ],
-    },
-  ];
+        fields: [
+          {
+            name: "value",
+            label: "form.labelStaticValue",
+            type: "code",
+            language: "json",
+            required: true,
+          },
+        ],
+      },
+    ];
+  };
 
   static newInstance(
     settings: UnknownRecord,

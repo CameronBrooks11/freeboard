@@ -31,6 +31,7 @@ export class MQTTDatasource extends DatasourceRuntimeBase {
     general: UnknownRecord & { fields: UnknownRecord[]; settings: UnknownRecord },
     runtimeContext: Record<string, unknown> = {},
   ): UnknownRecord[] => {
+    const settings = datasource?.settings ?? {};
     const brokerProfiles = Array.isArray(runtimeContext.brokerProfiles)
       ? runtimeContext.brokerProfiles
       : [];
@@ -40,7 +41,7 @@ export class MQTTDatasource extends DatasourceRuntimeBase {
         ...general,
         settings: {
           ...general.settings,
-          staleAfterSeconds: datasource?.settings.staleAfterSeconds,
+          staleAfterSeconds: settings.staleAfterSeconds,
         },
         fields: [
           ...general.fields,
@@ -58,11 +59,11 @@ export class MQTTDatasource extends DatasourceRuntimeBase {
         icon: "hi-chip",
         name: "mqtt",
         settings: {
-          brokerProfileId: datasource?.settings?.brokerProfileId,
-          topic: datasource?.settings?.topic,
-          qos: datasource?.settings?.qos,
-          parser: normalizeParser(datasource?.settings?.parser),
-          keepaliveSeconds: datasource?.settings?.keepaliveSeconds,
+          brokerProfileId: settings.brokerProfileId,
+          topic: settings.topic,
+          qos: settings.qos,
+          parser: normalizeParser(settings.parser),
+          keepaliveSeconds: settings.keepaliveSeconds,
         },
         fields: [
           {
@@ -237,10 +238,10 @@ export class MQTTDatasource extends DatasourceRuntimeBase {
           },
           onStatus: (message) => {
             this.emitStatus({
-              status: message.status,
+              status: String(message.status || "connected"),
               errorCode: message.errorCode || null,
               error: message.message || null,
-              lastMessageAt: message.timestamp || null,
+              ...(message.timestamp ? { lastMessageAt: message.timestamp } : {}),
             });
           },
           onError: (message) => {

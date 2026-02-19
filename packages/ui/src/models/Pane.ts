@@ -74,8 +74,12 @@ export class Pane {
   moveWidgetUp(widget: Widget): void {
     if (this.widgetCanMoveUp(widget)) {
       const i = this.widgets.indexOf(widget);
-      const array = this.widgets;
-      this.widgets.splice(i - 1, 2, array[i], array[i - 1]);
+      const current = this.widgets[i];
+      const previous = this.widgets[i - 1];
+      if (!current || !previous) {
+        return;
+      }
+      this.widgets.splice(i - 1, 2, current, previous);
     }
   }
 
@@ -87,8 +91,12 @@ export class Pane {
   moveWidgetDown(widget: Widget): void {
     if (this.widgetCanMoveDown(widget)) {
       const i = this.widgets.indexOf(widget);
-      const array = this.widgets;
-      this.widgets.splice(i, 2, array[i + 1], array[i]);
+      const current = this.widgets[i];
+      const next = this.widgets[i + 1];
+      if (!current || !next) {
+        return;
+      }
+      this.widgets.splice(i, 2, next, current);
     }
   }
 
@@ -115,7 +123,7 @@ export class Pane {
     layout?: unknown;
     widgets?: Array<Record<string, unknown>>;
   }): void {
-    this.title = object.title;
+    this.title = object.title ?? null;
     this.layout = cloneMutableObject(object.layout, {});
     this.widgets = [];
 

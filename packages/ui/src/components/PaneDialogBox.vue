@@ -37,6 +37,8 @@ const { header, onClose, onOk, settings } = defineProps({
   onOk: Function as PropType<(payload: PaneDialogSubmitPayload) => void>,
   settings: Object as PropType<Record<string, unknown>>,
 });
+const paneDialogHeader = header || "";
+const paneDialogSettings = settings || {};
 
 // Initialize form fields on mount
 onMounted(() => {
@@ -61,14 +63,14 @@ const onDialogBoxOk = () => {
   if (form.value?.hasErrors?.()) {
     return;
   }
-  onOk({ settings: form.value?.getValue?.() || {} });
+  onOk?.({ settings: form.value?.getValue?.() || {} });
   dialog.value?.closeModal?.();
 };
 </script>
 
 <template>
   <DialogBox
-    :header="header"
+    :header="paneDialogHeader"
     ref="dialog"
     :ok="$t('dialogBox.buttonOk')"
     :cancel="$t('dialogBox.buttonCancel')"
@@ -76,6 +78,6 @@ const onDialogBoxOk = () => {
     @ok="() => onDialogBoxOk()"
   >
     <!-- Form for editing pane title -->
-    <Form ref="form" :settings="settings" :fields="fields" />
+    <Form ref="form" :settings="paneDialogSettings" :fields="fields" />
   </DialogBox>
 </template>

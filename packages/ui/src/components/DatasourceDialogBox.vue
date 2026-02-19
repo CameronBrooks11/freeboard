@@ -60,6 +60,7 @@ const { header, onClose, onOk, datasource } = defineProps({
   onOk: Function as PropType<(payload: DatasourceDialogSubmitPayload) => void>,
   datasource: Object as PropType<DatasourceLike>,
 });
+const datasourceDialogHeader = header || "";
 
 // Reference to the DialogBox component
 const dialog = ref<{ closeModal?: () => void } | null>(null);
@@ -222,7 +223,7 @@ const onDialogBoxOk = () => {
       }
     });
   });
-  onOk({ ...result, settings: s, type: typeRef.value });
+  onOk?.({ ...result, settings: s, type: typeRef.value });
   dialog.value?.closeModal?.();
 };
 </script>
@@ -230,7 +231,7 @@ const onDialogBoxOk = () => {
 <template>
   <DialogBox
     class="datasource-dialog-box"
-    :header="header"
+    :header="datasourceDialogHeader"
     :ok="$t('dialogBox.buttonOk')"
     :cancel="$t('dialogBox.buttonCancel')"
     ref="dialog"

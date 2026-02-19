@@ -154,7 +154,7 @@ const saveVisibility = async () => {
       id: dashboard.value._id,
       visibility: visibilityToEnum(visibilityDraft.value),
     });
-    applyDashboardMutationPayload(result.data?.setDashboardVisibility);
+    applyDashboardMutationPayload(result?.data?.setDashboardVisibility);
     statusMessage.value = "Visibility updated.";
   } catch (error) {
     setGraphQLError(error, "Could not update visibility.");
@@ -169,7 +169,7 @@ const rotateLink = async () => {
 
   try {
     const result = await rotateShareToken({ id: dashboard.value._id });
-    applyDashboardMutationPayload(result.data?.rotateDashboardShareToken);
+    applyDashboardMutationPayload(result?.data?.rotateDashboardShareToken);
     statusMessage.value = "Share link rotated.";
   } catch (error) {
     setGraphQLError(error, "Could not rotate share link.");
@@ -253,7 +253,7 @@ const addCollaborator = async () => {
       email: collaboratorEmail.value,
       accessLevel: accessLevelToEnum(collaboratorAccessLevel.value),
     });
-    applyDashboardMutationPayload(result.data?.upsertDashboardAccess);
+    applyDashboardMutationPayload(result?.data?.upsertDashboardAccess);
     collaboratorEmail.value = "";
     collaboratorAccessLevel.value = "viewer";
     await refetchCollaborators();
@@ -279,7 +279,7 @@ const removeCollaborator = async (userId: string) => {
       id: dashboard.value._id,
       userId,
     });
-    applyDashboardMutationPayload(result.data?.revokeDashboardAccess);
+    applyDashboardMutationPayload(result?.data?.revokeDashboardAccess);
     await refetchCollaborators();
     statusMessage.value = "Collaborator removed.";
   } catch (error) {
@@ -310,7 +310,7 @@ const transferOwnership = async () => {
       id: dashboard.value._id,
       newOwnerUserId: transferTargetUserId.value,
     });
-    applyDashboardMutationPayload(result.data?.transferDashboardOwnership);
+    applyDashboardMutationPayload(result?.data?.transferDashboardOwnership);
     transferTargetUserId.value = "";
     await refetchCollaborators();
     statusMessage.value = "Ownership transferred.";

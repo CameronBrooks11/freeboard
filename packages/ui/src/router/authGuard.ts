@@ -71,7 +71,13 @@ export const resolveNavigationGuard = ({
   isLoggedIn,
   isAdmin,
 }: {
-  to: { name?: string | symbol | null; meta?: { requiresAdmin?: boolean } } | null | undefined;
+  to:
+    | {
+        name: string | symbol | null | undefined;
+        meta: { requiresAdmin?: boolean } | undefined;
+      }
+    | null
+    | undefined;
   isLoggedIn: boolean;
   isAdmin: boolean;
 }) =>

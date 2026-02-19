@@ -114,15 +114,15 @@ type RuntimeMetric = {
 };
 type AuditEvent = {
   _id: string | number;
-  action?: string;
-  actorUserId?: string;
-  createdAt?: string;
-  actorType?: string;
-  actorId?: string;
-  eventType?: string;
-  targetType?: string;
-  targetId?: string;
-  metadata?: Record<string, unknown>;
+  action: string;
+  actorUserId: string;
+  createdAt: string;
+  actorType: string;
+  actorId: string;
+  eventType: string;
+  targetType: string;
+  targetId: string;
+  metadata: Record<string, unknown>;
 };
 
 export const useAdminConsoleController = () => {
@@ -318,29 +318,44 @@ export const useAdminConsoleController = () => {
           typeof event._id === "string" || typeof event._id === "number"
             ? event._id
             : `event-${index}`,
-        action: typeof event.action === "string" ? event.action : undefined,
-        actorUserId: typeof event.actorUserId === "string" ? event.actorUserId : undefined,
-        createdAt: typeof event.createdAt === "string" ? event.createdAt : undefined,
-        actorType: typeof event.actorType === "string" ? event.actorType : undefined,
-        actorId: typeof event.actorId === "string" ? event.actorId : undefined,
-        eventType: typeof event.eventType === "string" ? event.eventType : undefined,
-        targetType: typeof event.targetType === "string" ? event.targetType : undefined,
-        targetId: typeof event.targetId === "string" ? event.targetId : undefined,
+        action: typeof event.action === "string" ? event.action : "",
+        actorUserId: typeof event.actorUserId === "string" ? event.actorUserId : "",
+        createdAt: typeof event.createdAt === "string" ? event.createdAt : "",
+        actorType: typeof event.actorType === "string" ? event.actorType : "",
+        actorId: typeof event.actorId === "string" ? event.actorId : "",
+        eventType: typeof event.eventType === "string" ? event.eventType : "",
+        targetType: typeof event.targetType === "string" ? event.targetType : "",
+        targetId: typeof event.targetId === "string" ? event.targetId : "",
         metadata:
           event.metadata && typeof event.metadata === "object"
             ? (event.metadata as Record<string, unknown>)
-            : undefined,
+            : {},
       }),
     ),
   );
-  const issuedResetEntries = computed(() =>
+  const issuedResetEntries = computed<
+    Array<{
+      email: string;
+      payload: PasswordResetPayload;
+      userId: string;
+    }>
+  >(() =>
     users.value
       .filter((user) => Boolean(issuedResetByUser.value[user._id]))
       .map((user) => ({
-        email: user.email,
+        email: String(user.email || ""),
         payload: issuedResetByUser.value[user._id],
         userId: user._id,
-      })),
+      }))
+      .filter(
+        (
+          entry,
+        ): entry is {
+          email: string;
+          payload: PasswordResetPayload;
+          userId: string;
+        } => Boolean(entry.payload),
+      ),
   );
   const isBusy = computed(
     () =>
@@ -496,7 +511,7 @@ export const useAdminConsoleController = () => {
         dashboardPublicListingEnabled: Boolean(policyDraft.value.dashboardPublicListingEnabled),
         executionMode: executionModeToEnum(policyDraft.value.executionMode),
       });
-      const updatedPolicy = result.data?.setAuthPolicy;
+      const updatedPolicy = result?.data?.setAuthPolicy;
       if (updatedPolicy) {
         policyDraft.value = toPolicyDraft(updatedPolicy);
         const executionModeChanged = authStore.setPublicAuthPolicy(updatedPolicy);
@@ -712,7 +727,7 @@ export const useAdminConsoleController = () => {
         role: roleToEnum(createInviteInput.value.role),
         expiresInHours: Number(createInviteInput.value.expiresInHours) || 72,
       });
-      const payload = result.data?.adminCreateInvite as Invite | null | undefined;
+      const payload = result?.data?.adminCreateInvite as Invite | null | undefined;
       issuedInvite.value = payload
         ? {
             ...payload,
@@ -749,7 +764,7 @@ export const useAdminConsoleController = () => {
         id: user._id,
         expiresInHours: 24,
       });
-      const payload = result.data?.adminIssuePasswordReset as
+      const payload = result?.data?.adminIssuePasswordReset as
         | { token?: string; expiresAt?: string }
         | null
         | undefined;

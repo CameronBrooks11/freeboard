@@ -93,7 +93,7 @@ export const normalizeBarChartRows = (rows: unknown, settings: Record<string, un
 
   let seriesKeys = [...explicitSeriesFields];
   if (!seriesKeys.length) {
-    const firstRow = normalizedRows[0];
+    const firstRow = normalizedRows[0] || {};
     if (toFiniteNumber(firstRow[valueField]) !== null) {
       seriesKeys = [valueField];
     } else {
@@ -496,7 +496,9 @@ export class BarChartWidget extends ReactiveWidget {
           const barX = categoryStartX + seriesIndex * (barThickness + innerGap);
           const barY = baselineY - barHeight;
 
-          context.fillStyle = colors[seriesIndex % colors.length];
+          context.fillStyle =
+            colors[seriesIndex % colors.length] ||
+            DEFAULT_BAR_COLORS[seriesIndex % DEFAULT_BAR_COLORS.length]!;
           context.fillRect(barX, barY, barThickness, barHeight);
 
           if (allowValueLabels) {
@@ -522,7 +524,9 @@ export class BarChartWidget extends ReactiveWidget {
           const barX = baselineX;
           const barY = categoryStartY + seriesIndex * (barThickness + innerGap);
 
-          context.fillStyle = colors[seriesIndex % colors.length];
+          context.fillStyle =
+            colors[seriesIndex % colors.length] ||
+            DEFAULT_BAR_COLORS[seriesIndex % DEFAULT_BAR_COLORS.length]!;
           context.fillRect(barX, barY, barWidth, barThickness);
 
           if (allowValueLabels) {
@@ -556,7 +560,8 @@ export class BarChartWidget extends ReactiveWidget {
       item.style.gap = "4px";
       const marker = document.createElement("span");
       marker.textContent = "■";
-      marker.style.color = colors[index % colors.length];
+      marker.style.color =
+        colors[index % colors.length] || DEFAULT_BAR_COLORS[index % DEFAULT_BAR_COLORS.length]!;
 
       const label = document.createElement("span");
       label.textContent = String(seriesKey);

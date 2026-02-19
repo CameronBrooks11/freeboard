@@ -115,7 +115,10 @@ if (__FREEBOARD_STATIC__) {
     const authStore = useAuthStore();
 
     const redirect = resolveNavigationGuard({
-      to,
+      to: {
+        name: to?.name,
+        meta: (to?.meta as { requiresAdmin?: boolean } | undefined) || undefined,
+      },
       isLoggedIn: authStore.isLoggedIn(),
       isAdmin: authStore.isAdmin(),
     });

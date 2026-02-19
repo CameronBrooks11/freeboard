@@ -271,6 +271,9 @@ export const useDashboardStore = defineStore("dashboard", {
 
           if (files && files.length > 0) {
             const file = files[0];
+            if (!file) {
+              return;
+            }
             const reader = new FileReader();
 
             reader.addEventListener("load", (fileReaderEvent: ProgressEvent<FileReader>) => {

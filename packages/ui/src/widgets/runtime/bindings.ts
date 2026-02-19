@@ -84,7 +84,8 @@ export const resolveBinding = (bindingPath: unknown, snapshot: DatasourceSnapsho
     rest = segments.slice(2);
   }
 
-  let sourceId = sourceRef;
+  let sourceId: string | number | undefined =
+    typeof sourceRef === "string" || typeof sourceRef === "number" ? sourceRef : undefined;
   if (
     typeof sourceRef === "string" &&
     snapshot.datasourceTitles &&
@@ -94,11 +95,19 @@ export const resolveBinding = (bindingPath: unknown, snapshot: DatasourceSnapsho
   }
 
   let current: unknown;
-  if (snapshot.datasources && sourceId in snapshot.datasources) {
+  if (
+    snapshot.datasources &&
+    (typeof sourceId === "string" || typeof sourceId === "number") &&
+    sourceId in snapshot.datasources
+  ) {
     current = snapshot.datasources[sourceId];
   } else {
     // Legacy fallback for dashboards still using title-root bindings.
-    current = snapshot[sourceRef];
+    if (typeof sourceRef === "string" || typeof sourceRef === "number") {
+      current = snapshot[String(sourceRef)];
+    } else {
+      current = undefined;
+    }
   }
 
   for (const segment of rest) {

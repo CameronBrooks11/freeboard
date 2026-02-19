@@ -8,7 +8,7 @@ test("resolveFieldModelValue preserves explicit false model value", () => {
   const value = resolveFieldModelValue(
     {
       name: "enabled",
-      model: { value: false },
+      model: false,
       default: true,
     },
     { enabled: true },

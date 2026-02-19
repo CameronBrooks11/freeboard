@@ -16,25 +16,28 @@ export class ClockDatasource extends DatasourceRuntimeBase {
     datasource: DatasourceFieldModel,
     dashboard: unknown,
     general: UnknownRecord & { fields: UnknownRecord[]; settings: UnknownRecord },
-  ) => [
-    {
-      ...general,
-      settings: {
-        ...general.settings,
-        refresh: datasource?.settings.refresh,
-      },
-      fields: [
-        ...general.fields,
-        {
-          name: "refresh",
-          label: "form.labelRefresh",
-          type: "number",
-          suffix: "form.suffixRefresh",
-          default: 1,
+  ) => {
+    const settings = datasource?.settings ?? {};
+    return [
+      {
+        ...general,
+        settings: {
+          ...general.settings,
+          refresh: settings.refresh,
         },
-      ],
-    },
-  ];
+        fields: [
+          ...general.fields,
+          {
+            name: "refresh",
+            label: "form.labelRefresh",
+            type: "number",
+            suffix: "form.suffixRefresh",
+            default: 1,
+          },
+        ],
+      },
+    ];
+  };
 
   static newInstance(
     settings: UnknownRecord,

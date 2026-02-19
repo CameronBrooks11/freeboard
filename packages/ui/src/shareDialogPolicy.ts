@@ -125,7 +125,7 @@ export const applyShareMutationPayloadToDashboard = ({
   if (payload.shareTokenVersion !== undefined) {
     dashboard.shareTokenVersion = Number.isFinite(Number(payload.shareTokenVersion))
       ? Math.max(0, Math.floor(Number(payload.shareTokenVersion)))
-      : dashboard.shareTokenVersion;
+      : (dashboard.shareTokenVersion ?? null);
   }
 
   if (payload.canEdit !== undefined) {

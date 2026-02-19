@@ -168,7 +168,7 @@ const onDialogBoxOk = () => {
       }
     });
   });
-  onOk({ ...result, settings: s });
+  onOk?.({ ...result, settings: s });
   dialog.value?.closeModal?.();
 };
 </script>

@@ -223,9 +223,13 @@ export class StatusListWidget extends ReactiveWidget {
     this.listElement.style.gap = compactMode ? "3px" : "5px";
 
     inputs.items.forEach((item) => {
-      const color =
-        inputs.colorMap[item.status] || inputs.colorMap.unknown || DEFAULT_STATUS_COLORS.unknown;
-      const icon = DEFAULT_STATUS_ICONS[item.status] || DEFAULT_STATUS_ICONS.unknown;
+      const color = String(
+        inputs.colorMap[item.status] ||
+          inputs.colorMap.unknown ||
+          DEFAULT_STATUS_COLORS.unknown ||
+          "#64748b",
+      );
+      const icon = DEFAULT_STATUS_ICONS[item.status] || DEFAULT_STATUS_ICONS.unknown || "•";
 
       const row = document.createElement("li");
       row.setAttribute("role", "listitem");
@@ -240,7 +244,7 @@ export class StatusListWidget extends ReactiveWidget {
 
       if (inputs.showIcons) {
         const iconElement = document.createElement("span");
-        iconElement.textContent = icon;
+        iconElement.textContent = String(icon || "•");
         iconElement.style.color = color;
         iconElement.style.fontSize = compactMode ? "11px" : "12px";
         iconElement.setAttribute("aria-hidden", "true");

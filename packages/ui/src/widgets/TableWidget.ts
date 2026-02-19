@@ -196,6 +196,10 @@ const compareTableValues = (
     return left.value.localeCompare(right.value, undefined, { numeric: true }) * sign;
   }
 
+  if (left.value === null || right.value === null) {
+    return left.value === right.value ? 0 : left.value === null ? 1 * sign : -1 * sign;
+  }
+
   return left.value < right.value ? -1 * sign : 1 * sign;
 };
 

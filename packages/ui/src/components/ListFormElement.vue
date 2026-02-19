@@ -58,7 +58,7 @@ const filter = async () => {
 };
 
 // Filtered options to display in dropdown
-const opts = ref([]);
+const opts = ref<Array<ListOption & { prio: number }>>([]);
 
 /**
  * Refresh dropdown options when the user types.

@@ -39,19 +39,20 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
     general: UnknownRecord & { fields: UnknownRecord[]; settings: UnknownRecord },
     runtimeContext: Record<string, unknown> = {},
   ): UnknownRecord[] => {
+    const settings = datasource?.settings ?? {};
     const credentialProfiles = Array.isArray(runtimeContext.credentialProfiles)
       ? runtimeContext.credentialProfiles
       : [];
 
-    const authPlacement = normalizeAuthPlacement(datasource?.settings?.authPlacement);
+    const authPlacement = normalizeAuthPlacement(settings.authPlacement);
 
     return [
       {
         ...general,
         settings: {
           ...general.settings,
-          url: datasource?.settings.url,
-          staleAfterSeconds: datasource?.settings.staleAfterSeconds,
+          url: settings.url,
+          staleAfterSeconds: settings.staleAfterSeconds,
         },
         fields: [
           ...general.fields,
@@ -75,10 +76,10 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
         icon: "hi-wifi",
         name: "websocket",
         settings: {
-          parser: normalizeParser(datasource?.settings?.parser),
-          idleTimeoutMs: datasource?.settings?.idleTimeoutMs,
-          protocols: datasource?.settings?.protocols,
-          headers: datasource?.settings?.headers,
+          parser: normalizeParser(settings.parser),
+          idleTimeoutMs: settings.idleTimeoutMs,
+          protocols: settings.protocols,
+          headers: settings.headers,
         },
         fields: [
           {
@@ -117,9 +118,9 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
         icon: "hi-key",
         name: "credentials",
         settings: {
-          credentialProfileId: datasource?.settings?.credentialProfileId,
+          credentialProfileId: settings.credentialProfileId,
           authPlacement,
-          queryParamName: datasource?.settings?.queryParamName,
+          queryParamName: settings.queryParamName,
         },
         fields: [
           {
@@ -276,10 +277,10 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
           },
           onStatus: (message) => {
             this.emitStatus({
-              status: message.status,
+              status: String(message.status || "connected"),
               errorCode: message.errorCode || null,
               error: message.message || null,
-              lastMessageAt: message.timestamp || null,
+              ...(message.timestamp ? { lastMessageAt: message.timestamp } : {}),
             });
           },
           onError: (message) => {

@@ -280,7 +280,7 @@ export class StreamingManager {
     const leadMs = 60_000;
     const delayMs = Math.max(0, subscription.expiresAtMs - Date.now() - leadMs);
     subscription.tokenExpiryTimer = setTimeout(() => {
-      subscription.callbacks.onTokenExpiring();
+      subscription.callbacks.onTokenExpiring?.();
     }, delayMs);
   }
 
@@ -331,7 +331,7 @@ export class StreamingManager {
       clearTimeout(pending.timeoutId);
       this.pendingAcks.delete(requestId);
 
-      if (Boolean(message.ok)) {
+      if (message.ok) {
         pending.resolve(message);
       } else {
         pending.reject(new Error(String(message.message || "Realtime request rejected")));

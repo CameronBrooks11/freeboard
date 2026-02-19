@@ -50,7 +50,7 @@ const openDatasourceEditDialogBox = (datasource: Datasource) => {
     header: t("datasourcesList.titleEdit"),
     datasource,
     onOk: (newSettings: DatasourceDialogPayload) => {
-      const previousTitle = datasource.title;
+      const previousTitle = datasource.title || "";
       datasource.title = dashboard.value.ensureUniqueDatasourceTitle(
         newSettings.title,
         datasource.id,

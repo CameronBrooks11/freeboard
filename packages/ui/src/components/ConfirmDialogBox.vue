@@ -23,7 +23,7 @@ const { title, onClose, onOk } = defineProps({
  * Handle the OK button: invoke onOk and close the modal.
  */
 const onDialogBoxOk = () => {
-  onOk();
+  onOk?.();
   dialog.value?.closeModal?.();
 };
 </script>

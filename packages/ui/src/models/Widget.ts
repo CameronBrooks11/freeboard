@@ -58,8 +58,8 @@ export class Widget {
   pane: Pane | null = null;
   /** @private {string|null} Current widget type key. */
   _type: string | null = null;
-  /** @private {Object|null} Current widget settings. */
-  _settings: UnknownRecord | null = null;
+  /** @private {Object} Current widget settings. */
+  _settings: UnknownRecord = {};
   /** @type {{changedDatasource?: string|null, snapshot?: Record<string, unknown>, timestamp?: string}|null} */
   lastContext: WidgetRuntimeContext | null = null;
   /** @type {unknown|null} Last widget runtime error. */
@@ -155,7 +155,7 @@ export class Widget {
    *
    * @returns {Object|null} Settings object.
    */
-  get settings() {
+  get settings(): UnknownRecord {
     return this._settings;
   }
 
@@ -269,10 +269,14 @@ export class Widget {
    * @param {{changedDatasource?: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot?: Record<string, unknown>, timestamp?: string}} [context]
    */
   processDatasourceUpdate(datasource: unknown, context: WidgetRuntimeContext = {}): void {
-    this.lastContext = {
-      ...context,
-      snapshot: context.snapshot,
-    };
+    this.lastContext = context.snapshot
+      ? {
+          ...context,
+          snapshot: context.snapshot,
+        }
+      : {
+          ...context,
+        };
 
     if (
       this.enabled &&
@@ -339,7 +343,7 @@ export class Widget {
       return 1;
     }
 
-    const plugin = getWidgetPlugin(this.type);
+    const plugin = getWidgetPlugin(this.type || "");
     return toPositiveInteger(plugin?.preferredRows ?? plugin?.minRows ?? 1);
   }
 }

@@ -19,28 +19,28 @@ export function levenshteinDistance(str1: string, str2: string): number {
 
   // Base cases: transforming empty string to prefix of other string
   for (let i = 0; i <= len1; i++) {
-    matrix[i][0] = i;
+    matrix[i]![0] = i;
   }
 
   for (let j = 0; j <= len2; j++) {
-    matrix[0][j] = j;
+    matrix[0]![j] = j;
   }
 
   // Populate matrix with minimum edit operations
   for (let i = 1; i <= len1; i++) {
     for (let j = 1; j <= len2; j++) {
       if (str1[i - 1] === str2[j - 1]) {
-        matrix[i][j] = matrix[i - 1][j - 1];
+        matrix[i]![j] = matrix[i - 1]![j - 1]!;
       } else {
         // Compute minimum of deletion, insertion, and substitution
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j - 1] + 1,
+        matrix[i]![j] = Math.min(
+          matrix[i - 1]![j]! + 1,
+          matrix[i]![j - 1]! + 1,
+          matrix[i - 1]![j - 1]! + 1,
         );
       }
     }
   }
 
-  return matrix[len1][len2];
+  return matrix[len1]![len2]!;
 }

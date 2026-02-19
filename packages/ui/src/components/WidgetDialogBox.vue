@@ -47,6 +47,7 @@ const { header, onClose, onOk, widget } = defineProps({
   onOk: Function as PropType<(payload: WidgetDialogSubmitPayload) => void>,
   widget: Object as PropType<Record<string, unknown>>,
 });
+const widgetDialogHeader = header || "";
 
 // Reactive reference for selected widget type
 const typeRef = ref<string | null>(widget && typeof widget.type === "string" ? widget.type : null);
@@ -131,7 +132,7 @@ watch(
 const widgetPluginsOptions = computed(() =>
   Object.keys(widgetPluginMap.value).map((key) => ({
     value: key,
-    label: widgetPluginMap.value[key].label || key,
+    label: widgetPluginMap.value[key]?.label || key,
   })),
 );
 
@@ -156,14 +157,14 @@ const onDialogBoxOk = () => {
       }
     });
   });
-  onOk({ ...result, settings: s, type: typeRef.value });
+  onOk?.({ ...result, settings: s, type: typeRef.value });
   dialog.value?.closeModal?.();
 };
 </script>
 
 <template>
   <DialogBox
-    :header="header"
+    :header="widgetDialogHeader"
     ref="dialog"
     :ok="$t('dialogBox.buttonOk')"
     :cancel="$t('dialogBox.buttonCancel')"

@@ -83,7 +83,11 @@ const parseCsv = (csvText: unknown): Array<Record<string, string>> => {
     return [];
   }
 
-  const headers = lines[0].split(",").map((part) => part.trim());
+  const firstLine = lines[0];
+  if (!firstLine) {
+    return [];
+  }
+  const headers = firstLine.split(",").map((part) => part.trim());
   return lines.slice(1).map((line) => {
     const values = line.split(",").map((part) => part.trim());
     const item: Record<string, string> = {};
@@ -120,6 +124,7 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
     general: UnknownRecord & { fields: UnknownRecord[]; settings: UnknownRecord },
     runtimeContext: HTTPRuntimeContext = {},
   ): UnknownRecord[] => {
+    const settings = datasource?.settings ?? {};
     const credentialProfiles = Array.isArray(runtimeContext.credentialProfiles)
       ? runtimeContext.credentialProfiles
       : [];
@@ -164,11 +169,10 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
         ...general,
         settings: {
           ...general.settings,
-          url: datasource?.settings.url,
-          refresh: datasource?.settings.refresh,
-          useGateway:
-            datasource?.settings.useGateway === undefined ? true : datasource?.settings.useGateway,
-          staleAfterSeconds: datasource?.settings.staleAfterSeconds,
+          url: settings.url,
+          refresh: settings.refresh,
+          useGateway: settings.useGateway === undefined ? true : settings.useGateway,
+          staleAfterSeconds: settings.staleAfterSeconds,
         },
         fields: generalFields,
       },
@@ -177,11 +181,11 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
         icon: "hi-briefcase",
         name: "http",
         settings: {
-          method: datasource?.settings.method,
-          parser: datasource?.settings.parser,
-          timeoutMs: datasource?.settings.timeoutMs,
-          headers: datasource?.settings.headers,
-          body: datasource?.settings.body,
+          method: settings.method,
+          parser: settings.parser,
+          timeoutMs: settings.timeoutMs,
+          headers: settings.headers,
+          body: settings.body,
         },
         fields: [
           {
@@ -231,7 +235,7 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
         icon: "hi-key",
         name: "credentials",
         settings: {
-          credentialProfileId: datasource?.settings.credentialProfileId,
+          credentialProfileId: settings.credentialProfileId,
         },
         fields: [
           {
@@ -393,16 +397,17 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const requestBody =
+      method === "GET" || method === "DELETE"
+        ? null
+        : typeof this.currentSettings.body === "string"
+          ? this.currentSettings.body
+          : null;
     const response = await fetch(url, {
       method,
       headers,
-      body:
-        method === "GET" || method === "DELETE"
-          ? undefined
-          : typeof this.currentSettings.body === "string"
-            ? this.currentSettings.body
-            : undefined,
       signal: controller.signal,
+      ...(requestBody !== null ? { body: requestBody } : {}),
     }).finally(() => clearTimeout(timeout));
 
     const text = await response.text();

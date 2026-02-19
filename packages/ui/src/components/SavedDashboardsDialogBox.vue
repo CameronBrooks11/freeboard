@@ -32,7 +32,6 @@ const { result, loading, error } = useQuery(DASHBOARDS_LIST_QUERY);
 
 // UI state to track if a dashboard is being opened
 const picking = ref(false);
-type DashboardListEntry = { _id: string; title?: string; visibility?: string };
 
 const visibilityLabelKey = (visibility: unknown) => {
   const normalized = String(visibility || "").toLowerCase();

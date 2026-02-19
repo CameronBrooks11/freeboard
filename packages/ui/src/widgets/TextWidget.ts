@@ -136,9 +136,9 @@ export class TextWidget extends ReactiveWidget {
 
   private unitElement: HTMLDivElement;
 
-  private animationFrame?: number | ReturnType<typeof setTimeout>;
+  private animationFrame: number | ReturnType<typeof setTimeout> | undefined;
 
-  private currentNumericValue?: number;
+  private currentNumericValue: number | undefined;
 
   constructor(settings: Record<string, unknown>) {
     super(settings);

@@ -1,7 +1,6 @@
-type FieldModel = { value?: unknown };
 type FormField = {
   name?: string;
-  model?: FieldModel;
+  model?: unknown;
   default?: unknown;
 };
 
@@ -21,7 +20,7 @@ export const resolveFieldModelValue = (
   field: FormField,
   settings: Record<string, unknown> = {},
 ): unknown => {
-  const currentModelValue = field?.model?.value;
+  const currentModelValue = field?.model;
   const fieldName = typeof field?.name === "string" ? field.name : "";
   const hasExplicitSetting = fieldName
     ? Object.prototype.hasOwnProperty.call(settings, fieldName)

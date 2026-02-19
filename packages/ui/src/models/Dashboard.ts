@@ -188,7 +188,7 @@ export class Dashboard {
     if (index <= 0) {
       return;
     }
-    this.width = DASHBOARD_WIDTH_PRESETS[index - 1];
+    this.width = DASHBOARD_WIDTH_PRESETS[index - 1] || DASHBOARD_WIDTH_PRESETS[0] || "md";
   }
 
   /**
@@ -199,7 +199,10 @@ export class Dashboard {
     if (index >= DASHBOARD_WIDTH_PRESETS.length - 1) {
       return;
     }
-    this.width = DASHBOARD_WIDTH_PRESETS[index + 1];
+    this.width =
+      DASHBOARD_WIDTH_PRESETS[index + 1] ||
+      DASHBOARD_WIDTH_PRESETS[DASHBOARD_WIDTH_PRESETS.length - 1] ||
+      "md";
   }
 
   /**
@@ -300,7 +303,10 @@ export class Dashboard {
       datasource.id = generateModelId("ds");
     }
 
-    datasource.title = this.ensureUniqueDatasourceTitle(datasource.title, datasource.id);
+    datasource.title = this.ensureUniqueDatasourceTitle(
+      String(datasource.title || ""),
+      datasource.id,
+    );
 
     this.datasources = [...this.datasources, datasource];
   }

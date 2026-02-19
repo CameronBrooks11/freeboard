@@ -136,7 +136,7 @@ const errorLink = onError(({ graphQLErrors }) => {
 const httpLink = new HttpLink({
   uri: `/graphql`,
   fetch: (uri, options = {}) => {
-    const requestOptions: RequestInit = {
+    const requestOptions = {
       ...options,
       headers: getHeaders(),
     };
