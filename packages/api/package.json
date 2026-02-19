@@ -30,5 +30,8 @@
     "nanoid": "^5.1.6",
     "nodemon": "^3.1.7",
     "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6"
   }
 }

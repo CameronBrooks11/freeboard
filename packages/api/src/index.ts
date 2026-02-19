@@ -9,6 +9,7 @@
  */
 
 import { createServer } from "http";
+import type { IncomingMessage, ServerResponse } from "http";
 import { createYoga } from "graphql-yoga";
 import mongoose from "mongoose";
 import { useGraphQLSSE } from "@graphql-yoga/plugin-graphql-sse";
@@ -22,6 +23,7 @@ import Dashboard from "./models/Dashboard.js";
 import {
   resolveGatewayIntrospection,
   validateDatasourceSessionToken,
+  type DatasourceSessionTokenClaims,
 } from "./datasourceGateway.js";
 import { decryptCredentialSecret } from "./credentialEncryption.js";
 import { consumeRateLimit } from "./rateLimit.js";
@@ -54,7 +56,7 @@ const connectToMongo = async () => {
           : undefined;
       console.error(`MongoDB connection attempt ${attempts} failed. Retrying in 2s...`);
       console.error(errorMessage || error);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise<void>((resolve) => setTimeout(resolve, 2000));
     }
   }
 };
@@ -100,7 +102,9 @@ const yoga = createYoga({
 const INTERNAL_GATEWAY_INTROSPECTION_PATH = "/internal/gateway/datasource-introspect";
 const INTERNAL_GATEWAY_REVOKED_TOKENS_PATH = "/internal/gateway/revoked-tokens";
 
-const getClientIp = (req) => {
+type JsonObject = Record<string, unknown>;
+
+const getClientIp = (req: IncomingMessage): string => {
   const forwardedForHeader = req.headers["x-forwarded-for"];
   const forwardedFor =
     typeof forwardedForHeader === "string"
@@ -109,17 +113,18 @@ const getClientIp = (req) => {
   return forwardedFor || req.socket?.remoteAddress || "unknown-ip";
 };
 
-const readJsonBody = async (req, maxBytes = 256 * 1024) => {
-  const chunks = [];
+const readJsonBody = async (req: IncomingMessage, maxBytes = 256 * 1024): Promise<JsonObject> => {
+  const chunks: Buffer[] = [];
   let total = 0;
   for await (const chunk of req) {
-    total += chunk.length;
+    const normalizedChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    total += normalizedChunk.length;
     if (total > maxBytes) {
       const error = new Error("Request body is too large") as Error & { statusCode?: number };
       error.statusCode = 413;
       throw error;
     }
-    chunks.push(chunk);
+    chunks.push(normalizedChunk);
   }
 
   if (chunks.length === 0) {
@@ -140,7 +145,7 @@ const readJsonBody = async (req, maxBytes = 256 * 1024) => {
   }
 };
 
-const sendJson = (res, statusCode, payload) => {
+const sendJson = (res: ServerResponse, statusCode: number, payload: unknown): void => {
   res.statusCode = statusCode;
   res.setHeader("content-type", "application/json; charset=utf-8");
   res.end(JSON.stringify(payload));
@@ -163,7 +168,10 @@ const resolveErrorMessage = (error: unknown, fallback: string) => {
   return typeof message === "string" && message.trim() ? message : fallback;
 };
 
-const handleGatewayIntrospection = async (req, res) => {
+const handleGatewayIntrospection = async (
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> => {
   if (req.method !== "POST") {
     sendJson(res, 405, { error: "Method not allowed" });
     return;
@@ -205,9 +213,9 @@ const handleGatewayIntrospection = async (req, res) => {
       return;
     }
 
-    const tokenClaims = validateDatasourceSessionToken(sessionToken);
-    const dashboardId = String(tokenClaims?.dashboardId || "").trim();
-    const datasourceId = String(tokenClaims?.datasourceId || "").trim();
+    const tokenClaims: DatasourceSessionTokenClaims = validateDatasourceSessionToken(sessionToken);
+    const dashboardId = String(tokenClaims.dashboardId || "").trim();
+    const datasourceId = String(tokenClaims.datasourceId || "").trim();
     if (!dashboardId || !datasourceId) {
       sendJson(res, 400, { error: "Datasource session token is missing claims" });
       return;
@@ -245,7 +253,10 @@ const handleGatewayIntrospection = async (req, res) => {
   }
 };
 
-const handleGatewayRevokedTokens = async (req, res) => {
+const handleGatewayRevokedTokens = async (
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> => {
   if (req.method !== "POST") {
     sendJson(res, 405, { error: "Method not allowed" });
     return;
@@ -308,7 +319,7 @@ const handleGatewayRevokedTokens = async (req, res) => {
  * HTTP server wrapping GraphQL Yoga instance plus internal gateway endpoints.
  * @type {HTTPServer}
  */
-const server = createServer((req, res) => {
+const server = createServer((req: IncomingMessage, res: ServerResponse) => {
   const requestStartedAt = Date.now();
   res.on("finish", () => {
     recordApiHttpRequest({

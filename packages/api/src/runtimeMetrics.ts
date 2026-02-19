@@ -12,7 +12,7 @@ const state = {
     errorCount: 0,
     latencyTotalMs: 0,
     latencyMaxMs: 0,
-    recentLatencyMs: [],
+    recentLatencyMs: [] as number[],
   },
   auth: {
     failureCount: 0,
@@ -26,7 +26,7 @@ const state = {
   },
 };
 
-const percentile = (sortedValues, ratio) => {
+const percentile = (sortedValues: number[], ratio: number): number => {
   if (!sortedValues.length) {
     return 0;
   }
@@ -37,7 +37,13 @@ const percentile = (sortedValues, ratio) => {
   return sortedValues[index];
 };
 
-export const recordApiHttpRequest = ({ statusCode, durationMs }) => {
+export const recordApiHttpRequest = ({
+  statusCode,
+  durationMs,
+}: {
+  statusCode: number;
+  durationMs: number;
+}): void => {
   state.http.requestCount += 1;
   if (Number(statusCode) >= 500) {
     state.http.errorCount += 1;
@@ -54,11 +60,11 @@ export const recordApiHttpRequest = ({ statusCode, durationMs }) => {
   }
 };
 
-export const recordAuthFailureMetric = () => {
+export const recordAuthFailureMetric = (): void => {
   state.auth.failureCount += 1;
 };
 
-export const recordDatasourceMintMetric = ({ ok }) => {
+export const recordDatasourceMintMetric = ({ ok }: { ok: boolean }): void => {
   if (ok) {
     state.datasource.mintSuccessCount += 1;
     return;
@@ -66,7 +72,7 @@ export const recordDatasourceMintMetric = ({ ok }) => {
   state.datasource.mintFailureCount += 1;
 };
 
-export const recordAuditWriteFailureMetric = () => {
+export const recordAuditWriteFailureMetric = (): void => {
   state.audit.writeFailureCount += 1;
 };
 

@@ -4,6 +4,8 @@
  */
 
 import { createGraphQLError } from "graphql-yoga";
+import type { IResolvers } from "@graphql-tools/utils";
+import type { ApiContext } from "../context.js";
 import { recordAuditEvent } from "../audit.js";
 import { config } from "../config.js";
 import { createClientError, mintDatasourceSessionToken } from "../datasourceGateway.js";
@@ -12,7 +14,7 @@ import { consumeRateLimit } from "../rateLimit.js";
 import { ensureThatPrincipalHasServiceScope } from "../auth.js";
 import { recordDatasourceMintMetric } from "../runtimeMetrics.js";
 
-const toComparableId = (value) => {
+const toComparableId = (value: unknown): string | null => {
   if (!value) {
     return null;
   }
@@ -22,17 +24,33 @@ const toComparableId = (value) => {
   return String(value);
 };
 
-const toGraphQLError = (error, fallbackMessage = "Datasource session token request failed") => {
-  if (error?.statusCode) {
-    const code = error.statusCode === 429 ? "TOO_MANY_REQUESTS" : "FORBIDDEN";
-    return createGraphQLError(error.message || fallbackMessage, {
+const toGraphQLError = (
+  error: unknown,
+  fallbackMessage = "Datasource session token request failed",
+) => {
+  const typedError =
+    error && typeof error === "object"
+      ? (error as { statusCode?: number; message?: string })
+      : null;
+  if (typedError?.statusCode) {
+    const code = typedError.statusCode === 429 ? "TOO_MANY_REQUESTS" : "FORBIDDEN";
+    return createGraphQLError(typedError.message || fallbackMessage, {
       extensions: { code },
     });
   }
-  return createGraphQLError(error?.message || fallbackMessage);
+  return createGraphQLError(typedError?.message || fallbackMessage);
 };
 
-const enforceMintRateLimit = async ({ context, dashboardId, shareToken }) => {
+const enforceMintRateLimit = async ({
+  context,
+  dashboardId,
+  shareToken,
+}: {
+  context: ApiContext;
+  dashboardId: unknown;
+  shareToken: unknown;
+}) => {
+  const normalizedDashboardId = toComparableId(dashboardId);
   const clientIp = String(context.clientIp || "unknown-ip");
 
   if (context.user?._id) {
@@ -46,7 +64,7 @@ const enforceMintRateLimit = async ({ context, dashboardId, shareToken }) => {
         actorUserId: userId,
         action: "datasource.session_token.rate_limited",
         targetType: "dashboard",
-        targetId: dashboardId,
+        targetId: normalizedDashboardId,
         metadata: {
           scope: "user",
           retryAfterMs: userBucket.retryAfterMs,
@@ -56,7 +74,7 @@ const enforceMintRateLimit = async ({ context, dashboardId, shareToken }) => {
     }
 
     const dashboardBucket = consumeRateLimit(
-      `datasource-mint:user-dashboard:${userId}:${dashboardId}`,
+      `datasource-mint:user-dashboard:${userId}:${normalizedDashboardId || "unknown-dashboard"}`,
       config.datasourceTokenMintRateLimitUserPerMin,
     );
     if (!dashboardBucket.allowed) {
@@ -64,7 +82,7 @@ const enforceMintRateLimit = async ({ context, dashboardId, shareToken }) => {
         actorUserId: userId,
         action: "datasource.session_token.rate_limited",
         targetType: "dashboard",
-        targetId: dashboardId,
+        targetId: normalizedDashboardId,
         metadata: {
           scope: "user-dashboard",
           retryAfterMs: dashboardBucket.retryAfterMs,
@@ -84,7 +102,7 @@ const enforceMintRateLimit = async ({ context, dashboardId, shareToken }) => {
       actorUserId: null,
       action: "datasource.session_token.rate_limited",
       targetType: "dashboard",
-      targetId: dashboardId,
+      targetId: normalizedDashboardId,
       metadata: {
         scope: "public-ip",
         clientIp,
@@ -94,7 +112,7 @@ const enforceMintRateLimit = async ({ context, dashboardId, shareToken }) => {
     throw createClientError(429, "Too many datasource session token requests");
   }
 
-  const normalizedShareKey = String(shareToken || dashboardId || "public").trim();
+  const normalizedShareKey = String(shareToken || normalizedDashboardId || "public").trim();
   const shareBucket = consumeRateLimit(
     `datasource-mint:public-share:${normalizedShareKey}`,
     config.datasourceTokenMintRateLimitShareTokenPerMin,
@@ -104,7 +122,7 @@ const enforceMintRateLimit = async ({ context, dashboardId, shareToken }) => {
       actorUserId: null,
       action: "datasource.session_token.rate_limited",
       targetType: "dashboard",
-      targetId: dashboardId,
+      targetId: normalizedDashboardId,
       metadata: {
         scope: "public-share",
         shareToken: normalizedShareKey,
@@ -115,7 +133,7 @@ const enforceMintRateLimit = async ({ context, dashboardId, shareToken }) => {
   }
 };
 
-export default {
+const resolvers: IResolvers = {
   Mutation: {
     mintDatasourceSessionToken: async (
       parent,
@@ -153,3 +171,5 @@ export default {
     },
   },
 };
+
+export default resolvers;

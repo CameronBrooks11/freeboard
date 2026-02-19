@@ -4,6 +4,7 @@
  */
 
 import { createGraphQLError } from "graphql-yoga";
+import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatPrincipalHasServiceScope, ensureThatUserIsAdministrator } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
 import { config } from "../config.js";
@@ -31,7 +32,7 @@ const SCOPE_ENUM_MAP = Object.freeze({
   OPS_READ: "ops:read",
 });
 
-const toComparableId = (value) => {
+const toComparableId = (value: unknown): string | null => {
   if (!value) {
     return null;
   }
@@ -41,22 +42,34 @@ const toComparableId = (value) => {
   return String(value);
 };
 
-const toScopeValues = (scopes = []) =>
+const toScopeValues = (scopes: unknown[] = []): string[] =>
   normalizeServiceAccountScopes(
-    Array.isArray(scopes) ? scopes.map((scope) => SCOPE_ENUM_MAP[scope] || scope) : [],
+    Array.isArray(scopes)
+      ? scopes.map((scope) => {
+          const normalized = String(scope || "")
+            .trim()
+            .toUpperCase();
+          return (
+            SCOPE_ENUM_MAP[normalized as keyof typeof SCOPE_ENUM_MAP] ||
+            String(scope || "")
+              .trim()
+              .toLowerCase()
+          );
+        })
+      : [],
   );
 
-const toScopeEnums = (scopes = []) =>
+const toScopeEnums = (scopes: unknown[] = []): string[] =>
   normalizeServiceAccountScopes(scopes).map(
     (scope) =>
       Object.entries(SCOPE_ENUM_MAP).find(([, value]) => value === scope)?.[0] || "OPS_READ",
   );
 
-const toTokenRecordView = (tokenRecord) => ({
+const toTokenRecordView = (tokenRecord: Record<string, unknown>) => ({
   _id: tokenRecord._id,
   serviceAccountId: tokenRecord.serviceAccountId,
   label: tokenRecord.label || null,
-  scopes: toScopeEnums(tokenRecord.scopes),
+  scopes: toScopeEnums(Array.isArray(tokenRecord.scopes) ? tokenRecord.scopes : []),
   tokenPreview: `fsa_${tokenRecord._id}.${String(tokenRecord.tokenPrefix || "").trim()}...`,
   expiresAt: tokenRecord.expiresAt || null,
   revokedAt: tokenRecord.revokedAt || null,
@@ -65,19 +78,25 @@ const toTokenRecordView = (tokenRecord) => ({
   lastUsedAt: tokenRecord.lastUsedAt || null,
 });
 
-const toServiceAccountView = (account, tokenCount = 0) => ({
+const toServiceAccountView = (account: Record<string, unknown>, tokenCount = 0) => ({
   _id: account._id,
   name: account.name,
   description: account.description || "",
   active: account.active !== false,
-  scopes: toScopeEnums(account.scopes),
+  scopes: toScopeEnums(Array.isArray(account.scopes) ? account.scopes : []),
   tokenCount,
   createdAt: account.createdAt || null,
   updatedAt: account.updatedAt || null,
   lastUsedAt: account.lastUsedAt || null,
 });
 
-const ensureServiceAccountInputValid = ({ name, scopes }) => {
+const ensureServiceAccountInputValid = ({
+  name,
+  scopes,
+}: {
+  name?: unknown;
+  scopes?: unknown[];
+}) => {
   const normalizedName = String(name || "").trim();
   if (!normalizedName || normalizedName.length < 3) {
     throw createGraphQLError("Service account name must be at least 3 characters", {
@@ -96,7 +115,7 @@ const ensureServiceAccountInputValid = ({ name, scopes }) => {
   };
 };
 
-const clampAuditLimit = (value) => {
+const clampAuditLimit = (value: unknown): number => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return DEFAULT_AUDIT_LIMIT;
@@ -126,7 +145,7 @@ const fetchGatewayMetrics = async () => {
   }
 };
 
-export default {
+const resolvers: IResolvers = {
   ServiceAccountScope: {
     DATASOURCE_MINT: "DATASOURCE_MINT",
     DATASOURCE_DIAGNOSTICS_READ: "DATASOURCE_DIAGNOSTICS_READ",
@@ -401,3 +420,5 @@ export default {
     },
   },
 };
+
+export default resolvers;

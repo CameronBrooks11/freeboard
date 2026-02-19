@@ -5,6 +5,7 @@
 
 import { URL } from "url";
 import { createGraphQLError } from "graphql-yoga";
+import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatUserHasRole, ensureThatUserIsAdministrator } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
 import BrokerProfile, { BROKER_PROFILE_PROTOCOLS } from "../models/BrokerProfile.js";
@@ -12,7 +13,7 @@ import CredentialProfile from "../models/CredentialProfile.js";
 
 const MQTT_ALLOWED_URL_PROTOCOLS = new Set(["mqtt:", "mqtts:"]);
 
-const normalizeProtocol = (value) => {
+const normalizeProtocol = (value: unknown): string => {
   const normalized = String(value || "mqtt")
     .trim()
     .toLowerCase();
@@ -24,11 +25,11 @@ const normalizeProtocol = (value) => {
   return normalized;
 };
 
-const normalizeName = (value) => String(value || "").trim();
+const normalizeName = (value: unknown): string => String(value || "").trim();
 
-const normalizeDescription = (value) => String(value || "").trim();
+const normalizeDescription = (value: unknown): string => String(value || "").trim();
 
-const normalizeBrokerUrl = (value, protocol) => {
+const normalizeBrokerUrl = (value: unknown, protocol: string): string => {
   const raw = String(value || "").trim();
   if (!raw) {
     throw createGraphQLError("Broker URL is required", {
@@ -60,20 +61,20 @@ const normalizeBrokerUrl = (value, protocol) => {
   return parsed.toString();
 };
 
-const normalizeTls = (value) => {
+const normalizeTls = (value: unknown): Record<string, unknown> => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
-  return value;
+  return value as Record<string, unknown>;
 };
 
-const normalizeTopicAllowlist = (value) => {
+const normalizeTopicAllowlist = (value: unknown): string[] => {
   if (!Array.isArray(value)) {
     return [];
   }
 
   const seen = new Set();
-  const normalized = [];
+  const normalized: string[] = [];
   for (const entry of value) {
     const topic = String(entry || "").trim();
     if (!topic || seen.has(topic)) {
@@ -85,12 +86,14 @@ const normalizeTopicAllowlist = (value) => {
   return normalized;
 };
 
-const normalizeCredentialProfileId = (value) => {
+const normalizeCredentialProfileId = (value: unknown): string | null => {
   const normalized = String(value || "").trim();
   return normalized || null;
 };
 
-const ensureMqttCredentialProfile = async (credentialProfileId) => {
+const ensureMqttCredentialProfile = async (
+  credentialProfileId: string | null,
+): Promise<string | null> => {
   if (!credentialProfileId) {
     return null;
   }
@@ -114,7 +117,7 @@ const ensureMqttCredentialProfile = async (credentialProfileId) => {
   return String(credentialProfile._id);
 };
 
-const toBrokerProfileResponse = (profile) => ({
+const toBrokerProfileResponse = (profile: Record<string, unknown>) => ({
   _id: profile._id,
   name: profile.name,
   description: profile.description || "",
@@ -128,8 +131,12 @@ const toBrokerProfileResponse = (profile) => ({
   updatedAt: profile.updatedAt,
 });
 
-const toDuplicateNameGraphQLError = (error) => {
-  if (Number(error?.code) === 11000 && error?.keyPattern?.name) {
+const toDuplicateNameGraphQLError = (error: unknown) => {
+  const typedError =
+    error && typeof error === "object"
+      ? (error as { code?: unknown; keyPattern?: Record<string, unknown> })
+      : null;
+  if (Number(typedError?.code) === 11000 && typedError?.keyPattern?.name) {
     return createGraphQLError("Broker profile name must be unique", {
       extensions: { code: "BAD_USER_INPUT" },
     });
@@ -137,7 +144,7 @@ const toDuplicateNameGraphQLError = (error) => {
   return null;
 };
 
-export default {
+const resolvers: IResolvers = {
   BrokerProfileProtocol: {
     MQTT: "mqtt",
   },
@@ -304,3 +311,5 @@ export default {
     },
   },
 };
+
+export default resolvers;

@@ -34,12 +34,42 @@ const SUPPORTED_GATEWAY_DATASOURCE_TYPES = new Set([
   ...STREAM_DATASOURCE_TYPES,
 ]);
 
+type UnknownRecord = Record<string, unknown>;
+type DashboardLike = {
+  _id?: unknown;
+  user?: unknown;
+  visibility?: string;
+  shareToken?: string;
+  shareTokenVersion?: number;
+  acl?: Array<{ userId?: unknown }>;
+  datasources?: Array<{
+    id?: unknown;
+    type?: string;
+    settings?: Record<string, unknown>;
+  }>;
+};
+
+type PrincipalLike = {
+  _id?: unknown;
+  role?: string;
+};
+
+export type DatasourceSessionTokenClaims = jwt.JwtPayload & {
+  sub?: string;
+  scope?: string;
+  dashboardId?: string;
+  datasourceId?: string;
+  credentialProfileId?: string | null;
+  intentHash?: string;
+  shareTokenVersion?: number | null;
+};
+
 export const DATASOURCE_SESSION_TTL_SECONDS = Math.max(
   60,
   Math.floor(Number(config.datasourceSessionTtlSeconds) || 300),
 );
 
-const toComparableId = (value) => {
+const toComparableId = (value: unknown): string | null => {
   if (!value) {
     return null;
   }
@@ -49,7 +79,11 @@ const toComparableId = (value) => {
   return String(value);
 };
 
-export const createClientError = (statusCode, message, code = null) => {
+export const createClientError = (
+  statusCode: number,
+  message: string,
+  code: string | null = null,
+) => {
   const error = new Error(message) as Error & { statusCode?: number; code?: string };
   error.statusCode = statusCode;
   if (code) {
@@ -58,13 +92,19 @@ export const createClientError = (statusCode, message, code = null) => {
   return error;
 };
 
-const resolveAclAccess = (dashboard, userId) => {
+const resolveAclAccess = (dashboard: DashboardLike, userId: unknown) => {
   const normalizedUserId = toComparableId(userId);
   const entries = Array.isArray(dashboard?.acl) ? dashboard.acl : [];
   return entries.find((entry) => toComparableId(entry?.userId) === normalizedUserId) || null;
 };
 
-const canUserReadDashboard = ({ dashboard, user }) => {
+const canUserReadDashboard = ({
+  dashboard,
+  user,
+}: {
+  dashboard: DashboardLike;
+  user: PrincipalLike | null;
+}) => {
   const visibility = String(dashboard?.visibility || "private").toLowerCase();
   if (!user) {
     return visibility === "public";
@@ -85,7 +125,7 @@ const canUserReadDashboard = ({ dashboard, user }) => {
   return visibility === "public";
 };
 
-const ensureExternalVisibility = (dashboard) => {
+const ensureExternalVisibility = (dashboard: DashboardLike): string => {
   const visibility = String(dashboard?.visibility || "private").toLowerCase();
   if (!EXTERNAL_VISIBILITIES.has(visibility)) {
     throw createClientError(403, "Dashboard is not externally visible", "DASHBOARD_PRIVATE");
@@ -93,7 +133,13 @@ const ensureExternalVisibility = (dashboard) => {
   return visibility;
 };
 
-const ensurePublicDashboardAllowed = ({ dashboard, shareToken }) => {
+const ensurePublicDashboardAllowed = ({
+  dashboard,
+  shareToken,
+}: {
+  dashboard: DashboardLike;
+  shareToken: string | null;
+}): void => {
   const visibility = ensureExternalVisibility(dashboard);
 
   if (visibility === "link") {
@@ -104,12 +150,12 @@ const ensurePublicDashboardAllowed = ({ dashboard, shareToken }) => {
   }
 };
 
-const getDatasourceType = (datasource) =>
+const getDatasourceType = (datasource: { type?: string } | null | undefined) =>
   String(datasource?.type || "")
     .trim()
     .toLowerCase();
 
-const resolveScopeFromDatasourceType = (datasourceType) =>
+const resolveScopeFromDatasourceType = (datasourceType: string) =>
   HTTP_DATASOURCE_TYPES.has(datasourceType)
     ? "datasource:fetch"
     : STREAM_DATASOURCE_TYPES.has(datasourceType)
@@ -117,8 +163,8 @@ const resolveScopeFromDatasourceType = (datasourceType) =>
       : null;
 
 export const findDashboardDatasource = (
-  dashboard,
-  datasourceId,
+  dashboard: DashboardLike,
+  datasourceId: unknown,
   { allowedTypes = SUPPORTED_GATEWAY_DATASOURCE_TYPES } = {},
 ) => {
   const targetDatasourceId = toComparableId(datasourceId);
@@ -142,7 +188,13 @@ export const findDashboardDatasource = (
   return datasource;
 };
 
-export const buildCanonicalDatasourceIntent = async ({ dashboard, datasourceId }) => {
+export const buildCanonicalDatasourceIntent = async ({
+  dashboard,
+  datasourceId,
+}: {
+  dashboard: DashboardLike;
+  datasourceId: unknown;
+}) => {
   const datasource = findDashboardDatasource(dashboard, datasourceId, {
     allowedTypes: HTTP_DATASOURCE_TYPES,
   });
@@ -183,7 +235,13 @@ export const buildCanonicalDatasourceIntent = async ({ dashboard, datasourceId }
   };
 };
 
-export const buildCanonicalStreamingIntent = async ({ dashboard, datasourceId }) => {
+export const buildCanonicalStreamingIntent = async ({
+  dashboard,
+  datasourceId,
+}: {
+  dashboard: DashboardLike;
+  datasourceId: unknown;
+}) => {
   const datasource = findDashboardDatasource(dashboard, datasourceId, {
     allowedTypes: STREAM_DATASOURCE_TYPES,
   });
@@ -234,7 +292,7 @@ export const buildCanonicalStreamingIntent = async ({ dashboard, datasourceId })
       queryParamName,
       credentialProfileId,
       credentialProfile,
-    };
+    } as CanonicalSseWebsocketIntent;
   }
 
   if (datasourceType === "mqtt") {
@@ -294,7 +352,7 @@ export const buildCanonicalStreamingIntent = async ({ dashboard, datasourceId })
       keepaliveSeconds: normalizeKeepaliveSeconds(settings.keepaliveSeconds, 60),
       credentialProfileId,
       credentialProfile,
-    };
+    } as CanonicalMqttIntent;
   }
 
   throw createClientError(
@@ -359,13 +417,19 @@ const toHashableIntent = (intent: Record<string, unknown> = {}) => {
   };
 };
 
-export const hashDatasourceIntent = (intent) =>
+export const hashDatasourceIntent = (intent: Record<string, unknown>) =>
   crypto
     .createHash("sha256")
     .update(JSON.stringify(toHashableIntent(intent)))
     .digest("hex");
 
-const buildCanonicalIntentForDatasource = async ({ dashboard, datasourceId }) => {
+const buildCanonicalIntentForDatasource = async ({
+  dashboard,
+  datasourceId,
+}: {
+  dashboard: DashboardLike;
+  datasourceId: unknown;
+}) => {
   const datasource = findDashboardDatasource(dashboard, datasourceId);
   const datasourceType = getDatasourceType(datasource);
   if (HTTP_DATASOURCE_TYPES.has(datasourceType)) {
@@ -382,12 +446,47 @@ const buildCanonicalIntentForDatasource = async ({ dashboard, datasourceId }) =>
 };
 
 type CanonicalHttpIntent = Awaited<ReturnType<typeof buildCanonicalDatasourceIntent>>;
+type CanonicalSseWebsocketIntent = {
+  protocol: "sse" | "websocket";
+  datasourceType: string;
+  datasourceId: string | null;
+  dashboardId: string | null;
+  url: string;
+  parser: string;
+  headers: Record<string, string>;
+  idleTimeoutMs: number;
+  protocols: string[];
+  authPlacement: string;
+  queryParamName: string | null;
+  credentialProfileId: string | null;
+  credentialProfile: UnknownRecord | null;
+};
+type CanonicalMqttIntent = {
+  protocol: "mqtt";
+  datasourceType: "mqtt";
+  datasourceId: string | null;
+  dashboardId: string | null;
+  brokerProfileId: string | null;
+  brokerProfile: UnknownRecord;
+  brokerUrl: string;
+  topic: string;
+  qos: number;
+  parser: string;
+  keepaliveSeconds: number;
+  credentialProfileId: string | null;
+  credentialProfile: UnknownRecord | null;
+};
 
 export const mintDatasourceSessionToken = async ({
   dashboard,
   datasourceId,
   user = null,
   shareToken = null,
+}: {
+  dashboard: DashboardLike;
+  datasourceId: unknown;
+  user?: PrincipalLike | null;
+  shareToken?: string | null;
 }) => {
   const userRole = String(user?.role || "").toLowerCase();
   const isPublicFlow = !user;
@@ -449,7 +548,10 @@ export const mintDatasourceSessionToken = async ({
   };
 };
 
-export const validateDatasourceSessionToken = (token, { expectedScope = null } = {}) => {
+export const validateDatasourceSessionToken = (
+  token: string,
+  { expectedScope = null }: { expectedScope?: string | null } = {},
+): DatasourceSessionTokenClaims => {
   let claims;
   try {
     claims = jwt.verify(token, config.jwtGatewaySecret, {
@@ -461,14 +563,22 @@ export const validateDatasourceSessionToken = (token, { expectedScope = null } =
     throw createClientError(401, "Invalid or expired datasource session token", "TOKEN_INVALID");
   }
 
-  if (expectedScope && String(claims?.scope || "") !== expectedScope) {
+  const resolvedClaims = claims as DatasourceSessionTokenClaims;
+
+  if (expectedScope && String(resolvedClaims.scope || "") !== expectedScope) {
     throw createClientError(403, "Datasource token scope mismatch", "TOKEN_SCOPE_MISMATCH");
   }
 
-  return claims;
+  return resolvedClaims;
 };
 
-const ensureTokenScopeMatchesDatasource = ({ tokenClaims, datasourceType }) => {
+const ensureTokenScopeMatchesDatasource = ({
+  tokenClaims,
+  datasourceType,
+}: {
+  tokenClaims: DatasourceSessionTokenClaims;
+  datasourceType: string;
+}) => {
   const expectedScope = resolveScopeFromDatasourceType(datasourceType);
   if (!expectedScope) {
     throw createClientError(
@@ -488,6 +598,11 @@ const enforcePublicCredentialPolicy = ({
   credentialProfile,
   brokerProfile,
   protocol,
+}: {
+  tokenClaims: DatasourceSessionTokenClaims;
+  credentialProfile: UnknownRecord | null;
+  brokerProfile: UnknownRecord | null;
+  protocol: string;
 }) => {
   if (String(tokenClaims?.sub || "") !== "public") {
     return;
@@ -523,9 +638,17 @@ const enforcePublicCredentialPolicy = ({
   }
 };
 
-const resolveStreamingSseWebsocketIntent = ({ canonicalIntent, tokenClaims, decryptSecret }) => {
+const resolveStreamingSseWebsocketIntent = ({
+  canonicalIntent,
+  tokenClaims,
+  decryptSecret,
+}: {
+  canonicalIntent: CanonicalSseWebsocketIntent;
+  tokenClaims: DatasourceSessionTokenClaims;
+  decryptSecret: (value: unknown) => Record<string, unknown>;
+}) => {
   const profile = canonicalIntent.credentialProfile || null;
-  const protocol = canonicalIntent.protocol;
+  const protocol: "sse" | "websocket" = canonicalIntent.protocol;
   enforcePublicCredentialPolicy({
     tokenClaims,
     credentialProfile: profile,
@@ -533,7 +656,7 @@ const resolveStreamingSseWebsocketIntent = ({ canonicalIntent, tokenClaims, decr
     protocol,
   });
 
-  const headers = {
+  const headers: Record<string, string> = {
     ...canonicalIntent.headers,
   };
   let url = canonicalIntent.url;
@@ -574,7 +697,15 @@ const resolveStreamingSseWebsocketIntent = ({ canonicalIntent, tokenClaims, decr
   };
 };
 
-const resolveMqttIntent = ({ canonicalIntent, tokenClaims, decryptSecret }) => {
+const resolveMqttIntent = ({
+  canonicalIntent,
+  tokenClaims,
+  decryptSecret,
+}: {
+  canonicalIntent: CanonicalMqttIntent;
+  tokenClaims: DatasourceSessionTokenClaims;
+  decryptSecret: (value: unknown) => Record<string, unknown>;
+}) => {
   const brokerProfile = canonicalIntent.brokerProfile || null;
   const credentialProfile = canonicalIntent.credentialProfile || null;
 
@@ -611,7 +742,10 @@ const resolveMqttIntent = ({ canonicalIntent, tokenClaims, decryptSecret }) => {
     qos: canonicalIntent.qos,
     parser: canonicalIntent.parser,
     keepaliveSeconds: canonicalIntent.keepaliveSeconds,
-    tls: canonicalIntent.brokerProfile?.tls || {},
+    tls:
+      canonicalIntent.brokerProfile && typeof canonicalIntent.brokerProfile.tls === "object"
+        ? canonicalIntent.brokerProfile.tls
+        : {},
     topicAllowlist: Array.isArray(canonicalIntent.brokerProfile?.topicAllowlist)
       ? canonicalIntent.brokerProfile.topicAllowlist
       : [],
@@ -625,6 +759,11 @@ export const resolveGatewayIntrospection = async ({
   datasourceId,
   tokenClaims,
   decryptSecret,
+}: {
+  dashboard: DashboardLike;
+  datasourceId: unknown;
+  tokenClaims: DatasourceSessionTokenClaims;
+  decryptSecret: (value: unknown) => Record<string, unknown>;
 }) => {
   const datasource = findDashboardDatasource(dashboard, datasourceId);
   const datasourceType = getDatasourceType(datasource);
@@ -704,13 +843,13 @@ export const resolveGatewayIntrospection = async ({
     let streamIntent;
     if (canonicalIntent.protocol === "mqtt") {
       streamIntent = resolveMqttIntent({
-        canonicalIntent,
+        canonicalIntent: canonicalIntent as CanonicalMqttIntent,
         tokenClaims,
         decryptSecret,
       });
     } else {
       streamIntent = resolveStreamingSseWebsocketIntent({
-        canonicalIntent,
+        canonicalIntent: canonicalIntent as CanonicalSseWebsocketIntent,
         tokenClaims,
         decryptSecret,
       });

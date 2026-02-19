@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
 import { nanoid } from "nanoid";
+import type { CallbackWithoutResultAndOptionalError, HydratedDocument, Query } from "mongoose";
 import {
   EMAIL_POLICY_MESSAGE,
   PASSWORD_POLICY_MESSAGE,
@@ -26,6 +27,10 @@ import { USER_ROLES } from "../policy.js";
  */
 
 const Schema = mongoose.Schema;
+type UserHydratedDocument = HydratedDocument<{
+  password: string;
+  isModified(path: string): boolean;
+}>;
 
 /**
  * Ensure ObjectId valueOf returns string representation.
@@ -76,7 +81,7 @@ const UserSchema = new Schema(
       type: String,
       required: true, // Plaintext will be hashed before save
       validate: {
-        validator(value) {
+        validator(this: UserHydratedDocument, value: unknown) {
           const isPasswordModified =
             typeof this?.isModified === "function" ? this.isModified("password") : true;
           if (!isPasswordModified) {
@@ -120,8 +125,15 @@ const UserSchema = new Schema(
   },
 );
 
-const ensureNoDirectPasswordUpdate = function (next) {
-  const update = this.getUpdate() || {};
+const ensureNoDirectPasswordUpdate = function (
+  this: Query<unknown, unknown>,
+  next: CallbackWithoutResultAndOptionalError,
+) {
+  const rawUpdate = this.getUpdate();
+  if (!rawUpdate || Array.isArray(rawUpdate)) {
+    return next();
+  }
+  const update = rawUpdate as { password?: unknown; $set?: { password?: unknown } };
   const directPasswordUpdate = update.password !== undefined || update.$set?.password !== undefined;
 
   if (directPasswordUpdate) {
@@ -142,23 +154,26 @@ UserSchema.pre("updateMany", ensureNoDirectPasswordUpdate);
 /**
  * Pre-save hook to hash the password if it has been modified.
  */
-UserSchema.pre("save", function (next) {
-  if (!this.isModified("password")) {
-    return next();
-  }
-  bcrypt.genSalt((err, salt) => {
-    if (err) {
-      return next(err);
+UserSchema.pre(
+  "save",
+  function (this: UserHydratedDocument, next: CallbackWithoutResultAndOptionalError) {
+    if (!this.isModified("password")) {
+      return next();
     }
-    bcrypt.hash(this.password, salt, (err, hash) => {
+    bcrypt.genSalt((err: Error | undefined, salt: string) => {
       if (err) {
         return next(err);
       }
-      this.password = hash;
-      next();
+      bcrypt.hash(this.password, salt, (err: Error | undefined, hash: string) => {
+        if (err) {
+          return next(err);
+        }
+        this.password = hash;
+        next();
+      });
     });
-  });
-});
+  },
+);
 
 /**
  * Mongoose model for users.

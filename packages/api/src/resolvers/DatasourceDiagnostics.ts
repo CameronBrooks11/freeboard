@@ -4,35 +4,69 @@
  */
 
 import { ensureThatPrincipalHasServiceScope } from "../auth.js";
+import type { IResolvers } from "@graphql-tools/utils";
 import Dashboard from "../models/Dashboard.js";
 import BrokerProfile from "../models/BrokerProfile.js";
 
 const ALLOWED_DATASOURCE_TYPES = new Set(["http", "clock", "static", "sse", "websocket", "mqtt"]);
 const EXTERNAL_VISIBILITIES = new Set(["link", "public"]);
+type DatasourceLike = {
+  type?: unknown;
+  settings?: {
+    brokerProfileId?: unknown;
+    credentialProfileId?: unknown;
+  };
+};
 
-const normalizeType = (value) => {
+const toDatasourceArray = (value: unknown): DatasourceLike[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      return {};
+    }
+    const record = entry as Record<string, unknown>;
+    const settings =
+      record.settings && typeof record.settings === "object" && !Array.isArray(record.settings)
+        ? (record.settings as Record<string, unknown>)
+        : undefined;
+    return {
+      type: record.type,
+      settings: settings
+        ? {
+            brokerProfileId: settings.brokerProfileId,
+            credentialProfileId: settings.credentialProfileId,
+          }
+        : undefined,
+    };
+  });
+};
+
+const normalizeType = (value: unknown): string => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
   return normalized || "unknown";
 };
 
-export default {
+const resolvers: IResolvers = {
   Query: {
     adminDatasourceDiagnostics: async (parent, args, context) => {
       ensureThatPrincipalHasServiceScope(context, ["datasource:diagnostics:read"]);
 
       const dashboards = await Dashboard.find({}).select("_id visibility datasources").lean();
 
-      const brokerProfileIds = new Set();
+      const brokerProfileIds = new Set<string>();
       dashboards.forEach((dashboard) => {
-        const datasources = Array.isArray(dashboard?.datasources) ? dashboard.datasources : [];
+        const datasources = toDatasourceArray(dashboard?.datasources);
         datasources.forEach((datasource) => {
           const type = normalizeType(datasource?.type);
           if (type !== "mqtt") {
             return;
           }
-          const brokerProfileId = String(datasource?.settings?.brokerProfileId || "").trim();
+          const brokerProfileId = String(datasource.settings?.brokerProfileId || "").trim();
           if (brokerProfileId) {
             brokerProfileIds.add(brokerProfileId);
           }
@@ -55,13 +89,13 @@ export default {
       let credentialBoundDatasources = 0;
       let externalDashboardDatasources = 0;
       let invalidDatasources = 0;
-      const typeCounts = new Map();
+      const typeCounts = new Map<string, number>();
 
       dashboards.forEach((dashboard) => {
         const visibility = String(dashboard?.visibility || "private")
           .trim()
           .toLowerCase();
-        const datasources = Array.isArray(dashboard?.datasources) ? dashboard.datasources : [];
+        const datasources = toDatasourceArray(dashboard?.datasources);
 
         datasources.forEach((datasource) => {
           totalDatasources += 1;
@@ -72,14 +106,12 @@ export default {
             invalidDatasources += 1;
           }
 
-          const credentialProfileId = String(
-            datasource?.settings?.credentialProfileId || "",
-          ).trim();
+          const credentialProfileId = String(datasource.settings?.credentialProfileId || "").trim();
           if (["http", "sse", "websocket"].includes(type) && credentialProfileId) {
             credentialBoundDatasources += 1;
           }
           if (type === "mqtt") {
-            const brokerProfileId = String(datasource?.settings?.brokerProfileId || "").trim();
+            const brokerProfileId = String(datasource.settings?.brokerProfileId || "").trim();
             if (brokerProfileId && brokerCredentialMap.get(brokerProfileId)) {
               credentialBoundDatasources += 1;
             }
@@ -109,3 +141,5 @@ export default {
     },
   },
 };
+
+export default resolvers;

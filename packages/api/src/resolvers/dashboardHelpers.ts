@@ -11,6 +11,31 @@ import { getAuthPolicyState } from "../policyStore.js";
 import { normalizeDashboardAccessLevel, normalizeDashboardVisibility } from "../policy.js";
 import { transformDashboard } from "./merge.js";
 import { recordShareTokenRevocationEvent } from "../shareTokenRevocationFeed.js";
+import type { ApiContext } from "../context.js";
+
+type UnknownRecord = Record<string, unknown>;
+type DashboardLike = UnknownRecord & {
+  _id?: unknown;
+  user?: unknown;
+  visibility?: unknown;
+  shareToken?: unknown;
+  shareTokenVersion?: unknown;
+  settings?: UnknownRecord;
+  panes?: unknown;
+  acl?: Array<{
+    userId?: unknown;
+    accessLevel?: unknown;
+    grantedBy?: unknown;
+    grantedAt?: unknown;
+  }>;
+};
+type DashboardPermissions = {
+  canRead: boolean;
+  canEdit: boolean;
+  canManageSharing: boolean;
+  canDelete: boolean;
+  isOwner: boolean;
+};
 
 const DASHBOARD_MUTABLE_FIELDS = new Set([
   "title",
@@ -47,7 +72,7 @@ export type SanitizedDashboardInput = {
 
 export const generateShareToken = () => crypto.randomBytes(24).toString("base64url");
 
-export const toComparableId = (value) => {
+export const toComparableId = (value: unknown): string | null => {
   if (!value) {
     return null;
   }
@@ -57,7 +82,7 @@ export const toComparableId = (value) => {
   return String(value);
 };
 
-export const getDashboardVisibility = (dashboard) => {
+export const getDashboardVisibility = (dashboard: DashboardLike): string => {
   if (typeof dashboard?.visibility === "string") {
     try {
       return normalizeDashboardVisibility(dashboard.visibility);
@@ -68,9 +93,9 @@ export const getDashboardVisibility = (dashboard) => {
   return "private";
 };
 
-const toTrimmedString = (value) => (typeof value === "string" ? value.trim() : "");
+const toTrimmedString = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
 
-const normalizeResourceList = (resources) => {
+const normalizeResourceList = (resources: unknown): string[] => {
   if (!Array.isArray(resources)) {
     return [];
   }
@@ -94,42 +119,51 @@ const normalizeResourceList = (resources) => {
   return normalized;
 };
 
-const hasTrustedDashboardSettings = (settings) => {
+const hasTrustedDashboardSettings = (settings: unknown): boolean => {
   if (!settings || typeof settings !== "object") {
     return false;
   }
+  const settingsRecord = settings as UnknownRecord;
   return Boolean(
-    toTrimmedString(settings.script) ||
-    toTrimmedString(settings.style) ||
-    normalizeResourceList(settings.resources).length > 0,
+    toTrimmedString(settingsRecord.script) ||
+    toTrimmedString(settingsRecord.style) ||
+    normalizeResourceList(settingsRecord.resources).length > 0,
   );
 };
 
-const trustedDashboardSettingsSignature = (settings) =>
-  JSON.stringify({
-    script: toTrimmedString(settings?.script),
-    style: toTrimmedString(settings?.style),
-    resources: normalizeResourceList(settings?.resources),
+const trustedDashboardSettingsSignature = (settings: unknown) => {
+  const settingsRecord =
+    settings && typeof settings === "object" ? (settings as UnknownRecord) : {};
+  return JSON.stringify({
+    script: toTrimmedString(settingsRecord.script),
+    style: toTrimmedString(settingsRecord.style),
+    resources: normalizeResourceList(settingsRecord.resources),
   });
+};
 
-const normalizeWidgetType = (widget) =>
+const normalizeWidgetType = (widget: UnknownRecord | null | undefined): string =>
   String(widget?.typeName || widget?.type || "")
     .trim()
     .toLowerCase();
 
-const trustedWidgetPayloadSignatures = (panes) => {
+const trustedWidgetPayloadSignatures = (panes: unknown): string[] => {
   if (!Array.isArray(panes)) {
     return [];
   }
 
-  const signatures = [];
+  const signatures: string[] = [];
   panes.forEach((pane, paneIndex) => {
-    const widgets = Array.isArray(pane?.widgets) ? pane.widgets : [];
-    widgets.forEach((widget, widgetIndex) => {
-      const widgetType = normalizeWidgetType(widget);
+    const paneRecord = pane && typeof pane === "object" ? (pane as UnknownRecord) : {};
+    const widgets: unknown[] = Array.isArray(paneRecord.widgets) ? paneRecord.widgets : [];
+    widgets.forEach((widget: unknown, widgetIndex: number) => {
+      const widgetRecord =
+        widget && typeof widget === "object" ? (widget as UnknownRecord) : ({} as UnknownRecord);
+      const widgetType = normalizeWidgetType(widgetRecord);
       const widgetSettings =
-        widget?.settings && typeof widget.settings === "object" ? widget.settings : {};
-      const widgetKey = toTrimmedString(widget?.id) || `${paneIndex}:${widgetIndex}`;
+        widgetRecord.settings && typeof widgetRecord.settings === "object"
+          ? (widgetRecord.settings as UnknownRecord)
+          : {};
+      const widgetKey = toTrimmedString(widgetRecord.id) || `${paneIndex}:${widgetIndex}`;
 
       if (widgetType === "html") {
         const mode = toTrimmedString(widgetSettings.mode).toLowerCase();
@@ -155,6 +189,9 @@ const trustedWidgetPayloadSignatures = (panes) => {
 export const ensureDashboardPayloadAllowedByExecutionMode = async ({
   inputDashboard,
   existingDashboard = null,
+}: {
+  inputDashboard: UnknownRecord | null;
+  existingDashboard?: DashboardLike | null;
 }) => {
   if (!inputDashboard || typeof inputDashboard !== "object") {
     return;
@@ -215,12 +252,12 @@ export const sanitizeDashboardInput = (dashboard: Record<string, unknown> = {}) 
   return sanitized;
 };
 
-const createBadInputError = (message) =>
+const createBadInputError = (message: string) =>
   createGraphQLError(message, {
     extensions: { code: "BAD_USER_INPUT" },
   });
 
-export const validateDashboardDatasources = (datasources) => {
+export const validateDashboardDatasources = (datasources: unknown): void => {
   if (datasources === undefined) {
     return;
   }
@@ -391,7 +428,7 @@ export const validateDashboardDatasources = (datasources) => {
   });
 };
 
-const getAclEntry = (dashboard, userId) => {
+const getAclEntry = (dashboard: DashboardLike, userId: unknown) => {
   const normalizedUserId = toComparableId(userId);
   if (!normalizedUserId || !Array.isArray(dashboard?.acl)) {
     return null;
@@ -400,10 +437,10 @@ const getAclEntry = (dashboard, userId) => {
 };
 
 export const resolveDashboardPermissions = (
-  dashboard,
-  context,
+  dashboard: DashboardLike | null | undefined,
+  context: ApiContext,
   { shareTokenMatched = false } = {},
-) => {
+): DashboardPermissions => {
   if (!dashboard) {
     return {
       canRead: false,
@@ -443,13 +480,17 @@ export const resolveDashboardPermissions = (
   };
 };
 
-export const transformDashboardForContext = (dashboard, context, permissions) =>
+export const transformDashboardForContext = (
+  dashboard: DashboardLike,
+  context: ApiContext,
+  permissions: DashboardPermissions,
+) =>
   transformDashboard(dashboard, context.user?._id || null, {
     canEdit: permissions.canEdit,
     canManageSharing: permissions.canManageSharing,
   });
 
-export const getDashboardOrNotFound = async (_id) => {
+export const getDashboardOrNotFound = async (_id: unknown): Promise<DashboardLike> => {
   const dashboard = await Dashboard.findOne({ _id }).lean();
   if (!dashboard) {
     throw createGraphQLError("Dashboard not found");
@@ -457,7 +498,11 @@ export const getDashboardOrNotFound = async (_id) => {
   return dashboard;
 };
 
-export const ensureDashboardReadable = (dashboard, context, options = {}) => {
+export const ensureDashboardReadable = (
+  dashboard: DashboardLike,
+  context: ApiContext,
+  options: { shareTokenMatched?: boolean } = {},
+): DashboardPermissions => {
   const permissions = resolveDashboardPermissions(dashboard, context, options);
   if (!permissions.canRead) {
     throw createGraphQLError("Dashboard not found");
@@ -465,7 +510,10 @@ export const ensureDashboardReadable = (dashboard, context, options = {}) => {
   return permissions;
 };
 
-export const ensureDashboardEditable = (dashboard, context) => {
+export const ensureDashboardEditable = (
+  dashboard: DashboardLike,
+  context: ApiContext,
+): DashboardPermissions => {
   const permissions = resolveDashboardPermissions(dashboard, context);
   if (!permissions.canEdit) {
     throw createGraphQLError("Dashboard not found");
@@ -473,7 +521,10 @@ export const ensureDashboardEditable = (dashboard, context) => {
   return permissions;
 };
 
-export const ensureDashboardShareManageable = (dashboard, context) => {
+export const ensureDashboardShareManageable = (
+  dashboard: DashboardLike,
+  context: ApiContext,
+): DashboardPermissions => {
   const permissions = resolveDashboardPermissions(dashboard, context);
   if (!permissions.canManageSharing) {
     throw createGraphQLError("Dashboard not found");
@@ -481,7 +532,10 @@ export const ensureDashboardShareManageable = (dashboard, context) => {
   return permissions;
 };
 
-export const ensureDashboardOwnershipTransferAllowed = (dashboard, context) => {
+export const ensureDashboardOwnershipTransferAllowed = (
+  dashboard: DashboardLike,
+  context: ApiContext,
+): DashboardPermissions => {
   const permissions = resolveDashboardPermissions(dashboard, context);
   if (!(permissions.isOwner || context.user?.role === "admin")) {
     throw createGraphQLError("Dashboard not found");
@@ -489,7 +543,10 @@ export const ensureDashboardOwnershipTransferAllowed = (dashboard, context) => {
   return permissions;
 };
 
-export const ensureDashboardDeletable = (dashboard, context) => {
+export const ensureDashboardDeletable = (
+  dashboard: DashboardLike,
+  context: ApiContext,
+): DashboardPermissions => {
   const permissions = resolveDashboardPermissions(dashboard, context);
   if (!permissions.canDelete) {
     throw createGraphQLError("Dashboard not found");
@@ -501,6 +558,10 @@ export const ensureVisibilityTransitionAllowed = async ({
   context,
   previousVisibility,
   nextVisibility,
+}: {
+  context: ApiContext;
+  previousVisibility: string;
+  nextVisibility: string;
 }) => {
   if (nextVisibility === previousVisibility) {
     return;
@@ -522,7 +583,10 @@ export const ensureVisibilityTransitionAllowed = async ({
   }
 };
 
-export const resolveCreateVisibility = async (inputDashboard, context) => {
+export const resolveCreateVisibility = async (
+  inputDashboard: SanitizedDashboardInput,
+  context: ApiContext,
+): Promise<string> => {
   const hasVisibility = Object.prototype.hasOwnProperty.call(inputDashboard || {}, "visibility");
   const authPolicy = await getAuthPolicyState();
 
@@ -546,7 +610,14 @@ export const resolveCreateVisibility = async (inputDashboard, context) => {
   return visibility;
 };
 
-export const uniqueAclEntries = (entries = []) => {
+export const uniqueAclEntries = (
+  entries: Array<{
+    userId?: unknown;
+    accessLevel?: unknown;
+    grantedBy?: unknown;
+    grantedAt?: unknown;
+  }> = [],
+) => {
   const byUserId = new Map();
   entries.forEach((entry) => {
     const userId = toComparableId(entry?.userId);
@@ -563,7 +634,7 @@ export const uniqueAclEntries = (entries = []) => {
   return [...byUserId.values()];
 };
 
-export const buildCollaboratorView = async (dashboard) => {
+export const buildCollaboratorView = async (dashboard: DashboardLike) => {
   const ownerUserId = toComparableId(dashboard.user);
   const aclEntries = uniqueAclEntries(dashboard.acl || []);
   const userIds = [ownerUserId, ...aclEntries.map((entry) => toComparableId(entry.userId))].filter(
@@ -600,7 +671,13 @@ export const buildCollaboratorView = async (dashboard) => {
   return collaborators;
 };
 
-export const recordShareTokenRevocation = async ({ dashboardId, shareTokenVersion }) => {
+export const recordShareTokenRevocation = async ({
+  dashboardId,
+  shareTokenVersion,
+}: {
+  dashboardId: unknown;
+  shareTokenVersion: unknown;
+}) => {
   const normalizedDashboardId = toComparableId(dashboardId);
   const normalizedVersion = Math.floor(Number(shareTokenVersion));
   if (!normalizedDashboardId || !Number.isFinite(normalizedVersion)) {

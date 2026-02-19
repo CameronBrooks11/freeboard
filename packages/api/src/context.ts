@@ -4,11 +4,34 @@
  */
 
 import { createPubSub } from "graphql-yoga";
+import type { IncomingMessage } from "http";
 import { validateAuthToken, type AuthTokenClaims } from "./auth.js";
 import User from "./models/User.js";
 import Dashboard from "./models/Dashboard.js";
 import { authenticateServiceAccountToken } from "./serviceAccountAuth.js";
 import { recordAuthFailureMetric } from "./runtimeMetrics.js";
+
+export type ServiceAccountPrincipal = {
+  _id: unknown;
+  name: string;
+  active: boolean;
+  scopes: unknown[];
+  tokenId: unknown;
+};
+
+export type UserPrincipal = AuthTokenClaims & {
+  role: string;
+  admin: boolean;
+  sessionVersion: number;
+};
+
+export type ApiContext = {
+  pubsub: ReturnType<typeof createPubSub>;
+  models: { Dashboard: typeof Dashboard; User: typeof User };
+  clientIp: string | null;
+  user?: UserPrincipal;
+  serviceAccount?: ServiceAccountPrincipal;
+};
 
 /**
  * PubSub engine for subscriptions.
@@ -46,7 +69,11 @@ import { recordAuthFailureMetric } from "./runtimeMetrics.js";
  * @param {IncomingMessage} args.req - HTTP request object.
  * @returns {Promise<Context>}       The context object passed to all resolvers.
  */
-export const setContext = async ({ req }) => {
+export const setContext = async ({
+  req,
+}: {
+  req: IncomingMessage & { ip?: string };
+}): Promise<ApiContext> => {
   const forwardedForHeader = req?.headers?.["x-forwarded-for"];
   const forwardedFor =
     typeof forwardedForHeader === "string"
@@ -54,19 +81,7 @@ export const setContext = async ({ req }) => {
       : null;
   const clientIp = forwardedFor || req?.socket?.remoteAddress || req?.ip || null;
 
-  const context: {
-    pubsub: ReturnType<typeof createPubSub>;
-    models: { Dashboard: typeof Dashboard; User: typeof User };
-    clientIp: string | null;
-    user?: Record<string, unknown>;
-    serviceAccount?: {
-      _id: unknown;
-      name: string;
-      active: boolean;
-      scopes: unknown[];
-      tokenId: unknown;
-    };
-  } = {
+  const context: ApiContext = {
     pubsub: createPubSub(),
     models: {
       Dashboard,

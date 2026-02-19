@@ -4,6 +4,7 @@
  */
 
 import { createGraphQLError } from "graphql-yoga";
+import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatUserHasRole, ensureThatUserIsAdministrator } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
 import {
@@ -11,9 +12,10 @@ import {
   encryptCredentialSecret,
   redactSecretShape,
 } from "../credentialEncryption.js";
+import type { EncryptedSecretPayload } from "../credentialEncryption.js";
 import CredentialProfile, { CREDENTIAL_PROFILE_TYPES } from "../models/CredentialProfile.js";
 
-const normalizeProfileType = (value) => {
+const normalizeProfileType = (value: unknown): string => {
   const normalized = String(value || "none")
     .trim()
     .toLowerCase();
@@ -25,21 +27,29 @@ const normalizeProfileType = (value) => {
   return normalized;
 };
 
-const normalizeMetadata = (value) => {
+const normalizeMetadata = (value: unknown): Record<string, unknown> => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
-  return value;
+  return value as Record<string, unknown>;
 };
 
-const normalizeSecret = (value) => {
+const normalizeSecret = (value: unknown): Record<string, unknown> => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
-  return value;
+  return value as Record<string, unknown>;
 };
 
-const validateProfilePayload = ({ type, metadata, secret }) => {
+const validateProfilePayload = ({
+  type,
+  metadata,
+  secret,
+}: {
+  type: string;
+  metadata: Record<string, unknown>;
+  secret: Record<string, unknown>;
+}) => {
   if (type === "none") {
     return;
   }
@@ -81,10 +91,12 @@ const validateProfilePayload = ({ type, metadata, secret }) => {
   }
 };
 
-const toCredentialProfileResponse = (profile) => {
-  let decryptedSecret = {};
+const toCredentialProfileResponse = (profile: Record<string, unknown>) => {
+  let decryptedSecret: Record<string, unknown> = {};
   try {
-    decryptedSecret = decryptCredentialSecret(profile.secret);
+    decryptedSecret = decryptCredentialSecret(
+      (profile.secret || null) as EncryptedSecretPayload | null,
+    );
   } catch {
     decryptedSecret = {};
   }
@@ -102,7 +114,7 @@ const toCredentialProfileResponse = (profile) => {
   };
 };
 
-export default {
+const resolvers: IResolvers = {
   CredentialProfileType: {
     NONE: "none",
     HEADER: "header",
@@ -242,3 +254,5 @@ export default {
     },
   },
 };
+
+export default resolvers;

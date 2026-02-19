@@ -3,15 +3,8 @@
  * @description GraphQL resolver definitions for user queries and mutations.
  */
 
-/**
- * @typedef {Object} IResolvers
- *   Alias for the resolver map type from @graphql-tools/utils.
- *
- * @typedef {Object} GraphQLResolveInfo
- *   Alias for GraphQLResolveInfo from graphql.
- */
-
 import { createGraphQLError } from "graphql-yoga";
+import type { IResolvers } from "@graphql-tools/utils";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import InviteToken from "../models/InviteToken.js";
@@ -54,7 +47,7 @@ import {
   toSessionVersion,
 } from "./userHelpers.js";
 
-export default /** @type {IResolvers} */ {
+const resolvers: IResolvers = {
   Query: {
     /**
      * Allows administrators to list all registered users.
@@ -537,7 +530,7 @@ export default /** @type {IResolvers} */ {
         actorUserId: context.user._id,
         action: "invite.created",
         targetType: "invite",
-        targetId: payload.invite._id,
+        targetId: String(payload.invite._id || ""),
         metadata: {
           email: payload.invite.email,
           role: payload.invite.role,
@@ -752,3 +745,5 @@ export default /** @type {IResolvers} */ {
     },
   },
 };
+
+export default resolvers;

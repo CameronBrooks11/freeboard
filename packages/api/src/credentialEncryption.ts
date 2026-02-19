@@ -10,8 +10,16 @@ const ALGORITHM = "aes-256-gcm";
 const IV_BYTES = 12;
 const KEY_ID = "v1";
 
-const decodeBase64 = (value) => Buffer.from(String(value || ""), "base64");
-const encodeBase64 = (value) => Buffer.from(value).toString("base64");
+export type EncryptedSecretPayload = {
+  algorithm: string;
+  keyId: string;
+  iv: string;
+  ciphertext: string;
+  authTag: string;
+};
+
+const decodeBase64 = (value: unknown): Buffer => Buffer.from(String(value || ""), "base64");
+const encodeBase64 = (value: Buffer): string => Buffer.from(value).toString("base64");
 
 /**
  * Encrypt credential secret payload for storage.
@@ -19,7 +27,9 @@ const encodeBase64 = (value) => Buffer.from(value).toString("base64");
  * @param {Object} secret
  * @returns {{algorithm: string, keyId: string, iv: string, ciphertext: string, authTag: string}}
  */
-export const encryptCredentialSecret = (secret = {}) => {
+export const encryptCredentialSecret = (
+  secret: Record<string, unknown> = {},
+): EncryptedSecretPayload => {
   const iv = crypto.randomBytes(IV_BYTES);
   const cipher = crypto.createCipheriv(ALGORITHM, config.credentialEncryptionKey, iv);
   const plaintext = Buffer.from(JSON.stringify(secret || {}), "utf8");
@@ -41,7 +51,9 @@ export const encryptCredentialSecret = (secret = {}) => {
  * @param {Object|null|undefined} encrypted
  * @returns {Object}
  */
-export const decryptCredentialSecret = (encrypted) => {
+export const decryptCredentialSecret = (
+  encrypted: EncryptedSecretPayload | null | undefined,
+): Record<string, unknown> => {
   if (!encrypted || typeof encrypted !== "object") {
     return {};
   }
@@ -72,7 +84,9 @@ export const decryptCredentialSecret = (encrypted) => {
  * @param {Object|null|undefined} secret
  * @returns {Object}
  */
-export const redactSecretShape = (secret) => {
+export const redactSecretShape = (
+  secret: Record<string, unknown> | null | undefined,
+): Record<string, string> => {
   if (!secret || typeof secret !== "object") {
     return {};
   }

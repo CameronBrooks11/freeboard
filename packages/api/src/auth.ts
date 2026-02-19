@@ -8,6 +8,7 @@ import User from "./models/User.js";
 import { config } from "./config.js";
 import jwt from "jsonwebtoken";
 import type { StringValue } from "ms";
+import type { ApiContext, UserPrincipal, ServiceAccountPrincipal } from "./context.js";
 
 export type AuthTokenClaims = jwt.JwtPayload & {
   _id: string;
@@ -42,7 +43,7 @@ const ensureJwtPayloadObject = (decoded: string | jwt.JwtPayload): jwt.JwtPayloa
  * @param {number} numberOfCurrentlyUsersRegistered - Current count of registered users.
  * @throws {GraphQLError} When the user limit has been reached.
  */
-export const ensureLimitOfUsersIsNotReached = (numberOfCurrentlyUsersRegistered) => {
+export const ensureLimitOfUsersIsNotReached = (numberOfCurrentlyUsersRegistered: number): void => {
   const usersLimit = config.userLimit;
   if (usersLimit === 0) {
     return;
@@ -61,7 +62,9 @@ export const ensureLimitOfUsersIsNotReached = (numberOfCurrentlyUsersRegistered)
  * @param {Object} context - GraphQL resolver context containing user info.
  * @throws {GraphQLError} When no authenticated user is present.
  */
-export const ensureThatUserIsLogged = (context) => {
+export const ensureThatUserIsLogged: (
+  context: ApiContext,
+) => asserts context is ApiContext & { user: UserPrincipal } = (context) => {
   if (!context.user) {
     throw createGraphQLError("You must be logged in to perform this action", {
       extensions: { code: "UNAUTHENTICATED" },
@@ -75,7 +78,7 @@ export const ensureThatUserIsLogged = (context) => {
  * @param {Object} context - GraphQL resolver context containing user info.
  * @throws {GraphQLError} When the user is not an administrator.
  */
-export const ensureThatUserIsAdministrator = (context) => {
+export const ensureThatUserIsAdministrator = (context: ApiContext): void => {
   ensureThatUserIsLogged(context);
   if (context.user.role !== "admin") {
     throw createGraphQLError("You must be an administrator to perform this action", {
@@ -90,7 +93,7 @@ export const ensureThatUserIsAdministrator = (context) => {
  * @param {Object} context - GraphQL resolver context containing user info.
  * @param {string[]} allowedRoles - Allowed role values.
  */
-export const ensureThatUserHasRole = (context, allowedRoles = []) => {
+export const ensureThatUserHasRole = (context: ApiContext, allowedRoles: string[] = []): void => {
   ensureThatUserIsLogged(context);
   if (!allowedRoles.includes(context.user.role)) {
     throw createGraphQLError("You do not have access to perform this action", {
@@ -105,12 +108,15 @@ export const ensureThatUserHasRole = (context, allowedRoles = []) => {
  * @param {Object} context
  * @param {string[]} requiredScopes
  */
-export const ensureThatPrincipalHasServiceScope = (context, requiredScopes = []) => {
+export const ensureThatPrincipalHasServiceScope = (
+  context: ApiContext,
+  requiredScopes: string[] = [],
+): void => {
   if (context.user?.role === "admin") {
     return;
   }
 
-  const principal = context.serviceAccount;
+  const principal = context.serviceAccount as ServiceAccountPrincipal | undefined;
   if (!principal) {
     throw createGraphQLError("You must be authenticated to perform this action", {
       extensions: { code: "UNAUTHENTICATED" },
@@ -119,14 +125,14 @@ export const ensureThatPrincipalHasServiceScope = (context, requiredScopes = [])
 
   const grantedScopes = new Set(
     Array.isArray(principal.scopes)
-      ? principal.scopes.map((scope) =>
+      ? principal.scopes.map((scope: unknown) =>
           String(scope || "")
             .trim()
             .toLowerCase(),
         )
       : [],
   );
-  const hasScope = requiredScopes.some((scope) =>
+  const hasScope = requiredScopes.some((scope: string) =>
     grantedScopes.has(
       String(scope || "")
         .trim()
@@ -147,7 +153,7 @@ export const ensureThatPrincipalHasServiceScope = (context, requiredScopes = [])
  * @returns {Promise<Object|null>} The user document or null if no user in context.
  * @throws {GraphQLError} When the user record cannot be found.
  */
-export const getUser = async (context) => {
+export const getUser = async (context: ApiContext) => {
   if (!context.user) {
     return null;
   }
@@ -171,7 +177,13 @@ export const getUser = async (context) => {
  * @param {number} [sessionVersion=0] - Session version for revocation checks.
  * @returns {string}           Signed JWT token.
  */
-export const createAuthToken = (email, role, active, _id, sessionVersion = 0) => {
+export const createAuthToken = (
+  email: string,
+  role: string,
+  active: boolean,
+  _id: string,
+  sessionVersion = 0,
+): string => {
   const normalizedRole = String(role || "").toLowerCase();
   const expiresIn = normalizeJwtExpiry(config.jwtTimeExpiration);
   return jwt.sign(
@@ -199,7 +211,7 @@ export const createAuthToken = (email, role, active, _id, sessionVersion = 0) =>
  * @returns {Promise<Object>} Decoded token payload containing user claims.
  * @throws {JsonWebTokenError} When the token is invalid or expired.
  */
-export const validateAuthToken = async (token) => {
+export const validateAuthToken = async (token: string): Promise<AuthTokenClaims> => {
   const decoded = await jwt.verify(token, config.jwtSecret);
   const payload = ensureJwtPayloadObject(decoded);
   return payload as AuthTokenClaims;

@@ -17,7 +17,7 @@ const EMAIL_VALID_PATTERN =
  * @param {string} email - Raw email input.
  * @returns {string} Lowercased, trimmed email or empty string for invalid input.
  */
-export const normalizeEmail = (email) => {
+export const normalizeEmail = (email: unknown): string => {
   if (typeof email !== "string") {
     return "";
   }
@@ -30,7 +30,7 @@ export const normalizeEmail = (email) => {
  * @param {string} email - The email address to validate.
  * @returns {boolean} True if the email matches the standard email format; otherwise false.
  */
-export const isValidEmail = (email) => {
+export const isValidEmail = (email: unknown): boolean => {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) {
     return false;
@@ -54,7 +54,7 @@ export const isValidEmail = (email) => {
  * @param {string} password - The password to validate.
  * @returns {boolean} True if the password is strong; otherwise false.
  */
-export const isStrongPassword = (password) => {
+export const isStrongPassword = (password: unknown): boolean => {
   if (typeof password !== "string") {
     return false;
   }

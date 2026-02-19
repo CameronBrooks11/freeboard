@@ -26,13 +26,16 @@ const __dirname = path.dirname(__filename);
 const apiPackageDir = path.resolve(__dirname, "..");
 const repoRootDir = path.resolve(__dirname, "../../..");
 
-const loadEnvFile = (filePath, { overridableKeys = new Set() } = {}) => {
+const loadEnvFile = (
+  filePath: string,
+  { overridableKeys = new Set<string>() }: { overridableKeys?: Set<string> } = {},
+): Set<string> => {
   if (!fs.existsSync(filePath)) {
     return new Set();
   }
 
   const parsed = dotenv.parse(fs.readFileSync(filePath));
-  const loadedKeys = new Set();
+  const loadedKeys = new Set<string>();
   for (const [key, value] of Object.entries(parsed)) {
     const hasExternalValue = Object.prototype.hasOwnProperty.call(process.env, key);
     if (!hasExternalValue || overridableKeys.has(key)) {
@@ -60,12 +63,12 @@ loadEnvFile(path.join(apiPackageDir, ".env"), {
  * @param {number} fallback - The fallback number to use if `v` is not a finite number.
  * @returns {number} The converted number if finite, otherwise the `fallback` value.
  */
-const num = (v, fallback) => {
+const num = (v: unknown, fallback: number): number => {
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
 };
 
-const bool = (v, fallback = false) => {
+const bool = (v: unknown, fallback = false): boolean => {
   if (v === undefined || v === null || v === "") {
     return fallback;
   }
@@ -84,7 +87,7 @@ const bool = (v, fallback = false) => {
   return fallback;
 };
 
-const positiveInteger = (v, fallback) => {
+const positiveInteger = (v: unknown, fallback: number): number => {
   const n = Number(v);
   if (!Number.isFinite(n)) {
     return fallback;
@@ -96,7 +99,7 @@ const positiveInteger = (v, fallback) => {
   return normalized;
 };
 
-const decodeBase64 = (value) => {
+const decodeBase64 = (value: unknown): Buffer | null => {
   try {
     return Buffer.from(String(value || ""), "base64");
   } catch {
@@ -104,7 +107,7 @@ const decodeBase64 = (value) => {
   }
 };
 
-const parseBase64Key = (value, expectedLength) => {
+const parseBase64Key = (value: unknown, expectedLength: number): Buffer | null => {
   if (typeof value !== "string" || value.trim() === "") {
     return null;
   }
@@ -120,7 +123,7 @@ const isNonDevRuntime = !["development", "test"].includes(environment);
 const hasExplicitMongoUrl =
   typeof process.env.MONGO_URL === "string" && process.env.MONGO_URL.trim() !== "";
 
-const isWeakJwtSecret = (secret) => {
+const isWeakJwtSecret = (secret: unknown): boolean => {
   if (!secret || typeof secret !== "string") {
     return true;
   }
@@ -143,7 +146,7 @@ const isWeakJwtSecret = (secret) => {
 
 const credentialPolicy = getCredentialPolicyHints();
 
-const warnAndThrow = (message) => {
+const warnAndThrow = (message: string): never => {
   console.warn(`Configuration warning: ${message}`);
   throw new Error(message);
 };

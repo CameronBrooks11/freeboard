@@ -19,6 +19,23 @@ import {
   normalizeEmail,
 } from "../validators.js";
 import { generateOneTimeToken, hashOneTimeToken } from "../tokenSecurity.js";
+type UserLike = {
+  _id?: unknown;
+  email?: unknown;
+  role?: unknown;
+  active?: unknown;
+  sessionVersion?: unknown;
+  registrationDate?: unknown;
+};
+type InviteLike = {
+  _id?: unknown;
+  email?: unknown;
+  role?: unknown;
+  expiresAt?: unknown;
+  revokedAt?: unknown;
+  acceptedAt?: unknown;
+  createdAt?: unknown;
+};
 
 const credentialPolicy = getCredentialPolicyHints();
 const roleSortPriority = Object.freeze({
@@ -32,7 +49,7 @@ export const PASSWORD_RESET_DEFAULT_EXPIRY_HOURS = 2;
 export const PASSWORD_RESET_ADMIN_DEFAULT_EXPIRY_HOURS = 24;
 const MAX_TOKEN_EXPIRY_HOURS = 24 * 14;
 
-const toComparableId = (value) => {
+const toComparableId = (value: unknown): string | null => {
   if (!value) {
     return null;
   }
@@ -44,7 +61,7 @@ const toComparableId = (value) => {
 
 const generateShareToken = () => crypto.randomBytes(24).toString("base64url");
 
-export const clampExpiryHours = (inputHours, fallbackHours) => {
+export const clampExpiryHours = (inputHours: unknown, fallbackHours: number): number => {
   const parsed = Number(inputHours);
   if (!Number.isFinite(parsed)) {
     return fallbackHours;
@@ -58,10 +75,10 @@ export const clampExpiryHours = (inputHours, fallbackHours) => {
   return Math.floor(parsed);
 };
 
-const computeExpiryDate = (hours) =>
+const computeExpiryDate = (hours: unknown) =>
   new Date(Date.now() + clampExpiryHours(hours, 1) * 60 * 60 * 1000);
 
-export const ensureSelfRegistrationAllowed = (registrationMode) => {
+export const ensureSelfRegistrationAllowed = (registrationMode: unknown): void => {
   if (registrationMode === "open") {
     return;
   }
@@ -77,7 +94,7 @@ export const ensureSelfRegistrationAllowed = (registrationMode) => {
   });
 };
 
-export const ensureAtLeastOneActiveAdminWillRemain = async (excludedUserId) => {
+export const ensureAtLeastOneActiveAdminWillRemain = async (excludedUserId: unknown) => {
   const remainingAdmins = await User.countDocuments({
     role: "admin",
     active: true,
@@ -90,7 +107,7 @@ export const ensureAtLeastOneActiveAdminWillRemain = async (excludedUserId) => {
   }
 };
 
-export const findFallbackActiveAdmin = async (excludedUserId = null) => {
+export const findFallbackActiveAdmin = async (excludedUserId: unknown = null) => {
   const filter: Record<string, unknown> = {
     role: "admin",
     active: true,
@@ -106,9 +123,15 @@ export const reconcileDashboardAccessForRemovedUser = async ({
   replacementOwnerUserId = null,
   actorUserId = null,
   reason = "user_delete",
+}: {
+  targetUserId: unknown;
+  replacementOwnerUserId?: unknown;
+  actorUserId?: unknown;
+  reason?: string;
 }) => {
   const normalizedTargetUserId = toComparableId(targetUserId);
   const normalizedReplacementOwnerUserId = toComparableId(replacementOwnerUserId);
+  const normalizedActorUserId = toComparableId(actorUserId);
   if (!normalizedTargetUserId) {
     return {
       ownershipReassignments: 0,
@@ -142,7 +165,9 @@ export const reconcileDashboardAccessForRemovedUser = async ({
   for (const dashboard of impactedDashboards) {
     const dashboardId = toComparableId(dashboard._id);
     const ownerWasTarget = toComparableId(dashboard.user) === normalizedTargetUserId;
-    const currentAcl = Array.isArray(dashboard.acl) ? dashboard.acl : [];
+    const currentAcl: Array<{ userId?: unknown }> = Array.isArray(dashboard.acl)
+      ? (dashboard.acl as Array<{ userId?: unknown }>)
+      : [];
     const aclWithoutTarget = currentAcl.filter(
       (entry) => toComparableId(entry?.userId) !== normalizedTargetUserId,
     );
@@ -181,7 +206,7 @@ export const reconcileDashboardAccessForRemovedUser = async ({
     if (ownerWasTarget) {
       ownershipReassignments += 1;
       await recordAuditEvent({
-        actorUserId,
+        actorUserId: normalizedActorUserId,
         action: "dashboard.ownership.reassigned_for_user_offboarding",
         targetType: "dashboard",
         targetId: dashboardId,
@@ -197,7 +222,7 @@ export const reconcileDashboardAccessForRemovedUser = async ({
     if (aclChanged) {
       aclRevocations += 1;
       await recordAuditEvent({
-        actorUserId,
+        actorUserId: normalizedActorUserId,
         action: "dashboard.acl.revoked_for_user_offboarding",
         targetType: "dashboard",
         targetId: dashboardId,
@@ -215,18 +240,26 @@ export const reconcileDashboardAccessForRemovedUser = async ({
   };
 };
 
-export const sortUsersForAdmin = (users) =>
+export const sortUsersForAdmin = (users: UserLike[]) =>
   [...users].sort((a, b) => {
+    const leftRole = String(a.role || "").toLowerCase() as keyof typeof roleSortPriority;
+    const rightRole = String(b.role || "").toLowerCase() as keyof typeof roleSortPriority;
     const roleDelta =
-      (roleSortPriority[a.role] ?? Number.MAX_SAFE_INTEGER) -
-      (roleSortPriority[b.role] ?? Number.MAX_SAFE_INTEGER);
+      (roleSortPriority[leftRole] ?? Number.MAX_SAFE_INTEGER) -
+      (roleSortPriority[rightRole] ?? Number.MAX_SAFE_INTEGER);
     if (roleDelta !== 0) {
       return roleDelta;
     }
-    return new Date(a.registrationDate).valueOf() - new Date(b.registrationDate).valueOf();
+    const leftDate = new Date(
+      a.registrationDate instanceof Date ? a.registrationDate : String(a.registrationDate || 0),
+    ).valueOf();
+    const rightDate = new Date(
+      b.registrationDate instanceof Date ? b.registrationDate : String(b.registrationDate || 0),
+    ).valueOf();
+    return leftDate - rightDate;
   });
 
-export const toInviteView = (invite) => ({
+export const toInviteView = (invite: InviteLike) => ({
   _id: invite._id,
   email: invite.email,
   role: invite.role,
@@ -236,19 +269,19 @@ export const toInviteView = (invite) => ({
   createdAt: invite.createdAt,
 });
 
-export const ensurePasswordIsStrong = (password) => {
+export const ensurePasswordIsStrong = (password: unknown): void => {
   if (!isStrongPassword(password)) {
     throw createGraphQLError(`The password is not secure enough. ${credentialPolicy.password}.`);
   }
 };
 
-export const ensureEmailIsValid = (email) => {
+export const ensureEmailIsValid = (email: unknown): void => {
   if (!isValidEmail(email)) {
     throw createGraphQLError(`The email is not valid. ${credentialPolicy.email}.`);
   }
 };
 
-export const toSessionVersion = (value) => {
+export const toSessionVersion = (value: unknown): number => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return 0;
@@ -256,16 +289,16 @@ export const toSessionVersion = (value) => {
   return Math.max(0, Math.floor(parsed));
 };
 
-export const issueUserAuthToken = (user) =>
+export const issueUserAuthToken = (user: UserLike): string =>
   createAuthToken(
-    user.email,
-    user.role,
-    user.active,
-    user._id,
+    String(user.email || ""),
+    String(user.role || "viewer"),
+    Boolean(user.active),
+    String(user._id || ""),
     toSessionVersion(user.sessionVersion),
   );
 
-export const findActiveInviteByToken = async (token) => {
+export const findActiveInviteByToken = async (token: unknown) => {
   const tokenHash = hashOneTimeToken(token);
   const now = new Date();
   return InviteToken.findOne({
@@ -276,7 +309,17 @@ export const findActiveInviteByToken = async (token) => {
   }).lean();
 };
 
-export const issueInviteToken = async ({ email, role, createdBy, expiresInHours }) => {
+export const issueInviteToken = async ({
+  email,
+  role,
+  createdBy,
+  expiresInHours,
+}: {
+  email: unknown;
+  role: unknown;
+  createdBy?: unknown;
+  expiresInHours?: unknown;
+}) => {
   const normalizedEmail = normalizeEmail(email);
   ensureEmailIsValid(normalizedEmail);
   const normalizedRole = normalizeNonAdminRole(role);
@@ -317,6 +360,11 @@ export const issuePasswordResetToken = async ({
   createdBy = null,
   requestedByEmail = null,
   expiresInHours = PASSWORD_RESET_DEFAULT_EXPIRY_HOURS,
+}: {
+  user: UserLike;
+  createdBy?: unknown;
+  requestedByEmail?: string | null;
+  expiresInHours?: number;
 }) => {
   const now = new Date();
   await PasswordResetToken.updateMany(

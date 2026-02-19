@@ -5,18 +5,23 @@
 
 import { config } from "./config.js";
 
-const attemptState = new Map();
+type AttemptEntry = {
+  failedAt: number[];
+  lockUntil: number;
+};
 
-const toMs = (seconds) => Number(seconds) * 1000;
+const attemptState = new Map<string, AttemptEntry>();
+
+const toMs = (seconds: number): number => Number(seconds) * 1000;
 const WINDOW_MS = toMs(config.authLoginWindowSeconds);
 const LOCK_MS = toMs(config.authLoginLockSeconds);
 const MAX_ATTEMPTS = Number(config.authLoginMaxAttempts);
 
-const trimFailures = (entry, now) => {
+const trimFailures = (entry: AttemptEntry, now: number): void => {
   entry.failedAt = entry.failedAt.filter((ts) => now - ts <= WINDOW_MS);
 };
 
-const ensureEntry = (key) => {
+const ensureEntry = (key: string): AttemptEntry => {
   if (!attemptState.has(key)) {
     attemptState.set(key, {
       failedAt: [],
@@ -26,13 +31,13 @@ const ensureEntry = (key) => {
   return attemptState.get(key);
 };
 
-const destroyIfIdle = (key, entry) => {
+const destroyIfIdle = (key: string, entry: AttemptEntry): void => {
   if (entry.failedAt.length === 0 && entry.lockUntil <= 0) {
     attemptState.delete(key);
   }
 };
 
-const normalizeKeyPart = (value, fallback) => {
+const normalizeKeyPart = (value: unknown, fallback: string): string => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
@@ -46,7 +51,10 @@ const normalizeKeyPart = (value, fallback) => {
  * @param {string|undefined|null} clientIp
  * @returns {string}
  */
-export const buildLoginThrottleKey = (email, clientIp) => {
+export const buildLoginThrottleKey = (
+  email: string,
+  clientIp: string | undefined | null,
+): string => {
   const normalizedEmail = normalizeKeyPart(email, "unknown-email");
   const normalizedIp = normalizeKeyPart(clientIp, "unknown-ip");
   return `${normalizedEmail}::${normalizedIp}`;
@@ -59,7 +67,10 @@ export const buildLoginThrottleKey = (email, clientIp) => {
  * @param {number} [now=Date.now()]
  * @returns {{ blocked: boolean, retryAfterMs: number }}
  */
-export const getLoginThrottleState = (key, now = Date.now()) => {
+export const getLoginThrottleState = (
+  key: string,
+  now = Date.now(),
+): { blocked: boolean; retryAfterMs: number } => {
   const entry = attemptState.get(key);
   if (!entry) {
     return { blocked: false, retryAfterMs: 0 };
@@ -85,7 +96,10 @@ export const getLoginThrottleState = (key, now = Date.now()) => {
  * @param {number} [now=Date.now()]
  * @returns {{ blocked: boolean, retryAfterMs: number, justLocked: boolean }}
  */
-export const recordFailedLoginAttempt = (key, now = Date.now()) => {
+export const recordFailedLoginAttempt = (
+  key: string,
+  now = Date.now(),
+): { blocked: boolean; retryAfterMs: number; justLocked: boolean } => {
   const entry = ensureEntry(key);
   trimFailures(entry, now);
 
@@ -120,13 +134,13 @@ export const recordFailedLoginAttempt = (key, now = Date.now()) => {
  *
  * @param {string} key
  */
-export const clearLoginThrottle = (key) => {
+export const clearLoginThrottle = (key: string): void => {
   attemptState.delete(key);
 };
 
 /**
  * Test helper to reset all in-memory throttle state.
  */
-export const resetLoginThrottleState = () => {
+export const resetLoginThrottleState = (): void => {
   attemptState.clear();
 };

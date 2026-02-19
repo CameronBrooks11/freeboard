@@ -6,10 +6,23 @@
 import mongoose from "mongoose";
 import ShareTokenRevocationEvent from "./models/ShareTokenRevocationEvent.js";
 
-const encodeCursor = (payload) =>
+type CursorPayload = {
+  createdAtMs: number;
+  eventId: string;
+};
+
+type FeedEventLike = {
+  _id: unknown;
+  dashboardId?: unknown;
+  shareTokenVersion?: unknown;
+  revokedAt?: Date | string | number;
+  createdAt?: Date | string | number;
+};
+
+const encodeCursor = (payload: CursorPayload): string =>
   Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
 
-const decodeCursor = (cursor) => {
+const decodeCursor = (cursor: unknown): CursorPayload | null => {
   if (!cursor || typeof cursor !== "string") {
     return null;
   }
@@ -27,7 +40,7 @@ const decodeCursor = (cursor) => {
   }
 };
 
-const toEventPayload = (eventDoc) => ({
+const toEventPayload = (eventDoc: FeedEventLike) => ({
   eventId: String(eventDoc._id),
   dashboardId: String(eventDoc.dashboardId || ""),
   shareTokenVersion: Math.max(0, Math.floor(Number(eventDoc.shareTokenVersion) || 0)),
@@ -37,7 +50,7 @@ const toEventPayload = (eventDoc) => ({
       : new Date(eventDoc.revokedAt || Date.now()).toISOString(),
 });
 
-const toCursorPayload = (eventDoc) => ({
+const toCursorPayload = (eventDoc: FeedEventLike): CursorPayload => ({
   createdAtMs: new Date(eventDoc.createdAt || eventDoc.revokedAt || Date.now()).getTime(),
   eventId: String(eventDoc._id),
 });
@@ -52,6 +65,10 @@ export const recordShareTokenRevocationEvent = async ({
   dashboardId,
   shareTokenVersion,
   revokedAt = new Date(),
+}: {
+  dashboardId: unknown;
+  shareTokenVersion: unknown;
+  revokedAt?: Date | string | number;
 }) => {
   const normalizedDashboardId = String(dashboardId || "").trim();
   if (!normalizedDashboardId) {
@@ -89,6 +106,10 @@ export const queryShareTokenRevocationFeed = async ({
   sinceCursor = null,
   limit = 200,
   retentionSeconds = 86_400,
+}: {
+  sinceCursor?: string | null;
+  limit?: number;
+  retentionSeconds?: number;
 } = {}) => {
   const safeLimit = Math.min(1000, Math.max(1, Math.floor(Number(limit) || 200)));
   const safeRetentionSeconds = Math.max(60, Math.floor(Number(retentionSeconds) || 86_400));

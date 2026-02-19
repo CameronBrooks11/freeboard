@@ -10,20 +10,34 @@ const ALLOWED_HTTP_PARSERS = new Set(["json", "text", "csv"]);
 const ALLOWED_STREAM_PARSERS = new Set(["json", "text"]);
 const ALLOWED_AUTH_PLACEMENTS = new Set(["header", "query"]);
 
-export const parseJsonObjectSetting = (value) => {
+type JsonRecord = Record<string, unknown>;
+type GatewayClientErrorFactory = (statusCode: number, message: string, code?: string) => Error;
+type CredentialProfileLike = {
+  type?: string;
+  metadata?: Record<string, unknown> | null;
+};
+type CredentialSecretLike = {
+  token?: string;
+  username?: string;
+  password?: string;
+  headerValue?: string;
+};
+type HeaderMap = Record<string, string>;
+
+export const parseJsonObjectSetting = (value: unknown): JsonRecord => {
   if (!value) {
     return {};
   }
 
   if (typeof value === "object" && !Array.isArray(value)) {
-    return value;
+    return value as JsonRecord;
   }
 
   if (typeof value === "string") {
     try {
       const parsed = JSON.parse(value);
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        return parsed;
+        return parsed as JsonRecord;
       }
     } catch {
       return {};
@@ -33,8 +47,8 @@ export const parseJsonObjectSetting = (value) => {
   return {};
 };
 
-export const sanitizeCustomHeaders = (inputHeaders = {}) => {
-  const normalized = {};
+export const sanitizeCustomHeaders = (inputHeaders: Record<string, unknown> = {}): HeaderMap => {
+  const normalized: HeaderMap = {};
   for (const [rawKey, rawValue] of Object.entries(inputHeaders || {})) {
     const key = String(rawKey || "").trim();
     if (!key) {
@@ -46,28 +60,28 @@ export const sanitizeCustomHeaders = (inputHeaders = {}) => {
   return normalized;
 };
 
-export const normalizeHttpMethod = (value) => {
+export const normalizeHttpMethod = (value: unknown): string => {
   const method = String(value || "GET")
     .trim()
     .toUpperCase();
   return ALLOWED_HTTP_METHODS.has(method) ? method : "GET";
 };
 
-export const normalizeHttpParser = (value) => {
+export const normalizeHttpParser = (value: unknown): string => {
   const parser = String(value || "json")
     .trim()
     .toLowerCase();
   return ALLOWED_HTTP_PARSERS.has(parser) ? parser : "json";
 };
 
-export const normalizeStreamParser = (value) => {
+export const normalizeStreamParser = (value: unknown): string => {
   const parser = String(value || "json")
     .trim()
     .toLowerCase();
   return ALLOWED_STREAM_PARSERS.has(parser) ? parser : "json";
 };
 
-export const normalizeTimeout = (value, fallback) => {
+export const normalizeTimeout = (value: unknown, fallback: number): number => {
   const timeout = Number(value);
   if (!Number.isFinite(timeout) || timeout < 100 || timeout > 120000) {
     return fallback;
@@ -75,7 +89,7 @@ export const normalizeTimeout = (value, fallback) => {
   return Math.floor(timeout);
 };
 
-export const normalizeKeepaliveSeconds = (value, fallback = 60) => {
+export const normalizeKeepaliveSeconds = (value: unknown, fallback = 60): number => {
   const normalized = Number(value);
   if (!Number.isFinite(normalized) || normalized < 5 || normalized > 3600) {
     return fallback;
@@ -83,7 +97,7 @@ export const normalizeKeepaliveSeconds = (value, fallback = 60) => {
   return Math.floor(normalized);
 };
 
-export const normalizeQos = (value) => {
+export const normalizeQos = (value: unknown): number => {
   const qos = Number(value);
   if (!Number.isFinite(qos)) {
     return 0;
@@ -98,14 +112,14 @@ export const normalizeQos = (value) => {
   return normalized;
 };
 
-export const normalizeAuthPlacement = (value) => {
+export const normalizeAuthPlacement = (value: unknown): string => {
   const normalized = String(value || "header")
     .trim()
     .toLowerCase();
   return ALLOWED_AUTH_PLACEMENTS.has(normalized) ? normalized : "header";
 };
 
-export const normalizeWebSocketProtocols = (value) => {
+export const normalizeWebSocketProtocols = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value.map((entry) => String(entry || "").trim()).filter(Boolean);
   }
@@ -120,7 +134,7 @@ export const normalizeWebSocketProtocols = (value) => {
   return [];
 };
 
-export const normalizeBodyValue = (rawBody) => {
+export const normalizeBodyValue = (rawBody: unknown): string | null => {
   if (rawBody === null || rawBody === undefined) {
     return null;
   }
@@ -134,7 +148,15 @@ export const normalizeBodyValue = (rawBody) => {
   }
 };
 
-export const resolveCredentialHeaders = ({ profile, secret, createClientError }) => {
+export const resolveCredentialHeaders = ({
+  profile,
+  secret,
+  createClientError,
+}: {
+  profile?: CredentialProfileLike | null;
+  secret?: CredentialSecretLike | null;
+  createClientError: GatewayClientErrorFactory;
+}): HeaderMap => {
   if (!profile || profile.type === "none") {
     return {};
   }
@@ -175,7 +197,15 @@ export const resolveCredentialHeaders = ({ profile, secret, createClientError })
   return {};
 };
 
-export const resolveQueryCredentialValue = ({ profile, secret, createClientError }) => {
+export const resolveQueryCredentialValue = ({
+  profile,
+  secret,
+  createClientError,
+}: {
+  profile?: CredentialProfileLike | null;
+  secret?: CredentialSecretLike | null;
+  createClientError: GatewayClientErrorFactory;
+}): string => {
   if (!profile || profile.type === "none") {
     return "";
   }
@@ -207,7 +237,17 @@ export const resolveQueryCredentialValue = ({ profile, secret, createClientError
   return "";
 };
 
-export const applyQueryCredentialToUrl = ({ rawUrl, paramName, value, createClientError }) => {
+export const applyQueryCredentialToUrl = ({
+  rawUrl,
+  paramName,
+  value,
+  createClientError,
+}: {
+  rawUrl: string;
+  paramName: string;
+  value: string;
+  createClientError: GatewayClientErrorFactory;
+}): string => {
   const normalizedParamName = String(paramName || "").trim();
   if (!normalizedParamName) {
     throw createClientError(

@@ -4,6 +4,7 @@
  */
 
 import { createGraphQLError, createPubSub } from "graphql-yoga";
+import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatUserHasRole, ensureThatUserIsLogged } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
 import Dashboard from "../models/Dashboard.js";
@@ -36,7 +37,7 @@ import { isValidEmail, normalizeEmail } from "../validators.js";
 const pubSub = createPubSub();
 const EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES = new Set(["link", "public"]);
 
-export default {
+const resolvers: IResolvers = {
   DashboardVisibility: {
     PRIVATE: "private",
     LINK: "link",
@@ -523,3 +524,5 @@ export default {
     },
   },
 };
+
+export default resolvers;

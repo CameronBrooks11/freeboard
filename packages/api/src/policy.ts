@@ -4,22 +4,29 @@
  */
 
 /** @type {string[]} */
-export const USER_ROLES = Object.freeze(["viewer", "editor", "admin"]);
+export const USER_ROLES = Object.freeze(["viewer", "editor", "admin"] as const);
 
 /** @type {string[]} */
-export const REGISTRATION_MODES = Object.freeze(["disabled", "invite", "open"]);
+export const REGISTRATION_MODES = Object.freeze(["disabled", "invite", "open"] as const);
 
 /** @type {string[]} */
-export const NON_ADMIN_USER_ROLES = Object.freeze(["viewer", "editor"]);
+export const NON_ADMIN_USER_ROLES = Object.freeze(["viewer", "editor"] as const);
 
 /** @type {string[]} */
-export const EXECUTION_MODES = Object.freeze(["safe", "trusted"]);
+export const EXECUTION_MODES = Object.freeze(["safe", "trusted"] as const);
 
 /** @type {string[]} */
-export const DASHBOARD_VISIBILITIES = Object.freeze(["private", "link", "public"]);
+export const DASHBOARD_VISIBILITIES = Object.freeze(["private", "link", "public"] as const);
 
 /** @type {string[]} */
-export const DASHBOARD_ACCESS_LEVELS = Object.freeze(["viewer", "editor"]);
+export const DASHBOARD_ACCESS_LEVELS = Object.freeze(["viewer", "editor"] as const);
+
+const USER_ROLE_SET = new Set<string>(USER_ROLES);
+const NON_ADMIN_USER_ROLE_SET = new Set<string>(NON_ADMIN_USER_ROLES);
+const REGISTRATION_MODE_SET = new Set<string>(REGISTRATION_MODES);
+const EXECUTION_MODE_SET = new Set<string>(EXECUTION_MODES);
+const DASHBOARD_VISIBILITY_SET = new Set<string>(DASHBOARD_VISIBILITIES);
+const DASHBOARD_ACCESS_LEVEL_SET = new Set<string>(DASHBOARD_ACCESS_LEVELS);
 
 /**
  * Normalize and validate a role string.
@@ -27,11 +34,11 @@ export const DASHBOARD_ACCESS_LEVELS = Object.freeze(["viewer", "editor"]);
  * @param {string} role
  * @returns {string}
  */
-export const normalizeRole = (role) => {
+export const normalizeRole = (role: unknown): string => {
   const normalized = String(role || "")
     .trim()
     .toLowerCase();
-  if (!USER_ROLES.includes(normalized)) {
+  if (!USER_ROLE_SET.has(normalized)) {
     throw new Error(`Invalid role '${role}'. Allowed roles: ${USER_ROLES.join(", ")}`);
   }
   return normalized;
@@ -43,9 +50,9 @@ export const normalizeRole = (role) => {
  * @param {string} role
  * @returns {string}
  */
-export const normalizeNonAdminRole = (role) => {
+export const normalizeNonAdminRole = (role: unknown): string => {
   const normalized = normalizeRole(role);
-  if (!NON_ADMIN_USER_ROLES.includes(normalized)) {
+  if (!NON_ADMIN_USER_ROLE_SET.has(normalized)) {
     throw new Error(
       `Invalid non-admin role '${role}'. Allowed roles: ${NON_ADMIN_USER_ROLES.join(", ")}`,
     );
@@ -59,11 +66,11 @@ export const normalizeNonAdminRole = (role) => {
  * @param {string} mode
  * @returns {string}
  */
-export const normalizeRegistrationMode = (mode) => {
+export const normalizeRegistrationMode = (mode: unknown): string => {
   const normalized = String(mode || "")
     .trim()
     .toLowerCase();
-  if (!REGISTRATION_MODES.includes(normalized)) {
+  if (!REGISTRATION_MODE_SET.has(normalized)) {
     throw new Error(
       `Invalid registration mode '${mode}'. Allowed modes: ${REGISTRATION_MODES.join(", ")}`,
     );
@@ -77,11 +84,11 @@ export const normalizeRegistrationMode = (mode) => {
  * @param {string} mode
  * @returns {string}
  */
-export const normalizeExecutionMode = (mode) => {
+export const normalizeExecutionMode = (mode: unknown): string => {
   const normalized = String(mode || "")
     .trim()
     .toLowerCase();
-  if (!EXECUTION_MODES.includes(normalized)) {
+  if (!EXECUTION_MODE_SET.has(normalized)) {
     throw new Error(
       `Invalid execution mode '${mode}'. Allowed modes: ${EXECUTION_MODES.join(", ")}`,
     );
@@ -95,11 +102,11 @@ export const normalizeExecutionMode = (mode) => {
  * @param {string} visibility
  * @returns {string}
  */
-export const normalizeDashboardVisibility = (visibility) => {
+export const normalizeDashboardVisibility = (visibility: unknown): string => {
   const normalized = String(visibility || "")
     .trim()
     .toLowerCase();
-  if (!DASHBOARD_VISIBILITIES.includes(normalized)) {
+  if (!DASHBOARD_VISIBILITY_SET.has(normalized)) {
     throw new Error(
       `Invalid dashboard visibility '${visibility}'. Allowed visibilities: ${DASHBOARD_VISIBILITIES.join(
         ", ",
@@ -115,11 +122,11 @@ export const normalizeDashboardVisibility = (visibility) => {
  * @param {string} accessLevel
  * @returns {string}
  */
-export const normalizeDashboardAccessLevel = (accessLevel) => {
+export const normalizeDashboardAccessLevel = (accessLevel: unknown): string => {
   const normalized = String(accessLevel || "")
     .trim()
     .toLowerCase();
-  if (!DASHBOARD_ACCESS_LEVELS.includes(normalized)) {
+  if (!DASHBOARD_ACCESS_LEVEL_SET.has(normalized)) {
     throw new Error(
       `Invalid dashboard access level '${accessLevel}'. Allowed levels: ${DASHBOARD_ACCESS_LEVELS.join(
         ", ",

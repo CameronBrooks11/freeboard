@@ -11,7 +11,7 @@ import { SERVICE_ACCOUNT_SCOPES } from "./serviceAccountScopes.js";
 
 const SERVICE_ACCOUNT_SCOPE_SET = new Set(SERVICE_ACCOUNT_SCOPES);
 
-const toComparableId = (value) => {
+const toComparableId = (value: unknown): string | null => {
   if (!value) {
     return null;
   }
@@ -21,7 +21,7 @@ const toComparableId = (value) => {
   return String(value);
 };
 
-export const normalizeServiceAccountScopes = (scopes = []) => {
+export const normalizeServiceAccountScopes = (scopes: unknown[] = []): string[] => {
   if (!Array.isArray(scopes)) {
     return [];
   }
@@ -37,7 +37,7 @@ export const normalizeServiceAccountScopes = (scopes = []) => {
   return [...new Set(normalized)].sort();
 };
 
-const hashSecret = (secret) =>
+const hashSecret = (secret: unknown): string =>
   crypto
     .createHash("sha256")
     .update(`${String(secret || "")}:${config.jwtSecret}`)
@@ -45,9 +45,10 @@ const hashSecret = (secret) =>
 
 const generateSecret = () => crypto.randomBytes(24).toString("base64url");
 
-const buildToken = ({ tokenId, secret }) => `fsa_${tokenId}.${secret}`;
+const buildToken = ({ tokenId, secret }: { tokenId: string; secret: string }): string =>
+  `fsa_${tokenId}.${secret}`;
 
-const parseToken = (rawToken) => {
+const parseToken = (rawToken: unknown): { tokenId: string; secret: string } | null => {
   const token = String(rawToken || "").trim();
   const match = token.match(/^fsa_([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)$/);
   if (!match) {
@@ -59,7 +60,7 @@ const parseToken = (rawToken) => {
   };
 };
 
-const equalHashes = (left, right) => {
+const equalHashes = (left: unknown, right: unknown): boolean => {
   const leftBuffer = Buffer.from(String(left || ""), "utf8");
   const rightBuffer = Buffer.from(String(right || ""), "utf8");
   if (leftBuffer.length !== rightBuffer.length) {
@@ -74,6 +75,12 @@ export const issueServiceAccountToken = async ({
   label = "",
   expiresInHours = null,
   actorUserId = null,
+}: {
+  serviceAccountId: unknown;
+  scopes?: unknown[];
+  label?: string | null;
+  expiresInHours?: number | null;
+  actorUserId?: unknown;
 }) => {
   const account = await ServiceAccount.findOne({ _id: serviceAccountId, active: true }).lean();
   if (!account) {
@@ -111,7 +118,7 @@ export const issueServiceAccountToken = async ({
   };
 };
 
-export const authenticateServiceAccountToken = async (rawToken) => {
+export const authenticateServiceAccountToken = async (rawToken: unknown) => {
   const parsed = parseToken(rawToken);
   if (!parsed) {
     return null;

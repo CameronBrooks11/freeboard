@@ -21,12 +21,35 @@ const POLICY_KEYS = Object.freeze({
   executionMode: "app.execution.mode",
 });
 
-const readStoredPolicy = async (key) => {
+type PolicyInput = Partial<{
+  registrationMode: string;
+  registrationDefaultRole: string;
+  editorCanPublish: boolean;
+  dashboardDefaultVisibility: string;
+  dashboardPublicListingEnabled: boolean;
+  executionMode: string;
+}>;
+
+type PolicyState = {
+  registrationMode: string;
+  registrationDefaultRole: string;
+  editorCanPublish: boolean;
+  dashboardDefaultVisibility: string;
+  dashboardPublicListingEnabled: boolean;
+  executionMode: string;
+  policyEditLock: boolean;
+};
+
+const readStoredPolicy = async (key: string): Promise<unknown> => {
   const record = await Policy.findOne({ key }).lean();
   return record?.value;
 };
 
-const writeStoredPolicy = async (key, value, updatedBy = null) => {
+const writeStoredPolicy = async (
+  key: string,
+  value: unknown,
+  updatedBy: string | null = null,
+): Promise<void> => {
   await Policy.findOneAndUpdate(
     { key },
     {
@@ -56,7 +79,7 @@ const writeStoredPolicy = async (key, value, updatedBy = null) => {
  *  policyEditLock: boolean
  * }>}
  */
-export const getAuthPolicyState = async () => {
+export const getAuthPolicyState = async (): Promise<PolicyState> => {
   const registrationModeRaw =
     (await readStoredPolicy(POLICY_KEYS.registrationMode)) ?? config.registrationMode;
   const registrationDefaultRoleRaw =
@@ -98,7 +121,10 @@ export const getAuthPolicyState = async () => {
  *  policyEditLock: boolean
  * }>}
  */
-export const setAuthPolicyState = async (input, actorUserId = null) => {
+export const setAuthPolicyState = async (
+  input: PolicyInput,
+  actorUserId: string | null = null,
+): Promise<PolicyState> => {
   if (Object.prototype.hasOwnProperty.call(input, "registrationMode")) {
     const value = normalizeRegistrationMode(input.registrationMode);
     await writeStoredPolicy(POLICY_KEYS.registrationMode, value, actorUserId);

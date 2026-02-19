@@ -14,8 +14,8 @@
  * @returns {Object}
  */
 export const transformDashboard = (
-  dashboard,
-  viewerUserId = null,
+  dashboard: Record<string, unknown>,
+  viewerUserId: unknown = null,
   permissions: { canEdit?: boolean; canManageSharing?: boolean } = {},
 ) => {
   const rawOwnerId =

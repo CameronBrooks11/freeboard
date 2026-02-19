@@ -19,7 +19,7 @@ export const generateOneTimeToken = () => crypto.randomBytes(32).toString("base6
  * @param {string} token
  * @returns {string}
  */
-export const hashOneTimeToken = (token) =>
+export const hashOneTimeToken = (token: unknown): string =>
   crypto
     .createHash("sha256")
     .update(`${String(token || "")}:${config.jwtSecret}`)

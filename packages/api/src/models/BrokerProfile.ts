@@ -10,7 +10,7 @@ const Schema = mongoose.Schema;
 
 export const BROKER_PROFILE_PROTOCOLS = Object.freeze(["mqtt"]);
 
-const normalizeTopicAllowlist = (value) => {
+const normalizeTopicAllowlist = (value: unknown): string[] => {
   if (!Array.isArray(value)) {
     return [];
   }

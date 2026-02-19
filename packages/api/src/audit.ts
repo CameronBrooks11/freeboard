@@ -7,6 +7,14 @@ import mongoose from "mongoose";
 import AuditEvent from "./models/AuditEvent.js";
 import { recordAuditWriteFailureMetric } from "./runtimeMetrics.js";
 
+type AuditEventInput = {
+  actorUserId?: string | null;
+  action: string;
+  targetType?: string | null;
+  targetId?: string | null;
+  metadata?: Record<string, unknown>;
+};
+
 /**
  * Persist an audit event. Errors are intentionally non-fatal.
  *
@@ -24,7 +32,7 @@ export const recordAuditEvent = async ({
   targetType = null,
   targetId = null,
   metadata = {},
-}) => {
+}: AuditEventInput): Promise<void> => {
   if (!action) {
     return;
   }

@@ -4,6 +4,7 @@
  */
 
 import { createGraphQLError } from "graphql-yoga";
+import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatUserIsAdministrator } from "../auth.js";
 import { config } from "../config.js";
 import { recordAuditEvent } from "../audit.js";
@@ -32,7 +33,7 @@ const toMutablePolicyInput = (args: Record<string, unknown> = {}) => {
   return input;
 };
 
-export default {
+const resolvers: IResolvers = {
   UserRole: {
     VIEWER: "viewer",
     EDITOR: "editor",
@@ -86,3 +87,5 @@ export default {
     },
   },
 };
+
+export default resolvers;

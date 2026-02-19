@@ -4,13 +4,16 @@
  */
 
 const WINDOW_MS = 60_000;
-const buckets = new Map();
+type RateLimitBucket = {
+  hits: number[];
+};
+const buckets = new Map<string, RateLimitBucket>();
 
-const trimWindow = (bucket, now) => {
+const trimWindow = (bucket: RateLimitBucket, now: number): void => {
   bucket.hits = bucket.hits.filter((ts) => now - ts < WINDOW_MS);
 };
 
-const ensureBucket = (key) => {
+const ensureBucket = (key: string): RateLimitBucket => {
   if (!buckets.has(key)) {
     buckets.set(key, {
       hits: [],
@@ -27,7 +30,11 @@ const ensureBucket = (key) => {
  * @param {number} [now=Date.now()]
  * @returns {{allowed: boolean, retryAfterMs: number, remaining: number}}
  */
-export const consumeRateLimit = (key, limit, now = Date.now()) => {
+export const consumeRateLimit = (
+  key: string,
+  limit: number,
+  now = Date.now(),
+): { allowed: boolean; retryAfterMs: number; remaining: number } => {
   const safeLimit = Math.max(1, Number(limit) || 1);
   const bucket = ensureBucket(key);
   trimWindow(bucket, now);
@@ -53,6 +60,6 @@ export const consumeRateLimit = (key, limit, now = Date.now()) => {
 /**
  * Test helper to clear all limiter state.
  */
-export const resetRateLimitState = () => {
+export const resetRateLimitState = (): void => {
   buckets.clear();
 };
