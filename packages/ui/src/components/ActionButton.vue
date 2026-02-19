@@ -4,7 +4,7 @@
   </button>
 </template>
 
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component ActionButton
  * @description A button for triggering actions, rendering default slot content.

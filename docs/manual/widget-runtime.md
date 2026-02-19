@@ -89,7 +89,7 @@ Widgets receive context with each update:
 
 1. create widget file under `packages/ui/src/widgets/`
 2. implement plugin class + instance lifecycle
-3. register plugin in `packages/ui/src/stores/pluginRegistry.js`
+3. register plugin in `packages/ui/src/stores/pluginRegistry.ts`
 4. validate bindings and resize behavior
 5. document in `Widget Reference` if user-facing
 

@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component TextButton
  * @description Simple button styled as text for inline actions.

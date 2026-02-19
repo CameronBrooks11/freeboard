@@ -6,6 +6,8 @@
 - Validate formatting: `npm run format:check`
 - Full lint: `npm run lint`
 - UI store boundary guardrail: `npm run check:ui:store-boundaries`
+- TS source debt guardrail: `npm run check:ts:debt`
+- TS source artifact guardrail: `npm run check:ts:source-artifacts`
 - UI bundle budget guardrail (warn-first): `npm run check:ui:bundle-budget`
 - UI lint only: `npm run lint:ui`
 - API lint only: `npm run lint:api`
@@ -15,6 +17,7 @@
 - Run API tests: `npm run test:api`
 - Run UI runtime tests: `npm run test:ui`
 - Run all tests: `npm run test`
+- Run TypeScript type checks: `npm run typecheck`
 - Verify build/syntax: `npm run build:verify`
 - Full local CI pass: `npm run ci`
 - Start realtime fixture stack: `npm run demo:realtime:up`
@@ -33,16 +36,21 @@ Run this sequence before opening a PR:
 npm run format:check
 npm run lint
 npm run check:ui:store-boundaries
+npm run check:ts:debt
+npm run check:ts:source-artifacts
 npm run test
 npm run build:verify
+npm run typecheck
 ```
 
 If your change is docs-only, run `npm run format:check` to verify Markdown/YAML formatting consistency.
 
 ## CI Troubleshooting (Quick)
 
-- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-ui`, `build-verify`).
+- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-ui`, `build-verify`, `typecheck`).
 - If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
+- If `Validate TS source debt` fails, remove unsafe TS patterns (`as any`, `as unknown as`, `: any`, `Record<string, any>`, `[key: string]: any`, `@ts-ignore`, `@ts-nocheck`) from `packages/*/src`.
+- If `Validate TS source artifacts` fails, remove legacy JS source files from `packages/*/src` (or classify intentionally retained artifacts in `docs/manual/typescript-standards.md`).
 - If a job was expected but appears skipped, check `Classify changes` output in the `changes` job.
 - If Docker publish unexpectedly rebuilds all images, verify event type:
   - `workflow_dispatch` intentionally rebuilds all packages.

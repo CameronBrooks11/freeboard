@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component ConfirmDialogBox
  * @description Modal dialog prompting the user to confirm an action.
@@ -8,23 +8,23 @@
  */
 defineOptions({ name: "ConfirmDialogBox" });
 
-import { ref } from "vue";
+import { ref, type PropType } from "vue";
 import DialogBox from "./DialogBox.vue";
 
-const dialog = ref(null);
+const dialog = ref<{ closeModal?: () => void } | null>(null);
 
 const { title, onClose, onOk } = defineProps({
   title: String,
-  onClose: Function,
-  onOk: Function,
+  onClose: Function as PropType<(event?: Event) => void>,
+  onOk: Function as PropType<() => void>,
 });
 
 /**
  * Handle the OK button: invoke onOk and close the modal.
  */
 const onDialogBoxOk = () => {
-  onOk();
-  dialog.value.closeModal();
+  onOk?.();
+  dialog.value?.closeModal?.();
 };
 </script>
 

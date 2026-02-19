@@ -1,11 +1,11 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component ShareDialogBox
  * @description Dashboard visibility/share/collaboration management dialog.
  */
 defineOptions({ name: "ShareDialogBox" });
 
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, type PropType } from "vue";
 import { useMutation, useQuery } from "@vue/apollo-composable";
 import { storeToRefs } from "pinia";
 import DialogBox from "./DialogBox.vue";
@@ -28,8 +28,20 @@ import {
   DASHBOARD_UPSERT_ACCESS_MUTATION,
 } from "../gql.js";
 
+type CollaboratorEntry = {
+  userId: string;
+  email?: string;
+  accessLevel?: string;
+  isOwner?: boolean;
+};
+type GraphQLErrorLike = {
+  graphQLErrors?: Array<{ message?: string }>;
+  message?: string;
+};
+type ShareMutationPayload = Record<string, unknown> | null | undefined;
+
 const { onClose } = defineProps({
-  onClose: Function,
+  onClose: Function as PropType<(event?: Event) => void>,
 });
 
 const dashboardStore = useDashboardStore();
@@ -76,9 +88,12 @@ const { mutate: transferDashboardOwnership, loading: transferOwnershipLoading } 
   DASHBOARD_TRANSFER_OWNERSHIP_MUTATION,
 );
 
-const collaborators = computed(() => collaboratorsResult.value?.dashboardCollaborators || []);
+const collaborators = computed<CollaboratorEntry[]>(
+  () =>
+    (collaboratorsResult.value?.dashboardCollaborators as CollaboratorEntry[] | undefined) || [],
+);
 const ownershipTransferCandidates = computed(() =>
-  collaborators.value.filter((entry) => !entry.isOwner),
+  collaborators.value.filter((entry: CollaboratorEntry) => !entry.isOwner),
 );
 const isBusy = computed(
   () =>
@@ -103,14 +118,15 @@ const clearMessages = () => {
   errorMessage.value = "";
 };
 
-const setGraphQLError = (error, fallback) => {
-  errorMessage.value = error?.graphQLErrors?.[0]?.message || error?.message || fallback;
+const setGraphQLError = (error: unknown, fallback: string) => {
+  const normalized = (error as GraphQLErrorLike | undefined) || undefined;
+  errorMessage.value = normalized?.graphQLErrors?.[0]?.message || normalized?.message || fallback;
 };
 
-const visibilityToEnum = (visibility) => String(visibility || "private").toUpperCase();
-const accessLevelToEnum = (accessLevel) => String(accessLevel || "viewer").toUpperCase();
+const visibilityToEnum = (visibility: string) => String(visibility || "private").toUpperCase();
+const accessLevelToEnum = (accessLevel: string) => String(accessLevel || "viewer").toUpperCase();
 
-const applyDashboardMutationPayload = (payload) => {
+const applyDashboardMutationPayload = (payload: ShareMutationPayload) => {
   const applied = applyShareMutationPayloadToDashboard({
     dashboard: dashboard.value,
     payload,
@@ -138,7 +154,7 @@ const saveVisibility = async () => {
       id: dashboard.value._id,
       visibility: visibilityToEnum(visibilityDraft.value),
     });
-    applyDashboardMutationPayload(result.data?.setDashboardVisibility);
+    applyDashboardMutationPayload(result?.data?.setDashboardVisibility);
     statusMessage.value = "Visibility updated.";
   } catch (error) {
     setGraphQLError(error, "Could not update visibility.");
@@ -153,7 +169,7 @@ const rotateLink = async () => {
 
   try {
     const result = await rotateShareToken({ id: dashboard.value._id });
-    applyDashboardMutationPayload(result.data?.rotateDashboardShareToken);
+    applyDashboardMutationPayload(result?.data?.rotateDashboardShareToken);
     statusMessage.value = "Share link rotated.";
   } catch (error) {
     setGraphQLError(error, "Could not rotate share link.");
@@ -237,7 +253,7 @@ const addCollaborator = async () => {
       email: collaboratorEmail.value,
       accessLevel: accessLevelToEnum(collaboratorAccessLevel.value),
     });
-    applyDashboardMutationPayload(result.data?.upsertDashboardAccess);
+    applyDashboardMutationPayload(result?.data?.upsertDashboardAccess);
     collaboratorEmail.value = "";
     collaboratorAccessLevel.value = "viewer";
     await refetchCollaborators();
@@ -247,7 +263,7 @@ const addCollaborator = async () => {
   }
 };
 
-const removeCollaborator = async (userId) => {
+const removeCollaborator = async (userId: string) => {
   clearMessages();
   const guardError = getShareMutationGuardError({
     isShareableDashboard: isShareableDashboard.value,
@@ -263,7 +279,7 @@ const removeCollaborator = async (userId) => {
       id: dashboard.value._id,
       userId,
     });
-    applyDashboardMutationPayload(result.data?.revokeDashboardAccess);
+    applyDashboardMutationPayload(result?.data?.revokeDashboardAccess);
     await refetchCollaborators();
     statusMessage.value = "Collaborator removed.";
   } catch (error) {
@@ -294,7 +310,7 @@ const transferOwnership = async () => {
       id: dashboard.value._id,
       newOwnerUserId: transferTargetUserId.value,
     });
-    applyDashboardMutationPayload(result.data?.transferDashboardOwnership);
+    applyDashboardMutationPayload(result?.data?.transferDashboardOwnership);
     transferTargetUserId.value = "";
     await refetchCollaborators();
     statusMessage.value = "Ownership transferred.";

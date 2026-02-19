@@ -1,13 +1,14 @@
 {
   "name": "@freeboard/api",
   "version": "0.1.0",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
-    "test": "node --test --test-concurrency=1",
-    "test:ci": "node --test --test-concurrency=1"
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "npm run build && node dist/index.js",
+    "test": "tsx --test --test-concurrency=1",
+    "test:ci": "tsx --test --test-concurrency=1"
   },
   "private": true,
   "dependencies": {
@@ -29,5 +30,8 @@
     "nanoid": "^5.1.6",
     "nodemon": "^3.1.7",
     "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6"
   }
 }

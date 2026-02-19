@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component WidgetDialogBox
  * @description Modal dialog for configuring a widget’s type, title, enabled flag, and settings.
@@ -10,7 +10,7 @@
  */
 defineOptions({ name: "WidgetDialogBox" });
 
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, type PropType } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
 import { useDashboardStore } from "../stores/dashboard.js";
@@ -18,43 +18,86 @@ import { usePluginRegistryStore } from "../stores/pluginRegistry.js";
 import { storeToRefs } from "pinia";
 import TabNavigator from "./TabNavigator.vue";
 import TypeSelect from "./TypeSelect.vue";
+import type { UnknownRecord, WidgetPlugin } from "../types/runtime.js";
+
+type FormComponentRef = {
+  hasErrors: () => boolean;
+  getValue: () => Record<string, unknown>;
+};
+type WidgetDialogSubmitPayload = {
+  type: string | null;
+  settings: Record<string, unknown>;
+} & Record<string, unknown>;
+type WidgetFieldSection = {
+  name: string;
+  settings: UnknownRecord;
+  fields: UnknownRecord[];
+};
 
 const dashboardStore = useDashboardStore();
 const pluginRegistryStore = usePluginRegistryStore();
 const { dashboard } = storeToRefs(dashboardStore);
 const { widgetPlugins } = storeToRefs(pluginRegistryStore);
+const widgetPluginMap = computed<Record<string, WidgetPlugin>>(() => widgetPlugins.value);
 
 // Props passed from parent component
 const { header, onClose, onOk, widget } = defineProps({
   header: String,
-  onClose: Function,
-  onOk: Function,
-  widget: Object,
+  onClose: Function as PropType<(event?: Event) => void>,
+  onOk: Function as PropType<(payload: WidgetDialogSubmitPayload) => void>,
+  widget: Object as PropType<Record<string, unknown>>,
 });
+const widgetDialogHeader = header || "";
 
 // Reactive reference for selected widget type
-const typeRef = ref(widget ? widget.type : null);
+const typeRef = ref<string | null>(widget && typeof widget.type === "string" ? widget.type : null);
 
 // Dynamic fields schema based on selected type
-const fields = ref([]);
+const toWidgetFieldSection = (value: unknown): WidgetFieldSection | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const candidate = value as Record<string, unknown>;
+  const name = typeof candidate.name === "string" ? candidate.name : "";
+  if (!name) {
+    return null;
+  }
+  return {
+    name,
+    settings:
+      candidate.settings && typeof candidate.settings === "object"
+        ? (candidate.settings as UnknownRecord)
+        : {},
+    fields: Array.isArray(candidate.fields) ? (candidate.fields as UnknownRecord[]) : [],
+  };
+};
+
+const fields = ref<WidgetFieldSection[]>([]);
 
 // Store child Form component refs for validation
-const components = ref({});
+const components = ref<Record<string, FormComponentRef | null>>({});
 
-const storeComponentRef = (name, el) => {
-  components.value[name] = el;
+const isFormComponentRef = (value: unknown): value is FormComponentRef =>
+  !!value &&
+  typeof value === "object" &&
+  typeof (value as FormComponentRef).hasErrors === "function" &&
+  typeof (value as FormComponentRef).getValue === "function";
+
+const storeComponentRef = (name: string, el: unknown) => {
+  components.value[name] = isFormComponentRef(el) ? el : null;
 };
 
 // Rebuild fields whenever widget type changes
 watch(
   typeRef,
   (newValue) => {
-    const plugin = widgetPlugins.value[newValue];
+    const selectedType = typeof newValue === "string" ? newValue : "";
+    const plugin = widgetPluginMap.value[selectedType];
     if (!newValue || !plugin || typeof plugin.fields !== "function") {
       fields.value = [];
       return;
     }
-    fields.value = plugin.fields(widget, dashboard.value, {
+    const sections = plugin.fields?.(widget, dashboard.value, {
       label: "form.labelGeneral",
       icon: "hi-home",
       name: "general",
@@ -76,31 +119,36 @@ watch(
         },
       ],
     });
+    fields.value = Array.isArray(sections)
+      ? sections
+          .map((section) => toWidgetFieldSection(section))
+          .filter((section): section is WidgetFieldSection => Boolean(section))
+      : [];
   },
   { immediate: true },
 );
 
 // Build options list for the type select dropdown
 const widgetPluginsOptions = computed(() =>
-  Object.keys(widgetPlugins.value).map((key) => ({
+  Object.keys(widgetPluginMap.value).map((key) => ({
     value: key,
-    label: widgetPlugins.value[key].label,
+    label: widgetPluginMap.value[key]?.label || key,
   })),
 );
 
-const dialog = ref(null);
+const dialog = ref<{ closeModal?: () => void } | null>(null);
 
 /**
  * Handle OK: validate all fields, assemble new widget config, invoke onOk, then close modal.
  */
 const onDialogBoxOk = () => {
-  if (fields.value.some((f) => components.value[f.name].hasErrors())) {
+  if (fields.value.some((f) => components.value[f.name]?.hasErrors?.())) {
     return;
   }
-  const s = {};
-  const result = {};
+  const s: Record<string, unknown> = {};
+  const result: Record<string, unknown> = {};
   fields.value.forEach((f) => {
-    const v = components.value[f.name].getValue();
+    const v = components.value[f.name]?.getValue?.() || {};
     Object.keys(v).forEach((k) => {
       if (["type", "title", "enabled"].includes(k)) {
         result[k] = v[k];
@@ -109,14 +157,14 @@ const onDialogBoxOk = () => {
       }
     });
   });
-  onOk({ ...result, settings: s, type: typeRef.value });
-  dialog.value.closeModal();
+  onOk?.({ ...result, settings: s, type: typeRef.value });
+  dialog.value?.closeModal?.();
 };
 </script>
 
 <template>
   <DialogBox
-    :header="header"
+    :header="widgetDialogHeader"
     ref="dialog"
     :ok="$t('dialogBox.buttonOk')"
     :cancel="$t('dialogBox.buttonCancel')"

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import mongoose from "mongoose";
-import { config } from "../packages/api/src/config.js";
-import Dashboard from "../packages/api/src/models/Dashboard.js";
+import { config } from "../packages/api/src/config.ts";
+import Dashboard from "../packages/api/src/models/Dashboard.ts";
 
 const parseArgs = () => {
   const args = process.argv.slice(2);

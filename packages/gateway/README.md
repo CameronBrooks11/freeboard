@@ -19,7 +19,7 @@ Datasource execution boundary service (HTTP fetch + realtime SSE/WebSocket/MQTT 
 
 ## Core Source Layout
 
-- `src/index.js`: composition root, server wiring, realtime orchestration
+- `src/index.ts`: composition root, server wiring, realtime orchestration
 - `src/runtimeConfig.js`: env normalization and runtime limits
 - `src/networkPolicy.js`: URL parsing + destination checks
 - `src/gatewayApiClient.js`: API introspection/revocation client
@@ -38,4 +38,4 @@ Optional tuning is documented in root `.env.example` (`REALTIME_*`, `FETCH_*`, `
 
 - Keep client-facing errors intentional and sanitized.
 - Add/adjust tests in `packages/gateway/test` when touching auth, egress, or protocol handling.
-- Preserve API/gateway contract compatibility with `packages/api/src/datasourceGateway.js`.
+- Preserve API/gateway contract compatibility with `packages/api/src/datasourceGateway.ts`.

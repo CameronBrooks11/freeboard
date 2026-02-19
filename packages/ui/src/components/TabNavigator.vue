@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component TabNavigator
  * @description Renders a tabbed navigation interface for switching between multiple content sections.
@@ -9,9 +9,13 @@ defineOptions({ name: "TabNavigator" });
 
 import { onMounted, ref } from "vue";
 
-const { fields } = defineProps({
-  fields: Array,
-});
+type TabField = {
+  name: string;
+  icon?: string;
+  label?: string;
+};
+
+const { fields } = defineProps<{ fields: TabField[] }>();
 
 // Index of currently active tab
 const index = ref(0);
@@ -35,10 +39,10 @@ onMounted(() => {
           :class="{ 'tab-navigator__menu__board-toolbar__item--active': index === i }"
         >
           <i class="tab-navigator__menu__board-toolbar__item__icon">
-            <v-icon :name="field.icon" />
+            <v-icon :name="field.icon || 'hi-cog'" />
           </i>
           <label class="tab-navigator__menu__board-toolbar__item__label">
-            {{ $t(field.label) }}
+            {{ $t(field.label || "") }}
           </label>
         </li>
       </ul>
@@ -52,7 +56,7 @@ onMounted(() => {
         :style="{ display: index === i ? 'inherit' : 'none' }"
       >
         <!-- Render named slot for each tab -->
-        <slot :name="field.name" :key="field.name"></slot>
+        <slot :name="field.name || ''" :key="field.name || i"></slot>
       </div>
     </div>
   </div>

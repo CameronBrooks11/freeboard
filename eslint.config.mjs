@@ -1,6 +1,8 @@
 import globals from "globals";
 import js from "@eslint/js";
 import pluginVue from "eslint-plugin-vue";
+import tsParser from "@typescript-eslint/parser";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
 
 let eslintConfigPrettier = null;
 try {
@@ -53,17 +55,79 @@ export default [
   },
   { languageOptions: { globals: globals.browser } },
   {
-    files: ["packages/ui/src/**/*.{js,mjs,cjs,vue}"],
+    files: ["**/*.ts"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        sourceType: "module",
+        ecmaVersion: "latest",
+      },
+    },
+    plugins: {
+      "@typescript-eslint": tsPlugin,
+    },
+    rules: {
+      ...tsPlugin.configs.recommended.rules,
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/ban-ts-comment": [
+        "error",
+        {
+          "ts-ignore": true,
+          "ts-nocheck": true,
+          "ts-check": false,
+          "ts-expect-error": "allow-with-description",
+          minimumDescriptionLength: 10,
+        },
+      ],
+    },
+  },
+  {
+    files: ["**/*.vue"],
+    languageOptions: {
+      parserOptions: {
+        parser: tsParser,
+        sourceType: "module",
+        ecmaVersion: "latest",
+      },
+    },
+    plugins: {
+      "@typescript-eslint": tsPlugin,
+    },
+    rules: {
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+    },
+  },
+  {
+    files: ["packages/ui/src/**/*.{js,ts,mjs,cjs,vue}"],
     languageOptions: {
       globals: {
         __FREEBOARD_VERSION__: "readonly",
         __FREEBOARD_STATIC__: "readonly",
+        __FREEBOARD_BASE_PATH__: "readonly",
       },
     },
     rules: {
       "vue/multi-word-component-names": "off",
       "vue/no-reserved-component-names": "off",
       "vue/no-mutating-props": "off",
+    },
+  },
+  {
+    files: ["packages/{ui,api,gateway}/src/**/*.{ts,vue}"],
+    plugins: {
+      "@typescript-eslint": tsPlugin,
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
+  {
+    files: ["**/test/**/*.ts", "e2e/**/*.ts", "scripts/**/*.mjs"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
   ...(eslintConfigPrettier ? [eslintConfigPrettier] : []),

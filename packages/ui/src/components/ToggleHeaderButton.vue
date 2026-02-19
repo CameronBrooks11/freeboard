@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component ToggleHeaderButton
  * @description Button to toggle the dashboard header edit mode on and off.

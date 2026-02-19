@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component AdminConsole
  * @description Admin-only surface for user lifecycle and policy management.
@@ -359,7 +359,7 @@ const {
               <td>
                 <input
                   v-if="serviceAccountDrafts[serviceAccount._id]"
-                  v-model="serviceAccountDrafts[serviceAccount._id].name"
+                  v-model="serviceAccountDrafts[serviceAccount._id]!.name"
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
@@ -368,7 +368,7 @@ const {
               <td>
                 <input
                   v-if="serviceAccountDrafts[serviceAccount._id]"
-                  v-model="serviceAccountDrafts[serviceAccount._id].description"
+                  v-model="serviceAccountDrafts[serviceAccount._id]!.description"
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
@@ -385,7 +385,7 @@ const {
                       class="admin-console__checkbox-input"
                       type="checkbox"
                       :value="scope"
-                      v-model="serviceAccountDrafts[serviceAccount._id].scopes"
+                      v-model="serviceAccountDrafts[serviceAccount._id]!.scopes"
                       :disabled="isBusy"
                     />
                     <span>{{ scope }}</span>
@@ -397,7 +397,7 @@ const {
                   v-if="serviceAccountDrafts[serviceAccount._id]"
                   class="admin-console__checkbox-input"
                   type="checkbox"
-                  v-model="serviceAccountDrafts[serviceAccount._id].active"
+                  v-model="serviceAccountDrafts[serviceAccount._id]!.active"
                   :disabled="isBusy"
                 />
               </td>
@@ -510,7 +510,7 @@ const {
           <code class="admin-console__mono">
             {{
               issuedServiceAccountTokenByAccount[createServiceAccountTokenInput.serviceAccountId]
-                .token
+                ?.token
             }}
           </code>
         </div>
@@ -537,7 +537,7 @@ const {
           <tbody>
             <tr v-for="tokenRecord in serviceAccountTokens" :key="tokenRecord._id">
               <td>{{ tokenRecord.label || "-" }}</td>
-              <td>{{ tokenRecord.scopes.join(", ") }}</td>
+              <td>{{ (tokenRecord.scopes || []).join(", ") }}</td>
               <td>{{ formatDateTime(tokenRecord.expiresAt) }}</td>
               <td>{{ formatDateTime(tokenRecord.revokedAt) }}</td>
               <td>{{ formatDateTime(tokenRecord.lastUsedAt) }}</td>
@@ -646,7 +646,7 @@ const {
           type="button"
           class="admin-console__button"
           :disabled="isBusy"
-          @click="refetchAuditEvents"
+          @click="() => void refetchAuditEvents()"
         >
           {{ $t("admin.refreshAuditEvents") }}
         </button>
@@ -899,7 +899,7 @@ const {
               <td>
                 <input
                   v-if="credentialProfileDrafts[profile._id]"
-                  v-model="credentialProfileDrafts[profile._id].name"
+                  v-model="credentialProfileDrafts[profile._id]!.name"
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
@@ -908,7 +908,7 @@ const {
               <td>
                 <select
                   v-if="credentialProfileDrafts[profile._id]"
-                  v-model="credentialProfileDrafts[profile._id].type"
+                  v-model="credentialProfileDrafts[profile._id]!.type"
                   class="admin-console__select"
                   :disabled="isBusy"
                 >
@@ -926,7 +926,7 @@ const {
                   v-if="credentialProfileDrafts[profile._id]"
                   class="admin-console__checkbox-input"
                   type="checkbox"
-                  v-model="credentialProfileDrafts[profile._id].allowPublicUse"
+                  v-model="credentialProfileDrafts[profile._id]!.allowPublicUse"
                   :disabled="isBusy"
                 />
               </td>
@@ -1089,7 +1089,7 @@ const {
               <td>
                 <input
                   v-if="brokerProfileDrafts[profile._id]"
-                  v-model="brokerProfileDrafts[profile._id].name"
+                  v-model="brokerProfileDrafts[profile._id]!.name"
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
@@ -1098,7 +1098,7 @@ const {
               <td>
                 <input
                   v-if="brokerProfileDrafts[profile._id]"
-                  v-model="brokerProfileDrafts[profile._id].brokerUrl"
+                  v-model="brokerProfileDrafts[profile._id]!.brokerUrl"
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
@@ -1107,7 +1107,7 @@ const {
               <td>
                 <select
                   v-if="brokerProfileDrafts[profile._id]"
-                  v-model="brokerProfileDrafts[profile._id].credentialProfileId"
+                  v-model="brokerProfileDrafts[profile._id]!.credentialProfileId"
                   class="admin-console__select"
                   :disabled="isBusy"
                 >
@@ -1124,7 +1124,7 @@ const {
               <td>
                 <input
                   v-if="brokerProfileDrafts[profile._id]"
-                  v-model="brokerProfileDrafts[profile._id].topicAllowlist"
+                  v-model="brokerProfileDrafts[profile._id]!.topicAllowlist"
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
@@ -1135,7 +1135,7 @@ const {
                   v-if="brokerProfileDrafts[profile._id]"
                   class="admin-console__checkbox-input"
                   type="checkbox"
-                  v-model="brokerProfileDrafts[profile._id].tlsRejectUnauthorized"
+                  v-model="brokerProfileDrafts[profile._id]!.tlsRejectUnauthorized"
                   :disabled="isBusy"
                 />
               </td>
@@ -1144,7 +1144,7 @@ const {
                   v-if="brokerProfileDrafts[profile._id]"
                   class="admin-console__checkbox-input"
                   type="checkbox"
-                  v-model="brokerProfileDrafts[profile._id].allowPublicUse"
+                  v-model="brokerProfileDrafts[profile._id]!.allowPublicUse"
                   :disabled="isBusy"
                 />
               </td>
@@ -1249,7 +1249,7 @@ const {
               <td>
                 <select
                   v-if="userDrafts[user._id]"
-                  v-model="userDrafts[user._id].role"
+                  v-model="userDrafts[user._id]!.role"
                   class="admin-console__select"
                   :disabled="isBusy"
                 >
@@ -1264,7 +1264,7 @@ const {
                   v-if="userDrafts[user._id]"
                   class="admin-console__checkbox-input"
                   type="checkbox"
-                  v-model="userDrafts[user._id].active"
+                  v-model="userDrafts[user._id]!.active"
                   :disabled="isBusy"
                 />
                 <span v-else>{{ user.active ? "yes" : "no" }}</span>
@@ -1313,10 +1313,10 @@ const {
       >
         <div class="admin-console__token-row">
           <strong>{{ entry.email }}</strong>
-          <code class="admin-console__mono">{{ entry.payload.token }}</code>
+          <code class="admin-console__mono">{{ entry.payload?.token || "" }}</code>
         </div>
         <div class="admin-console__token-row">
-          <code class="admin-console__mono">{{ entry.payload.resetUrl }}</code>
+          <code class="admin-console__mono">{{ entry.payload?.resetUrl || "" }}</code>
         </div>
       </div>
     </section>

@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component SelectFormElement
  * @description Dropdown select form element that initializes with a default option and emits updates.
@@ -32,8 +32,12 @@ const errors = ref([]);
  *
  * @param {string} value - Newly selected option value.
  */
-const onInput = (value) => {
+const onInput = (value: string) => {
   emit("update:modelValue", value);
+};
+
+const onChange = (event: Event) => {
+  onInput((event.target as HTMLSelectElement)?.value ?? "");
 };
 
 // Initialize to the first option if no value is set
@@ -50,11 +54,7 @@ defineExpose({
 
 <template>
   <div class="select-form-element">
-    <select
-      @change="onInput($event.target.value)"
-      :disabled="props.disabled"
-      class="select-form-element__select"
-    >
+    <select @change="onChange" :disabled="props.disabled" class="select-form-element__select">
       <option
         value=""
         :selected="modelValue === ''"

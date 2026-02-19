@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component Header
  * @description Renders the application header with admin controls, dashboard tools, and column toolbar when in edit mode.

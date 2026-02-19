@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component PaneDialogBox
  * @description Modal dialog for editing a pane’s title.
@@ -10,25 +10,35 @@
  */
 defineOptions({ name: "PaneDialogBox" });
 
-import { onMounted, ref } from "vue";
+import { onMounted, ref, type PropType } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
 import { useI18n } from "vue-i18n";
 
+type FormRef = {
+  hasErrors: () => boolean;
+  getValue: () => Record<string, unknown>;
+};
+type PaneDialogSubmitPayload = {
+  settings: Record<string, unknown>;
+};
+
 const { t } = useI18n();
 
 // Reference to the Form component for validation and value retrieval
-const form = ref(null);
+const form = ref<FormRef | null>(null);
 // Dynamic form fields for editing pane name
-const fields = ref([]);
+const fields = ref<Array<Record<string, unknown>>>([]);
 
 // Props passed from parent component
 const { header, onClose, onOk, settings } = defineProps({
   header: String,
-  onClose: Function,
-  onOk: Function,
-  settings: Object,
+  onClose: Function as PropType<(event?: Event) => void>,
+  onOk: Function as PropType<(payload: PaneDialogSubmitPayload) => void>,
+  settings: Object as PropType<Record<string, unknown>>,
 });
+const paneDialogHeader = header || "";
+const paneDialogSettings = settings || {};
 
 // Initialize form fields on mount
 onMounted(() => {
@@ -44,23 +54,23 @@ onMounted(() => {
 });
 
 // Reference to the DialogBox for closing the modal programmatically
-const dialog = ref(null);
+const dialog = ref<{ closeModal?: () => void } | null>(null);
 
 /**
  * Handle the OK button: validate form, invoke onOk prop with new settings, then close modal.
  */
 const onDialogBoxOk = () => {
-  if (form.value.hasErrors()) {
+  if (form.value?.hasErrors?.()) {
     return;
   }
-  onOk({ settings: form.value.getValue() });
-  dialog.value.closeModal();
+  onOk?.({ settings: form.value?.getValue?.() || {} });
+  dialog.value?.closeModal?.();
 };
 </script>
 
 <template>
   <DialogBox
-    :header="header"
+    :header="paneDialogHeader"
     ref="dialog"
     :ok="$t('dialogBox.buttonOk')"
     :cancel="$t('dialogBox.buttonCancel')"
@@ -68,6 +78,6 @@ const onDialogBoxOk = () => {
     @ok="() => onDialogBoxOk()"
   >
     <!-- Form for editing pane title -->
-    <Form ref="form" :settings="settings" :fields="fields" />
+    <Form ref="form" :settings="paneDialogSettings" :fields="fields" />
   </DialogBox>
 </template>

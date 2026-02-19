@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component SwitchFormElement
  * @description Toggle switch form element for boolean values.
@@ -26,8 +26,12 @@ const id = `switch-${new Date().getTime()}`;
  *
  * @param {boolean} value - New checked state from the checkbox input.
  */
-const onChange = (value) => {
+const onChangeValue = (value: boolean) => {
   emit("update:modelValue", value);
+};
+
+const onChange = (event: Event) => {
+  onChangeValue((event.target as HTMLInputElement)?.checked ?? false);
 };
 
 defineExpose({
@@ -44,7 +48,7 @@ defineExpose({
       :checked="props.modelValue"
       class="switch-form-element__checkbox"
       :disabled="props.disabled"
-      @change="onChange($event.target.checked)"
+      @change="onChange"
     />
     <label class="switch-form-element__label" :for="id">
       <div class="switch-form-element__label__inner">

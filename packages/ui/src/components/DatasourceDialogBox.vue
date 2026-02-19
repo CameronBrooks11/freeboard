@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component DatasourceDialogBox
  * @description Modal dialog for configuring a datasource plugin and its settings.
@@ -9,7 +9,7 @@
  */
 defineOptions({ name: "DatasourceDialogBox" });
 
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, type PropType } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
 import { useDashboardStore } from "../stores/dashboard.js";
@@ -19,7 +19,28 @@ import { storeToRefs } from "pinia";
 import TabNavigator from "./TabNavigator.vue";
 import TypeSelect from "./TypeSelect.vue";
 import router from "../router";
+import type { Router } from "vue-router";
+import type { DatasourcePlugin, UnknownRecord } from "../types/runtime.js";
 
+type FormComponentRef = {
+  hasErrors: () => boolean;
+  getValue: () => Record<string, unknown>;
+};
+type DatasourceDialogSubmitPayload = {
+  type: string | null;
+  settings: Record<string, unknown>;
+} & Record<string, unknown>;
+type DatasourceFieldSection = {
+  name: string;
+  settings: UnknownRecord;
+  fields: UnknownRecord[];
+};
+type DatasourceLike = {
+  id?: string;
+  type?: string;
+  title?: string;
+  enabled?: boolean;
+};
 const dashboardStore = useDashboardStore();
 const pluginRegistryStore = usePluginRegistryStore();
 const profileCatalogStore = useProfileCatalogStore();
@@ -27,37 +48,72 @@ const profileCatalogStore = useProfileCatalogStore();
 const { dashboard } = storeToRefs(dashboardStore);
 const { datasourcePlugins } = storeToRefs(pluginRegistryStore);
 const { credentialProfiles, brokerProfiles } = storeToRefs(profileCatalogStore);
+const routerTyped = router as Router;
+const datasourcePluginMap = computed<Record<string, DatasourcePlugin>>(
+  () => datasourcePlugins.value,
+);
 
 // Define props passed into this dialog
 const { header, onClose, onOk, datasource } = defineProps({
   header: String,
-  onClose: Function,
-  onOk: Function,
-  datasource: Object,
+  onClose: Function as PropType<(event?: Event) => void>,
+  onOk: Function as PropType<(payload: DatasourceDialogSubmitPayload) => void>,
+  datasource: Object as PropType<DatasourceLike>,
 });
+const datasourceDialogHeader = header || "";
 
 // Reference to the DialogBox component
-const dialog = ref(null);
+const dialog = ref<{ closeModal?: () => void } | null>(null);
 // Reference to the TabNavigator component
-const tabNavigator = ref(null);
+const tabNavigator = ref<unknown>(null);
 
 // Store refs to child Form components for validation
-const components = ref({});
-const storeComponentRef = (name, el) => {
-  components.value[name] = el;
+const components = ref<Record<string, FormComponentRef | null>>({});
+
+const isFormComponentRef = (value: unknown): value is FormComponentRef =>
+  !!value &&
+  typeof value === "object" &&
+  typeof (value as FormComponentRef).hasErrors === "function" &&
+  typeof (value as FormComponentRef).getValue === "function";
+
+const storeComponentRef = (name: string, el: unknown) => {
+  components.value[name] = isFormComponentRef(el) ? el : null;
 };
 
 // Track selected plugin type for the datasource
-const typeRef = ref(datasource ? datasource.type : null);
+const typeRef = ref<string | null>(
+  datasource && typeof datasource.type === "string" ? datasource.type : null,
+);
 // Dynamic form fields based on selected plugin
-const fields = ref([]);
+const toDatasourceFieldSection = (value: unknown): DatasourceFieldSection | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const candidate = value as Record<string, unknown>;
+  const name = typeof candidate.name === "string" ? candidate.name : "";
+  if (!name) {
+    return null;
+  }
+  return {
+    name,
+    settings:
+      candidate.settings && typeof candidate.settings === "object"
+        ? (candidate.settings as UnknownRecord)
+        : {},
+    fields: Array.isArray(candidate.fields) ? (candidate.fields as UnknownRecord[]) : [],
+  };
+};
 
-const validateUniqueDatasourceTitle = (value) => {
-  if (!String(value || "").trim()) {
+const fields = ref<DatasourceFieldSection[]>([]);
+
+const validateUniqueDatasourceTitle = (value: unknown) => {
+  const candidate = String(value || "").trim();
+  if (!candidate) {
     return {};
   }
 
-  const duplicate = dashboard.value.hasDatasourceTitleConflict(value, datasource?.id);
+  const excludeId = datasource ? String(datasource.id || "") || null : null;
+  const duplicate = dashboard.value.hasDatasourceTitleConflict(candidate, excludeId);
 
   return duplicate ? { error: "Datasource title must be unique and not use reserved names." } : {};
 };
@@ -66,12 +122,17 @@ const validateUniqueDatasourceTitle = (value) => {
 watch(
   [typeRef, credentialProfiles, brokerProfiles],
   ([newValue]) => {
-    const plugin = datasourcePlugins.value[newValue];
-    if (!newValue || !plugin || typeof plugin.fields !== "function") {
+    const selectedType = typeof newValue === "string" ? newValue : "";
+    if (!selectedType) {
       fields.value = [];
       return;
     }
-    fields.value = plugin.fields(
+    const plugin = datasourcePluginMap.value[selectedType];
+    if (!plugin || typeof plugin.fields !== "function") {
+      fields.value = [];
+      return;
+    }
+    const sections = plugin.fields?.(
       datasource,
       dashboard.value,
       {
@@ -102,22 +163,35 @@ watch(
         brokerProfiles: brokerProfiles.value,
       },
     );
+    fields.value = Array.isArray(sections)
+      ? sections
+          .map((section) => toDatasourceFieldSection(section))
+          .filter((section): section is DatasourceFieldSection => Boolean(section))
+      : [];
   },
   { immediate: true },
 );
 
 // Build select options for plugin types
 const datasourcePluginsOptions = computed(() =>
-  Object.keys(datasourcePlugins.value).map((key) => ({
-    value: key,
-    label: datasourcePlugins.value[key].label,
-  })),
+  Object.keys(datasourcePluginMap.value)
+    .map((key: string) => {
+      const plugin = datasourcePluginMap.value[key];
+      if (!plugin) {
+        return null;
+      }
+      return {
+        value: key,
+        label: plugin.label || key,
+      };
+    })
+    .filter((entry): entry is { value: string; label: string } => Boolean(entry)),
 );
 
 const showBrokerProfileQuickCreate = computed(
   () => typeRef.value === "mqtt" && brokerProfiles.value.length === 0,
 );
-const adminBrokerProfilesHref = computed(() => router.resolve({ path: "/admin" }).href);
+const adminBrokerProfilesHref = computed(() => routerTyped.resolve({ path: "/admin" }).href);
 
 const openAdminBrokerProfiles = () => {
   window.open(adminBrokerProfilesHref.value, "_blank", "noopener");
@@ -128,13 +202,19 @@ const openAdminBrokerProfiles = () => {
  */
 const onDialogBoxOk = () => {
   // Prevent saving if any field component reports errors
-  if (fields.value.some((f) => components.value[f.name].hasErrors())) {
+  if (
+    fields.value.some((f) => {
+      const name = typeof f.name === "string" ? f.name : "";
+      return components.value[name]?.hasErrors?.();
+    })
+  ) {
     return;
   }
-  const s = {};
-  const result = {};
+  const s: Record<string, unknown> = {};
+  const result: Record<string, unknown> = {};
   fields.value.forEach((f) => {
-    const v = components.value[f.name].getValue();
+    const name = typeof f.name === "string" ? f.name : "";
+    const v = components.value[name]?.getValue?.() || {};
     Object.keys(v).forEach((k) => {
       if (["type", "title", "enabled"].includes(k)) {
         result[k] = v[k];
@@ -143,15 +223,15 @@ const onDialogBoxOk = () => {
       }
     });
   });
-  onOk({ ...result, settings: s, type: typeRef.value });
-  dialog.value.closeModal();
+  onOk?.({ ...result, settings: s, type: typeRef.value });
+  dialog.value?.closeModal?.();
 };
 </script>
 
 <template>
   <DialogBox
     class="datasource-dialog-box"
-    :header="header"
+    :header="datasourceDialogHeader"
     :ok="$t('dialogBox.buttonOk')"
     :cancel="$t('dialogBox.buttonCancel')"
     ref="dialog"

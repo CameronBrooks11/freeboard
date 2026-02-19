@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component SavedDashboardsDialogBox
  * @description
@@ -13,14 +13,14 @@
 defineOptions({ name: "SavedDashboardsDialogBox" });
 
 import { useQuery } from "@vue/apollo-composable";
-import { ref } from "vue";
+import { ref, type PropType } from "vue";
 import { useRouter } from "vue-router";
 import DialogBox from "./DialogBox.vue";
 import { DASHBOARDS_LIST_QUERY, DASHBOARD_READ_QUERY } from "../gql.js";
 import { useDashboardStore } from "../stores/dashboard.js";
 
 // ===== Props =====
-const { onClose } = defineProps({ onClose: Function });
+const { onClose } = defineProps({ onClose: Function as PropType<(event?: Event) => void> });
 
 // ===== Store & Router =====
 const router = useRouter();
@@ -33,7 +33,7 @@ const { result, loading, error } = useQuery(DASHBOARDS_LIST_QUERY);
 // UI state to track if a dashboard is being opened
 const picking = ref(false);
 
-const visibilityLabelKey = (visibility) => {
+const visibilityLabelKey = (visibility: unknown) => {
   const normalized = String(visibility || "").toLowerCase();
   if (normalized === "public") {
     return "savedDashboards.public";
@@ -53,7 +53,7 @@ const visibilityLabelKey = (visibility) => {
  * @param {string} id - Dashboard ID to load.
  * @returns {Promise<void>}
  */
-const openDashboard = async (id) => {
+const openDashboard = async (id: string) => {
   picking.value = true;
   try {
     // Navigate to dashboard route
@@ -61,9 +61,10 @@ const openDashboard = async (id) => {
   } catch {
     // Fallback: fetch dashboard directly if navigation fails
     const { onResult } = useQuery(DASHBOARD_READ_QUERY, { id });
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       onResult(({ data }) => {
-        if (data?.dashboard) dashboardStore.loadDashboard(data.dashboard);
+        if (data?.dashboard)
+          dashboardStore.loadDashboard(data.dashboard as Record<string, unknown>);
         resolve();
       });
     });

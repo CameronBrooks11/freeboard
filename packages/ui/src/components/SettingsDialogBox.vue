@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component SettingsDialogBox
  * @description Modal dialog for editing dashboard settings (general, theme, style, etc.) via tabs.
@@ -8,7 +8,7 @@
  */
 defineOptions({ name: "SettingsDialogBox" });
 
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, type PropType } from "vue";
 import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
 import { useAuthStore } from "../stores/auth.js";
@@ -18,28 +18,49 @@ import TabNavigator from "./TabNavigator.vue";
 import createSettings from "../settings";
 import { usePreferredColorScheme } from "@vueuse/core";
 
+type FormComponentRef = {
+  hasErrors: () => boolean;
+  getValue: () => Record<string, unknown>;
+  setFieldValue?: (fieldName: string, value: unknown) => void;
+};
+type SettingsDialogSubmitPayload = Record<string, unknown> & {
+  settings: Record<string, unknown>;
+};
+type SettingsSection = {
+  name: string;
+  settings: Record<string, unknown>;
+  fields: Array<Record<string, unknown>>;
+};
+
 const authStore = useAuthStore();
 const dashboardStore = useDashboardStore();
 const { dashboard } = storeToRefs(dashboardStore);
 
 // Store child form component refs for validation
-const components = ref({});
+const components = ref<Record<string, FormComponentRef | null>>({});
 
-const storeComponentRef = (name, el) => {
-  components.value[name] = el;
+const isFormComponentRef = (value: unknown): value is FormComponentRef =>
+  !!value &&
+  typeof value === "object" &&
+  typeof (value as FormComponentRef).hasErrors === "function" &&
+  typeof (value as FormComponentRef).getValue === "function";
+
+const storeComponentRef = (name: string, el: unknown) => {
+  components.value[name] = isFormComponentRef(el) ? el : null;
 };
 
 // Props passed from parent
 const { onClose, onOk } = defineProps({
-  onClose: Function,
-  onOk: Function,
+  onClose: Function as PropType<(event?: Event) => void>,
+  onOk: Function as PropType<(payload: SettingsDialogSubmitPayload) => void>,
 });
 
 // Compute tab fields schema from current dashboard settings
-const fields = computed(() =>
-  createSettings(dashboard.value, {
-    allowTrustedExecution: authStore.isTrustedExecutionMode(),
-  }),
+const fields = computed<SettingsSection[]>(
+  () =>
+    createSettings(dashboard.value, {
+      allowTrustedExecution: authStore.isTrustedExecutionMode(),
+    }) as SettingsSection[],
 );
 
 const preferredColorScheme = usePreferredColorScheme();
@@ -97,14 +118,18 @@ watch(
   { immediate: true },
 );
 
-const onFormChange = (sectionName, formValue) => {
+const onFormChange = (sectionName: string, formValue: unknown) => {
   if (sectionName !== "theme") {
     return;
   }
-  selectedTheme.value = String(formValue?.theme || "auto");
+  const nextValue =
+    formValue && typeof formValue === "object"
+      ? (formValue as Record<string, unknown>).theme
+      : undefined;
+  selectedTheme.value = String(nextValue || "auto");
 };
 
-const onThemePreviewSelect = (themeValue) => {
+const onThemePreviewSelect = (themeValue: string) => {
   selectedTheme.value = themeValue;
   components.value.theme?.setFieldValue?.("theme", themeValue);
 };
@@ -121,20 +146,20 @@ const themePreviewCards = computed(() =>
 );
 
 // Reference to the DialogBox for closing the modal programmatically
-const dialog = ref(null);
+const dialog = ref<{ closeModal?: () => void } | null>(null);
 
 /**
  * Handle OK: validate all tabs, assemble general and settings objects, invoke onOk, then close modal.
  */
 const onDialogBoxOk = () => {
   // Prevent save if any field component reports errors
-  if (fields.value.some((f) => components.value[f.name].hasErrors())) {
+  if (fields.value.some((f) => components.value[f.name]?.hasErrors?.())) {
     return;
   }
-  const s = {};
-  const result = {};
+  const s: Record<string, unknown> = {};
+  const result: Record<string, unknown> = {};
   fields.value.forEach((f) => {
-    const v = components.value[f.name].getValue();
+    const v = components.value[f.name]?.getValue?.() || {};
     Object.keys(v).forEach((k) => {
       if (f.name === "general") {
         result[k] = v[k];
@@ -143,8 +168,8 @@ const onDialogBoxOk = () => {
       }
     });
   });
-  onOk({ ...result, settings: s });
-  dialog.value.closeModal();
+  onOk?.({ ...result, settings: s });
+  dialog.value?.closeModal?.();
 };
 </script>
 

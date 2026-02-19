@@ -73,14 +73,14 @@ See: [Widget Runtime](/manual/widget-runtime)
 
 ## Key UI Models
 
-- `Dashboard` (`packages/ui/src/models/Dashboard.js`)
+- `Dashboard` (`packages/ui/src/models/Dashboard.ts`)
   - owns panes and datasources
   - handles serialization/deserialization
   - propagates datasource updates to widgets
-- `Datasource` (`packages/ui/src/models/Datasource.js`)
+- `Datasource` (`packages/ui/src/models/Datasource.ts`)
   - owns datasource plugin instance and update lifecycle
   - delegates realtime lifecycle to per-dashboard `StreamingManager` for `sse`/`websocket`/`mqtt`
-- `Widget` (`packages/ui/src/models/Widget.js`)
+- `Widget` (`packages/ui/src/models/Widget.ts`)
   - owns widget plugin instance, rendering, errors, and resize forwarding
 
 ## Ports (Default Dev)

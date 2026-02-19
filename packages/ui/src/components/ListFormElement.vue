@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component ListFormElement
  * @description Autocomplete list dropdown with fuzzy search to select a value.
@@ -20,7 +20,13 @@ import { asyncComputed } from "@vueuse/core";
 const { t } = useI18n();
 
 // Props and emit definition
-const props = defineProps(["modelValue", "secret", "disabled", "options"]);
+type ListOption = { value: string; label: string };
+const props = defineProps<{
+  modelValue: string;
+  secret?: boolean;
+  disabled?: boolean;
+  options: Promise<ListOption[]>;
+}>();
 const emit = defineEmits(["update:modelValue"]);
 
 // Dropdown visibility toggle
@@ -41,18 +47,18 @@ const label = asyncComputed(async () => {
 const filter = async () => {
   const all = await props.options;
   return all
-    .filter((opt) => opt.value)
-    .map((opt) => ({
+    .filter((opt: ListOption) => opt.value)
+    .map((opt: ListOption) => ({
       value: opt.value,
       label: opt.label,
       prio: levenshteinDistance(value.value, opt.label),
     }))
-    .sort((a, b) => a.prio - b.prio)
+    .sort((a: { prio: number }, b: { prio: number }) => a.prio - b.prio)
     .slice(0, 10);
 };
 
 // Filtered options to display in dropdown
-const opts = ref([]);
+const opts = ref<Array<ListOption & { prio: number }>>([]);
 
 /**
  * Refresh dropdown options when the user types.
@@ -64,7 +70,7 @@ const onSearch = async () => {
 /**
  * Handle user selecting an option from the list.
  */
-const onLinkClicked = (option) => {
+const onLinkClicked = (option: ListOption) => {
   value.value = option.value;
   show.value = false;
 };

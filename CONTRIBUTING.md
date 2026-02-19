@@ -22,6 +22,21 @@ npm run build:verify
 - Include docs updates in the same PR when behavior changes.
 - Include tests for regressions and new behavior.
 
+TypeScript PR policy:
+
+- Type-focused refactors must not include unrelated feature behavior changes.
+- Keep type-system refactors scoped by package and boundary.
+- For Node ESM imports, use explicit `.js` specifiers for local module imports.
+- Any `@ts-expect-error` requires a short rationale and follow-up reference.
+- Do not start migrating the next package until the current package closeout criteria are met.
+
+TypeScript regression prevention checklist:
+
+- No `any`, `as unknown as`, `@ts-ignore`, or `@ts-nocheck` introduced in product source.
+- New boundary inputs start as `unknown` and are narrowed with guards/adapters.
+- `npm run check:ts:debt`, `npm run check:ts:source-artifacts`, and `npm run typecheck` must pass.
+- Any new ambient declaration (`*.d.ts`) must be documented in `docs/manual/typescript-standards.md`.
+
 ## Widget Contribution Process
 
 1. Open a **Widget Proposal** issue (use the issue template).

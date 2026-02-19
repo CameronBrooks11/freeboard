@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component Login
  * @description Policy-aware login/registration/invite/reset flow.
@@ -15,6 +15,7 @@ import {
   canAcceptInviteForMode,
   canCreateAccountForMode,
   LOGIN_ACTION_MODES,
+  type LoginActionMode,
   resolveLoginActionMode,
 } from "../auth/loginMode";
 import {
@@ -27,16 +28,27 @@ import {
 } from "../gql.js";
 
 const MODES = LOGIN_ACTION_MODES;
+type FormComponentRef = {
+  hasErrors: () => boolean;
+  getValue: () => Record<string, unknown>;
+};
+type LoginField = {
+  name: string;
+  label: string;
+  type: string;
+  required?: boolean;
+  disabled?: boolean;
+};
 
 const authStore = useAuthStore();
 const dashboardStore = useDashboardStore();
 const route = useRoute();
 
-const form = ref(null);
+const form = ref<FormComponentRef | null>(null);
 const loginError = ref("");
 const infoMessageKey = ref("");
-const fields = ref([]);
-const actionMode = ref(MODES.login);
+const fields = ref<LoginField[]>([]);
+const actionMode = ref<LoginActionMode>(MODES.login);
 
 const { mutate: authUser, loading: authLoading } = useMutation(USER_AUTH_MUTATION);
 const { mutate: registerUser, loading: registerLoading } = useMutation(USER_REGISTER_MUTATION);
@@ -222,20 +234,34 @@ const resetMessages = () => {
   infoMessageKey.value = "";
 };
 
-const switchMode = (nextMode) => {
+const switchMode = (nextMode: LoginActionMode) => {
   resetMessages();
   actionMode.value = nextMode;
 };
 
-const ensureMatchingPasswords = (value) => {
-  if (value.password !== value.confirmPassword) {
+const ensureMatchingPasswords = (value: Record<string, unknown>) => {
+  if (String(value.password ?? "") !== String(value.confirmPassword ?? "")) {
     throw new Error("Passwords do not match.");
   }
 };
 
+const resolveErrorMessage = (error: unknown): string => {
+  if (error && typeof error === "object") {
+    const graphQLErrors = (error as { graphQLErrors?: Array<{ message?: string }> }).graphQLErrors;
+    if (Array.isArray(graphQLErrors) && graphQLErrors[0]?.message) {
+      return graphQLErrors[0].message;
+    }
+    const message = (error as { message?: string }).message;
+    if (message) {
+      return message;
+    }
+  }
+  return "Authentication failed.";
+};
+
 const onDialogBoxOk = async () => {
   resetMessages();
-  if (form.value.hasErrors()) {
+  if (!form.value || form.value.hasErrors()) {
     return;
   }
 
@@ -247,7 +273,7 @@ const onDialogBoxOk = async () => {
         email: value.email,
         password: value.password,
       });
-      const token = result.data?.authUser?.token;
+      const token = result?.data?.authUser?.token;
       if (!token) {
         loginError.value = "Invalid authentication response.";
         return;
@@ -255,7 +281,7 @@ const onDialogBoxOk = async () => {
       authStore.login(token);
       dashboardStore.syncEditingPermissions();
       const lastPath = router.options.history?.state?.back;
-      const targetPath = lastPath && lastPath !== "/login" ? lastPath : "/";
+      const targetPath = typeof lastPath === "string" && lastPath !== "/login" ? lastPath : "/";
       await router.push(targetPath);
       return;
     }
@@ -266,7 +292,7 @@ const onDialogBoxOk = async () => {
         email: value.email,
         password: value.password,
       });
-      const token = result.data?.registerUser?.token;
+      const token = result?.data?.registerUser?.token;
       if (!token) {
         loginError.value = "Invalid authentication response.";
         return;
@@ -283,7 +309,7 @@ const onDialogBoxOk = async () => {
         token: value.token,
         password: value.password,
       });
-      const token = tokenResult.data?.acceptInvite?.token;
+      const token = tokenResult?.data?.acceptInvite?.token;
       if (!token) {
         loginError.value = "Invalid authentication response.";
         return;
@@ -314,8 +340,7 @@ const onDialogBoxOk = async () => {
       return;
     }
   } catch (error) {
-    loginError.value =
-      error?.graphQLErrors?.[0]?.message || error.message || "Authentication failed.";
+    loginError.value = resolveErrorMessage(error);
   }
 };
 

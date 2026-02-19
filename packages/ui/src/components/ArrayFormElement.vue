@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component ArrayFormElement
  * @description Renders and manages an array of objects in a table, with add/remove controls.
@@ -14,16 +14,22 @@ import { ref, watch } from "vue";
 import Form from "./Form.vue";
 import ActionButton from "./ActionButton.vue";
 
-const props = defineProps(["modelValue", "options"]);
+type ArrayField = { name: string; label?: string };
+type ArrayItem = Record<string, unknown>;
+
+const props = defineProps<{
+  modelValue: ArrayItem[];
+  options: ArrayField[];
+}>();
 const emit = defineEmits(["update:modelValue"]);
 
-const errors = ref([]);
-const value = ref([]);
+const errors = ref<string[]>([]);
+const value = ref<ArrayItem[]>([]);
 
 // Sync internal value when prop changes
 watch(
   () => props.modelValue,
-  (v) => {
+  (v: ArrayItem[] | undefined) => {
     if (!v) {
       return;
     }
@@ -32,13 +38,13 @@ watch(
   { immediate: true },
 );
 
-const onSettingChange = (index, v) => {
+const onSettingChange = (index: number, v: ArrayItem) => {
   // Update one item and emit change
   value.value[index] = v;
   onChange(value.value);
 };
 
-const onSettingRemove = (index) => {
+const onSettingRemove = (index: number) => {
   // Remove item and emit change
   value.value.splice(index, 1);
   onChange(value.value);
@@ -46,17 +52,17 @@ const onSettingRemove = (index) => {
 
 const onSettingAdd = () => {
   // Create a new empty object based on options and emit change
-  const val = {};
+  const val: ArrayItem = {};
 
-  props.options.forEach((o) => {
+  props.options.forEach((o: ArrayField) => {
     val[o.name] = "";
   });
   value.value.push(val);
   onChange(value.value);
 };
 
-const onChange = (value) => {
-  emit("update:modelValue", value);
+const onChange = (nextValue: ArrayItem[]) => {
+  emit("update:modelValue", nextValue);
 };
 
 defineExpose({

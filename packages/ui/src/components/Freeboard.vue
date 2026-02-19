@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component Freeboard
  * @description Root component that fetches/subscribes to dashboard data,
@@ -200,9 +200,16 @@ watch(
 
 /**
  * Handle incoming dashboard data (initial or subscription).
- * @param {{ dashboard?: any }|undefined} data
+ * @param {{ dashboard?: unknown }|undefined} data
  */
-const applyResult = (data) => {
+const applyResult = (
+  data:
+    | {
+        dashboard?: Record<string, unknown> | null;
+        dashboardByShareToken?: Record<string, unknown> | null;
+      }
+    | undefined,
+) => {
   const dash = data?.dashboard || data?.dashboardByShareToken;
   showLoadingIndicator.value = false;
 

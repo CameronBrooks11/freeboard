@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component Pane
  * @description Represents a dashboard pane, rendering its title, controls for editing/deleting the pane or adding widgets, and its widgets.
@@ -15,24 +15,31 @@ import WidgetDialogBox from "./WidgetDialogBox.vue";
 import Widget from "./Widget.vue";
 import { Widget as _Widget } from "../models/Widget";
 import { getCurrentInstance } from "vue";
+import type { AppContext } from "vue";
 import { useI18n } from "vue-i18n";
 import { openModal } from "../ui/modalHost.js";
+import type { Pane as PaneModel } from "../models/Pane";
 
 const { t } = useI18n();
 
 const dashboardStore = useDashboardStore();
 const { isEditing, dashboard } = storeToRefs(dashboardStore);
+const instance = getCurrentInstance();
+const appContext: AppContext | null = instance?.appContext ?? null;
 
 /**
  * Open dialog to edit the pane’s title.
  *
  * @param {Object} pane - Pane instance to edit.
  */
-const openPaneEditDialogBox = (pane) => {
-  openModal(PaneDialogBox, instance.appContext, {
+const openPaneEditDialogBox = (pane: PaneModel) => {
+  if (!appContext) {
+    return;
+  }
+  openModal(PaneDialogBox, appContext, {
     header: t("pane.titleEdit"),
-    onOk: (newSettings) => {
-      pane.title = newSettings.settings.name;
+    onOk: (newSettings: { settings: { name?: string } }) => {
+      pane.title = String(newSettings.settings.name || "");
     },
     settings: { name: pane.title },
   });
@@ -43,8 +50,11 @@ const openPaneEditDialogBox = (pane) => {
  *
  * @param {Object} pane - Pane instance to delete.
  */
-const openPaneDeleteDialogBox = (pane) => {
-  openModal(ConfirmDialogBox, instance.appContext, {
+const openPaneDeleteDialogBox = (pane: PaneModel) => {
+  if (!appContext) {
+    return;
+  }
+  openModal(ConfirmDialogBox, appContext, {
     title: t("pane.titleDelete"),
     onOk: () => dashboard.value.deletePane(pane),
   });
@@ -55,10 +65,18 @@ const openPaneDeleteDialogBox = (pane) => {
  *
  * @param {Object} pane - Pane instance to add the widget into.
  */
-const openWidgetAddDialogBox = (pane) => {
-  openModal(WidgetDialogBox, instance.appContext, {
+const openWidgetAddDialogBox = (pane: PaneModel) => {
+  if (!appContext) {
+    return;
+  }
+  openModal(WidgetDialogBox, appContext, {
     header: t("pane.titleAdd"),
-    onOk: (newSettings) => {
+    onOk: (newSettings: {
+      enabled: boolean;
+      settings: Record<string, unknown>;
+      type: string;
+      title: string;
+    }) => {
       const newViewModel = new _Widget();
       newViewModel.enabled = newSettings.enabled;
       newViewModel.settings = newSettings.settings;
@@ -70,8 +88,7 @@ const openWidgetAddDialogBox = (pane) => {
 };
 
 // Props passed in from parent component
-const { pane } = defineProps({ pane: Object });
-const instance = getCurrentInstance();
+const { pane } = defineProps<{ pane: PaneModel }>();
 </script>
 
 <template>

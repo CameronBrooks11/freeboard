@@ -156,7 +156,7 @@ services:
       export JWT_GATEWAY_SECRET="$(cat /run/secrets/jwt_gateway_secret)";
       export GATEWAY_SERVICE_TOKEN="$(cat /run/secrets/gateway_service_token)";
       export CREDENTIAL_ENCRYPTION_KEY="$(cat /run/secrets/credential_encryption_key)";
-      exec node packages/api/src/index.js
+      exec node packages/api/dist/index.js
 secrets:
   jwt_secret:
     file: ./secrets/jwt_secret.txt

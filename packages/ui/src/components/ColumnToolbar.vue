@@ -1,4 +1,4 @@
-<script setup lang="js">
+<script setup lang="ts">
 /**
  * @component ColumnToolbar
  * @description Toolbar for adjusting the dashboard’s maximum width (column count), rendered on both sides of the board.

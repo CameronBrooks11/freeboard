@@ -1,5 +1,5 @@
 schema:
-  - "packages/api/src/gql.js"
+  - "packages/api/src/gql.ts"
 generates:
   docs/auto/graphql/schema.graphql:
     plugins:
