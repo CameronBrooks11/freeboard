@@ -40,6 +40,19 @@ type StreamCallbacks = {
   onError: (errorCode: string, message: string) => void;
 };
 
+type MqttClientLike = {
+  subscribe: (topic: string, options: { qos: number }, callback: (error?: unknown) => void) => void;
+  unsubscribe: (topic: string, callback: (error?: unknown) => void) => void;
+  on: (event: string, listener: (...args: unknown[]) => void) => void;
+  off: (event: string, listener: (...args: unknown[]) => void) => void;
+  connected: boolean;
+};
+
+type MqttPoolEntryLike = {
+  client: MqttClientLike;
+  topicRefCounts: Map<string, number>;
+};
+
 type ParseRealtimeTargetUrl = (params: { rawTarget: string; protocol: string }) => {
   target: URL;
   port: number;
@@ -53,22 +66,7 @@ type EnsureDestinationFn = (
   deps?: { lookup?: LookupFn },
 ) => Promise<{ address: string; family: 4 | 6 }>;
 
-type MqttPoolEntry = {
-  client: {
-    subscribe: (
-      topic: string,
-      options: { qos: number },
-      callback: (error?: unknown) => void,
-    ) => void;
-    unsubscribe: (topic: string, callback: (error?: unknown) => void) => void;
-    on: (event: string, listener: (...args: unknown[]) => void) => void;
-    off: (event: string, listener: (...args: unknown[]) => void) => void;
-    connected: boolean;
-  };
-  topicRefCounts: Map<string, number>;
-};
-
-type AdapterFactoryDeps = {
+type AdapterFactoryDeps<TPoolEntry extends MqttPoolEntryLike> = {
   parseRealtimeTargetUrl: ParseRealtimeTargetUrl;
   ensureResolvedDestinationIsAllowed: EnsureDestinationFn;
   lookup: LookupFn;
@@ -104,8 +102,8 @@ type AdapterFactoryDeps = {
   acquireMqttPoolEntry: (params: {
     intent: StreamIntent;
     resolvedDestination: { address: string; family: 4 | 6 };
-  }) => MqttPoolEntry;
-  releaseMqttPoolEntry: (entry: MqttPoolEntry) => void;
+  }) => TPoolEntry;
+  releaseMqttPoolEntry: (entry: TPoolEntry) => void;
   ensureMqttTopicPolicy: (params: { intent: StreamIntent }) => void;
   REALTIME_SSE_ENABLED: boolean;
   REALTIME_WS_ENABLED: boolean;
@@ -136,7 +134,9 @@ const toBufferPayload = (value: unknown): Buffer => {
  * @param {Object} deps
  * @returns {Function}
  */
-export const createProtocolAdapterFactory = (deps: AdapterFactoryDeps) => {
+export const createProtocolAdapterFactory = <TPoolEntry extends MqttPoolEntryLike>(
+  deps: AdapterFactoryDeps<TPoolEntry>,
+) => {
   const {
     parseRealtimeTargetUrl,
     ensureResolvedDestinationIsAllowed,
@@ -430,7 +430,7 @@ export const createProtocolAdapterFactory = (deps: AdapterFactoryDeps) => {
       rejectUnauthorized: !ALLOW_INSECURE_TLS,
       lookup: (
         _unusedHostname: string,
-        _unusedOptions: dns.LookupOneOptions,
+        _unusedOptions: dns.LookupOptions,
         callback: (error: Error | null, address: string, family: number) => void,
       ) => {
         callback(null, resolvedDestination.address, resolvedDestination.family);

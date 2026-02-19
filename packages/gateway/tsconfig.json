@@ -3,6 +3,7 @@
   "compilerOptions": {
     "lib": ["ES2022"],
     "allowJs": false,
+    "strict": true,
     "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,
     "strictNullChecks": true,

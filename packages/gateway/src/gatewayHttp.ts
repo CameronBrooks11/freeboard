@@ -119,7 +119,7 @@ export const createUpstreamRequestOptions = ({
     family: resolvedDestination.family,
     lookup: (
       _unusedHostname: string,
-      _unusedOptions: dns.LookupOneOptions,
+      _unusedOptions: dns.LookupOptions,
       callback: (error: Error | null, address: string, family: number) => void,
     ) => {
       callback(null, resolvedDestination.address, resolvedDestination.family);
