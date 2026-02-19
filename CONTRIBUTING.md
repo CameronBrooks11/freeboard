@@ -30,6 +30,13 @@ TypeScript migration PR policy:
 - Any `@ts-expect-error` requires a short rationale and follow-up reference.
 - Do not start migrating the next package until the current package closeout criteria are met.
 
+TypeScript regression prevention checklist:
+
+- No `any`, `as unknown as`, `@ts-ignore`, or `@ts-nocheck` introduced in product source.
+- New boundary inputs start as `unknown` and are narrowed with guards/adapters.
+- `npm run check:ts:debt`, `npm run check:ts:migration-artifacts`, and `npm run typecheck` must pass.
+- Any new ambient declaration (`*.d.ts`) must be documented in `docs/manual/typescript-migration-conventions.md`.
+
 ## Widget Contribution Process
 
 1. Open a **Widget Proposal** issue (use the issue template).
