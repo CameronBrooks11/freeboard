@@ -38,15 +38,15 @@ type UnknownRecord = Record<string, unknown>;
 type DashboardLike = {
   _id?: unknown;
   user?: unknown;
-  visibility?: string;
-  shareToken?: string;
-  shareTokenVersion?: number;
+  visibility?: string | null;
+  shareToken?: string | null;
+  shareTokenVersion?: number | null;
   acl?: Array<{ userId?: unknown }>;
   datasources?: Array<{
     id?: unknown;
-    type?: string;
-    settings?: Record<string, unknown>;
-  }>;
+    type?: string | null;
+    settings?: Record<string, unknown> | null;
+  }> | null;
 };
 
 type PrincipalLike = {
@@ -150,7 +150,7 @@ const ensurePublicDashboardAllowed = ({
   }
 };
 
-const getDatasourceType = (datasource: { type?: string } | null | undefined) =>
+const getDatasourceType = (datasource: { type?: string | null } | null | undefined) =>
   String(datasource?.type || "")
     .trim()
     .toLowerCase();
@@ -668,7 +668,7 @@ const resolveStreamingSseWebsocketIntent = ({
       if (queryValue) {
         url = applyQueryCredentialToUrl({
           rawUrl: url,
-          paramName: canonicalIntent.queryParamName,
+          paramName: canonicalIntent.queryParamName || "",
           value: queryValue,
           createClientError,
         });

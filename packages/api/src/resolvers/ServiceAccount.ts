@@ -241,11 +241,14 @@ const resolvers: IResolvers = {
         createdByUserId: toComparableId(context.user?._id),
       }).save();
       const created = await ServiceAccount.findOne({ _id: account._id }).lean();
+      if (!created) {
+        throw createGraphQLError("Service account not found after creation");
+      }
       await recordAuditEvent({
         actorUserId: context.user?._id || null,
         action: "service_account.created",
         targetType: "service_account",
-        targetId: created?._id || null,
+        targetId: created._id,
         metadata: {
           scopes: normalizedScopes,
         },

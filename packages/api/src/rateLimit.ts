@@ -14,12 +14,16 @@ const trimWindow = (bucket: RateLimitBucket, now: number): void => {
 };
 
 const ensureBucket = (key: string): RateLimitBucket => {
-  if (!buckets.has(key)) {
-    buckets.set(key, {
-      hits: [],
-    });
+  const existing = buckets.get(key);
+  if (existing) {
+    return existing;
   }
-  return buckets.get(key);
+
+  const created: RateLimitBucket = {
+    hits: [],
+  };
+  buckets.set(key, created);
+  return created;
 };
 
 /**

@@ -34,7 +34,7 @@ const percentile = (sortedValues: number[], ratio: number): number => {
     0,
     Math.min(sortedValues.length - 1, Math.ceil(sortedValues.length * ratio) - 1),
   );
-  return sortedValues[index];
+  return sortedValues[index] ?? 0;
 };
 
 export const recordApiHttpRequest = ({

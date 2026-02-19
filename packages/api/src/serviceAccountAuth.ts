@@ -54,9 +54,14 @@ const parseToken = (rawToken: unknown): { tokenId: string; secret: string } | nu
   if (!match) {
     return null;
   }
+  const tokenId = match[1];
+  const secret = match[2];
+  if (!tokenId || !secret) {
+    return null;
+  }
   return {
-    tokenId: match[1],
-    secret: match[2],
+    tokenId,
+    secret,
   };
 };
 

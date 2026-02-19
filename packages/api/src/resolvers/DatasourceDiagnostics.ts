@@ -32,15 +32,17 @@ const toDatasourceArray = (value: unknown): DatasourceLike[] => {
       record.settings && typeof record.settings === "object" && !Array.isArray(record.settings)
         ? (record.settings as Record<string, unknown>)
         : undefined;
-    return {
-      type: record.type,
-      settings: settings
-        ? {
+    return settings
+      ? {
+          type: record.type,
+          settings: {
             brokerProfileId: settings.brokerProfileId,
             credentialProfileId: settings.credentialProfileId,
-          }
-        : undefined,
-    };
+          },
+        }
+      : {
+          type: record.type,
+        };
   });
 };
 

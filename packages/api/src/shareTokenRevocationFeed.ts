@@ -152,7 +152,10 @@ export const queryShareTokenRevocationFeed = async ({
 
   let nextCursor = null;
   if (events.length > 0) {
-    nextCursor = encodeCursor(toCursorPayload(events[events.length - 1]));
+    const latestEvent = events[events.length - 1];
+    if (latestEvent) {
+      nextCursor = encodeCursor(toCursorPayload(latestEvent));
+    }
   } else if (decodedCursor && !cursorExpired) {
     nextCursor = encodeCursor({
       createdAtMs: decodedCursor.createdAtMs,

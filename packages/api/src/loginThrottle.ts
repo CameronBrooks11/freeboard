@@ -22,13 +22,17 @@ const trimFailures = (entry: AttemptEntry, now: number): void => {
 };
 
 const ensureEntry = (key: string): AttemptEntry => {
-  if (!attemptState.has(key)) {
-    attemptState.set(key, {
-      failedAt: [],
-      lockUntil: 0,
-    });
+  const existing = attemptState.get(key);
+  if (existing) {
+    return existing;
   }
-  return attemptState.get(key);
+
+  const created: AttemptEntry = {
+    failedAt: [],
+    lockUntil: 0,
+  };
+  attemptState.set(key, created);
+  return created;
 };
 
 const destroyIfIdle = (key: string, entry: AttemptEntry): void => {

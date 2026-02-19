@@ -426,6 +426,9 @@ const resolvers: IResolvers = {
     deleteMyUserAccount: async (parent, args, context) => {
       ensureThatUserIsLogged(context);
       const user = await getUser(context);
+      if (!user) {
+        throw createGraphQLError("User not found or login not allowed");
+      }
 
       if (user.role === "admin") {
         await ensureAtLeastOneActiveAdminWillRemain(user._id);

@@ -20,6 +20,12 @@ export type EncryptedSecretPayload = {
 
 const decodeBase64 = (value: unknown): Buffer => Buffer.from(String(value || ""), "base64");
 const encodeBase64 = (value: Buffer): string => Buffer.from(value).toString("base64");
+const getEncryptionKey = (): Buffer => {
+  if (!config.credentialEncryptionKey) {
+    throw new Error("Credential encryption key is not configured");
+  }
+  return config.credentialEncryptionKey;
+};
 
 /**
  * Encrypt credential secret payload for storage.
@@ -31,7 +37,7 @@ export const encryptCredentialSecret = (
   secret: Record<string, unknown> = {},
 ): EncryptedSecretPayload => {
   const iv = crypto.randomBytes(IV_BYTES);
-  const cipher = crypto.createCipheriv(ALGORITHM, config.credentialEncryptionKey, iv);
+  const cipher = crypto.createCipheriv(ALGORITHM, getEncryptionKey(), iv);
   const plaintext = Buffer.from(JSON.stringify(secret || {}), "utf8");
   const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
   const authTag = cipher.getAuthTag();
@@ -71,7 +77,7 @@ export const decryptCredentialSecret = (
   const ciphertext = decodeBase64(encrypted.ciphertext);
   const authTag = decodeBase64(encrypted.authTag);
 
-  const decipher = crypto.createDecipheriv(ALGORITHM, config.credentialEncryptionKey, iv);
+  const decipher = crypto.createDecipheriv(ALGORITHM, getEncryptionKey(), iv);
   decipher.setAuthTag(authTag);
   const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
 

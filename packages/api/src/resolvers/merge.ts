@@ -18,6 +18,7 @@ export const transformDashboard = (
   viewerUserId: unknown = null,
   permissions: { canEdit?: boolean; canManageSharing?: boolean } = {},
 ) => {
+  const dashboardId = String(dashboard._id || "");
   const rawOwnerId =
     dashboard?.user && typeof dashboard.user === "object" && "_id" in dashboard.user
       ? dashboard.user._id
@@ -30,7 +31,7 @@ export const transformDashboard = (
   const canManageSharing = permissions.canManageSharing === true;
 
   return {
-    _id: dashboard._id.toString(),
+    _id: dashboardId,
     version: dashboard.version,
     title: dashboard.title,
     visibility: dashboard.visibility || "private",
