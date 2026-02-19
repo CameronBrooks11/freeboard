@@ -19,6 +19,15 @@ const parseSeriesPaths = (raw) =>
     .filter(Boolean);
 
 export class SparklineWidget extends ReactiveWidget {
+  seriesHistory: Array<Array<number | null>> = [];
+  latestSeriesCount = 1;
+  isNarrow = false;
+
+  headerElement!: HTMLDivElement;
+  canvas!: HTMLCanvasElement;
+  canvasWrap!: HTMLDivElement;
+  legendElement!: HTMLDivElement;
+
   static typeName = "sparkline";
   static label = "Sparkline";
   static preferredRows = 3;

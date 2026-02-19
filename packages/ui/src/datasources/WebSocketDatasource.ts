@@ -30,7 +30,12 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
 
   static label = "WebSocket";
 
-  static fields = (datasource, dashboard, general, runtimeContext: any = {}) => {
+  static fields = (
+    datasource,
+    dashboard,
+    general,
+    runtimeContext: Record<string, unknown> = {},
+  ) => {
     const credentialProfiles = Array.isArray(runtimeContext.credentialProfiles)
       ? runtimeContext.credentialProfiles
       : [];
@@ -163,7 +168,7 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
     );
   }
 
-  runtimeContext: any = {};
+  runtimeContext: Record<string, unknown> = {};
 
   manager = null;
 
@@ -171,15 +176,20 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
 
   streamGeneration = 0;
 
-  constructor(settings, updateCallback, statusCallback, runtimeContext: any = {}) {
+  constructor(
+    settings,
+    updateCallback,
+    statusCallback,
+    runtimeContext: Record<string, unknown> = {},
+  ) {
     super(settings, updateCallback, statusCallback);
     this.runtimeContext = runtimeContext;
     this.onSettingsChanged(settings);
   }
 
   async mintSessionToken() {
-    const dashboardId = this.runtimeContext.dashboardId || getDashboardId();
-    const datasourceId = this.runtimeContext.datasourceId;
+    const dashboardId = String(this.runtimeContext.dashboardId || getDashboardId() || "").trim();
+    const datasourceId = String(this.runtimeContext.datasourceId || "").trim();
 
     if (!dashboardId || !datasourceId) {
       throw new Error("Datasource runtime context is incomplete");
@@ -201,7 +211,7 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
       return;
     }
 
-    const datasourceId = this.runtimeContext.datasourceId;
+    const datasourceId = String(this.runtimeContext.datasourceId || "").trim();
     if (!datasourceId) {
       return;
     }
@@ -215,12 +225,13 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
   }
 
   async stopStream() {
-    if (!this.manager || !this.runtimeContext.datasourceId) {
+    const datasourceId = String(this.runtimeContext.datasourceId || "").trim();
+    if (!this.manager || !datasourceId) {
       return;
     }
 
     try {
-      await this.manager.unsubscribe(this.runtimeContext.datasourceId);
+      await this.manager.unsubscribe(datasourceId);
     } catch {
       // Ignore unsubscribe failures during teardown.
     }
@@ -234,8 +245,8 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
       return;
     }
 
-    const dashboardId = this.runtimeContext.dashboardId || getDashboardId();
-    const datasourceId = this.runtimeContext.datasourceId;
+    const dashboardId = String(this.runtimeContext.dashboardId || getDashboardId() || "").trim();
+    const datasourceId = String(this.runtimeContext.datasourceId || "").trim();
     if (!dashboardId || !datasourceId) {
       this.emitError("Datasource runtime context is incomplete", "STREAM_CONNECT_FAILED");
       return;
@@ -284,7 +295,7 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
     }
   }
 
-  onSettingsChanged(nextSettings: any = {}) {
+  onSettingsChanged(nextSettings: Record<string, unknown> = {}) {
     super.onSettingsChanged(nextSettings);
 
     const staleAfterSeconds = Math.max(5, Number(nextSettings.staleAfterSeconds) || 180);

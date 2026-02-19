@@ -7,17 +7,22 @@ import { normalizeDatasourceValue } from "../widgets/runtime/bindings.js";
 
 const RESERVED_DATASOURCE_TITLES = new Set(["datasources", "datasourcetitles"]);
 
+type DatasourceSnapshot = Record<string, unknown> & {
+  datasources: Record<string, unknown>;
+  datasourceTitles: Record<string, string>;
+};
+
 /**
  * Build a normalized datasource snapshot map keyed by datasource id,
  * with legacy title aliases when unambiguous.
  *
  * @param {Array<any>} datasources
- * @returns {Record<string, any>}
+ * @returns {Record<string, unknown>}
  */
 export const buildDatasourceSnapshot = (datasources = []) => {
-  const snapshot: Record<string, any> = {
-    datasources: {} as Record<string, any>,
-    datasourceTitles: {} as Record<string, any>,
+  const snapshot: DatasourceSnapshot = {
+    datasources: {},
+    datasourceTitles: {},
   };
   const duplicateTitles = new Set<string>();
 

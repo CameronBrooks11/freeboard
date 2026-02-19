@@ -39,7 +39,7 @@ export class ClockDatasource extends DatasourceRuntimeBase {
     this.onSettingsChanged(settings);
   }
 
-  onSettingsChanged(nextSettings: any = {}) {
+  onSettingsChanged(nextSettings: Record<string, unknown> = {}) {
     super.onSettingsChanged(nextSettings);
     const refreshSeconds = Math.max(1, Number(nextSettings.refresh) || 1);
     this.setPollingInterval(() => {

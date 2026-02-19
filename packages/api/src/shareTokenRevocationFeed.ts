@@ -71,7 +71,11 @@ export const recordShareTokenRevocationEvent = async ({
       revokedAt: new Date(revokedAt),
     }).save();
   } catch (error) {
-    console.warn("Share token revocation event persistence failed", error?.message || error);
+    const errorMessage =
+      error && typeof error === "object" && "message" in error
+        ? (error as { message?: string }).message
+        : undefined;
+    console.warn("Share token revocation event persistence failed", errorMessage || error);
   }
 };
 

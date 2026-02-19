@@ -3,8 +3,9 @@
  *
  * @param {Record<string, { node?: { remove?: Function } }>} assets
  */
-export const disposeDashboardAssets = (assets: Record<string, any> = {}) => {
+export const disposeDashboardAssets = (assets: Record<string, unknown> = {}) => {
   Object.values(assets).forEach((asset) => {
-    asset?.node?.remove?.();
+    const node = (asset as { node?: { remove?: () => void } } | null | undefined)?.node;
+    node?.remove?.();
   });
 };

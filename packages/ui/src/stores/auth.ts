@@ -77,7 +77,7 @@ const normalizeRole = (role) => {
   return "viewer";
 };
 
-const normalizePublicAuthPolicy = (policy: any = {}) => ({
+const normalizePublicAuthPolicy = (policy: Record<string, unknown> = {}) => ({
   registrationMode: ["disabled", "invite", "open"].includes(
     String(policy.registrationMode || "").toLowerCase(),
   )
@@ -211,8 +211,8 @@ export const useAuthStore = defineStore("auth", {
       }
 
       try {
-        const settings: any = JSON.parse(item);
-        this.token = settings.token || null;
+        const settings = JSON.parse(item) as Record<string, unknown>;
+        this.token = settings.token ? String(settings.token) : null;
       } catch {
         this.token = null;
         this.currentUser = null;
@@ -231,7 +231,7 @@ export const useAuthStore = defineStore("auth", {
     },
 
     saveSession() {
-      const settings: Record<string, any> = {};
+      const settings: Record<string, unknown> = {};
       if (this.token) {
         settings.token = this.token;
       }

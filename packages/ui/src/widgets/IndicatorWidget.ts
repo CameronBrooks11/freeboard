@@ -9,6 +9,12 @@ import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
  * Indicator widget implementation.
  */
 export class IndicatorWidget extends ReactiveWidget {
+  isNarrow = false;
+  headerElement!: HTMLDivElement;
+  rowElement!: HTMLDivElement;
+  lightElement!: HTMLDivElement;
+  labelElement!: HTMLDivElement;
+
   static typeName = "indicator";
 
   static label = "Indicator";
@@ -161,13 +167,12 @@ export class IndicatorWidget extends ReactiveWidget {
     this.headerElement.textContent = inputs.header || "";
     this.headerElement.style.display = inputs.header ? "block" : "none";
 
-    this.lightElement.style.backgroundColor = isOn
-      ? this.currentSettings?.onColor || "#16a34a"
-      : this.currentSettings?.offColor || "#4b5563";
+    const onColor = String(this.currentSettings?.onColor || "#16a34a");
+    const offColor = String(this.currentSettings?.offColor || "#4b5563");
 
-    this.lightElement.style.boxShadow = isOn
-      ? `0 0 10px ${this.currentSettings?.onColor || "#16a34a"}`
-      : "none";
+    this.lightElement.style.backgroundColor = isOn ? onColor : offColor;
+
+    this.lightElement.style.boxShadow = isOn ? `0 0 10px ${onColor}` : "none";
 
     this.labelElement.textContent = isOn ? inputs.onText || "On" : inputs.offText || "Off";
   }

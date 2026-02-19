@@ -44,6 +44,10 @@ export const recordAuditEvent = async ({
     }).save();
   } catch (error) {
     recordAuditWriteFailureMetric();
-    console.warn("Audit event persistence failed", error?.message || error);
+    const errorMessage =
+      error && typeof error === "object" && "message" in error
+        ? (error as { message?: string }).message
+        : undefined;
+    console.warn("Audit event persistence failed", errorMessage || error);
   }
 };

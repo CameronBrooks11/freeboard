@@ -77,7 +77,7 @@ export class StaticDatasource extends DatasourceRuntimeBase {
     this.onSettingsChanged(settings);
   }
 
-  onSettingsChanged(nextSettings: any = {}) {
+  onSettingsChanged(nextSettings: Record<string, unknown> = {}) {
     super.onSettingsChanged(nextSettings);
 
     const refreshSeconds = Math.max(0, Number(nextSettings.refresh) || 0);

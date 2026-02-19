@@ -49,7 +49,7 @@ export const toPathSegments = (path) => {
  * Path format is `<datasourceTitle>.<path.to.value>`.
  *
  * @param {string} bindingPath
- * @param {Record<string, any>} snapshot
+ * @param {Record<string, unknown>} snapshot
  * @returns {any}
  */
 export const resolveBinding = (bindingPath, snapshot) => {
@@ -108,7 +108,7 @@ export const resolveBinding = (bindingPath, snapshot) => {
  * Resolve `{{ binding.path }}` placeholders in a template string.
  *
  * @param {string} template
- * @param {Record<string, any>} snapshot
+ * @param {Record<string, unknown>} snapshot
  * @returns {string}
  */
 export const resolveTemplate = (template, snapshot) => {

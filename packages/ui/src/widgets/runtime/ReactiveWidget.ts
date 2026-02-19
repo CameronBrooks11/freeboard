@@ -9,23 +9,21 @@ import { resolveBinding, resolveTemplate } from "./bindings.js";
  * Base widget class with snapshot-aware update flow.
  */
 export class ReactiveWidget {
-  [key: string]: any;
+  /** @type {Record<string, unknown>} */
+  snapshot: Record<string, unknown> = {};
 
-  /** @type {Record<string, any>} */
-  snapshot: Record<string, any> = {};
-
-  /** @type {{changedDatasource: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot: Record<string, any>, timestamp?: string}|null} */
+  /** @type {{changedDatasource: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot: Record<string, unknown>, timestamp?: string}|null} */
   context: {
     changedDatasource: string | null;
     changedDatasourceId?: string | null;
     changedDatasourceTitle?: string | null;
-    snapshot: Record<string, any>;
+    snapshot: Record<string, unknown>;
     timestamp?: string;
   } | null = null;
   /** @type {unknown|null} */
   lastError: unknown | null = null;
 
-  currentSettings: Record<string, any>;
+  currentSettings: Record<string, unknown>;
 
   widgetElement: HTMLDivElement;
 
@@ -34,7 +32,7 @@ export class ReactiveWidget {
   /**
    * @param {Object} settings
    */
-  constructor(settings: Record<string, any> = {}) {
+  constructor(settings: Record<string, unknown> = {}) {
     this.currentSettings = settings || {};
     this.widgetElement = document.createElement("div");
     this.widgetElement.style.width = "100%";
@@ -55,14 +53,14 @@ export class ReactiveWidget {
   /**
    * @param {Object} newSettings
    */
-  onSettingsChanged(newSettings: Record<string, any> = {}) {
+  onSettingsChanged(newSettings: Record<string, unknown> = {}) {
     this.currentSettings = newSettings || {};
     this.refresh();
   }
 
   /**
    * @param {{title?: string}|null} datasource
-   * @param {{changedDatasource?: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot?: Record<string, any>, timestamp?: string}} [context]
+   * @param {{changedDatasource?: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot?: Record<string, unknown>, timestamp?: string}} [context]
    */
   processDatasourceUpdate(
     datasource: { id?: string; title?: string } | null,
@@ -70,7 +68,7 @@ export class ReactiveWidget {
       changedDatasource?: string | null;
       changedDatasourceId?: string | null;
       changedDatasourceTitle?: string | null;
-      snapshot?: Record<string, any>;
+      snapshot?: Record<string, unknown>;
       timestamp?: string;
     } = {},
   ) {
@@ -117,7 +115,7 @@ export class ReactiveWidget {
    * Apply input changes to the widget UI.
    * Subclasses should override.
    */
-  onInputsChanged(_inputs?: any, _context?: any) {
+  onInputsChanged(_inputs?: unknown, _context?: unknown) {
     void _inputs;
     void _context;
   }

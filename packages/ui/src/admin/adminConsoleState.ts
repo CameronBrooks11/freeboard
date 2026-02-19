@@ -17,7 +17,10 @@ export const SERVICE_ACCOUNT_SCOPE_OPTIONS = Object.freeze([
   "ops:read",
 ]);
 
-const normalizeOptionValue = (value: any, allowed: readonly string[], fallback: string) => {
+const toRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+
+const normalizeOptionValue = (value: unknown, allowed: readonly string[], fallback: string) => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
@@ -44,12 +47,12 @@ export const normalizeCredentialProfileTypeValue = (value) =>
 export const normalizeBrokerProfileProtocolValue = (value) =>
   normalizeOptionValue(value, BROKER_PROFILE_PROTOCOL_OPTIONS, "mqtt");
 
-export const toUserDraft = (user: any = {}) => ({
+export const toUserDraft = (user: Record<string, unknown> = {}) => ({
   role: normalizeRoleValue(user.role),
   active: Boolean(user.active),
 });
 
-export const toPolicyDraft = (policy: any = {}) => ({
+export const toPolicyDraft = (policy: Record<string, unknown> = {}) => ({
   registrationMode: normalizeRegistrationModeValue(policy.registrationMode),
   registrationDefaultRole: normalizeRegistrationDefaultRoleValue(policy.registrationDefaultRole),
   editorCanPublish: Boolean(policy.editorCanPublish),
@@ -59,19 +62,19 @@ export const toPolicyDraft = (policy: any = {}) => ({
   policyEditLock: Boolean(policy.policyEditLock),
 });
 
-export const toCredentialProfileDraft = (profile: any = {}) => ({
+export const toCredentialProfileDraft = (profile: Record<string, unknown> = {}) => ({
   name: String(profile.name || ""),
   description: String(profile.description || ""),
   type: normalizeCredentialProfileTypeValue(profile.type),
   allowPublicUse: Boolean(profile.allowPublicUse),
-  metadataHeaderName: String(profile.metadata?.headerName || ""),
+  metadataHeaderName: String(toRecord(profile.metadata).headerName || ""),
   secretToken: "",
   secretUsername: "",
   secretPassword: "",
   secretHeaderValue: "",
 });
 
-export const toBrokerProfileDraft = (profile: any = {}) => ({
+export const toBrokerProfileDraft = (profile: Record<string, unknown> = {}) => ({
   name: String(profile.name || ""),
   description: String(profile.description || ""),
   protocol: normalizeBrokerProfileProtocolValue(profile.protocol),
@@ -79,11 +82,13 @@ export const toBrokerProfileDraft = (profile: any = {}) => ({
   credentialProfileId: String(profile.credentialProfileId || ""),
   allowPublicUse: Boolean(profile.allowPublicUse),
   topicAllowlist: Array.isArray(profile.topicAllowlist) ? profile.topicAllowlist.join(", ") : "",
-  tlsRejectUnauthorized:
-    profile.tls?.rejectUnauthorized === undefined ? true : Boolean(profile.tls.rejectUnauthorized),
+  tlsRejectUnauthorized: (() => {
+    const tls = toRecord(profile.tls);
+    return tls.rejectUnauthorized === undefined ? true : Boolean(tls.rejectUnauthorized);
+  })(),
 });
 
-export const toServiceAccountDraft = (account: any = {}) => ({
+export const toServiceAccountDraft = (account: Record<string, unknown> = {}) => ({
   name: String(account.name || ""),
   description: String(account.description || ""),
   active: account.active === undefined ? true : Boolean(account.active),

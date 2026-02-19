@@ -1,10 +1,14 @@
 import renderComponent from "../render.js";
 
-export const openModal = (component: any, appContext: any, props: any = {}) => {
+export const openModal = (
+  component: unknown,
+  appContext: unknown,
+  props: Record<string, unknown> & { onClose?: (event?: unknown) => void } = {},
+) => {
   const el = document.body.appendChild(document.createElement("div"));
   let mounted = null;
 
-  const closeModal = (event) => {
+  const closeModal = (event?: unknown) => {
     if (props.onClose) {
       props.onClose(event);
     }

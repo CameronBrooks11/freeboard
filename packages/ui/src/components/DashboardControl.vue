@@ -21,19 +21,26 @@ const dashboardStore = useDashboardStore();
 const { dashboard } = storeToRefs(dashboardStore);
 
 // Inline settings schema and current values
-const fields = computed(
-  () =>
-    createSettings(dashboard.value, {
-      allowTrustedExecution: authStore.isTrustedExecutionMode(),
-    })[0].fields,
-);
-const settings = ref({});
+type SettingsSection = {
+  fields?: Array<Record<string, unknown>>;
+};
+
+const fields = computed<Array<Record<string, unknown>>>(() => {
+  const sections = createSettings(dashboard.value, {
+    allowTrustedExecution: authStore.isTrustedExecutionMode(),
+  }) as SettingsSection[];
+  return sections[0]?.fields ?? [];
+});
+const settings = ref<Record<string, unknown>>({});
 
 // Sync settings when the dashboard object changes
 watch(
   dashboard,
   (d) => {
-    settings.value = d;
+    settings.value = {
+      title: d.title,
+      columns: d.columns,
+    };
   },
   {
     immediate: true,
@@ -71,9 +78,10 @@ const openShareDialogBox = () => {
  *
  * @param {{ title: string; columns: string }} s
  */
-const onChange = (s) => {
-  dashboard.value.columns = parseInt(s.columns, 10);
-  dashboard.value.title = s.title;
+const onChange = (s: unknown) => {
+  const value = s && typeof s === "object" ? (s as Record<string, unknown>) : {};
+  dashboard.value.columns = parseInt(String(value.columns || dashboard.value.columns), 10);
+  dashboard.value.title = String(value.title || "");
 };
 
 const instance = getCurrentInstance();

@@ -602,7 +602,7 @@ export default /** @type {IResolvers} */ {
         throw createGraphQLError("User not found or login not allowed");
       }
 
-      const update: Record<string, any> = {};
+      const update: Record<string, unknown> = {};
       if (role !== undefined) {
         update.role = normalizeRole(role);
       }

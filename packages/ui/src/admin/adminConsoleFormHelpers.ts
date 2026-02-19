@@ -5,6 +5,9 @@
 
 import { normalizeCredentialProfileTypeValue } from "./adminConsoleState.js";
 
+const toRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+
 export const roleToEnum = (role) => String(role || "viewer").toUpperCase();
 export const registrationModeToEnum = (mode) => String(mode || "disabled").toUpperCase();
 export const dashboardVisibilityToEnum = (visibility) =>
@@ -19,21 +22,22 @@ export const serviceAccountScopeToEnum = (scope) =>
     .toUpperCase();
 
 export const buildCredentialProfileMutationInput = (
-  draft: any,
+  draft: Record<string, unknown>,
   { includeSecrets = true }: { includeSecrets?: boolean } = {},
 ) => {
+  const source = toRecord(draft);
   const type = normalizeCredentialProfileTypeValue(draft.type);
-  const input: any = {
-    name: String(draft.name || "").trim(),
-    description: String(draft.description || "").trim(),
+  const input: Record<string, unknown> = {
+    name: String(source.name || "").trim(),
+    description: String(source.description || "").trim(),
     type: credentialProfileTypeToEnum(type),
-    allowPublicUse: Boolean(draft.allowPublicUse),
+    allowPublicUse: Boolean(source.allowPublicUse),
     metadata: {},
   };
 
   if (type === "header") {
     input.metadata = {
-      headerName: String(draft.metadataHeaderName || "").trim(),
+      headerName: String(source.metadataHeaderName || "").trim(),
     };
   }
 
@@ -43,19 +47,19 @@ export const buildCredentialProfileMutationInput = (
 
   const secret: Record<string, string> = {};
   if (type === "bearer") {
-    if (draft.secretToken) {
-      secret.token = String(draft.secretToken);
+    if (source.secretToken) {
+      secret.token = String(source.secretToken);
     }
   } else if (type === "basic") {
-    if (draft.secretUsername) {
-      secret.username = String(draft.secretUsername);
+    if (source.secretUsername) {
+      secret.username = String(source.secretUsername);
     }
-    if (draft.secretPassword) {
-      secret.password = String(draft.secretPassword);
+    if (source.secretPassword) {
+      secret.password = String(source.secretPassword);
     }
   } else if (type === "header") {
-    if (draft.secretHeaderValue) {
-      secret.headerValue = String(draft.secretHeaderValue);
+    if (source.secretHeaderValue) {
+      secret.headerValue = String(source.secretHeaderValue);
     }
   }
 
@@ -66,37 +70,45 @@ export const buildCredentialProfileMutationInput = (
   return input;
 };
 
-export const buildBrokerProfileMutationInput = (draft: any) => {
-  const protocol = String(draft.protocol || "mqtt").toLowerCase();
-  const allowlist = String(draft.topicAllowlist || "")
+export const buildBrokerProfileMutationInput = (draft: unknown) => {
+  const source = toRecord(draft);
+  const protocol = String(source.protocol || "mqtt").toLowerCase();
+  const allowlist = String(source.topicAllowlist || "")
     .split(",")
     .map((entry) => entry.trim())
     .filter(Boolean);
 
   return {
-    name: String(draft.name || "").trim(),
-    description: String(draft.description || "").trim(),
+    name: String(source.name || "").trim(),
+    description: String(source.description || "").trim(),
     protocol: brokerProfileProtocolToEnum(protocol),
-    brokerUrl: String(draft.brokerUrl || "").trim(),
-    credentialProfileId: String(draft.credentialProfileId || "").trim() || null,
-    allowPublicUse: Boolean(draft.allowPublicUse),
+    brokerUrl: String(source.brokerUrl || "").trim(),
+    credentialProfileId: String(source.credentialProfileId || "").trim() || null,
+    allowPublicUse: Boolean(source.allowPublicUse),
     topicAllowlist: allowlist,
     tls: {
-      rejectUnauthorized: Boolean(draft.tlsRejectUnauthorized),
+      rejectUnauthorized: Boolean(source.tlsRejectUnauthorized),
     },
   };
 };
 
-export const formatDateTime = (value: any) => {
+export const formatDateTime = (value: unknown) => {
   if (!value) {
     return "—";
   }
-  const parsed = new Date(value);
+  const parsed = new Date(String(value));
   if (Number.isNaN(parsed.getTime())) {
     return String(value);
   }
   return parsed.toLocaleString();
 };
 
-export const extractErrorMessage = (error: any, fallback: string) =>
-  error?.graphQLErrors?.[0]?.message || error?.message || fallback;
+export const extractErrorMessage = (error: unknown, fallback: string) => {
+  const normalizedError = toRecord(error);
+  const graphQLErrors = Array.isArray(normalizedError.graphQLErrors)
+    ? normalizedError.graphQLErrors
+    : [];
+  const firstGraphQLError =
+    graphQLErrors.length > 0 ? toRecord(graphQLErrors[0]).message : undefined;
+  return String(firstGraphQLError || normalizedError.message || fallback);
+};

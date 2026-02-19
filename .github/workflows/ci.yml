@@ -184,6 +184,8 @@ jobs:
         run: npm run lint
       - name: Validate UI store boundaries
         run: npm run check:ui:store-boundaries
+      - name: Validate TS source debt
+        run: npm run check:ts:debt
 
   test-api:
     name: Test API

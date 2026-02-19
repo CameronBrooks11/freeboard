@@ -234,6 +234,20 @@ const ensureMatchingPasswords = (value) => {
   }
 };
 
+const resolveErrorMessage = (error: unknown): string => {
+  if (error && typeof error === "object") {
+    const graphQLErrors = (error as { graphQLErrors?: Array<{ message?: string }> }).graphQLErrors;
+    if (Array.isArray(graphQLErrors) && graphQLErrors[0]?.message) {
+      return graphQLErrors[0].message;
+    }
+    const message = (error as { message?: string }).message;
+    if (message) {
+      return message;
+    }
+  }
+  return "Authentication failed.";
+};
+
 const onDialogBoxOk = async () => {
   resetMessages();
   if (form.value.hasErrors()) {
@@ -315,8 +329,7 @@ const onDialogBoxOk = async () => {
       return;
     }
   } catch (error) {
-    loginError.value =
-      error?.graphQLErrors?.[0]?.message || error.message || "Authentication failed.";
+    loginError.value = resolveErrorMessage(error);
   }
 };
 

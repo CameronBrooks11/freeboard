@@ -117,8 +117,8 @@ const normalizeBooleanSetting = (value, fallback = false) => {
  * @class Dashboard
  */
 export class Dashboard {
-  [key: string]: any;
-
+  /** @type {string|null} Serialized dashboard version. */
+  version = null;
   /** @type {string|null} Unique dashboard identifier. */
   _id = null;
   /** @type {string} Dashboard title. */
@@ -432,7 +432,7 @@ export class Dashboard {
    * Build a normalized datasource snapshot map keyed by datasource id,
    * with legacy title aliases when unambiguous.
    *
-   * @returns {Record<string, any>}
+   * @returns {Record<string, unknown>}
    */
   buildDatasourceSnapshot() {
     return buildDatasourceSnapshot(this.datasources);

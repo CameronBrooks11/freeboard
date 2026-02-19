@@ -54,7 +54,7 @@ const requestFrame =
 const cancelFrame =
   typeof cancelAnimationFrame === "function" ? cancelAnimationFrame : (id) => clearTimeout(id);
 
-export const normalizeBarChartRows = (rows: any, settings: any = {}) => {
+export const normalizeBarChartRows = (rows: unknown, settings: Record<string, unknown> = {}) => {
   const arrayRows = Array.isArray(rows) ? rows : [];
   const labelField = String(settings.labelField || "label").trim() || "label";
   const valueField = String(settings.valueField || "value").trim() || "value";
@@ -121,6 +121,20 @@ export const normalizeBarChartRows = (rows: any, settings: any = {}) => {
 };
 
 export class BarChartWidget extends ReactiveWidget {
+  lastModel: unknown = null;
+  lastDataLength = 0;
+  animationFrame: ReturnType<typeof requestAnimationFrame> | ReturnType<typeof setTimeout> | null =
+    null;
+  currentProgress = 1;
+  previousValues: number[][] | null = null;
+  latestValues: number[][] | null = null;
+  isNarrow = false;
+
+  headerElement!: HTMLDivElement;
+  canvasWrap!: HTMLDivElement;
+  canvas!: HTMLCanvasElement;
+  legendElement!: HTMLDivElement;
+
   static typeName = "bar-chart";
   static label = "Bar Chart";
 

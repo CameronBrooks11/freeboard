@@ -11,12 +11,12 @@ defineOptions({ name: "ConfirmDialogBox" });
 import { ref, type PropType } from "vue";
 import DialogBox from "./DialogBox.vue";
 
-const dialog = ref<any>(null);
+const dialog = ref<{ closeModal?: () => void } | null>(null);
 
 const { title, onClose, onOk } = defineProps({
   title: String,
-  onClose: Function as PropType<() => any>,
-  onOk: Function as PropType<() => any>,
+  onClose: Function as PropType<(event?: Event) => void>,
+  onOk: Function as PropType<() => void>,
 });
 
 /**
@@ -24,7 +24,7 @@ const { title, onClose, onOk } = defineProps({
  */
 const onDialogBoxOk = () => {
   onOk();
-  dialog.value.closeModal();
+  dialog.value?.closeModal?.();
 };
 </script>
 

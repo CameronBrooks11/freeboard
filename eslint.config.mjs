@@ -68,7 +68,8 @@ export default [
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
-      "@typescript-eslint/no-explicit-any": "off",
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": "warn",
     },
   },
@@ -80,6 +81,13 @@ export default [
         sourceType: "module",
         ecmaVersion: "latest",
       },
+    },
+    plugins: {
+      "@typescript-eslint": tsPlugin,
+    },
+    rules: {
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
     },
   },
   {
@@ -95,6 +103,21 @@ export default [
       "vue/multi-word-component-names": "off",
       "vue/no-reserved-component-names": "off",
       "vue/no-mutating-props": "off",
+    },
+  },
+  {
+    files: ["packages/{ui,api,gateway}/src/**/*.{ts,vue}"],
+    plugins: {
+      "@typescript-eslint": tsPlugin,
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
+  {
+    files: ["**/test/**/*.ts", "e2e/**/*.ts", "scripts/**/*.mjs"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
   ...(eslintConfigPrettier ? [eslintConfigPrettier] : []),

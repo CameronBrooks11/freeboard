@@ -54,7 +54,19 @@ export const setContext = async ({ req }) => {
       : null;
   const clientIp = forwardedFor || req?.socket?.remoteAddress || req?.ip || null;
 
-  const context: any = {
+  const context: {
+    pubsub: ReturnType<typeof createPubSub>;
+    models: { Dashboard: typeof Dashboard; User: typeof User };
+    clientIp: string | null;
+    user?: Record<string, unknown>;
+    serviceAccount?: {
+      _id: unknown;
+      name: string;
+      active: boolean;
+      scopes: unknown[];
+      tokenId: unknown;
+    };
+  } = {
     pubsub: createPubSub(),
     models: {
       Dashboard,

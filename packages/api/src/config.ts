@@ -148,6 +148,11 @@ const warnAndThrow = (message) => {
   throw new Error(message);
 };
 
+const resolveUnknownErrorMessage = (error: unknown, fallback: string) =>
+  error && typeof error === "object" && "message" in error
+    ? String((error as { message?: string }).message || fallback)
+    : fallback;
+
 const gatewaySecretDefault = "freeboard-gateway-dev-insecure-local-only-secret-32";
 const gatewayServiceTokenDefault = "freeboard-gateway-service-dev-token-local-only-32";
 const credentialEncryptionKeyFromEnv = parseBase64Key(process.env.CREDENTIAL_ENCRYPTION_KEY, 32);
@@ -293,25 +298,25 @@ if (config.createAdmin) {
 try {
   normalizeRegistrationMode(config.registrationMode);
 } catch (error) {
-  warnAndThrow(error.message);
+  warnAndThrow(resolveUnknownErrorMessage(error, "Invalid registration mode"));
 }
 
 try {
   normalizeNonAdminRole(config.registrationDefaultRole);
 } catch (error) {
-  warnAndThrow(error.message);
+  warnAndThrow(resolveUnknownErrorMessage(error, "Invalid registration default role"));
 }
 
 try {
   normalizeDashboardVisibility(config.dashboardDefaultVisibility);
 } catch (error) {
-  warnAndThrow(error.message);
+  warnAndThrow(resolveUnknownErrorMessage(error, "Invalid dashboard default visibility"));
 }
 
 try {
   normalizeExecutionMode(config.executionMode);
 } catch (error) {
-  warnAndThrow(error.message);
+  warnAndThrow(resolveUnknownErrorMessage(error, "Invalid execution mode"));
 }
 
 if (config.authLoginMaxAttempts < 1) {

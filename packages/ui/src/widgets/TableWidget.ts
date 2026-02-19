@@ -254,6 +254,31 @@ export const formatTableCellValue = (value, format) => {
 };
 
 export class TableWidget extends ReactiveWidget {
+  sortState: { field: string; direction: "asc" | "desc" } = {
+    field: "",
+    direction: "asc",
+  };
+  currentPage = 1;
+  lastInputs: {
+    header: string;
+    rows: Array<Record<string, unknown>>;
+    columns: Array<Record<string, unknown>>;
+    rowsPerPage: number;
+    sortable: boolean;
+    striped: boolean;
+    compact: boolean;
+    emptyText: string;
+  } | null = null;
+  lastVisibleRowCount = 0;
+  isNarrow = false;
+
+  headerElement!: HTMLDivElement;
+  scrollWrap!: HTMLDivElement;
+  tableElement!: HTMLTableElement;
+  tableHead!: HTMLTableSectionElement;
+  tableBody!: HTMLTableSectionElement;
+  paginationElement!: HTMLDivElement;
+
   static typeName = "table";
   static label = "Table";
   static preferredRows = 4;
@@ -399,7 +424,12 @@ export class TableWidget extends ReactiveWidget {
     this.scrollWrap.style.minHeight = "70px";
     this.scrollWrap.style.overflowX = "auto";
     this.scrollWrap.style.overflowY = "auto";
-    this.scrollWrap.style.WebkitOverflowScrolling = "touch";
+    if (typeof this.scrollWrap.style.setProperty === "function") {
+      this.scrollWrap.style.setProperty("-webkit-overflow-scrolling", "touch");
+    } else {
+      (this.scrollWrap.style as unknown as Record<string, string>).webkitOverflowScrolling =
+        "touch";
+    }
     this.scrollWrap.style.touchAction = "pan-y";
 
     this.tableElement = document.createElement("table");
@@ -441,10 +471,7 @@ export class TableWidget extends ReactiveWidget {
 
     return {
       header:
-        this.getBinding(this.currentSettings?.headerPath) ??
-        this.currentSettings?.headerText ??
-        this.title ??
-        "",
+        this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText ?? "",
       rows: normalizedRows,
       columns,
       rowsPerPage,

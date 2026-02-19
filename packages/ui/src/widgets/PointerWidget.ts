@@ -24,6 +24,13 @@ const resolveAngleUnit = (value) => {
 };
 
 export class PointerWidget extends ReactiveWidget {
+  isNarrow = false;
+  headerElement!: HTMLDivElement;
+  dialWrap!: HTMLDivElement;
+  pointerGroup!: SVGElement;
+  valueElement!: HTMLDivElement;
+  unitElement!: HTMLDivElement;
+
   static typeName = "pointer";
   static label = "Pointer";
   static preferredRows = 3;

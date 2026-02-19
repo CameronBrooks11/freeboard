@@ -15,19 +15,27 @@ import DialogBox from "./DialogBox.vue";
 import Form from "./Form.vue";
 import { useI18n } from "vue-i18n";
 
+type FormRef = {
+  hasErrors: () => boolean;
+  getValue: () => Record<string, unknown>;
+};
+type PaneDialogSubmitPayload = {
+  settings: Record<string, unknown>;
+};
+
 const { t } = useI18n();
 
 // Reference to the Form component for validation and value retrieval
-const form = ref<any>(null);
+const form = ref<FormRef | null>(null);
 // Dynamic form fields for editing pane name
-const fields = ref<any[]>([]);
+const fields = ref<Array<Record<string, unknown>>>([]);
 
 // Props passed from parent component
 const { header, onClose, onOk, settings } = defineProps({
   header: String,
-  onClose: Function as PropType<() => any>,
-  onOk: Function as PropType<() => any>,
-  settings: Object as PropType<any>,
+  onClose: Function as PropType<(event?: Event) => void>,
+  onOk: Function as PropType<(payload: PaneDialogSubmitPayload) => void>,
+  settings: Object as PropType<Record<string, unknown>>,
 });
 
 // Initialize form fields on mount
@@ -44,17 +52,17 @@ onMounted(() => {
 });
 
 // Reference to the DialogBox for closing the modal programmatically
-const dialog = ref<any>(null);
+const dialog = ref<{ closeModal?: () => void } | null>(null);
 
 /**
  * Handle the OK button: validate form, invoke onOk prop with new settings, then close modal.
  */
 const onDialogBoxOk = () => {
-  if (form.value.hasErrors()) {
+  if (form.value?.hasErrors?.()) {
     return;
   }
-  (onOk as any)({ settings: form.value.getValue() });
-  dialog.value.closeModal();
+  onOk({ settings: form.value?.getValue?.() || {} });
+  dialog.value?.closeModal?.();
 };
 </script>
 

@@ -254,9 +254,9 @@ export class BaseWidget {
    * Handle datasource updates by posting messages to the iframe window.
    *
    * @param {Object} datasource - Datasource instance providing the update.
-   * @param {{ snapshot?: Record<string, any> }} [context] - Optional normalized datasource snapshot.
+   * @param {{ snapshot?: Record<string, unknown> }} [context] - Optional normalized datasource snapshot.
    */
-  processDatasourceUpdate(datasource, context: { snapshot?: Record<string, any> } = {}) {
+  processDatasourceUpdate(datasource, context: { snapshot?: Record<string, unknown> } = {}) {
     if (!datasource?.id && !datasource?.title) {
       return;
     }

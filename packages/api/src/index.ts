@@ -48,8 +48,12 @@ const connectToMongo = async () => {
       console.info(`MongoDB connected on ${config.mongoUrl}`);
       connected = true;
     } catch (error) {
+      const errorMessage =
+        error && typeof error === "object" && "message" in error
+          ? (error as { message?: string }).message
+          : undefined;
       console.error(`MongoDB connection attempt ${attempts} failed. Retrying in 2s...`);
-      console.error(error?.message || error);
+      console.error(errorMessage || error);
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }
@@ -142,6 +146,23 @@ const sendJson = (res, statusCode, payload) => {
   res.end(JSON.stringify(payload));
 };
 
+const resolveErrorStatusCode = (error: unknown, fallback = 500) => {
+  if (typeof error !== "object" || !error) {
+    return fallback;
+  }
+  const value = (error as { statusCode?: unknown }).statusCode;
+  const normalized = Number(value);
+  return Number.isFinite(normalized) ? normalized : fallback;
+};
+
+const resolveErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error !== "object" || !error) {
+    return fallback;
+  }
+  const message = (error as { message?: unknown }).message;
+  return typeof message === "string" && message.trim() ? message : fallback;
+};
+
 const handleGatewayIntrospection = async (req, res) => {
   if (req.method !== "POST") {
     sendJson(res, 405, { error: "Method not allowed" });
@@ -214,9 +235,12 @@ const handleGatewayIntrospection = async (req, res) => {
       decryptSecret: decryptCredentialSecret,
     });
     sendJson(res, 200, resolved);
-  } catch (error: any) {
-    const statusCode = Number(error?.statusCode) || 500;
-    const message = statusCode >= 500 ? "Datasource introspection failed" : error.message;
+  } catch (error: unknown) {
+    const statusCode = resolveErrorStatusCode(error);
+    const message =
+      statusCode >= 500
+        ? "Datasource introspection failed"
+        : resolveErrorMessage(error, "Datasource introspection failed");
     sendJson(res, statusCode, { error: message });
   }
 };
@@ -270,9 +294,12 @@ const handleGatewayRevokedTokens = async (req, res) => {
     });
 
     sendJson(res, 200, feed);
-  } catch (error: any) {
-    const statusCode = Number(error?.statusCode) || 500;
-    const message = statusCode >= 500 ? "Revoked token feed request failed" : error.message;
+  } catch (error: unknown) {
+    const statusCode = resolveErrorStatusCode(error);
+    const message =
+      statusCode >= 500
+        ? "Revoked token feed request failed"
+        : resolveErrorMessage(error, "Revoked token feed request failed");
     sendJson(res, statusCode, { error: message });
   }
 };

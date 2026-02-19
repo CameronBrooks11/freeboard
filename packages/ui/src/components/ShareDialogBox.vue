@@ -29,7 +29,7 @@ import {
 } from "../gql.js";
 
 const { onClose } = defineProps({
-  onClose: Function as PropType<() => any>,
+  onClose: Function as PropType<(event?: Event) => void>,
 });
 
 const dashboardStore = useDashboardStore();

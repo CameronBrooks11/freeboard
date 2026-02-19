@@ -4,10 +4,10 @@
  */
 
 export class DatasourceRuntimeBase {
-  [key: string]: any;
+  [key: string]: unknown;
 
   /** @type {Object} */
-  currentSettings: Record<string, any> = {};
+  currentSettings: Record<string, unknown> = {};
 
   /** @type {Object} */
   metrics = {
@@ -40,10 +40,10 @@ export class DatasourceRuntimeBase {
   /** @type {string|null} */
   error = null;
 
-  /** @type {(payload: any) => void} */
+  /** @type {(payload: unknown) => void} */
   emitDataCallback;
 
-  /** @type {(payload: any) => void} */
+  /** @type {(payload: unknown) => void} */
   emitStatusCallback;
 
   constructor(settings, emitDataCallback, emitStatusCallback) {
@@ -52,7 +52,17 @@ export class DatasourceRuntimeBase {
     this.currentSettings = settings || {};
   }
 
-  setStatus(status: string, patch: any = {}) {
+  setStatus(
+    status: string,
+    patch: Partial<{
+      status: string;
+      lastMessageAt: Date | string | number;
+      lastUpdatedAt: Date | string | number;
+      lastErrorAt: Date | string | number;
+      errorCode: string | null;
+      error: string | null;
+    }> = {},
+  ) {
     this.status = status;
     this.emitStatus({
       status,
@@ -60,7 +70,16 @@ export class DatasourceRuntimeBase {
     });
   }
 
-  emitStatus(patch: any = {}) {
+  emitStatus(
+    patch: Partial<{
+      status: string;
+      lastMessageAt: Date | string | number;
+      lastUpdatedAt: Date | string | number;
+      lastErrorAt: Date | string | number;
+      errorCode: string | null;
+      error: string | null;
+    }> = {},
+  ) {
     if (patch.status) {
       this.status = patch.status;
     }
@@ -91,7 +110,7 @@ export class DatasourceRuntimeBase {
     });
   }
 
-  emitData(payload: any) {
+  emitData(payload: unknown) {
     const now = new Date();
     this.metrics.messageCount += 1;
     this.lastMessageAt = now;
@@ -190,11 +209,11 @@ export class DatasourceRuntimeBase {
    *
    * @param {Object} nextSettings
    */
-  applySettings(nextSettings: Record<string, any> = {}) {
+  applySettings(nextSettings: Record<string, unknown> = {}) {
     this.currentSettings = nextSettings;
   }
 
-  onSettingsChanged(nextSettings: Record<string, any> = {}) {
+  onSettingsChanged(nextSettings: Record<string, unknown> = {}) {
     this.applySettings(nextSettings);
   }
 

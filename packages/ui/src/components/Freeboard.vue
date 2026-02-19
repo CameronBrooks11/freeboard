@@ -200,7 +200,7 @@ watch(
 
 /**
  * Handle incoming dashboard data (initial or subscription).
- * @param {{ dashboard?: any }|undefined} data
+ * @param {{ dashboard?: unknown }|undefined} data
  */
 const applyResult = (data) => {
   const dash = data?.dashboard || data?.dashboardByShareToken;

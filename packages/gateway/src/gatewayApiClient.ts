@@ -54,7 +54,12 @@ const fetchJson = async ({ url, body, timeoutMs, fetchFn = fetch }) => {
       signal: abortController.signal,
     });
   } catch (error) {
-    if (error?.name === "AbortError") {
+    if (
+      error &&
+      typeof error === "object" &&
+      "name" in error &&
+      (error as { name?: string }).name === "AbortError"
+    ) {
       throw createClientError(504, "Internal API request timed out");
     }
     throw createClientError(502, "Internal API request failed");

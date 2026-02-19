@@ -7,6 +7,9 @@ import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 import { isTrustedExecutionEnabled } from "../executionPolicy.js";
 
 export class HtmlWidget extends ReactiveWidget {
+  headerElement!: HTMLDivElement;
+  contentElement!: HTMLDivElement;
+
   static typeName = "html";
   static label = "HTML";
   static preferredRows = 3;

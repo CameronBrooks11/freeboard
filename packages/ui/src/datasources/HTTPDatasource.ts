@@ -13,7 +13,7 @@ import { getAuthToken, getDashboardId, getRuntimeShareToken } from "../runtime/r
 const ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 const ALLOWED_PARSERS = ["json", "text", "csv"];
 const TRUTHY_ENV_VALUES = new Set(["1", "true", "yes", "on"]);
-const importMetaEnv: Record<string, any> =
+const importMetaEnv: Record<string, unknown> =
   typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
 const DIRECT_HTTP_ENABLED =
   Boolean(importMetaEnv.DEV) ||
@@ -22,6 +22,12 @@ const DIRECT_HTTP_ENABLED =
       .trim()
       .toLowerCase(),
   );
+
+type HTTPRuntimeContext = {
+  dashboardId?: string;
+  datasourceId?: string;
+  credentialProfiles?: Array<Record<string, unknown>>;
+};
 
 const normalizeMethod = (value) => {
   const method = String(value || "GET")
@@ -97,11 +103,13 @@ const parseByMode = (text, parser) => {
 };
 
 export class HTTPDatasource extends DatasourceRuntimeBase {
+  runtimeContext: HTTPRuntimeContext = {};
+
   static typeName = "http";
 
   static label = "HTTP";
 
-  static fields = (datasource, dashboard, general, runtimeContext: any = {}) => {
+  static fields = (datasource, dashboard, general, runtimeContext: HTTPRuntimeContext = {}) => {
     const credentialProfiles = Array.isArray(runtimeContext.credentialProfiles)
       ? runtimeContext.credentialProfiles
       : [];
@@ -257,13 +265,13 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
 
   requestInFlight = false;
 
-  constructor(settings, updateCallback, statusCallback, runtimeContext: any = {}) {
+  constructor(settings, updateCallback, statusCallback, runtimeContext: HTTPRuntimeContext = {}) {
     super(settings, updateCallback, statusCallback);
     this.runtimeContext = runtimeContext;
     this.onSettingsChanged(settings);
   }
 
-  onSettingsChanged(nextSettings: any = {}) {
+  onSettingsChanged(nextSettings: Record<string, unknown> = {}) {
     super.onSettingsChanged(nextSettings);
     if (this.retryTimer) {
       clearTimeout(this.retryTimer);
@@ -305,8 +313,8 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
       return this.sessionToken;
     }
 
-    const dashboardId = this.runtimeContext.dashboardId || getDashboardId();
-    const datasourceId = this.runtimeContext.datasourceId;
+    const dashboardId = String(this.runtimeContext.dashboardId || getDashboardId() || "").trim();
+    const datasourceId = String(this.runtimeContext.datasourceId || "").trim();
     if (!dashboardId || !datasourceId) {
       throw new Error("Datasource runtime context is incomplete");
     }
@@ -323,7 +331,7 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
 
   async fetchViaGateway() {
     const token = await this.ensureSessionToken();
-    const dashboardId = this.runtimeContext.dashboardId || getDashboardId();
+    const dashboardId = String(this.runtimeContext.dashboardId || getDashboardId() || "").trim();
 
     const response = await fetch("/gateway/http/fetch", {
       method: "POST",
@@ -333,7 +341,7 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
       },
       body: JSON.stringify({
         dashboardId,
-        datasourceId: this.runtimeContext.datasourceId,
+        datasourceId: String(this.runtimeContext.datasourceId || "").trim(),
       }),
     });
 
@@ -376,7 +384,9 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
       body:
         method === "GET" || method === "DELETE"
           ? undefined
-          : this.currentSettings.body || undefined,
+          : typeof this.currentSettings.body === "string"
+            ? this.currentSettings.body
+            : undefined,
       signal: controller.signal,
     }).finally(() => clearTimeout(timeout));
 

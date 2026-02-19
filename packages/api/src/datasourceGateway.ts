@@ -304,7 +304,7 @@ export const buildCanonicalStreamingIntent = async ({ dashboard, datasourceId })
   );
 };
 
-const toHashableIntent = (intent: any = {}) => {
+const toHashableIntent = (intent: Record<string, unknown> = {}) => {
   const protocol = String(intent.protocol || "http").toLowerCase();
   if (protocol === "http") {
     return {
@@ -380,6 +380,8 @@ const buildCanonicalIntentForDatasource = async ({ dashboard, datasourceId }) =>
     "UNSUPPORTED_DATASOURCE",
   );
 };
+
+type CanonicalHttpIntent = Awaited<ReturnType<typeof buildCanonicalDatasourceIntent>>;
 
 export const mintDatasourceSessionToken = async ({
   dashboard,
@@ -631,7 +633,7 @@ export const resolveGatewayIntrospection = async ({
     datasourceType,
   });
 
-  const canonicalIntent: any = await buildCanonicalIntentForDatasource({
+  const canonicalIntent = await buildCanonicalIntentForDatasource({
     dashboard,
     datasourceId,
   });
@@ -656,9 +658,14 @@ export const resolveGatewayIntrospection = async ({
   }
 
   if (scope === "datasource:fetch") {
+    if (canonicalIntent.protocol !== "http") {
+      throw createClientError(403, "Datasource token scope mismatch", "TOKEN_SCOPE_MISMATCH");
+    }
+    const httpIntent = canonicalIntent as CanonicalHttpIntent;
+
     let credentialHeaders = {};
-    if (canonicalIntent.credentialProfile) {
-      const profile = canonicalIntent.credentialProfile;
+    if (httpIntent.credentialProfile) {
+      const profile = httpIntent.credentialProfile;
       enforcePublicCredentialPolicy({
         tokenClaims,
         credentialProfile: profile,
@@ -675,18 +682,18 @@ export const resolveGatewayIntrospection = async ({
 
     return {
       dashboardId: canonicalIntent.dashboardId,
-      datasourceId: canonicalIntent.datasourceId,
-      credentialProfileId: canonicalIntent.credentialProfile?._id || null,
+      datasourceId: httpIntent.datasourceId,
+      credentialProfileId: httpIntent.credentialProfile?._id || null,
       scope,
       intent: {
         protocol: "http",
-        url: canonicalIntent.url,
-        method: canonicalIntent.method,
-        body: canonicalIntent.body,
-        parser: canonicalIntent.parser,
-        timeoutMs: canonicalIntent.timeoutMs,
+        url: httpIntent.url,
+        method: httpIntent.method,
+        body: httpIntent.body,
+        parser: httpIntent.parser,
+        timeoutMs: httpIntent.timeoutMs,
         headers: {
-          ...canonicalIntent.headers,
+          ...httpIntent.headers,
           ...credentialHeaders,
         },
       },

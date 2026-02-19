@@ -181,7 +181,7 @@ export default {
       context,
     ) => {
       ensureThatUserIsAdministrator(context);
-      const query: Record<string, any> = {};
+      const query: Record<string, unknown> = {};
       const prefix = String(actionPrefix || "").trim();
       if (prefix) {
         query.action = { $regex: `^${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}` };
@@ -241,7 +241,7 @@ export default {
         throw createGraphQLError("Service account not found");
       }
 
-      const updatePayload: Record<string, any> = {};
+      const updatePayload: Record<string, unknown> = {};
       if (Object.prototype.hasOwnProperty.call(input || {}, "name")) {
         const name = String(input.name || "").trim();
         if (!name || name.length < 3) {

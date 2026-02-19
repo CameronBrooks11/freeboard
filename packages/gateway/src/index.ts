@@ -996,10 +996,11 @@ export const createRealtimeGateway = ({
         }
       }
     } catch (error) {
-      console.warn(
-        "Realtime gateway warning: revoked token polling failed",
-        error?.message || error,
-      );
+      const errorMessage =
+        error && typeof error === "object" && "message" in error
+          ? (error as { message?: string }).message
+          : undefined;
+      console.warn("Realtime gateway warning: revoked token polling failed", errorMessage || error);
     } finally {
       pollingRevocations = false;
     }

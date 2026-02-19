@@ -11,6 +11,16 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
  * Gauge widget implementation.
  */
 export class GaugeWidget extends ReactiveWidget {
+  radius = 54;
+  circumference = 2 * Math.PI * this.radius;
+  isNarrow = false;
+
+  headerElement!: HTMLDivElement;
+  gaugeWrap!: HTMLDivElement;
+  progress!: SVGElement;
+  valueElement!: HTMLDivElement;
+  unitElement!: HTMLDivElement;
+
   static typeName = "gauge";
 
   static label = "Gauge";

@@ -36,7 +36,31 @@ const cloneMutableSettings = (value) => {
  * @class Widget
  */
 export class Widget {
-  [key: string]: any;
+  widgetInstance:
+    | {
+        onSettingsChanged?: (settings: Record<string, unknown>) => void;
+        onDispose?: () => void;
+        render?: (element: Element) => void;
+        processDatasourceUpdate?: (
+          datasource: unknown,
+          context?: {
+            changedDatasource?: string | null;
+            changedDatasourceId?: string | null;
+            changedDatasourceTitle?: string | null;
+            snapshot?: Record<string, unknown>;
+            timestamp?: string;
+          },
+        ) => void;
+        onResize?: (size: { width: number; height: number }) => void;
+        getPreferredRows?: (
+          settings: Record<string, unknown> | null,
+          snapshot: Record<string, unknown>,
+        ) => number;
+        lastError?: unknown;
+      }
+    | undefined;
+
+  element: Element | undefined;
 
   /** @type {string} Stable widget identifier for rendering and serialization. */
   id = generateModelId("w");
@@ -52,7 +76,7 @@ export class Widget {
   _type = null;
   /** @private {Object|null} Current widget settings. */
   _settings = null;
-  /** @type {{changedDatasource?: string|null, snapshot?: Record<string, any>, timestamp?: string}|null} */
+  /** @type {{changedDatasource?: string|null, snapshot?: Record<string, unknown>, timestamp?: string}|null} */
   lastContext = null;
   /** @type {unknown|null} Last widget runtime error. */
   lastError = null;
@@ -63,7 +87,7 @@ export class Widget {
    * @param {Object} settings - Initial settings object for the widget.
    * @param {string} type     - Widget type key.
    */
-  constructor(settings: Record<string, any> = {}, type: string | null = null) {
+  constructor(settings: Record<string, unknown> = {}, type: string | null = null) {
     this.settings = settings;
     this.type = type;
   }
@@ -258,9 +282,18 @@ export class Widget {
    * Process incoming datasource updates via the plugin instance.
    *
    * @param {Object} datasource - Datasource instance providing new data.
-   * @param {{changedDatasource?: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot?: Record<string, any>, timestamp?: string}} [context]
+   * @param {{changedDatasource?: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot?: Record<string, unknown>, timestamp?: string}} [context]
    */
-  processDatasourceUpdate(datasource, context: any = {}) {
+  processDatasourceUpdate(
+    datasource,
+    context: {
+      changedDatasource?: string | null;
+      changedDatasourceId?: string | null;
+      changedDatasourceTitle?: string | null;
+      snapshot?: Record<string, unknown>;
+      timestamp?: string;
+    } = {},
+  ) {
     this.lastContext = {
       ...context,
       snapshot: context.snapshot,

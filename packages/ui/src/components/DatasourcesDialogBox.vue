@@ -11,7 +11,7 @@ import DatasourcesList from "./DatasourcesList.vue";
 import type { PropType } from "vue";
 
 const { onClose } = defineProps({
-  onClose: Function as PropType<() => any>,
+  onClose: Function as PropType<(event?: Event) => void>,
 });
 </script>
 

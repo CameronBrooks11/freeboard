@@ -13,7 +13,11 @@
  * @param {boolean} [permissions.canManageSharing=false]
  * @returns {Object}
  */
-export const transformDashboard = (dashboard, viewerUserId = null, permissions: any = {}) => {
+export const transformDashboard = (
+  dashboard,
+  viewerUserId = null,
+  permissions: { canEdit?: boolean; canManageSharing?: boolean } = {},
+) => {
   const rawOwnerId =
     dashboard?.user && typeof dashboard.user === "object" && "_id" in dashboard.user
       ? dashboard.user._id

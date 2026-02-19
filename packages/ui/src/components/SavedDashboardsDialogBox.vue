@@ -20,7 +20,7 @@ import { DASHBOARDS_LIST_QUERY, DASHBOARD_READ_QUERY } from "../gql.js";
 import { useDashboardStore } from "../stores/dashboard.js";
 
 // ===== Props =====
-const { onClose } = defineProps({ onClose: Function as PropType<() => any> });
+const { onClose } = defineProps({ onClose: Function as PropType<(event?: Event) => void> });
 
 // ===== Store & Router =====
 const router = useRouter();

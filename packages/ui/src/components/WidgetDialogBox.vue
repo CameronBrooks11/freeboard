@@ -19,6 +19,15 @@ import { storeToRefs } from "pinia";
 import TabNavigator from "./TabNavigator.vue";
 import TypeSelect from "./TypeSelect.vue";
 
+type FormComponentRef = {
+  hasErrors: () => boolean;
+  getValue: () => Record<string, unknown>;
+};
+type WidgetDialogSubmitPayload = {
+  type: string | null;
+  settings: Record<string, unknown>;
+} & Record<string, unknown>;
+
 const dashboardStore = useDashboardStore();
 const pluginRegistryStore = usePluginRegistryStore();
 const { dashboard } = storeToRefs(dashboardStore);
@@ -27,22 +36,34 @@ const { widgetPlugins } = storeToRefs(pluginRegistryStore);
 // Props passed from parent component
 const { header, onClose, onOk, widget } = defineProps({
   header: String,
-  onClose: Function as PropType<() => any>,
-  onOk: Function as PropType<() => any>,
-  widget: Object as PropType<any>,
+  onClose: Function as PropType<(event?: Event) => void>,
+  onOk: Function as PropType<(payload: WidgetDialogSubmitPayload) => void>,
+  widget: Object as PropType<Record<string, unknown>>,
 });
 
 // Reactive reference for selected widget type
-const typeRef = ref<string | null>(widget ? widget.type : null);
+const typeRef = ref<string | null>(widget && typeof widget.type === "string" ? widget.type : null);
 
 // Dynamic fields schema based on selected type
-const fields = ref<any[]>([]);
+const fields = ref<
+  Array<{
+    name: string;
+    settings: Record<string, unknown>;
+    fields: Array<Record<string, unknown>>;
+  }>
+>([]);
 
 // Store child Form component refs for validation
-const components = ref<Record<string, any>>({});
+const components = ref<Record<string, FormComponentRef | null>>({});
 
-const storeComponentRef = (name: string, el: any) => {
-  components.value[name] = el;
+const isFormComponentRef = (value: unknown): value is FormComponentRef =>
+  !!value &&
+  typeof value === "object" &&
+  typeof (value as FormComponentRef).hasErrors === "function" &&
+  typeof (value as FormComponentRef).getValue === "function";
+
+const storeComponentRef = (name: string, el: unknown) => {
+  components.value[name] = isFormComponentRef(el) ? el : null;
 };
 
 // Rebuild fields whenever widget type changes
@@ -88,19 +109,19 @@ const widgetPluginsOptions = computed(() =>
   })),
 );
 
-const dialog = ref(null);
+const dialog = ref<{ closeModal?: () => void } | null>(null);
 
 /**
  * Handle OK: validate all fields, assemble new widget config, invoke onOk, then close modal.
  */
 const onDialogBoxOk = () => {
-  if (fields.value.some((f) => components.value[f.name].hasErrors())) {
+  if (fields.value.some((f) => components.value[f.name]?.hasErrors?.())) {
     return;
   }
-  const s = {};
-  const result = {};
+  const s: Record<string, unknown> = {};
+  const result: Record<string, unknown> = {};
   fields.value.forEach((f) => {
-    const v = components.value[f.name].getValue();
+    const v = components.value[f.name]?.getValue?.() || {};
     Object.keys(v).forEach((k) => {
       if (["type", "title", "enabled"].includes(k)) {
         result[k] = v[k];
@@ -109,8 +130,8 @@ const onDialogBoxOk = () => {
       }
     });
   });
-  (onOk as any)({ ...result, settings: s, type: typeRef.value });
-  dialog.value.closeModal();
+  onOk({ ...result, settings: s, type: typeRef.value });
+  dialog.value?.closeModal?.();
 };
 </script>
 

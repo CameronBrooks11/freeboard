@@ -27,8 +27,6 @@ const cloneMutableObject = (value, fallback) => {
  * @class Pane
  */
 export class Pane {
-  [key: string]: any;
-
   /** @type {string|null} Pane title. */
   title = null;
 

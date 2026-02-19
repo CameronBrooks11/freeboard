@@ -25,20 +25,27 @@ import {
  * @returns {Array<Object>} Array of settings sections for the UI form.
  */
 export default (
-  dashboard: any,
+  dashboard: {
+    title?: unknown;
+    columns?: unknown;
+    settings?: Record<string, unknown> | null;
+  },
   { allowTrustedExecution = true }: { allowTrustedExecution?: boolean } = {},
 ) => {
-  const dashboardSettings = dashboard.settings || {};
+  const dashboardSettings =
+    dashboard.settings && typeof dashboard.settings === "object"
+      ? (dashboard.settings as Record<string, unknown>)
+      : {};
 
-  const fields: any[] = [
+  const fields: Array<Record<string, unknown>> = [
     // General settings: title and columns
     {
       label: "form.labelGeneral",
       icon: "hi-home",
       name: "general",
       settings: {
-        title: dashboard.title,
-        columns: dashboard.columns,
+        title: dashboard.title as string | undefined,
+        columns: dashboard.columns as number | undefined,
       },
       fields: [
         {

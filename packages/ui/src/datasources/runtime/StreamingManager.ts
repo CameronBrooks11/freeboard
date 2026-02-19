@@ -251,7 +251,10 @@ export class StreamingManager {
         subscription.callbacks.onError?.({
           datasourceId: subscription.datasourceId,
           errorCode: "STREAM_CONNECT_FAILED",
-          message: error?.message || "Realtime subscription replay failed",
+          message:
+            (error && typeof error === "object" && "message" in error
+              ? String((error as { message?: string }).message || "")
+              : "") || "Realtime subscription replay failed",
         });
       }
     }

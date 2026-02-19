@@ -74,10 +74,13 @@ export default {
       ensureThatUserIsLogged(context);
 
       const userId = toComparableId(context.user._id);
-      let filter: any = {};
+      let filter: Record<string, unknown> = {};
       if (context.user.role !== "admin") {
         const authPolicy = await getAuthPolicyState();
-        const scopedFilters: any[] = [{ user: userId }, { acl: { $elemMatch: { userId } } }];
+        const scopedFilters: Record<string, unknown>[] = [
+          { user: userId },
+          { acl: { $elemMatch: { userId } } },
+        ];
         if (authPolicy.dashboardPublicListingEnabled) {
           scopedFilters.push({ visibility: "public" });
         }
@@ -108,7 +111,7 @@ export default {
     createDashboard: async (parent, { dashboard }, context) => {
       ensureThatUserHasRole(context, ["editor", "admin"]);
 
-      const sanitizedInput: any = sanitizeDashboardInput(dashboard);
+      const sanitizedInput = sanitizeDashboardInput(dashboard);
       validateDashboardDatasources(sanitizedInput.datasources);
       await ensureDashboardPayloadAllowedByExecutionMode({
         inputDashboard: sanitizedInput,
@@ -146,7 +149,7 @@ export default {
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardEditable(existing, context);
 
-      const sanitizedInput: any = sanitizeDashboardInput(dashboard);
+      const sanitizedInput = sanitizeDashboardInput(dashboard);
       validateDashboardDatasources(sanitizedInput.datasources);
       await ensureDashboardPayloadAllowedByExecutionMode({
         inputDashboard: sanitizedInput,

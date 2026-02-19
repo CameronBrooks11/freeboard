@@ -20,7 +20,7 @@ const isMobileViewport = () => {
 };
 
 const createAsset = (type: string, value: string, inline?: boolean) => {
-  let node: any = null;
+  let node: HTMLElement | null = null;
   if (inline) {
     if (type === "style") {
       const style = document.createElement("style");
@@ -159,7 +159,7 @@ export const useDashboardStore = defineStore("dashboard", {
       this.showLoadingIndicator = true;
       disposeDashboardAssets(this.assets);
 
-      const assets: Record<string, any> = {};
+      const assets: Record<string, { node: HTMLElement | null; type: string; value: string }> = {};
       const head = document.head || document.getElementsByTagName("head")[0];
       const authStore = useAuthStore(this.$pinia);
 
@@ -186,12 +186,12 @@ export const useDashboardStore = defineStore("dashboard", {
       }
 
       if (Array.isArray(this.dashboard.settings?.resources)) {
-        this.dashboard.settings.resources.forEach((element: any) => {
-          const node = createAsset(element.type, element.url);
+        this.dashboard.settings.resources.forEach((element: Record<string, unknown>) => {
+          const node = createAsset(String(element.type || ""), String(element.url || ""));
           if (node.node) {
             head.appendChild(node.node);
           }
-          assets[element.url] = node;
+          assets[String(element.url || "")] = node;
         });
       }
 

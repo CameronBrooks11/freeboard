@@ -15,6 +15,13 @@ const withCacheBust = (url) => {
 };
 
 export class PictureWidget extends ReactiveWidget {
+  headerElement!: HTMLDivElement;
+  imageWrap!: HTMLDivElement;
+  imageElement!: HTMLImageElement;
+  placeholderElement!: HTMLDivElement;
+  currentSrc = "";
+  refreshTimer: ReturnType<typeof setInterval> | null = null;
+
   static typeName = "picture";
   static label = "Picture";
   static preferredRows = 4;

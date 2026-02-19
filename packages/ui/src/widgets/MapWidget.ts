@@ -34,6 +34,10 @@ const mapProviders = {
 };
 
 export class MapWidget extends ReactiveWidget {
+  headerElement!: HTMLDivElement;
+  mapFrame!: HTMLIFrameElement;
+  statusElement!: HTMLDivElement;
+
   static typeName = "map";
   static label = "Map";
   static preferredRows = 4;
@@ -155,8 +159,9 @@ export class MapWidget extends ReactiveWidget {
       return;
     }
 
-    const providerKey = this.currentSettings?.provider || "openstreetmap";
-    const provider = mapProviders[providerKey] || mapProviders.openstreetmap;
+    const providerKey = String(this.currentSettings?.provider || "openstreetmap").toLowerCase();
+    const provider =
+      mapProviders[providerKey as keyof typeof mapProviders] || mapProviders.openstreetmap;
 
     const zoom = clamp(
       Number.isFinite(Number(this.currentSettings?.zoom))

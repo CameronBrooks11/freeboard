@@ -31,6 +31,20 @@ const ALLOWED_HTTP_PARSERS = new Set(["json", "text", "csv"]);
 const ALLOWED_STREAM_PARSERS = new Set(["json", "text"]);
 const ALLOWED_STREAM_AUTH_PLACEMENTS = new Set(["header", "query"]);
 
+export type SanitizedDashboardInput = {
+  title?: unknown;
+  version?: unknown;
+  visibility?: unknown;
+  image?: unknown;
+  datasources?: unknown;
+  columns?: unknown;
+  width?: unknown;
+  panes?: unknown;
+  settings?: unknown;
+  shareToken?: unknown;
+  shareTokenVersion?: unknown;
+};
+
 export const generateShareToken = () => crypto.randomBytes(24).toString("base64url");
 
 export const toComparableId = (value) => {
@@ -191,11 +205,11 @@ export const ensureDashboardPayloadAllowedByExecutionMode = async ({
   }
 };
 
-export const sanitizeDashboardInput = (dashboard = {}) => {
-  const sanitized = {};
+export const sanitizeDashboardInput = (dashboard: Record<string, unknown> = {}) => {
+  const sanitized: SanitizedDashboardInput = {};
   for (const [key, value] of Object.entries(dashboard || {})) {
     if (DASHBOARD_MUTABLE_FIELDS.has(key)) {
-      sanitized[key] = value;
+      (sanitized as Record<string, unknown>)[key] = value;
     }
   }
   return sanitized;

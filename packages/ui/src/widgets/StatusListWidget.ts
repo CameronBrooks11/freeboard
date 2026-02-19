@@ -74,6 +74,11 @@ const normalizeItem = (item, settings) => {
 };
 
 export class StatusListWidget extends ReactiveWidget {
+  lastItemCount = 0;
+  isNarrow = false;
+  headerElement!: HTMLDivElement;
+  listElement!: HTMLUListElement;
+
   static typeName = "status-list";
   static label = "Status List";
 
@@ -160,7 +165,12 @@ export class StatusListWidget extends ReactiveWidget {
     this.listElement.style.gap = "4px";
     this.listElement.style.overflowY = "auto";
     this.listElement.style.flex = "1";
-    this.listElement.style.webkitOverflowScrolling = "touch";
+    if (typeof this.listElement.style.setProperty === "function") {
+      this.listElement.style.setProperty("-webkit-overflow-scrolling", "touch");
+    } else {
+      (this.listElement.style as unknown as Record<string, string>).webkitOverflowScrolling =
+        "touch";
+    }
     this.listElement.style.touchAction = "pan-y";
     this.listElement.setAttribute("role", "list");
 

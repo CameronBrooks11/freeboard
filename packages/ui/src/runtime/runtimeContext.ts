@@ -2,15 +2,15 @@ const defaultContext = {
   getDashboardId: () => null,
   getAuthToken: () => null,
   getRuntimeShareToken: () => null,
-  getDatasourcePlugin: (...args: any[]) => {
+  getDatasourcePlugin: (...args: unknown[]) => {
     void args;
     return null;
   },
-  getWidgetPlugin: (...args: any[]) => {
+  getWidgetPlugin: (...args: unknown[]) => {
     void args;
     return null;
   },
-  processDatasourceUpdate: (...args: any[]) => {
+  processDatasourceUpdate: (...args: unknown[]) => {
     void args;
   },
 };

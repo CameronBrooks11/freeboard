@@ -19,6 +19,13 @@ This guide defines the migration rules for Phase 17.
 - `@ts-expect-error` requires a short rationale comment and a follow-up issue/task reference.
 - Do not use broad file-level disable directives as a default strategy.
 
+## Type Safety Rules
+
+- Do not use `any` in production source (`packages/*/src`).
+- Prefer `unknown` at trust boundaries, then narrow with explicit guards.
+- Prefer domain interfaces/types over unstructured mutable bags.
+- CI enforces a TS source debt check for unsafe typing patterns.
+
 ## Progression Gate
 
 - Do not start migrating the next package until the current package completion criteria are met.
