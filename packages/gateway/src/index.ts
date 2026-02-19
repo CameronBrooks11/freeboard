@@ -233,6 +233,9 @@ export const deriveClientIp = (request: http.IncomingMessage): string => {
   }
 
   const selected = forwardedEntries[forwardedEntries.length - 1 - REALTIME_TRUST_PROXY_HOPS];
+  if (!selected) {
+    return socketAddress;
+  }
   return selected.startsWith("::ffff:") ? selected.slice(7) : selected;
 };
 
@@ -582,10 +585,26 @@ export const createRealtimeGateway = ({
 
     const client = new SimpleMqttClient({
       brokerUrl: String(intent.brokerUrl || ""),
-      username: intent.username || undefined,
-      password: intent.password || undefined,
-      resolvedAddress: resolvedDestination?.address,
-      resolvedFamily: resolvedDestination?.family,
+      ...(intent.username
+        ? {
+            username: intent.username,
+          }
+        : {}),
+      ...(intent.password
+        ? {
+            password: intent.password,
+          }
+        : {}),
+      ...(resolvedDestination?.address
+        ? {
+            resolvedAddress: resolvedDestination.address,
+          }
+        : {}),
+      ...(resolvedDestination?.family
+        ? {
+            resolvedFamily: resolvedDestination.family,
+          }
+        : {}),
       tlsServername: new URL(String(intent.brokerUrl || "")).hostname,
       keepaliveSeconds: Math.max(
         5,

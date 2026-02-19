@@ -30,9 +30,11 @@ type ErrorLike = {
   message?: string;
 };
 
-export const writeError = (clientRes: ErrorResponse, error: ErrorLike | null | undefined): void => {
-  const statusCode = Number(error?.statusCode) || 500;
-  const message = statusCode >= 500 ? "Gateway request failed" : error?.message;
+export const writeError = (clientRes: ErrorResponse, error: unknown): void => {
+  const normalizedError =
+    error && typeof error === "object" ? (error as ErrorLike) : ({} as ErrorLike);
+  const statusCode = Number(normalizedError.statusCode) || 500;
+  const message = statusCode >= 500 ? "Gateway request failed" : normalizedError.message;
   if (!clientRes.headersSent) {
     clientRes.status(statusCode).json({ error: message || "Gateway request failed" });
   } else {

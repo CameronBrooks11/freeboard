@@ -202,6 +202,9 @@ export const ensureResolvedDestinationIsAllowed = async (
   }
 
   const primaryRecord = resolved[0];
+  if (!primaryRecord) {
+    throw createClientError(502, "Unable to resolve target host");
+  }
   const family: 4 | 6 = Number(primaryRecord.family) === 6 ? 6 : 4;
   return {
     address: primaryRecord.address,

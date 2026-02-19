@@ -23,6 +23,16 @@ type StreamIntent = {
   topicAllowlist?: string[];
 };
 type StreamAdapter = { stop: () => Promise<void> | void };
+type StreamErrorCodes = {
+  CONNECT_TIMEOUT: string;
+  CONNECT_REFUSED: string;
+  CONNECT_FAILED: string;
+  AUTH_FAILED: string;
+  IDLE_TIMEOUT: string;
+  MESSAGE_TOO_LARGE: string;
+  PROTOCOL_ERROR: string;
+  POLICY_BLOCKED: string;
+};
 type StreamCallbacks = {
   intent: StreamIntent;
   onData: (payload: unknown) => void;
@@ -64,7 +74,7 @@ type AdapterFactoryDeps = {
   lookup: LookupFn;
   REALTIME_SSE_IDLE_TIMEOUT_MS: number;
   REALTIME_MAX_MESSAGE_BYTES: number;
-  STREAM_ERROR_CODES: Record<string, string>;
+  STREAM_ERROR_CODES: StreamErrorCodes;
   parseStreamPayload: (raw: string, parser?: string) => unknown;
   REALTIME_CONNECT_TIMEOUT_MS: number;
   createUpstreamRequestOptions: (params: {
@@ -73,7 +83,7 @@ type AdapterFactoryDeps = {
     hostname: string;
     resolvedDestination: { address: string; family: 4 | 6 };
     bodyText: string;
-    headers?: Record<string, unknown>;
+    headers?: Record<string, unknown> | undefined;
     timeoutMs: number;
   }) => http.RequestOptions;
   httpRequest: typeof http.request;
@@ -270,7 +280,11 @@ export const createProtocolAdapterFactory = (deps: AdapterFactoryDeps) => {
       hostname,
       resolvedDestination,
       bodyText: "",
-      headers: intent.headers,
+      ...(intent.headers
+        ? {
+            headers: intent.headers,
+          }
+        : {}),
       timeoutMs,
     });
     options.method = "GET";

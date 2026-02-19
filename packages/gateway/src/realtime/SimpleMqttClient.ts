@@ -275,6 +275,9 @@ export class SimpleMqttClient extends EventEmitter {
       this.incomingBuffer = this.incomingBuffer.slice(totalLength);
 
       const firstByte = packet[0];
+      if (firstByte === undefined) {
+        continue;
+      }
       const packetType = firstByte >> 4;
       const body = packet.slice(fixedHeaderLength);
 

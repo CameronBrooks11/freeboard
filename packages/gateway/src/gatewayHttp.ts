@@ -30,7 +30,7 @@ type UpstreamRequestOptionsInput = {
   hostname: string;
   resolvedDestination: UpstreamResolvedDestination;
   bodyText: string;
-  headers?: Record<string, unknown>;
+  headers?: Record<string, unknown> | undefined;
   timeoutMs: number;
 };
 
@@ -151,7 +151,12 @@ const parseCsv = (csvText: string): Array<Record<string, string>> => {
     return [];
   }
 
-  const headers = lines[0].split(",").map((part) => part.trim());
+  const firstLine = lines[0];
+  if (!firstLine) {
+    return [];
+  }
+
+  const headers = firstLine.split(",").map((part) => part.trim());
   return lines.slice(1).map((line) => {
     const values = line.split(",").map((part) => part.trim());
     const item: Record<string, string> = {};
@@ -169,7 +174,7 @@ const parseGatewayResponse = ({
   parser,
   payload,
 }: {
-  parser?: string;
+  parser?: string | undefined;
   payload: string;
 }): unknown => {
   const normalizedParser = String(parser || "json").toLowerCase();
@@ -222,7 +227,11 @@ const executeIntentFetch = async ({
     hostname,
     resolvedDestination,
     bodyText,
-    headers: intent.headers,
+    ...(intent.headers
+      ? {
+          headers: intent.headers,
+        }
+      : {}),
     timeoutMs,
   });
   options.method = String(intent.method || "GET").toUpperCase();
@@ -272,10 +281,14 @@ const executeIntentFetch = async ({
     upstream.end();
   });
 
-  return parseGatewayResponse({
-    parser: intent.parser,
-    payload,
-  });
+  return parseGatewayResponse(
+    intent.parser
+      ? {
+          parser: intent.parser,
+          payload,
+        }
+      : { payload },
+  );
 };
 
 export const createGatewayFetchHandler =
