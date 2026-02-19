@@ -26,6 +26,7 @@ import {
   type DatasourceSessionTokenClaims,
 } from "./datasourceGateway.js";
 import { decryptCredentialSecret } from "./credentialEncryption.js";
+import type { EncryptedSecretPayload } from "./credentialEncryption.js";
 import { consumeRateLimit } from "./rateLimit.js";
 import { recordAuditEvent } from "./audit.js";
 import { queryShareTokenRevocationFeed } from "./shareTokenRevocationFeed.js";
@@ -240,7 +241,8 @@ const handleGatewayIntrospection = async (
       dashboard,
       datasourceId,
       tokenClaims,
-      decryptSecret: decryptCredentialSecret,
+      decryptSecret: (value: unknown) =>
+        decryptCredentialSecret((value || null) as EncryptedSecretPayload | null),
     });
     sendJson(res, 200, resolved);
   } catch (error: unknown) {
