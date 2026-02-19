@@ -6,8 +6,17 @@
 import { resolveTableRowValue } from "./TableWidget.js";
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 import { setStylePropertyCompat } from "../utils/styleCompat.js";
+type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
+type StatusItem = { label: string; value: string; status: string };
+type StatusInputs = {
+  header: string;
+  items: StatusItem[];
+  showIcons: boolean;
+  compact: boolean;
+  colorMap: Record<string, string>;
+};
 
-const DEFAULT_STATUS_COLORS = {
+const DEFAULT_STATUS_COLORS: Record<string, string> = {
   ok: "#16a34a",
   warn: "#f59e0b",
   warning: "#f59e0b",
@@ -16,7 +25,7 @@ const DEFAULT_STATUS_COLORS = {
   unknown: "#64748b",
 };
 
-const DEFAULT_STATUS_ICONS = {
+const DEFAULT_STATUS_ICONS: Record<string, string> = {
   ok: "●",
   warn: "▲",
   warning: "▲",
@@ -25,14 +34,14 @@ const DEFAULT_STATUS_ICONS = {
   unknown: "•",
 };
 
-const toArray = (value) => (Array.isArray(value) ? value : []);
+const toArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
-const normalizeStatusValue = (value) =>
+const normalizeStatusValue = (value: unknown): string =>
   String(value || "")
     .trim()
     .toLowerCase();
 
-export const parseStatusColorsMap = (rawValue) => {
+export const parseStatusColorsMap = (rawValue: unknown): Record<string, string> => {
   if (!rawValue) {
     return { ...DEFAULT_STATUS_COLORS };
   }
@@ -58,7 +67,7 @@ export const parseStatusColorsMap = (rawValue) => {
   return { ...DEFAULT_STATUS_COLORS };
 };
 
-const normalizeItem = (item, settings) => {
+const normalizeItem = (item: unknown, settings: Record<string, unknown>): StatusItem => {
   const labelField = String(settings.labelField || "label").trim() || "label";
   const valueField = String(settings.valueField || "value").trim() || "value";
   const statusField = String(settings.statusField || "status").trim() || "status";
@@ -83,7 +92,11 @@ export class StatusListWidget extends ReactiveWidget {
   static typeName = "status-list";
   static label = "Status List";
 
-  static fields = (widget, dashboard, general) => [
+  static fields = (
+    widget: WidgetFieldSource,
+    dashboard: unknown,
+    general: Record<string, unknown>,
+  ) => [
     general,
     {
       label: "Display",
@@ -134,11 +147,14 @@ export class StatusListWidget extends ReactiveWidget {
     },
   ];
 
-  static newInstance(settings, newInstanceCallback) {
+  static newInstance(
+    settings: Record<string, unknown>,
+    newInstanceCallback: (instance: unknown) => void,
+  ) {
     newInstanceCallback(new StatusListWidget(settings));
   }
 
-  constructor(settings) {
+  constructor(settings: Record<string, unknown>) {
     super(settings);
 
     this.lastItemCount = 0;
@@ -188,7 +204,7 @@ export class StatusListWidget extends ReactiveWidget {
     };
   }
 
-  onInputsChanged(inputs) {
+  onInputsChanged(inputs: StatusInputs) {
     this.headerElement.textContent = inputs.header || "";
     this.headerElement.style.display = inputs.header ? "block" : "none";
 

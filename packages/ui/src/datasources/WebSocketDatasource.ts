@@ -7,18 +7,21 @@ import { mintDatasourceSessionToken } from "./datasourceSessionToken.js";
 import { DatasourceRuntimeBase } from "./runtime/DatasourceRuntimeBase.js";
 import { getStreamingManager } from "./runtime/StreamingManager.js";
 import { getAuthToken, getDashboardId, getRuntimeShareToken } from "../runtime/runtimeContext.js";
+import type { DatasourceStatusPayload, UnknownRecord } from "../types/runtime.js";
+import type { StreamingManager } from "./runtime/StreamingManager.js";
+type DatasourceFieldModel = { settings?: UnknownRecord } | null | undefined;
 
 const STREAM_PARSERS = ["json", "text"];
 const AUTH_PLACEMENT_OPTIONS = ["header", "query"];
 
-const normalizeParser = (value) => {
+const normalizeParser = (value: unknown): string => {
   const normalized = String(value || "json")
     .trim()
     .toLowerCase();
   return STREAM_PARSERS.includes(normalized) ? normalized : "json";
 };
 
-const normalizeAuthPlacement = (value) => {
+const normalizeAuthPlacement = (value: unknown): string => {
   const normalized = String(value || "header")
     .trim()
     .toLowerCase();
@@ -31,11 +34,11 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
   static label = "WebSocket";
 
   static fields = (
-    datasource,
-    dashboard,
-    general,
+    datasource: DatasourceFieldModel,
+    dashboard: unknown,
+    general: UnknownRecord & { fields: UnknownRecord[]; settings: UnknownRecord },
     runtimeContext: Record<string, unknown> = {},
-  ) => {
+  ): UnknownRecord[] => {
     const credentialProfiles = Array.isArray(runtimeContext.credentialProfiles)
       ? runtimeContext.credentialProfiles
       : [];
@@ -157,12 +160,12 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
   };
 
   static newInstance(
-    settings,
-    newInstanceCallback,
-    updateCallback,
-    statusCallback,
-    runtimeContext,
-  ) {
+    settings: UnknownRecord,
+    newInstanceCallback: (instance: WebSocketDatasource) => void,
+    updateCallback: (payload: unknown) => void,
+    statusCallback: (payload: DatasourceStatusPayload & { metrics: UnknownRecord }) => void,
+    runtimeContext?: Record<string, unknown>,
+  ): void {
     newInstanceCallback(
       new WebSocketDatasource(settings, updateCallback, statusCallback, runtimeContext),
     );
@@ -170,16 +173,16 @@ export class WebSocketDatasource extends DatasourceRuntimeBase {
 
   runtimeContext: Record<string, unknown> = {};
 
-  manager = null;
+  manager: StreamingManager | null = null;
 
-  sessionToken = null;
+  sessionToken: string | null = null;
 
   streamGeneration = 0;
 
   constructor(
-    settings,
-    updateCallback,
-    statusCallback,
+    settings: UnknownRecord,
+    updateCallback: (payload: unknown) => void,
+    statusCallback: (payload: DatasourceStatusPayload & { metrics: UnknownRecord }) => void,
     runtimeContext: Record<string, unknown> = {},
   ) {
     super(settings, updateCallback, statusCallback);

@@ -11,5 +11,10 @@
  * @param {boolean} input.canPublish
  * @returns {Object}
  */
-export const normalizeCreateDashboardPayload = ({ dashboard, canPublish }) =>
-  canPublish ? dashboard : { ...dashboard, visibility: "private" };
+export const normalizeCreateDashboardPayload = ({
+  dashboard,
+  canPublish,
+}: {
+  dashboard: Record<string, unknown>;
+  canPublish: boolean;
+}) => (canPublish ? dashboard : { ...dashboard, visibility: "private" });

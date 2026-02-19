@@ -39,7 +39,7 @@ import {
 } from "oh-vue-icons/icons";
 
 import { createPinia } from "pinia";
-import router from "./router/index.js";
+import routerTyped from "./router/index.js";
 import { useAuthStore } from "./stores/auth.js";
 import { useDashboardStore } from "./stores/dashboard.js";
 import { useProfileCatalogStore } from "./stores/profileCatalog.js";
@@ -106,8 +106,8 @@ const cache = new InMemoryCache();
  *
  * @returns {Object<string, string>} HTTP headers object.
  */
-const getHeaders = () => {
-  const headers = {};
+const getHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = {};
   if (authStore.token) {
     headers["Authorization"] = `Bearer ${authStore.token}`;
   }
@@ -124,7 +124,7 @@ const errorLink = onError(({ graphQLErrors }) => {
     profileCatalogStore.clearCredentialProfiles();
     profileCatalogStore.clearBrokerProfiles();
     dashboardStore.syncEditingPermissions();
-    router.push("/login");
+    routerTyped.push("/login");
   }
 });
 
@@ -135,9 +135,12 @@ const errorLink = onError(({ graphQLErrors }) => {
  */
 const httpLink = new HttpLink({
   uri: `/graphql`,
-  fetch: (uri, options) => {
-    options.headers = getHeaders();
-    return fetch(uri, options);
+  fetch: (uri, options = {}) => {
+    const requestOptions: RequestInit = {
+      ...options,
+      headers: getHeaders(),
+    };
+    return fetch(uri, requestOptions);
   },
 });
 
@@ -174,4 +177,4 @@ app.provide(DefaultApolloClient, apolloClient);
 app.use(pinia);
 bootstrapApp({ pinia });
 
-app.use(router).use(i18n).use(head).component("v-icon", OhVueIcon).mount("#app");
+app.use(routerTyped).use(i18n).use(head).component("v-icon", OhVueIcon).mount("#app");

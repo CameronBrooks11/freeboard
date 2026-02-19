@@ -202,7 +202,14 @@ watch(
  * Handle incoming dashboard data (initial or subscription).
  * @param {{ dashboard?: unknown }|undefined} data
  */
-const applyResult = (data) => {
+const applyResult = (
+  data:
+    | {
+        dashboard?: Record<string, unknown> | null;
+        dashboardByShareToken?: Record<string, unknown> | null;
+      }
+    | undefined,
+) => {
   const dash = data?.dashboard || data?.dashboardByShareToken;
   showLoadingIndicator.value = false;
 

@@ -4,11 +4,11 @@
  */
 
 import { createRouter, createWebHistory } from "vue-router";
+import type { Router } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import { resolveNavigationGuard } from "./authGuard.js";
 
-/** @type {import('vue-router').Router} */
-let router;
+let router: Router;
 
 const Freeboard = () => import("../components/Freeboard.vue");
 const Login = () => import("../components/Login.vue");

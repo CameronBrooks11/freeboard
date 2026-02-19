@@ -2,8 +2,10 @@ import { useAuthStore } from "../stores/auth.js";
 import { useDashboardStore } from "../stores/dashboard.js";
 import { usePluginRegistryStore } from "../stores/pluginRegistry.js";
 import { setRuntimeContext } from "../runtime/runtimeContext.js";
+import type { Pinia } from "pinia";
+import type { Datasource } from "../models/Datasource.js";
 
-export const bootstrapApp = ({ pinia }) => {
+export const bootstrapApp = ({ pinia }: { pinia: Pinia }) => {
   const authStore = useAuthStore(pinia);
   const dashboardStore = useDashboardStore(pinia);
   const pluginRegistryStore = usePluginRegistryStore(pinia);
@@ -18,10 +20,10 @@ export const bootstrapApp = ({ pinia }) => {
     getDashboardId: () => dashboardStore.dashboard?._id || null,
     getAuthToken: () => authStore.token || null,
     getRuntimeShareToken: () => authStore.runtimeShareToken || null,
-    getDatasourcePlugin: (typeName) => pluginRegistryStore.getDatasourcePlugin(typeName),
-    getWidgetPlugin: (typeName) => pluginRegistryStore.getWidgetPlugin(typeName),
-    processDatasourceUpdate: (datasource) => {
-      dashboardStore.dashboard?.processDatasourceUpdate?.(datasource);
+    getDatasourcePlugin: (typeName: string) => pluginRegistryStore.getDatasourcePlugin(typeName),
+    getWidgetPlugin: (typeName: string) => pluginRegistryStore.getWidgetPlugin(typeName),
+    processDatasourceUpdate: (datasource: unknown) => {
+      dashboardStore.dashboard?.processDatasourceUpdate?.(datasource as Datasource);
     },
   });
 

@@ -4,8 +4,10 @@
  */
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
+type TextInputs = { header: string; unit: string; value: unknown };
 
-const isFiniteNumber = (v) => typeof v === "number" && Number.isFinite(v);
+const isFiniteNumber = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 
 const nowMs = () =>
   typeof performance !== "undefined" && typeof performance.now === "function"
@@ -15,10 +17,12 @@ const nowMs = () =>
 const requestFrame =
   typeof requestAnimationFrame === "function"
     ? requestAnimationFrame
-    : (callback) => setTimeout(() => callback(nowMs()), 16);
+    : (callback: (timestamp: number) => void) => setTimeout(() => callback(nowMs()), 16);
 
 const cancelFrame =
-  typeof cancelAnimationFrame === "function" ? cancelAnimationFrame : (id) => clearTimeout(id);
+  typeof cancelAnimationFrame === "function"
+    ? cancelAnimationFrame
+    : (id: ReturnType<typeof setTimeout>) => clearTimeout(id);
 
 /**
  * Text widget implementation.
@@ -28,7 +32,11 @@ export class TextWidget extends ReactiveWidget {
 
   static label = "Text";
 
-  static fields = (widget, dashboard, general) => [
+  static fields = (
+    widget: WidgetFieldSource,
+    dashboard: unknown,
+    general: Record<string, unknown>,
+  ) => [
     general,
     {
       label: "Display",
@@ -113,7 +121,10 @@ export class TextWidget extends ReactiveWidget {
     },
   ];
 
-  static newInstance(settings, newInstanceCallback) {
+  static newInstance(
+    settings: Record<string, unknown>,
+    newInstanceCallback: (instance: unknown) => void,
+  ) {
     newInstanceCallback(new TextWidget(settings));
   }
 
@@ -129,7 +140,7 @@ export class TextWidget extends ReactiveWidget {
 
   private currentNumericValue?: number;
 
-  constructor(settings) {
+  constructor(settings: Record<string, unknown>) {
     super(settings);
     this.isNarrow = false;
 
@@ -166,7 +177,7 @@ export class TextWidget extends ReactiveWidget {
     this.onSettingsChanged(settings);
   }
 
-  onSettingsChanged(newSettings) {
+  onSettingsChanged(newSettings: Record<string, unknown>) {
     super.onSettingsChanged(newSettings);
 
     this.applyResponsiveSizing();
@@ -199,7 +210,7 @@ export class TextWidget extends ReactiveWidget {
     };
   }
 
-  formatValue(value) {
+  formatValue(value: unknown): string {
     if (value === null || value === undefined || value === "") {
       return "—";
     }
@@ -216,7 +227,7 @@ export class TextWidget extends ReactiveWidget {
     return String(value);
   }
 
-  applyAnimatedNumber(nextValue) {
+  applyAnimatedNumber(nextValue: number): void {
     const shouldAnimate = this.currentSettings?.animate;
 
     if (!shouldAnimate || !isFiniteNumber(this.currentNumericValue)) {
@@ -234,7 +245,7 @@ export class TextWidget extends ReactiveWidget {
     const duration = 220;
     const startedAt = nowMs();
 
-    const step = (now) => {
+    const step = (now: number) => {
       const elapsed = now - startedAt;
       const t = Math.min(elapsed / duration, 1);
       const current = from + (to - from) * t;
@@ -250,7 +261,7 @@ export class TextWidget extends ReactiveWidget {
     this.animationFrame = requestFrame(step);
   }
 
-  onInputsChanged(inputs) {
+  onInputsChanged(inputs: TextInputs) {
     this.headerElement.textContent = inputs.header || "";
     this.headerElement.style.display = inputs.header ? "block" : "none";
 

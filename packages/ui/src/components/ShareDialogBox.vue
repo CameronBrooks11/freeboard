@@ -28,6 +28,18 @@ import {
   DASHBOARD_UPSERT_ACCESS_MUTATION,
 } from "../gql.js";
 
+type CollaboratorEntry = {
+  userId: string;
+  email?: string;
+  accessLevel?: string;
+  isOwner?: boolean;
+};
+type GraphQLErrorLike = {
+  graphQLErrors?: Array<{ message?: string }>;
+  message?: string;
+};
+type ShareMutationPayload = Record<string, unknown> | null | undefined;
+
 const { onClose } = defineProps({
   onClose: Function as PropType<(event?: Event) => void>,
 });
@@ -76,9 +88,12 @@ const { mutate: transferDashboardOwnership, loading: transferOwnershipLoading } 
   DASHBOARD_TRANSFER_OWNERSHIP_MUTATION,
 );
 
-const collaborators = computed(() => collaboratorsResult.value?.dashboardCollaborators || []);
+const collaborators = computed<CollaboratorEntry[]>(
+  () =>
+    (collaboratorsResult.value?.dashboardCollaborators as CollaboratorEntry[] | undefined) || [],
+);
 const ownershipTransferCandidates = computed(() =>
-  collaborators.value.filter((entry) => !entry.isOwner),
+  collaborators.value.filter((entry: CollaboratorEntry) => !entry.isOwner),
 );
 const isBusy = computed(
   () =>
@@ -103,14 +118,15 @@ const clearMessages = () => {
   errorMessage.value = "";
 };
 
-const setGraphQLError = (error, fallback) => {
-  errorMessage.value = error?.graphQLErrors?.[0]?.message || error?.message || fallback;
+const setGraphQLError = (error: unknown, fallback: string) => {
+  const normalized = (error as GraphQLErrorLike | undefined) || undefined;
+  errorMessage.value = normalized?.graphQLErrors?.[0]?.message || normalized?.message || fallback;
 };
 
-const visibilityToEnum = (visibility) => String(visibility || "private").toUpperCase();
-const accessLevelToEnum = (accessLevel) => String(accessLevel || "viewer").toUpperCase();
+const visibilityToEnum = (visibility: string) => String(visibility || "private").toUpperCase();
+const accessLevelToEnum = (accessLevel: string) => String(accessLevel || "viewer").toUpperCase();
 
-const applyDashboardMutationPayload = (payload) => {
+const applyDashboardMutationPayload = (payload: ShareMutationPayload) => {
   const applied = applyShareMutationPayloadToDashboard({
     dashboard: dashboard.value,
     payload,
@@ -247,7 +263,7 @@ const addCollaborator = async () => {
   }
 };
 
-const removeCollaborator = async (userId) => {
+const removeCollaborator = async (userId: string) => {
   clearMessages();
   const guardError = getShareMutationGuardError({
     isShareableDashboard: isShareableDashboard.value,

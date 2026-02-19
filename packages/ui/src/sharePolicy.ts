@@ -3,7 +3,7 @@
  * @description Pure helpers for share dialog state and fallback link generation.
  */
 
-const normalizeVisibility = (visibility) =>
+const normalizeVisibility = (visibility: unknown): string =>
   String(visibility || "private")
     .trim()
     .toLowerCase();
@@ -16,8 +16,13 @@ const normalizeVisibility = (visibility) =>
  * @param {string|undefined|null} input.dashboardId
  * @returns {boolean}
  */
-export const isDashboardShareable = ({ isSaved, dashboardId }) =>
-  Boolean(isSaved && String(dashboardId || "").trim());
+export const isDashboardShareable = ({
+  isSaved,
+  dashboardId,
+}: {
+  isSaved: boolean;
+  dashboardId: string | null | undefined;
+}): boolean => Boolean(isSaved && String(dashboardId || "").trim());
 
 /**
  * Build fallback route path used for share URLs.
@@ -28,7 +33,15 @@ export const isDashboardShareable = ({ isSaved, dashboardId }) =>
  * @param {string|undefined|null} input.shareToken
  * @returns {string}
  */
-export const buildFallbackSharePath = ({ visibility, dashboardId, shareToken }) => {
+export const buildFallbackSharePath = ({
+  visibility,
+  dashboardId,
+  shareToken,
+}: {
+  visibility: string | null | undefined;
+  dashboardId: string | null | undefined;
+  shareToken: string | null | undefined;
+}): string => {
   const normalizedVisibility = normalizeVisibility(visibility);
   const normalizedDashboardId = String(dashboardId || "").trim();
   const normalizedShareToken = String(shareToken || "").trim();

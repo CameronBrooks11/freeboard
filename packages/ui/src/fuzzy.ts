@@ -10,15 +10,12 @@
  * @param {string} str2 - Second string.
  * @returns {number} The number of edits required to transform str1 into str2.
  */
-export function levenshteinDistance(str1, str2) {
+export function levenshteinDistance(str1: string, str2: string): number {
   const len1 = str1.length;
   const len2 = str2.length;
 
   // Initialize the DP matrix with dimensions (len1+1) x (len2+1)
-  let matrix = Array(len1 + 1);
-  for (let i = 0; i <= len1; i++) {
-    matrix[i] = Array(len2 + 1);
-  }
+  const matrix: number[][] = Array.from({ length: len1 + 1 }, () => Array(len2 + 1).fill(0));
 
   // Base cases: transforming empty string to prefix of other string
   for (let i = 0; i <= len1; i++) {

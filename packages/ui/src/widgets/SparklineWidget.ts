@@ -4,15 +4,17 @@
  */
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
+type SparklineInputs = { header: string; series: unknown[] };
 
 const DEFAULT_COLORS = ["#f59e0b", "#22d3ee", "#a3e635", "#f43f5e", "#e879f9", "#38bdf8"];
 
-const toFiniteNumber = (value) => {
+const toFiniteNumber = (value: unknown): number | null => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const parseSeriesPaths = (raw) =>
+const parseSeriesPaths = (raw: unknown): string[] =>
   String(raw || "")
     .split(",")
     .map((value) => value.trim())
@@ -32,7 +34,11 @@ export class SparklineWidget extends ReactiveWidget {
   static label = "Sparkline";
   static preferredRows = 3;
 
-  static fields = (widget, dashboard, general) => [
+  static fields = (
+    widget: WidgetFieldSource,
+    dashboard: unknown,
+    general: Record<string, unknown>,
+  ) => [
     general,
     {
       label: "Display",
@@ -115,11 +121,14 @@ export class SparklineWidget extends ReactiveWidget {
     },
   ];
 
-  static newInstance(settings, newInstanceCallback) {
+  static newInstance(
+    settings: Record<string, unknown>,
+    newInstanceCallback: (instance: unknown) => void,
+  ) {
     newInstanceCallback(new SparklineWidget(settings));
   }
 
-  constructor(settings) {
+  constructor(settings: Record<string, unknown>) {
     super(settings);
     this.seriesHistory = [];
     this.latestSeriesCount = 1;
@@ -177,7 +186,7 @@ export class SparklineWidget extends ReactiveWidget {
     };
   }
 
-  onInputsChanged(inputs) {
+  onInputsChanged(inputs: SparklineInputs) {
     this.headerElement.textContent = inputs.header || "";
     this.headerElement.style.display = inputs.header ? "block" : "none";
 
@@ -201,7 +210,7 @@ export class SparklineWidget extends ReactiveWidget {
     this.legendElement.style.fontSize = this.isNarrow ? "10px" : "11px";
   }
 
-  pushSeriesValues(values) {
+  pushSeriesValues(values: Array<number | null>) {
     const historyLength = Math.max(
       2,
       Number.isFinite(Number(this.currentSettings?.historyLength))

@@ -11,8 +11,12 @@
 defineOptions({ name: "CodeEditorFormElement" });
 
 import { defineAsyncComponent, reactive, ref, shallowRef } from "vue";
+import type * as Monaco from "monaco-editor";
 
-const props = defineProps(["modelValue", "language"]);
+const props = defineProps<{
+  modelValue: string;
+  language: string | (() => string);
+}>();
 const emit = defineEmits(["update:modelValue"]);
 
 const MonacoEditor = defineAsyncComponent(async () => {
@@ -22,7 +26,7 @@ const MonacoEditor = defineAsyncComponent(async () => {
 });
 
 // Validation errors for the form element
-const errors = ref([]);
+const errors = ref<string[]>([]);
 
 // Configuration options passed to Monaco Editor
 const MONACO_EDITOR_OPTIONS = {
@@ -35,14 +39,14 @@ const MONACO_EDITOR_OPTIONS = {
 const p = reactive({ ...props });
 
 // Reference to store the Monaco editor instance
-const editor = shallowRef();
+const editor = shallowRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
 
 /**
  * Store the mounted editor instance for future use.
  *
  * @param {import('monaco-editor').editor.IStandaloneCodeEditor} editorInstance
  */
-const handleMount = (editorInstance) => {
+const handleMount = (editorInstance: Monaco.editor.IStandaloneCodeEditor) => {
   editor.value = editorInstance;
 };
 

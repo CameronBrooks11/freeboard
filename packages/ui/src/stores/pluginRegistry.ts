@@ -18,15 +18,16 @@ import { BarChartWidget } from "../widgets/BarChartWidget.js";
 import { StatusListWidget } from "../widgets/StatusListWidget.js";
 import { TableWidget } from "../widgets/TableWidget.js";
 import { TextWidget } from "../widgets/TextWidget.js";
+import type { DatasourcePlugin, WidgetPlugin } from "../types/runtime.js";
 
 export const usePluginRegistryStore = defineStore("pluginRegistry", {
   state: () => ({
-    datasourcePlugins: {},
-    widgetPlugins: {},
+    datasourcePlugins: {} as Record<string, DatasourcePlugin>,
+    widgetPlugins: {} as Record<string, WidgetPlugin>,
   }),
 
   actions: {
-    registerDatasourcePlugin(plugin) {
+    registerDatasourcePlugin(plugin: DatasourcePlugin) {
       if (!plugin || typeof plugin.typeName !== "string" || !plugin.typeName.trim()) {
         throw new Error("Datasource plugin requires a non-empty string `typeName`");
       }
@@ -37,7 +38,7 @@ export const usePluginRegistryStore = defineStore("pluginRegistry", {
       this.datasourcePlugins[typeName] = plugin;
     },
 
-    registerWidgetPlugin(plugin) {
+    registerWidgetPlugin(plugin: WidgetPlugin) {
       const normalizedPlugin = validateWidgetPlugin(plugin);
       this.widgetPlugins[normalizedPlugin.typeName] = normalizedPlugin;
     },
@@ -72,11 +73,11 @@ export const usePluginRegistryStore = defineStore("pluginRegistry", {
       });
     },
 
-    getDatasourcePlugin(typeName) {
+    getDatasourcePlugin(typeName: string): DatasourcePlugin | null {
       return this.datasourcePlugins[String(typeName || "")] || null;
     },
 
-    getWidgetPlugin(typeName) {
+    getWidgetPlugin(typeName: string): WidgetPlugin | null {
       return this.widgetPlugins[String(typeName || "")] || null;
     },
   },

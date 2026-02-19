@@ -4,6 +4,42 @@
  */
 import { normalizeDatasourceValue } from "./runtime/bindings.js";
 import { isTrustedExecutionEnabled } from "../executionPolicy.js";
+type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
+type BaseWidgetResource = { asset: string; label: string };
+type BaseWidgetSettings = {
+  style: string;
+  script: string;
+  html: string;
+  resources: BaseWidgetResource[];
+};
+type DatasourceUpdate = { id?: string; title?: string; latestData?: unknown };
+
+const getWidgetSettings = (widget: WidgetFieldSource): Record<string, unknown> =>
+  widget?.settings && typeof widget.settings === "object" ? widget.settings : {};
+
+const normalizeResources = (value: unknown): BaseWidgetResource[] =>
+  Array.isArray(value)
+    ? value
+        .map((resource) => {
+          if (!resource || typeof resource !== "object") {
+            return null;
+          }
+          const asset = String((resource as Record<string, unknown>).asset || "").trim();
+          if (!asset) {
+            return null;
+          }
+          const label = String((resource as Record<string, unknown>).label || "").trim();
+          return { asset, label };
+        })
+        .filter((resource): resource is BaseWidgetResource => Boolean(resource))
+    : [];
+
+const normalizeBaseWidgetSettings = (value: Record<string, unknown>): BaseWidgetSettings => ({
+  style: typeof value.style === "string" ? value.style : "",
+  script: typeof value.script === "string" ? value.script : "",
+  html: typeof value.html === "string" ? value.html : "",
+  resources: normalizeResources(value.resources),
+});
 
 export class BaseWidget {
   /**
@@ -29,8 +65,13 @@ export class BaseWidget {
    * @param {Object} general - General field group schema.
    * @returns {Array<Object>} Array of field group objects.
    */
-  static fields = (widget, dashboard, general) => {
+  static fields = (
+    widget: WidgetFieldSource,
+    dashboard: unknown,
+    general: Record<string, unknown>,
+  ) => {
     const trustedExecution = isTrustedExecutionEnabled();
+    const widgetSettings = getWidgetSettings(widget);
     const fields = [
       general,
       {
@@ -38,7 +79,7 @@ export class BaseWidget {
         icon: "hi-beaker",
         name: "style",
         settings: {
-          style: widget?.settings.style,
+          style: widgetSettings.style,
         },
         fields: [
           {
@@ -54,7 +95,7 @@ export class BaseWidget {
         icon: "hi-code",
         name: "html",
         settings: {
-          html: widget?.settings.html,
+          html: widgetSettings.html,
         },
         fields: [
           {
@@ -74,7 +115,7 @@ export class BaseWidget {
           icon: "hi-variable",
           name: "script",
           settings: {
-            script: widget?.settings.script,
+            script: widgetSettings.script,
           },
           fields: [
             {
@@ -90,7 +131,7 @@ export class BaseWidget {
           icon: "hi-archive",
           name: "resources",
           settings: {
-            resources: widget?.settings.resources,
+            resources: widgetSettings.resources,
           },
           fields: [
             {
@@ -104,11 +145,13 @@ export class BaseWidget {
                   type: "list",
                   options: fetch("https://api.cdnjs.com/libraries/")
                     .then((r) => r.json())
-                    .then((data) =>
-                      data.results.map((r) => ({
-                        value: r.latest,
-                        label: r.name,
-                      })),
+                    .then((data: { results?: Array<{ latest?: string; name?: string }> }) =>
+                      (Array.isArray(data.results) ? data.results : []).map(
+                        (r: { latest?: string; name?: string }) => ({
+                          value: String(r.latest || ""),
+                          label: String(r.name || ""),
+                        }),
+                      ),
                     ),
                 },
               ],
@@ -121,7 +164,7 @@ export class BaseWidget {
     return fields;
   };
 
-  static sanitizeHtmlAttribute(value) {
+  static sanitizeHtmlAttribute(value: unknown): string {
     return String(value || "")
       .replaceAll("&", "&amp;")
       .replaceAll('"', "&quot;")
@@ -137,11 +180,11 @@ export class BaseWidget {
    * @param {{style: string, script: string, html: string, resources: Array<{asset: string,label: string}>}} settings - Template settings.
    * @returns {string} HTML document string for iframe srcdoc.
    */
-  static template({ style, script, html, resources }) {
+  static template({ style, script, html, resources }: BaseWidgetSettings): string {
     const trustedExecution = isTrustedExecutionEnabled();
     const resourceTags = trustedExecution
       ? resources
-          ?.map((resource) => {
+          ?.map((resource: BaseWidgetResource) => {
             const src = BaseWidget.sanitizeHtmlAttribute(resource?.asset);
             if (!src) {
               return "";
@@ -177,32 +220,35 @@ export class BaseWidget {
    * @param {Object} settings - Initial settings object.
    * @param {function(BaseWidget):void} newInstanceCallback - Callback receiving the new instance.
    */
-  static newInstance(settings, newInstanceCallback) {
+  static newInstance(
+    settings: Record<string, unknown>,
+    newInstanceCallback: (instance: BaseWidget) => void,
+  ) {
     newInstanceCallback(new BaseWidget(settings));
   }
 
   /** @type {HTMLIFrameElement} Iframe element used to render the template. */
-  iframeElement;
+  iframeElement: HTMLIFrameElement;
 
   /** @type {string} Iframe source URL (not used when using srcdoc). */
-  iframeSrc;
+  iframeSrc = "";
 
   /** @type {HTMLDivElement} Container element wrapping the iframe. */
-  widgetElement;
+  widgetElement: HTMLDivElement;
 
   /** @type {Object} Current settings for this widget. */
-  currentSettings;
+  currentSettings: BaseWidgetSettings;
 
   /** @type {Element} DOM element where the widget is rendered. */
-  element;
+  element: Element | null = null;
 
   /**
    * Create a BaseWidget, setup container and iframe, and apply initial settings.
    *
    * @param {Object} settings - Initial settings containing style, script, html, resources.
    */
-  constructor(settings) {
-    this.currentSettings = settings;
+  constructor(settings: Record<string, unknown>) {
+    this.currentSettings = normalizeBaseWidgetSettings(settings);
     this.widgetElement = document.createElement("div");
     this.widgetElement.className = "template-widget";
     this.widgetElement.style.width = "100%";
@@ -222,7 +268,7 @@ export class BaseWidget {
    *
    * @param {Element} element - Target container element.
    */
-  render(element) {
+  render(element: Element) {
     if (this.element === element) {
       return;
     }
@@ -235,8 +281,8 @@ export class BaseWidget {
    *
    * @param {Object} newSettings - New settings for style, script, html, resources.
    */
-  onSettingsChanged(newSettings) {
-    this.currentSettings = newSettings;
+  onSettingsChanged(newSettings: Record<string, unknown>) {
+    this.currentSettings = normalizeBaseWidgetSettings(newSettings);
     this.iframeElement.sandbox = isTrustedExecutionEnabled()
       ? "allow-scripts allow-forms allow-modals allow-popups"
       : "allow-forms";
@@ -256,7 +302,10 @@ export class BaseWidget {
    * @param {Object} datasource - Datasource instance providing the update.
    * @param {{ snapshot?: Record<string, unknown> }} [context] - Optional normalized datasource snapshot.
    */
-  processDatasourceUpdate(datasource, context: { snapshot?: Record<string, unknown> } = {}) {
+  processDatasourceUpdate(
+    datasource: DatasourceUpdate,
+    context: { snapshot?: Record<string, unknown> } = {},
+  ) {
     if (!datasource?.id && !datasource?.title) {
       return;
     }
@@ -272,7 +321,7 @@ export class BaseWidget {
       snapshot: context.snapshot || {},
       raw: datasource.latestData,
       ...(datasource.latestData && typeof datasource.latestData === "object"
-        ? datasource.latestData
+        ? (datasource.latestData as Record<string, unknown>)
         : {}),
     });
   }

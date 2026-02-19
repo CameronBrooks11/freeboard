@@ -13,6 +13,8 @@ const DEFAULT_PUBLIC_AUTH_POLICY = Object.freeze({
 
 const EDITOR_ROLES = new Set(["editor", "admin"]);
 const SETTINGS_STORAGE_KEY = "freeboard";
+type UserRole = "viewer" | "editor" | "admin";
+type AuthUser = { _id: string | null; email: string | null; role: UserRole; active: boolean };
 
 const getSessionStorage = () => {
   try {
@@ -37,16 +39,19 @@ const getLocalStorage = () => {
 };
 
 const decodeBase64 = (value: string) => {
+  const runtimeGlobal = globalThis as typeof globalThis & {
+    Buffer?: { from(value: string, encoding?: string): { toString(encoding?: string): string } };
+  };
   if (typeof globalThis.atob === "function") {
     return globalThis.atob(value);
   }
-  if (typeof globalThis.Buffer !== "undefined") {
-    return globalThis.Buffer.from(value, "base64").toString("utf8");
+  if (typeof runtimeGlobal.Buffer !== "undefined") {
+    return runtimeGlobal.Buffer.from(value, "base64").toString("utf8");
   }
   throw new Error("No base64 decoder available");
 };
 
-const parseJwtPayload = (token: string | null) => {
+const parseJwtPayload = (token: string | null): Record<string, unknown> | null => {
   if (!token || typeof token !== "string") {
     return null;
   }
@@ -69,12 +74,21 @@ const parseJwtPayload = (token: string | null) => {
   }
 };
 
-const normalizeRole = (role) => {
+const normalizeRole = (role: unknown): UserRole => {
+  const allowedRoles: UserRole[] = ["viewer", "editor", "admin"];
   const normalized = String(role || "").toLowerCase();
-  if (["viewer", "editor", "admin"].includes(normalized)) {
-    return normalized;
+  if (allowedRoles.includes(normalized as UserRole)) {
+    return normalized as UserRole;
   }
   return "viewer";
+};
+
+const parseUserId = (value: unknown): string | null => {
+  return typeof value === "string" ? value : null;
+};
+
+const parseUserEmail = (value: unknown): string | null => {
+  return typeof value === "string" ? value : null;
 };
 
 const normalizePublicAuthPolicy = (policy: Record<string, unknown> = {}) => ({
@@ -112,35 +126,35 @@ const normalizePublicAuthPolicy = (policy: Record<string, unknown> = {}) => ({
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
-    token: null,
-    currentUser: null,
+    token: null as string | null,
+    currentUser: null as AuthUser | null,
     publicAuthPolicy: { ...DEFAULT_PUBLIC_AUTH_POLICY },
-    runtimeShareToken: null,
+    runtimeShareToken: null as string | null,
   }),
 
   actions: {
-    setPublicAuthPolicy(policy) {
+    setPublicAuthPolicy(policy: Record<string, unknown>) {
       const previousExecutionMode = this.publicAuthPolicy.executionMode;
       this.publicAuthPolicy = normalizePublicAuthPolicy(policy);
       setRuntimeExecutionMode(this.publicAuthPolicy.executionMode);
       return previousExecutionMode !== this.publicAuthPolicy.executionMode;
     },
 
-    setCurrentUser(user) {
+    setCurrentUser(user: Record<string, unknown> | null | undefined) {
       if (!user) {
         this.currentUser = null;
         return;
       }
 
       this.currentUser = {
-        _id: user._id || null,
-        email: user.email || null,
+        _id: parseUserId(user._id),
+        email: parseUserEmail(user.email),
         role: normalizeRole(user.role),
         active: user.active !== false,
       };
     },
 
-    setRuntimeShareToken(shareToken) {
+    setRuntimeShareToken(shareToken: unknown) {
       const normalized = String(shareToken || "").trim();
       this.runtimeShareToken = normalized || null;
     },
@@ -158,8 +172,8 @@ export const useAuthStore = defineStore("auth", {
       }
 
       this.currentUser = {
-        _id: payload._id || null,
-        email: payload.email || null,
+        _id: parseUserId(payload._id),
+        email: parseUserEmail(payload.email),
         role: normalizeRole(payload.role || (payload.admin ? "admin" : "viewer")),
         active: payload.active !== false,
       };
@@ -243,8 +257,8 @@ export const useAuthStore = defineStore("auth", {
       localStorageRef?.removeItem(SETTINGS_STORAGE_KEY);
     },
 
-    login(token) {
-      this.token = token;
+    login(token: string) {
+      this.token = String(token || "");
       this.hydrateFromToken();
       this.saveSession();
     },

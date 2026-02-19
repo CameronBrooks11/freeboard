@@ -68,6 +68,63 @@ import {
   SET_AUTH_POLICY_MUTATION,
 } from "../gql.js";
 
+type UserDraft = ReturnType<typeof toUserDraft>;
+type PolicyDraft = ReturnType<typeof toPolicyDraft>;
+type CredentialProfileDraft = ReturnType<typeof toCredentialProfileDraft>;
+type BrokerProfileDraft = ReturnType<typeof toBrokerProfileDraft>;
+type ServiceAccountDraft = ReturnType<typeof toServiceAccountDraft>;
+
+type User = { _id: string; email: string; role?: string; active?: boolean };
+type Invite = { _id: string; email?: string; role?: string; token?: string; expiresAt?: string };
+type CredentialProfile = { _id: string; name?: string; type?: string; secretShape?: string };
+type BrokerProfile = { _id: string; name?: string };
+type ServiceAccount = { _id: string; name?: string; tokenCount?: number; lastUsedAt?: string };
+type ServiceAccountToken = {
+  _id: string;
+  serviceAccountId?: string | null;
+  label?: string;
+  scopes?: string[];
+  expiresAt?: string;
+  revokedAt?: string | null;
+  lastUsedAt?: string;
+};
+type IssuedTokenPayload = { token: string; tokenPrefix?: string; expiresAt?: string };
+type PasswordResetPayload = { token: string; expiresAt?: string; resetUrl: string };
+type DatasourceDiagnostics = {
+  totalDashboards: number;
+  totalDatasources: number;
+  credentialBoundDatasources: number;
+  externalDashboardDatasources: number;
+  invalidDatasources: number;
+  typeCounts: Array<{ type: string; count: number }>;
+};
+type RuntimeMetric = {
+  api?: {
+    requestCount?: number;
+    errorCount?: number;
+    p95LatencyMs?: number;
+    authFailureCount?: number;
+  };
+  gateway?: {
+    httpRequestCount?: number;
+    httpErrorCount?: number;
+    realtimeActiveConnections?: number;
+    realtimeErrorCount?: number;
+  };
+};
+type AuditEvent = {
+  _id: string | number;
+  action?: string;
+  actorUserId?: string;
+  createdAt?: string;
+  actorType?: string;
+  actorId?: string;
+  eventType?: string;
+  targetType?: string;
+  targetId?: string;
+  metadata?: Record<string, unknown>;
+};
+
 export const useAdminConsoleController = () => {
   const authStore = useAuthStore();
   const dashboardStore = useDashboardStore();
@@ -76,13 +133,13 @@ export const useAdminConsoleController = () => {
 
   const statusMessage = ref("");
   const actionError = ref("");
-  const userDrafts = ref({});
-  const credentialProfileDrafts = ref({});
-  const brokerProfileDrafts = ref({});
-  const serviceAccountDrafts = ref({});
-  const issuedInvite = ref(null);
-  const issuedServiceAccountTokenByAccount = ref({});
-  const issuedResetByUser = ref({});
+  const userDrafts = ref<Record<string, UserDraft>>({});
+  const credentialProfileDrafts = ref<Record<string, CredentialProfileDraft>>({});
+  const brokerProfileDrafts = ref<Record<string, BrokerProfileDraft>>({});
+  const serviceAccountDrafts = ref<Record<string, ServiceAccountDraft>>({});
+  const issuedInvite = ref<(Invite & { acceptUrl: string }) | null>(null);
+  const issuedServiceAccountTokenByAccount = ref<Record<string, IssuedTokenPayload>>({});
+  const issuedResetByUser = ref<Record<string, PasswordResetPayload>>({});
 
   const createUserInput = ref({
     email: "",
@@ -95,16 +152,18 @@ export const useAdminConsoleController = () => {
     role: "viewer",
     expiresInHours: 72,
   });
-  const createCredentialProfileInput = ref(toCredentialProfileDraft());
-  const createBrokerProfileInput = ref(toBrokerProfileDraft());
-  const createServiceAccountInput = ref(toServiceAccountDraft({ scopes: ["ops:read"] }));
+  const createCredentialProfileInput = ref<CredentialProfileDraft>(toCredentialProfileDraft());
+  const createBrokerProfileInput = ref<BrokerProfileDraft>(toBrokerProfileDraft());
+  const createServiceAccountInput = ref<ServiceAccountDraft>(
+    toServiceAccountDraft({ scopes: ["ops:read"] }),
+  );
   const createServiceAccountTokenInput = ref({
     serviceAccountId: "",
     label: "",
     scopes: ["ops:read"],
     expiresInHours: 720,
   });
-  const policyDraft = ref(toPolicyDraft());
+  const policyDraft = ref<PolicyDraft>(toPolicyDraft());
 
   const {
     result: usersResult,
@@ -224,22 +283,56 @@ export const useAdminConsoleController = () => {
   const { mutate: adminRevokeServiceAccountToken, loading: revokeServiceAccountTokenLoading } =
     useMutation(ADMIN_REVOKE_SERVICE_ACCOUNT_TOKEN_MUTATION);
 
-  const users = computed(() => usersResult.value?.listAllUsers || []);
-  const pendingInvites = computed(() => pendingInvitesResult.value?.listPendingInvites || []);
-  const policy = computed(() => policyResult.value?.authPolicy || null);
-  const credentialProfiles = computed(
-    () => credentialProfilesResult.value?.credentialProfiles || [],
+  const users = computed<User[]>(() => (usersResult.value?.listAllUsers || []) as User[]);
+  const pendingInvites = computed<Invite[]>(
+    () => (pendingInvitesResult.value?.listPendingInvites || []) as Invite[],
   );
-  const brokerProfiles = computed(() => brokerProfilesResult.value?.brokerProfiles || []);
-  const datasourceDiagnostics = computed(
-    () => datasourceDiagnosticsResult.value?.adminDatasourceDiagnostics || null,
+  const policy = computed<Record<string, unknown> | null>(
+    () => (policyResult.value?.authPolicy as Record<string, unknown> | null) || null,
   );
-  const serviceAccounts = computed(() => serviceAccountsResult.value?.adminServiceAccounts || []);
-  const serviceAccountTokens = computed(
-    () => serviceAccountTokensResult.value?.adminServiceAccountTokens || [],
+  const credentialProfiles = computed<CredentialProfile[]>(
+    () => (credentialProfilesResult.value?.credentialProfiles || []) as CredentialProfile[],
   );
-  const runtimeMetrics = computed(() => runtimeMetricsResult.value?.adminRuntimeMetrics || null);
-  const auditEvents = computed(() => auditEventsResult.value?.adminAuditEvents || []);
+  const brokerProfiles = computed<BrokerProfile[]>(
+    () => (brokerProfilesResult.value?.brokerProfiles || []) as BrokerProfile[],
+  );
+  const datasourceDiagnostics = computed<DatasourceDiagnostics | null>(
+    () =>
+      (datasourceDiagnosticsResult.value?.adminDatasourceDiagnostics as DatasourceDiagnostics) ||
+      null,
+  );
+  const serviceAccounts = computed<ServiceAccount[]>(
+    () => (serviceAccountsResult.value?.adminServiceAccounts || []) as ServiceAccount[],
+  );
+  const serviceAccountTokens = computed<ServiceAccountToken[]>(
+    () =>
+      (serviceAccountTokensResult.value?.adminServiceAccountTokens || []) as ServiceAccountToken[],
+  );
+  const runtimeMetrics = computed<RuntimeMetric | null>(
+    () => (runtimeMetricsResult.value?.adminRuntimeMetrics as RuntimeMetric) || null,
+  );
+  const auditEvents = computed<AuditEvent[]>(() =>
+    ((auditEventsResult.value?.adminAuditEvents || []) as Array<Record<string, unknown>>).map(
+      (event, index) => ({
+        _id:
+          typeof event._id === "string" || typeof event._id === "number"
+            ? event._id
+            : `event-${index}`,
+        action: typeof event.action === "string" ? event.action : undefined,
+        actorUserId: typeof event.actorUserId === "string" ? event.actorUserId : undefined,
+        createdAt: typeof event.createdAt === "string" ? event.createdAt : undefined,
+        actorType: typeof event.actorType === "string" ? event.actorType : undefined,
+        actorId: typeof event.actorId === "string" ? event.actorId : undefined,
+        eventType: typeof event.eventType === "string" ? event.eventType : undefined,
+        targetType: typeof event.targetType === "string" ? event.targetType : undefined,
+        targetId: typeof event.targetId === "string" ? event.targetId : undefined,
+        metadata:
+          event.metadata && typeof event.metadata === "object"
+            ? (event.metadata as Record<string, unknown>)
+            : undefined,
+      }),
+    ),
+  );
   const issuedResetEntries = computed(() =>
     users.value
       .filter((user) => Boolean(issuedResetByUser.value[user._id]))
@@ -296,7 +389,7 @@ export const useAdminConsoleController = () => {
   );
 
   watch(usersResult, () => {
-    const nextDrafts = {};
+    const nextDrafts: Record<string, UserDraft> = {};
     users.value.forEach((user) => {
       nextDrafts[user._id] = toUserDraft(user);
     });
@@ -316,7 +409,7 @@ export const useAdminConsoleController = () => {
 
   watch(credentialProfilesResult, () => {
     const profiles = credentialProfiles.value;
-    const nextDrafts = {};
+    const nextDrafts: Record<string, CredentialProfileDraft> = {};
     profiles.forEach((profile) => {
       nextDrafts[profile._id] = toCredentialProfileDraft(profile);
     });
@@ -326,7 +419,7 @@ export const useAdminConsoleController = () => {
 
   watch(brokerProfilesResult, () => {
     const profiles = brokerProfiles.value;
-    const nextDrafts = {};
+    const nextDrafts: Record<string, BrokerProfileDraft> = {};
     profiles.forEach((profile) => {
       nextDrafts[profile._id] = toBrokerProfileDraft(profile);
     });
@@ -335,7 +428,7 @@ export const useAdminConsoleController = () => {
   });
 
   watch(serviceAccountsResult, () => {
-    const nextDrafts = {};
+    const nextDrafts: Record<string, ServiceAccountDraft> = {};
     serviceAccounts.value.forEach((account) => {
       nextDrafts[account._id] = toServiceAccountDraft(account);
     });
@@ -345,7 +438,10 @@ export const useAdminConsoleController = () => {
       !createServiceAccountTokenInput.value.serviceAccountId &&
       serviceAccounts.value.length > 0
     ) {
-      createServiceAccountTokenInput.value.serviceAccountId = serviceAccounts.value[0]._id;
+      const firstServiceAccount = serviceAccounts.value[0];
+      if (firstServiceAccount?._id) {
+        createServiceAccountTokenInput.value.serviceAccountId = firstServiceAccount._id;
+      }
     }
   });
 
@@ -366,7 +462,7 @@ export const useAdminConsoleController = () => {
     actionError.value = "";
   };
 
-  const normalizeServiceAccountScopeInput = (scopes = []) => [
+  const normalizeServiceAccountScopeInput = (scopes: readonly unknown[] = []): string[] => [
     ...new Set(
       scopes
         .map((scope) =>
@@ -378,7 +474,7 @@ export const useAdminConsoleController = () => {
     ),
   ];
 
-  const setErrorMessage = (error, fallback) => {
+  const setErrorMessage = (error: unknown, fallback: string): void => {
     actionError.value = extractErrorMessage(error, fallback);
   };
 
@@ -443,7 +539,7 @@ export const useAdminConsoleController = () => {
     }
   };
 
-  const saveUser = async (userId) => {
+  const saveUser = async (userId: string) => {
     clearMessages();
     const draft = userDrafts.value[userId];
     if (!draft) {
@@ -463,7 +559,7 @@ export const useAdminConsoleController = () => {
     }
   };
 
-  const deleteUser = async (user) => {
+  const deleteUser = async (user: User) => {
     clearMessages();
     const accepted = window.confirm(`Delete user '${user.email}'?`);
     if (!accepted) {
@@ -500,7 +596,7 @@ export const useAdminConsoleController = () => {
     }
   };
 
-  const saveServiceAccount = async (serviceAccountId) => {
+  const saveServiceAccount = async (serviceAccountId: string) => {
     clearMessages();
     const draft = serviceAccountDrafts.value[serviceAccountId];
     if (!draft) {
@@ -523,7 +619,7 @@ export const useAdminConsoleController = () => {
     }
   };
 
-  const deleteServiceAccount = async (serviceAccount) => {
+  const deleteServiceAccount = async (serviceAccount: ServiceAccount) => {
     clearMessages();
     const accepted = window.confirm(`Delete service account '${serviceAccount.name}'?`);
     if (!accepted) {
@@ -570,7 +666,7 @@ export const useAdminConsoleController = () => {
     }
   };
 
-  const rotateServiceAccountToken = async (tokenRecord) => {
+  const rotateServiceAccountToken = async (tokenRecord: ServiceAccountToken) => {
     clearMessages();
     try {
       const result = await adminRotateServiceAccountToken({
@@ -592,7 +688,7 @@ export const useAdminConsoleController = () => {
     }
   };
 
-  const revokeServiceAccountToken = async (tokenRecord) => {
+  const revokeServiceAccountToken = async (tokenRecord: ServiceAccountToken) => {
     clearMessages();
     try {
       await adminRevokeServiceAccountToken({ id: tokenRecord._id });
@@ -616,11 +712,11 @@ export const useAdminConsoleController = () => {
         role: roleToEnum(createInviteInput.value.role),
         expiresInHours: Number(createInviteInput.value.expiresInHours) || 72,
       });
-      const payload = result.data?.adminCreateInvite;
+      const payload = result.data?.adminCreateInvite as Invite | null | undefined;
       issuedInvite.value = payload
         ? {
             ...payload,
-            acceptUrl: `${appBaseUrl}login?invite=${encodeURIComponent(payload.token)}`,
+            acceptUrl: `${appBaseUrl}login?invite=${encodeURIComponent(String(payload.token || ""))}`,
           }
         : null;
       createInviteInput.value = {
@@ -635,7 +731,7 @@ export const useAdminConsoleController = () => {
     }
   };
 
-  const revokeInvite = async (invite) => {
+  const revokeInvite = async (invite: Invite) => {
     clearMessages();
     try {
       await adminRevokeInvite({ id: invite._id });
@@ -646,20 +742,24 @@ export const useAdminConsoleController = () => {
     }
   };
 
-  const issueResetToken = async (user) => {
+  const issueResetToken = async (user: User) => {
     clearMessages();
     try {
       const result = await adminIssuePasswordReset({
         id: user._id,
         expiresInHours: 24,
       });
-      const payload = result.data?.adminIssuePasswordReset;
+      const payload = result.data?.adminIssuePasswordReset as
+        | { token?: string; expiresAt?: string }
+        | null
+        | undefined;
       if (payload) {
         issuedResetByUser.value = {
           ...issuedResetByUser.value,
           [user._id]: {
             ...payload,
-            resetUrl: `${appBaseUrl}login?reset=${encodeURIComponent(payload.token)}`,
+            token: String(payload.token || ""),
+            resetUrl: `${appBaseUrl}login?reset=${encodeURIComponent(String(payload.token || ""))}`,
           },
         };
         statusMessage.value = "Password reset token issued.";
@@ -684,7 +784,7 @@ export const useAdminConsoleController = () => {
     }
   };
 
-  const saveCredentialProfile = async (profileId) => {
+  const saveCredentialProfile = async (profileId: string) => {
     clearMessages();
     const draft = credentialProfileDrafts.value[profileId];
     if (!draft) {
@@ -713,7 +813,7 @@ export const useAdminConsoleController = () => {
     }
   };
 
-  const deleteCredentialProfile = async (profile) => {
+  const deleteCredentialProfile = async (profile: CredentialProfile) => {
     clearMessages();
     const accepted = window.confirm(`Delete credential profile '${profile.name}'?`);
     if (!accepted) {
@@ -747,7 +847,7 @@ export const useAdminConsoleController = () => {
     }
   };
 
-  const saveBrokerProfile = async (profileId) => {
+  const saveBrokerProfile = async (profileId: string) => {
     clearMessages();
     const draft = brokerProfileDrafts.value[profileId];
     if (!draft) {
@@ -768,7 +868,7 @@ export const useAdminConsoleController = () => {
     }
   };
 
-  const deleteBrokerProfile = async (profile) => {
+  const deleteBrokerProfile = async (profile: BrokerProfile) => {
     clearMessages();
     const accepted = window.confirm(`Delete broker profile '${profile.name}'?`);
     if (!accepted) {

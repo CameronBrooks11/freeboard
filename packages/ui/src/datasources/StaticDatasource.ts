@@ -4,8 +4,10 @@
  */
 
 import { DatasourceRuntimeBase } from "./runtime/DatasourceRuntimeBase.js";
+import type { DatasourceStatusPayload, UnknownRecord } from "../types/runtime.js";
+type DatasourceFieldModel = { settings?: UnknownRecord } | null | undefined;
 
-const parseStaticValue = (value) => {
+const parseStaticValue = (value: unknown): unknown => {
   if (value === undefined || value === null) {
     return null;
   }
@@ -31,7 +33,11 @@ export class StaticDatasource extends DatasourceRuntimeBase {
 
   static label = "Static";
 
-  static fields = (datasource, dashboard, general) => [
+  static fields = (
+    datasource: DatasourceFieldModel,
+    dashboard: unknown,
+    general: UnknownRecord & { fields: UnknownRecord[]; settings: UnknownRecord },
+  ) => [
     {
       ...general,
       settings: {
@@ -68,11 +74,20 @@ export class StaticDatasource extends DatasourceRuntimeBase {
     },
   ];
 
-  static newInstance(settings, newInstanceCallback, updateCallback, statusCallback) {
+  static newInstance(
+    settings: UnknownRecord,
+    newInstanceCallback: (instance: StaticDatasource) => void,
+    updateCallback: (payload: unknown) => void,
+    statusCallback: (payload: DatasourceStatusPayload & { metrics: UnknownRecord }) => void,
+  ) {
     newInstanceCallback(new StaticDatasource(settings, updateCallback, statusCallback));
   }
 
-  constructor(settings, updateCallback, statusCallback) {
+  constructor(
+    settings: UnknownRecord,
+    updateCallback: (payload: unknown) => void,
+    statusCallback: (payload: DatasourceStatusPayload & { metrics: UnknownRecord }) => void,
+  ) {
     super(settings, updateCallback, statusCallback);
     this.onSettingsChanged(settings);
   }

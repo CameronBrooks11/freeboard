@@ -12,16 +12,17 @@ export const LOGIN_ACTION_MODES = Object.freeze({
 } as const);
 
 export type LoginActionMode = (typeof LOGIN_ACTION_MODES)[keyof typeof LOGIN_ACTION_MODES];
+type RegistrationMode = "disabled" | "invite" | "open";
 
-const normalizeRegistrationMode = (registrationMode) => {
+const normalizeRegistrationMode = (registrationMode: unknown): RegistrationMode => {
   const normalized = String(registrationMode || "").toLowerCase();
   if (["disabled", "invite", "open"].includes(normalized)) {
-    return normalized;
+    return normalized as RegistrationMode;
   }
   return "disabled";
 };
 
-const normalizeToken = (token) => String(token || "").trim();
+const normalizeToken = (token: unknown): string => String(token || "").trim();
 
 /**
  * Check whether self-registration should be shown.
@@ -29,7 +30,7 @@ const normalizeToken = (token) => String(token || "").trim();
  * @param {string} registrationMode
  * @returns {boolean}
  */
-export const canCreateAccountForMode = (registrationMode) =>
+export const canCreateAccountForMode = (registrationMode: unknown): boolean =>
   normalizeRegistrationMode(registrationMode) === "open";
 
 /**
@@ -40,7 +41,13 @@ export const canCreateAccountForMode = (registrationMode) =>
  * @param {string|undefined|null} input.inviteToken
  * @returns {boolean}
  */
-export const canAcceptInviteForMode = ({ registrationMode, inviteToken }) =>
+export const canAcceptInviteForMode = ({
+  registrationMode,
+  inviteToken,
+}: {
+  registrationMode: unknown;
+  inviteToken: unknown;
+}): boolean =>
   normalizeRegistrationMode(registrationMode) === "invite" || Boolean(normalizeToken(inviteToken));
 
 /**
@@ -58,7 +65,12 @@ export const resolveLoginActionMode = ({
   inviteToken,
   resetToken,
   currentMode,
-}) => {
+}: {
+  registrationMode: unknown;
+  inviteToken: unknown;
+  resetToken: unknown;
+  currentMode: LoginActionMode;
+}): LoginActionMode => {
   if (normalizeToken(resetToken)) {
     return LOGIN_ACTION_MODES.completeReset;
   }

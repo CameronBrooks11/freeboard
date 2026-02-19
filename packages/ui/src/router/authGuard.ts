@@ -12,7 +12,7 @@ const PUBLIC_ROUTE_NAMES = new Set(["SharedDashboard", "PublicDashboard"]);
  * @param {string|symbol|null|undefined} routeName
  * @returns {boolean}
  */
-export const isAuthEntryRoute = (routeName) => {
+export const isAuthEntryRoute = (routeName: string | symbol | null | undefined): boolean => {
   if (typeof routeName !== "string") {
     return false;
   }
@@ -34,7 +34,12 @@ export const resolveAuthNavigation = ({
   requiresAdmin = false,
   isLoggedIn = false,
   isAdmin = false,
-}) => {
+}: {
+  routeName: string | symbol | null | undefined;
+  requiresAdmin?: boolean;
+  isLoggedIn?: boolean;
+  isAdmin?: boolean;
+}): { name: "Login" | "Home" } | null => {
   const authEntry = isAuthEntryRoute(routeName);
   const publicRoute = typeof routeName === "string" && PUBLIC_ROUTE_NAMES.has(routeName);
   if (!isLoggedIn && !authEntry && !publicRoute) {
@@ -61,7 +66,15 @@ export const resolveAuthNavigation = ({
  * @param {boolean} args.isAdmin
  * @returns {{name: "Login"|"Home"}|null}
  */
-export const resolveNavigationGuard = ({ to, isLoggedIn, isAdmin }) =>
+export const resolveNavigationGuard = ({
+  to,
+  isLoggedIn,
+  isAdmin,
+}: {
+  to: { name?: string | symbol | null; meta?: { requiresAdmin?: boolean } } | null | undefined;
+  isLoggedIn: boolean;
+  isAdmin: boolean;
+}) =>
   resolveAuthNavigation({
     routeName: to?.name,
     requiresAdmin: Boolean(to?.meta?.requiresAdmin),

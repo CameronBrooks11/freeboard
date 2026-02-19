@@ -8,19 +8,60 @@ const REALTIME_RECONNECT_MAX_MS = 30000;
 const HEARTBEAT_INTERVAL_MS = 30000;
 const ACK_TIMEOUT_MS = 10000;
 
-const managerByDashboardId = new Map();
+type StreamingMessage = Record<string, unknown> & {
+  type?: string;
+  requestId?: string;
+  ok?: boolean;
+  message?: string;
+  datasourceId?: string;
+  status?: string;
+  errorCode?: string;
+  timestamp?: string;
+  payload?: unknown;
+};
 
-const decodeBase64 = (value) => {
+type PendingAck = {
+  resolve: (value: unknown) => void;
+  reject: (reason?: unknown) => void;
+  timeoutId: ReturnType<typeof setTimeout>;
+};
+
+type StreamingSubscriptionCallbacks = {
+  onData?: (message: StreamingMessage) => void;
+  onStatus?: (message: StreamingMessage) => void;
+  onError?: (message: StreamingMessage) => void;
+  onTokenExpiring?: () => void;
+};
+
+type StreamingSubscription = {
+  datasourceId: string;
+  dashboardId: string;
+  sessionToken: string;
+  callbacks: StreamingSubscriptionCallbacks;
+  expiresAtMs: number | null;
+  tokenExpiryTimer: ReturnType<typeof setTimeout> | null;
+};
+
+const managerByDashboardId = new Map<string, StreamingManager>();
+
+const decodeBase64 = (value: string): string => {
   if (typeof globalThis.atob === "function") {
     return globalThis.atob(value);
   }
-  if (typeof globalThis.Buffer !== "undefined") {
-    return globalThis.Buffer.from(value, "base64").toString("utf8");
+  const maybeBuffer = (
+    globalThis as typeof globalThis & {
+      Buffer?: {
+        from: (input: string, encoding: string) => { toString: (encoding: string) => string };
+      };
+    }
+  ).Buffer;
+  if (typeof maybeBuffer !== "undefined") {
+    return maybeBuffer.from(value, "base64").toString("utf8");
   }
   return "";
 };
 
-const parseJwtPayload = (token) => {
+const parseJwtPayload = (token: string | null | undefined): Record<string, unknown> | null => {
   if (!token || typeof token !== "string") {
     return null;
   }
@@ -42,7 +83,7 @@ const parseJwtPayload = (token) => {
   }
 };
 
-const getTokenExpiry = (token) => {
+const getTokenExpiry = (token: string | null | undefined): number | null => {
   const payload = parseJwtPayload(token);
   const exp = Number(payload?.exp);
   if (!Number.isFinite(exp)) {
@@ -57,27 +98,27 @@ const buildRealtimeSocketUrl = () => {
 };
 
 export class StreamingManager {
-  dashboardId = null;
+  dashboardId: string | null = null;
 
-  socket = null;
+  socket: WebSocket | null = null;
 
-  connectPromise = null;
+  connectPromise: Promise<void> | null = null;
 
-  reconnectTimer = null;
+  reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   reconnectAttempts = 0;
 
-  heartbeatTimer = null;
+  heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   requestCounter = 0;
 
   disposed = false;
 
-  subscriptions = new Map();
+  subscriptions = new Map<string, StreamingSubscription>();
 
-  pendingAcks = new Map();
+  pendingAcks = new Map<string, PendingAck>();
 
-  constructor(dashboardId = null) {
+  constructor(dashboardId: string | null = null) {
     this.dashboardId = dashboardId || null;
   }
 
@@ -86,7 +127,7 @@ export class StreamingManager {
     return `rt-${Date.now()}-${this.requestCounter}`;
   }
 
-  setDashboardId(nextDashboardId) {
+  setDashboardId(nextDashboardId: string | null) {
     this.dashboardId = nextDashboardId || null;
   }
 
@@ -183,7 +224,7 @@ export class StreamingManager {
     }
   }
 
-  failPendingAcks(error) {
+  failPendingAcks(error: Error) {
     for (const [requestId, pending] of this.pendingAcks.entries()) {
       clearTimeout(pending.timeoutId);
       pending.reject(error);
@@ -191,14 +232,14 @@ export class StreamingManager {
     }
   }
 
-  sendMessage(payload) {
+  sendMessage(payload: StreamingMessage): void {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       throw new Error("Realtime socket is not connected");
     }
     this.socket.send(JSON.stringify(payload));
   }
 
-  sendRequest(payload) {
+  sendRequest(payload: StreamingMessage): Promise<unknown> {
     const requestId = String(payload.requestId || this.nextRequestId());
 
     return new Promise((resolve, reject) => {
@@ -226,7 +267,7 @@ export class StreamingManager {
     });
   }
 
-  scheduleTokenExpiryCallback(subscription) {
+  scheduleTokenExpiryCallback(subscription: StreamingSubscription): void {
     if (subscription.tokenExpiryTimer) {
       clearTimeout(subscription.tokenExpiryTimer);
       subscription.tokenExpiryTimer = null;
@@ -260,7 +301,7 @@ export class StreamingManager {
     }
   }
 
-  async sendSubscribe(subscription) {
+  async sendSubscribe(subscription: StreamingSubscription): Promise<void> {
     await this.sendRequest({
       type: "subscribe",
       dashboardId: subscription.dashboardId,
@@ -271,15 +312,15 @@ export class StreamingManager {
     this.scheduleTokenExpiryCallback(subscription);
   }
 
-  handleMessage(rawMessage) {
-    let message;
+  handleMessage(rawMessage: unknown): void {
+    let message: StreamingMessage;
     try {
       message = JSON.parse(String(rawMessage || ""));
     } catch {
       return;
     }
 
-    const type = String(message?.type || "").toLowerCase();
+    const type = String(message.type || "").toLowerCase();
     if (type === "ack") {
       const requestId = String(message.requestId || "");
       const pending = this.pendingAcks.get(requestId);
@@ -290,7 +331,7 @@ export class StreamingManager {
       clearTimeout(pending.timeoutId);
       this.pendingAcks.delete(requestId);
 
-      if (message.ok) {
+      if (Boolean(message.ok)) {
         pending.resolve(message);
       } else {
         pending.reject(new Error(String(message.message || "Realtime request rejected")));
@@ -320,12 +361,22 @@ export class StreamingManager {
     }
   }
 
-  async subscribe({ datasourceId, dashboardId, sessionToken, callbacks }) {
+  async subscribe({
+    datasourceId,
+    dashboardId,
+    sessionToken,
+    callbacks,
+  }: {
+    datasourceId: string;
+    dashboardId: string;
+    sessionToken: string;
+    callbacks?: StreamingSubscriptionCallbacks;
+  }): Promise<void> {
     if (!datasourceId || !dashboardId || !sessionToken) {
       throw new Error("Realtime subscribe requires dashboardId, datasourceId, and sessionToken");
     }
 
-    const subscription = {
+    const subscription: StreamingSubscription = {
       datasourceId,
       dashboardId,
       sessionToken,
@@ -345,7 +396,7 @@ export class StreamingManager {
     }
   }
 
-  async refreshToken(datasourceId, sessionToken) {
+  async refreshToken(datasourceId: string, sessionToken: string): Promise<void> {
     const subscription = this.subscriptions.get(datasourceId);
     if (!subscription) {
       throw new Error("Realtime subscription not found");
@@ -358,7 +409,7 @@ export class StreamingManager {
     await this.sendSubscribe(subscription);
   }
 
-  async unsubscribe(datasourceId) {
+  async unsubscribe(datasourceId: string): Promise<void> {
     const subscription = this.subscriptions.get(datasourceId);
     if (!subscription) {
       return;
@@ -419,7 +470,7 @@ export class StreamingManager {
   }
 }
 
-export const getStreamingManager = (dashboardId = null) => {
+export const getStreamingManager = (dashboardId: string | null = null): StreamingManager => {
   const key = dashboardId || "default";
   let manager = managerByDashboardId.get(key);
   if (!manager) {
@@ -429,7 +480,7 @@ export const getStreamingManager = (dashboardId = null) => {
   return manager;
 };
 
-export const disposeStreamingManager = (dashboardId = null) => {
+export const disposeStreamingManager = (dashboardId: string | null = null): void => {
   const key = dashboardId || "default";
   const manager = managerByDashboardId.get(key);
   if (!manager) {
@@ -440,7 +491,7 @@ export const disposeStreamingManager = (dashboardId = null) => {
   managerByDashboardId.delete(key);
 };
 
-export const disposeAllStreamingManagers = () => {
+export const disposeAllStreamingManagers = (): void => {
   for (const [key, manager] of managerByDashboardId.entries()) {
     manager.dispose();
     managerByDashboardId.delete(key);

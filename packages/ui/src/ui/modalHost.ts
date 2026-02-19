@@ -1,12 +1,13 @@
 import renderComponent from "../render.js";
+import type { AppContext, Component } from "vue";
 
 export const openModal = (
-  component: unknown,
-  appContext: unknown,
+  component: Component,
+  appContext: AppContext,
   props: Record<string, unknown> & { onClose?: (event?: unknown) => void } = {},
 ) => {
   const el = document.body.appendChild(document.createElement("div"));
-  let mounted = null;
+  let mounted: { destroy: () => void } | null = null;
 
   const closeModal = (event?: unknown) => {
     if (props.onClose) {

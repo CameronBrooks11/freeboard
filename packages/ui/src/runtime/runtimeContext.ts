@@ -1,23 +1,26 @@
-const defaultContext = {
+import type { DatasourcePlugin, WidgetPlugin } from "../types/runtime.js";
+
+type RuntimeContext = {
+  getDashboardId: () => string | null;
+  getAuthToken: () => string | null;
+  getRuntimeShareToken: () => string | null;
+  getDatasourcePlugin: (typeName: string) => DatasourcePlugin | null;
+  getWidgetPlugin: (typeName: string) => WidgetPlugin | null;
+  processDatasourceUpdate: (datasource: unknown) => void;
+};
+
+const defaultContext: RuntimeContext = {
   getDashboardId: () => null,
   getAuthToken: () => null,
   getRuntimeShareToken: () => null,
-  getDatasourcePlugin: (...args: unknown[]) => {
-    void args;
-    return null;
-  },
-  getWidgetPlugin: (...args: unknown[]) => {
-    void args;
-    return null;
-  },
-  processDatasourceUpdate: (...args: unknown[]) => {
-    void args;
-  },
+  getDatasourcePlugin: () => null,
+  getWidgetPlugin: () => null,
+  processDatasourceUpdate: () => {},
 };
 
-let runtimeContext = { ...defaultContext };
+let runtimeContext: RuntimeContext = { ...defaultContext };
 
-const invokeAccessor = (accessor, fallback = null) => {
+const invokeAccessor = <T>(accessor: (() => T) | undefined, fallback: T): T => {
   if (typeof accessor !== "function") {
     return fallback;
   }
@@ -30,27 +33,26 @@ const invokeAccessor = (accessor, fallback = null) => {
   }
 };
 
-export const setRuntimeContext = (context = {}) => {
+export const setRuntimeContext = (context: Partial<RuntimeContext> = {}): void => {
   runtimeContext = {
     ...defaultContext,
     ...context,
   };
 };
 
-export const resetRuntimeContext = () => {
+export const resetRuntimeContext = (): void => {
   runtimeContext = { ...defaultContext };
 };
 
-export const getDashboardId = () => invokeAccessor(runtimeContext.getDashboardId, null);
+export const getDashboardId = (): string | null =>
+  invokeAccessor(runtimeContext.getDashboardId, null);
 
-export const getAuthToken = () => invokeAccessor(runtimeContext.getAuthToken, null);
+export const getAuthToken = (): string | null => invokeAccessor(runtimeContext.getAuthToken, null);
 
-export const getRuntimeShareToken = () => invokeAccessor(runtimeContext.getRuntimeShareToken, null);
+export const getRuntimeShareToken = (): string | null =>
+  invokeAccessor(runtimeContext.getRuntimeShareToken, null);
 
-export const getDatasourcePlugin = (typeName) => {
-  if (typeof runtimeContext.getDatasourcePlugin !== "function") {
-    return null;
-  }
+export const getDatasourcePlugin = (typeName: string): DatasourcePlugin | null => {
   try {
     return runtimeContext.getDatasourcePlugin(typeName) || null;
   } catch {
@@ -58,10 +60,7 @@ export const getDatasourcePlugin = (typeName) => {
   }
 };
 
-export const getWidgetPlugin = (typeName) => {
-  if (typeof runtimeContext.getWidgetPlugin !== "function") {
-    return null;
-  }
+export const getWidgetPlugin = (typeName: string): WidgetPlugin | null => {
   try {
     return runtimeContext.getWidgetPlugin(typeName) || null;
   } catch {
@@ -69,14 +68,10 @@ export const getWidgetPlugin = (typeName) => {
   }
 };
 
-export const processDatasourceUpdate = (datasource) => {
-  if (typeof runtimeContext.processDatasourceUpdate !== "function") {
-    return;
-  }
-
+export const processDatasourceUpdate = (datasource: unknown): void => {
   try {
     runtimeContext.processDatasourceUpdate(datasource);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Datasource update pipeline failed", error);
   }
 };

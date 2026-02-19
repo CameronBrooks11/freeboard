@@ -4,6 +4,25 @@ import { usePreferredColorScheme } from "@vueuse/core";
 import { disposeDashboardAssets } from "../dashboardAssets.js";
 import { normalizeCreateDashboardPayload } from "../auth/publishPolicy.js";
 import { useAuthStore } from "./auth.js";
+import type { UnknownRecord } from "../types/runtime.js";
+import type { Dashboard as DashboardModel } from "../models/Dashboard.js";
+
+type DashboardMutationPayload = {
+  _id?: string;
+  visibility?: string;
+  shareToken?: string | null;
+  shareTokenVersion?: number | string | null;
+  canEdit?: boolean;
+  canManageSharing?: boolean;
+};
+
+const asRecord = (value: unknown): UnknownRecord =>
+  value && typeof value === "object" ? (value as UnknownRecord) : {};
+
+const getMutationData = (value: unknown): UnknownRecord => {
+  const result = asRecord(value);
+  return asRecord(result.data);
+};
 
 const MOBILE_EDIT_MAX_WIDTH_PX = 640;
 
@@ -93,7 +112,7 @@ export const useDashboardStore = defineStore("dashboard", {
       }
     },
 
-    setEditing(nextValue) {
+    setEditing(nextValue: boolean) {
       if (!nextValue) {
         this.isEditing = false;
         return;
@@ -111,7 +130,15 @@ export const useDashboardStore = defineStore("dashboard", {
       this.setEditing(!this.isEditing);
     },
 
-    async saveDashboard(id, dashboard, createDashboard, updateDashboard) {
+    async saveDashboard(
+      id: string | null,
+      dashboard: UnknownRecord,
+      createDashboard: (payload: { dashboard: UnknownRecord }) => Promise<unknown>,
+      updateDashboard: (payload: {
+        id: string | null;
+        dashboard: UnknownRecord;
+      }) => Promise<unknown>,
+    ): Promise<string | null> {
       const authStore = useAuthStore(this.$pinia);
       let nextDashboardId = id || null;
 
@@ -120,7 +147,9 @@ export const useDashboardStore = defineStore("dashboard", {
           throw new Error("You do not have permission to edit this dashboard.");
         }
         const result = await updateDashboard({ id, dashboard });
-        const updated = result?.data?.updateDashboard;
+        const updated = getMutationData(result).updateDashboard as
+          | DashboardMutationPayload
+          | undefined;
         if (updated) {
           this.dashboard.visibility = updated.visibility;
           this.dashboard.shareToken = updated.shareToken || null;
@@ -137,7 +166,12 @@ export const useDashboardStore = defineStore("dashboard", {
         });
 
         const result = await createDashboard({ dashboard: createPayload });
-        const created = result?.data?.createDashboard;
+        const created = getMutationData(result).createDashboard as
+          | DashboardMutationPayload
+          | undefined;
+        if (!created || typeof created._id !== "string" || !created._id.trim()) {
+          throw new Error("Dashboard create mutation did not return a dashboard id.");
+        }
 
         this.isSaved = true;
         this.dashboard._id = created._id;
@@ -211,7 +245,7 @@ export const useDashboardStore = defineStore("dashboard", {
       document.body.className = cssClass;
     },
 
-    loadDashboard(dashboardData) {
+    loadDashboard(dashboardData: Record<string, unknown>) {
       this.showLoadingIndicator = true;
 
       if (this.dashboard) {
@@ -219,7 +253,7 @@ export const useDashboardStore = defineStore("dashboard", {
         this.dashboard = null;
       }
 
-      this.dashboard = new Dashboard();
+      this.dashboard = new Dashboard() as DashboardModel;
       this.dashboard.deserialize(dashboardData);
       this.isSaved = Boolean(this.dashboard._id);
       this.loadDashboardAssets();

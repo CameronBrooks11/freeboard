@@ -4,6 +4,16 @@
  */
 
 import { isDashboardShareable } from "./sharePolicy.js";
+type ShareableDashboard = {
+  _id?: string | null;
+  visibility?: string | null;
+  shareToken?: string | null;
+  shareTokenVersion?: number | null;
+  canEdit?: boolean;
+  canManageSharing?: boolean;
+  user?: unknown;
+  acl?: unknown[];
+};
 
 /**
  * Resolve share-dialog permission flags from dashboard/session state.
@@ -13,7 +23,13 @@ import { isDashboardShareable } from "./sharePolicy.js";
  * @param {Object|undefined|null} input.dashboard
  * @returns {{isShareableDashboard: boolean, canManageSharing: boolean}}
  */
-export const resolveShareDialogPermissions = ({ isSaved, dashboard }) => ({
+export const resolveShareDialogPermissions = ({
+  isSaved,
+  dashboard,
+}: {
+  isSaved: boolean;
+  dashboard: ShareableDashboard | null | undefined;
+}) => ({
   isShareableDashboard: isDashboardShareable({
     isSaved,
     dashboardId: dashboard?._id,
@@ -29,7 +45,13 @@ export const resolveShareDialogPermissions = ({ isSaved, dashboard }) => ({
  * @param {boolean} input.canManageSharing
  * @returns {string|null}
  */
-export const getShareMutationGuardError = ({ isShareableDashboard, canManageSharing }) => {
+export const getShareMutationGuardError = ({
+  isShareableDashboard,
+  canManageSharing,
+}: {
+  isShareableDashboard: boolean;
+  canManageSharing: boolean;
+}): string | null => {
   if (!isShareableDashboard) {
     return "Save the dashboard before configuring sharing.";
   }
@@ -46,7 +68,11 @@ export const getShareMutationGuardError = ({ isShareableDashboard, canManageShar
  * @param {string|undefined|null} input.collaboratorEmail
  * @returns {string|null}
  */
-export const getCollaboratorInputError = ({ collaboratorEmail }) => {
+export const getCollaboratorInputError = ({
+  collaboratorEmail,
+}: {
+  collaboratorEmail: string | null | undefined;
+}): string | null => {
   if (!String(collaboratorEmail || "").trim()) {
     return "Collaborator email is required.";
   }
@@ -60,7 +86,11 @@ export const getCollaboratorInputError = ({ collaboratorEmail }) => {
  * @param {string|undefined|null} input.transferTargetUserId
  * @returns {string|null}
  */
-export const getOwnershipTransferInputError = ({ transferTargetUserId }) => {
+export const getOwnershipTransferInputError = ({
+  transferTargetUserId,
+}: {
+  transferTargetUserId: string | null | undefined;
+}): string | null => {
   if (!String(transferTargetUserId || "").trim()) {
     return "Select a transfer target first.";
   }
@@ -75,13 +105,23 @@ export const getOwnershipTransferInputError = ({ transferTargetUserId }) => {
  * @param {Object|undefined|null} input.payload
  * @returns {boolean} True if payload was applied, otherwise false.
  */
-export const applyShareMutationPayloadToDashboard = ({ dashboard, payload }) => {
+export const applyShareMutationPayloadToDashboard = ({
+  dashboard,
+  payload,
+}: {
+  dashboard: ShareableDashboard | null | undefined;
+  payload: Record<string, unknown> | null | undefined;
+}): boolean => {
   if (!payload || !dashboard) {
     return false;
   }
 
-  dashboard.visibility = payload.visibility || dashboard.visibility;
-  dashboard.shareToken = payload.shareToken || null;
+  if (payload.visibility !== undefined) {
+    dashboard.visibility = String(payload.visibility || dashboard.visibility || "");
+  }
+  if (payload.shareToken !== undefined) {
+    dashboard.shareToken = payload.shareToken ? String(payload.shareToken) : null;
+  }
   if (payload.shareTokenVersion !== undefined) {
     dashboard.shareTokenVersion = Number.isFinite(Number(payload.shareTokenVersion))
       ? Math.max(0, Math.floor(Number(payload.shareTokenVersion)))

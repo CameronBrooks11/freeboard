@@ -9,7 +9,7 @@
  * @param {*} value - The input value to check.
  * @returns {Object} Empty object if valid, otherwise an error descriptor.
  */
-export const validateRequired = (value) => {
+export const validateRequired = (value: unknown): { error?: string } => {
   if (value === null || value === undefined) {
     return { error: "This is required." };
   }
@@ -31,8 +31,8 @@ export const validateRequired = (value) => {
  * @param {*} value - The input value to check.
  * @returns {Object} Empty object if valid integer, otherwise an error descriptor.
  */
-export const validateInteger = (value) => {
-  return value % 1 === 0 ? {} : { error: "Must be a whole number." };
+export const validateInteger = (value: unknown): { error?: string } => {
+  return Number(value) % 1 === 0 ? {} : { error: "Must be a whole number." };
 };
 
 /**
@@ -41,6 +41,7 @@ export const validateInteger = (value) => {
  * @param {*} value - The input value to check.
  * @returns {Object} Empty object if valid number, otherwise an error descriptor.
  */
-export const validateNumber = (value) => {
-  return !isNaN(parseFloat(value)) && isFinite(value) ? {} : { error: "Must be a number." };
+export const validateNumber = (value: unknown): { error?: string } => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? {} : { error: "Must be a number." };
 };

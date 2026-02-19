@@ -6,11 +6,32 @@
 import { toPathSegments } from "./runtime/bindings.js";
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 import { setStylePropertyCompat } from "../utils/styleCompat.js";
+type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
+type TableColumn = {
+  field: string;
+  header: string;
+  width: string;
+  align: string;
+  format: string;
+};
+type TableInputs = {
+  header: string;
+  rows: Array<Record<string, unknown>>;
+  columns: TableColumn[];
+  rowsPerPage: number;
+  sortable: boolean;
+  striped: boolean;
+  compact: boolean;
+  emptyText: string;
+};
 
 const DEFAULT_EMPTY_VALUE = "—";
 const DEFAULT_EMPTY_TABLE_TEXT = "No rows";
 
-const toPositiveIntegerOrZero = (value, fallback = 0) => {
+const hasIndexableShape = (value: unknown): value is Record<string, unknown> | Array<unknown> =>
+  Boolean(value) && (Array.isArray(value) || typeof value === "object");
+
+const toPositiveIntegerOrZero = (value: unknown, fallback = 0): number => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return fallback;
@@ -22,7 +43,7 @@ const toPositiveIntegerOrZero = (value, fallback = 0) => {
   return normalized;
 };
 
-const normalizeAlign = (value) => {
+const normalizeAlign = (value: unknown): string => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
@@ -32,7 +53,7 @@ const normalizeAlign = (value) => {
   return "left";
 };
 
-const normalizeFormat = (value) => {
+const normalizeFormat = (value: unknown): string => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
@@ -42,7 +63,7 @@ const normalizeFormat = (value) => {
   return "auto";
 };
 
-const toDisplayString = (value) => {
+const toDisplayString = (value: unknown): string => {
   if (value === null || value === undefined || value === "") {
     return DEFAULT_EMPTY_VALUE;
   }
@@ -65,7 +86,7 @@ const toDisplayString = (value) => {
   return String(value);
 };
 
-export const resolveTableRowValue = (row, fieldPath) => {
+export const resolveTableRowValue = (row: unknown, fieldPath: unknown): unknown => {
   if (!fieldPath || typeof fieldPath !== "string") {
     return row;
   }
@@ -75,29 +96,38 @@ export const resolveTableRowValue = (row, fieldPath) => {
     return row;
   }
 
-  let current = row;
+  let current: unknown = row;
   for (const segment of segments) {
-    if (current === null || current === undefined) {
+    if (!hasIndexableShape(current)) {
       return undefined;
     }
-    current = current[segment];
+    if (typeof segment === "number") {
+      current = Array.isArray(current) ? current[segment] : undefined;
+    } else {
+      current = (current as Record<string, unknown>)[segment];
+    }
   }
   return current;
 };
 
-export const normalizeTableColumns = (rawColumns, rows = []) => {
+export const normalizeTableColumns = (
+  rawColumns: unknown,
+  rows: Array<Record<string, unknown>> = [],
+): TableColumn[] => {
   if (Array.isArray(rawColumns) && rawColumns.length > 0) {
     return rawColumns.map((column, index) => {
+      const candidate =
+        column && typeof column === "object" ? (column as Record<string, unknown>) : {};
       const fallbackHeader = `Column ${index + 1}`;
-      const field = typeof column?.field === "string" ? column.field.trim() : "";
-      const header = typeof column?.header === "string" ? column.header.trim() : "";
-      const width = typeof column?.width === "string" ? column.width.trim() : "";
+      const field = typeof candidate.field === "string" ? candidate.field.trim() : "";
+      const header = typeof candidate.header === "string" ? candidate.header.trim() : "";
+      const width = typeof candidate.width === "string" ? candidate.width.trim() : "";
       return {
         field,
         header: header || field || fallbackHeader,
         width,
-        align: normalizeAlign(column?.align),
-        format: normalizeFormat(column?.format),
+        align: normalizeAlign(candidate.align),
+        format: normalizeFormat(candidate.format),
       };
     });
   }
@@ -124,7 +154,9 @@ export const normalizeTableColumns = (rawColumns, rows = []) => {
   ];
 };
 
-const normalizeComparableValue = (value) => {
+const normalizeComparableValue = (
+  value: unknown,
+): { rank: number; value: string | number | null } => {
   if (value === null || value === undefined || value === "") {
     return { rank: 3, value: null };
   }
@@ -142,7 +174,11 @@ const normalizeComparableValue = (value) => {
   return { rank: 2, value: String(value).toLowerCase() };
 };
 
-const compareTableValues = (leftValue, rightValue, direction) => {
+const compareTableValues = (
+  leftValue: unknown,
+  rightValue: unknown,
+  direction: "asc" | "desc",
+): number => {
   const left = normalizeComparableValue(leftValue);
   const right = normalizeComparableValue(rightValue);
 
@@ -163,7 +199,10 @@ const compareTableValues = (leftValue, rightValue, direction) => {
   return left.value < right.value ? -1 * sign : 1 * sign;
 };
 
-export const sortTableRows = (rows, sortState) => {
+export const sortTableRows = (
+  rows: Array<Record<string, unknown>>,
+  sortState: { field?: string; direction?: "asc" | "desc" } | null | undefined,
+): Array<Record<string, unknown>> => {
   const field = String(sortState?.field || "").trim();
   const direction = sortState?.direction === "desc" ? "desc" : "asc";
 
@@ -180,7 +219,11 @@ export const sortTableRows = (rows, sortState) => {
   );
 };
 
-export const paginateTableRows = (rows, rowsPerPage, currentPage) => {
+export const paginateTableRows = (
+  rows: Array<Record<string, unknown>>,
+  rowsPerPage: unknown,
+  currentPage: unknown,
+) => {
   const normalizedRowsPerPage = toPositiveIntegerOrZero(rowsPerPage, 0);
   if (normalizedRowsPerPage < 1) {
     return {
@@ -204,7 +247,7 @@ export const paginateTableRows = (rows, rowsPerPage, currentPage) => {
   };
 };
 
-export const formatTableCellValue = (value, format) => {
+export const formatTableCellValue = (value: unknown, format: unknown): string => {
   const normalizedFormat = normalizeFormat(format);
 
   if (value === null || value === undefined || value === "") {
@@ -241,7 +284,14 @@ export const formatTableCellValue = (value, format) => {
   }
 
   if (normalizedFormat === "date" || normalizedFormat === "datetime") {
-    const date = new Date(value);
+    const dateInput =
+      value instanceof Date || typeof value === "string" || typeof value === "number"
+        ? value
+        : null;
+    if (dateInput === null) {
+      return DEFAULT_EMPTY_VALUE;
+    }
+    const date = new Date(dateInput);
     if (Number.isNaN(date.getTime())) {
       return DEFAULT_EMPTY_VALUE;
     }
@@ -263,7 +313,7 @@ export class TableWidget extends ReactiveWidget {
   lastInputs: {
     header: string;
     rows: Array<Record<string, unknown>>;
-    columns: Array<Record<string, unknown>>;
+    columns: TableColumn[];
     rowsPerPage: number;
     sortable: boolean;
     striped: boolean;
@@ -284,7 +334,11 @@ export class TableWidget extends ReactiveWidget {
   static label = "Table";
   static preferredRows = 4;
 
-  static fields = (widget, dashboard, general) => [
+  static fields = (
+    widget: WidgetFieldSource,
+    dashboard: unknown,
+    general: Record<string, unknown>,
+  ) => [
     general,
     {
       label: "Display",
@@ -341,7 +395,7 @@ export class TableWidget extends ReactiveWidget {
       name: "columns",
       settings: {
         columns:
-          widget?.settings?.columns && widget.settings.columns.length
+          Array.isArray(widget?.settings?.columns) && widget.settings.columns.length > 0
             ? widget.settings.columns
             : [{ field: "", header: "Value", width: "", align: "left", format: "auto" }],
       },
@@ -391,11 +445,14 @@ export class TableWidget extends ReactiveWidget {
     },
   ];
 
-  static newInstance(settings, newInstanceCallback) {
+  static newInstance(
+    settings: Record<string, unknown>,
+    newInstanceCallback: (instance: unknown) => void,
+  ) {
     newInstanceCallback(new TableWidget(settings));
   }
 
-  constructor(settings) {
+  constructor(settings: Record<string, unknown>) {
     super(settings);
 
     this.sortState = {
@@ -454,8 +511,10 @@ export class TableWidget extends ReactiveWidget {
     const rowData = this.getBinding(this.currentSettings?.valuePath);
     const rows = Array.isArray(rowData) ? rowData : [];
 
-    const normalizedRows = rows.map((row) =>
-      row && typeof row === "object" && !Array.isArray(row) ? row : { value: row },
+    const normalizedRows: Array<Record<string, unknown>> = rows.map((row) =>
+      row && typeof row === "object" && !Array.isArray(row)
+        ? (row as Record<string, unknown>)
+        : { value: row },
     );
 
     const columns = normalizeTableColumns(this.currentSettings?.columns, normalizedRows);
@@ -478,7 +537,7 @@ export class TableWidget extends ReactiveWidget {
     };
   }
 
-  onInputsChanged(inputs) {
+  onInputsChanged(inputs: TableInputs) {
     this.lastInputs = inputs;
 
     this.headerElement.textContent = inputs.header || "";
@@ -510,18 +569,18 @@ export class TableWidget extends ReactiveWidget {
     this.applyResponsiveStyles(this.currentSettings?.compact === true);
   }
 
-  onSettingsChanged(newSettings) {
+  onSettingsChanged(newSettings: Record<string, unknown>) {
     this.currentPage = 1;
     super.onSettingsChanged(newSettings);
   }
 
-  applyResponsiveStyles(compact) {
+  applyResponsiveStyles(compact: boolean) {
     const effectiveCompact = compact || this.isNarrow;
     this.tableElement.style.fontSize = this.isNarrow ? "12px" : "13px";
     this.tableElement.dataset.compact = effectiveCompact ? "true" : "false";
   }
 
-  handleSort(field) {
+  handleSort(field: unknown) {
     const normalizedField = String(field || "").trim();
     if (!normalizedField) {
       return;
@@ -542,7 +601,18 @@ export class TableWidget extends ReactiveWidget {
     }
   }
 
-  setCellBaseStyle(cell, { align = "left", isHeader = false, compact = false } = {}) {
+  setCellBaseStyle(
+    cell: HTMLElement,
+    {
+      align = "left",
+      isHeader = false,
+      compact = false,
+    }: {
+      align?: string;
+      isHeader?: boolean;
+      compact?: boolean;
+    } = {},
+  ) {
     cell.style.textAlign = normalizeAlign(align);
     cell.style.padding = compact ? "4px 6px" : "7px 8px";
     cell.style.borderBottom = "1px solid var(--color-shade-2)";
@@ -560,7 +630,7 @@ export class TableWidget extends ReactiveWidget {
     }
   }
 
-  renderHeader(columns, sortable) {
+  renderHeader(columns: TableColumn[], sortable: boolean) {
     this.tableHead.innerHTML = "";
     const row = document.createElement("tr");
     const compact = this.currentSettings?.compact === true || this.isNarrow;
@@ -592,7 +662,11 @@ export class TableWidget extends ReactiveWidget {
     this.tableHead.append(row);
   }
 
-  renderBody(columns, rows, { compact, striped, emptyText }) {
+  renderBody(
+    columns: TableColumn[],
+    rows: Array<Record<string, unknown>>,
+    { compact, striped, emptyText }: { compact: boolean; striped: boolean; emptyText: string },
+  ) {
     this.tableBody.innerHTML = "";
     const effectiveCompact = compact || this.isNarrow;
 
@@ -631,7 +705,7 @@ export class TableWidget extends ReactiveWidget {
     });
   }
 
-  createPagerButton(label, disabled, onClick) {
+  createPagerButton(label: string, disabled: boolean, onClick: () => void) {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = label;
@@ -648,7 +722,11 @@ export class TableWidget extends ReactiveWidget {
     return button;
   }
 
-  renderPagination(page, totalRows, rowsPerPage) {
+  renderPagination(
+    page: { currentPage: number; totalPages: number },
+    totalRows: number,
+    rowsPerPage: number,
+  ) {
     this.paginationElement.innerHTML = "";
 
     if (!rowsPerPage || page.totalPages <= 1) {

@@ -16,6 +16,8 @@ import {
 } from "./dashboardRuntime.js";
 import { generateModelId } from "./id.js";
 import { resolveDashboardIsOwner } from "./ownership.js";
+import type { UnknownRecord, WidgetRuntimeContext } from "../types/runtime.js";
+import type { Widget } from "./Widget.js";
 
 /**
  * Minimum number of columns allowed for dashboard layout.
@@ -47,7 +49,7 @@ export const DEFAULT_DASHBOARD_WIDTH = "md";
  * @param {string} value
  * @returns {"sm"|"md"|"lg"|"xl"}
  */
-export const normalizeDashboardWidth = (value) => {
+export const normalizeDashboardWidth = (value: unknown): string => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
@@ -84,7 +86,7 @@ export const DEFAULT_DASHBOARD_THEME = "auto";
  * @param {string} value
  * @returns {"auto"|"light"|"dark"|"professional"|"high-contrast"|"colorblind"|"warm"|"cool"}
  */
-export const normalizeDashboardTheme = (value) => {
+export const normalizeDashboardTheme = (value: unknown): string => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
@@ -94,7 +96,7 @@ export const normalizeDashboardTheme = (value) => {
   return DEFAULT_DASHBOARD_THEME;
 };
 
-const normalizeBooleanSetting = (value, fallback = false) => {
+const normalizeBooleanSetting = (value: unknown, fallback = false): boolean => {
   if (value === undefined || value === null || value === "") {
     return fallback;
   }
@@ -118,31 +120,31 @@ const normalizeBooleanSetting = (value, fallback = false) => {
  */
 export class Dashboard {
   /** @type {string|null} Serialized dashboard version. */
-  version = null;
+  version: string | null = null;
   /** @type {string|null} Unique dashboard identifier. */
-  _id = null;
+  _id: string | null = null;
   /** @type {string} Dashboard title. */
   title = "Dashboard";
   /** @type {string} Visibility status. */
   visibility = "private";
   /** @type {string|null} Opaque share token for link access. */
-  shareToken = null;
+  shareToken: string | null = null;
   /** @type {number} Monotonic share token version for public/link revoke semantics. */
   shareTokenVersion = 0;
   /** @type {Array<{userId: string, accessLevel: string}>} Dashboard ACL entries. */
-  acl = [];
+  acl: Array<{ userId: string; accessLevel: string }> = [];
   /** @type {string|null} Optional image URL. */
-  image = null;
+  image: string | null = null;
   /** @type {number} Number of columns in layout. */
   columns = MIN_COLUMNS;
   /** @type {string} Layout width specifier. */
-  width = DEFAULT_DASHBOARD_WIDTH;
+  width: string = DEFAULT_DASHBOARD_WIDTH;
   /** @type {Array} Collection of datasource instances. */
-  datasources = [];
+  datasources: Datasource[] = [];
   /** @type {Array} Collection of pane instances. */
-  panes = [];
+  panes: Pane[] = [];
   /** @type {Object} Dashboard settings (theme, style, etc.). */
-  settings = {
+  settings: UnknownRecord & { theme: string; allowMobileEdit: boolean } = {
     theme: DEFAULT_DASHBOARD_THEME,
     allowMobileEdit: false,
   };
@@ -167,9 +169,13 @@ export class Dashboard {
    *
    * @param {Array<Object>} l - Array of layout objects matching pane order.
    */
-  set layout(l) {
-    l.forEach((layout, index) => {
-      this.panes[index].layout = layout;
+  set layout(l: Array<Record<string, unknown>>) {
+    l.forEach((layout: Record<string, unknown>, index: number) => {
+      const pane = this.panes[index];
+      if (!pane) {
+        return;
+      }
+      pane.layout = layout;
     });
     this.clampPaneLayoutHeights();
   }
@@ -210,21 +216,34 @@ export class Dashboard {
    *
    * @param {Object} object - Serialized dashboard data.
    */
-  deserialize(object) {
-    this.version = object.version;
-    this._id = object._id;
-    this.title = object.title;
-    this.columns = object.columns;
-    this.image = object.image;
+  deserialize(object: Record<string, unknown>): void {
+    this.version = typeof object.version === "string" ? object.version : null;
+    this._id = typeof object._id === "string" ? object._id : null;
+    this.title = typeof object.title === "string" ? object.title : "Dashboard";
+    this.columns = Number.isFinite(Number(object.columns)) ? Number(object.columns) : MIN_COLUMNS;
+    this.image = typeof object.image === "string" ? object.image : null;
     this.width = normalizeDashboardWidth(object.width);
     this.visibility = typeof object.visibility === "string" ? object.visibility : "private";
-    this.shareToken = object.shareToken || null;
+    this.shareToken = typeof object.shareToken === "string" ? object.shareToken : null;
     this.shareTokenVersion = Number.isFinite(Number(object.shareTokenVersion))
       ? Math.max(0, Math.floor(Number(object.shareTokenVersion)))
       : 0;
-    this.acl = Array.isArray(object.acl) ? object.acl : [];
-    const rawSettings =
-      object.settings && typeof object.settings === "object" ? object.settings : {};
+    this.acl = Array.isArray(object.acl)
+      ? object.acl
+          .filter((entry: unknown) => Boolean(entry) && typeof entry === "object")
+          .map((entry: unknown) => {
+            const aclEntry = entry as Record<string, unknown>;
+            return {
+              userId: String(aclEntry.userId || ""),
+              accessLevel: String(aclEntry.accessLevel || "viewer"),
+            };
+          })
+          .filter((entry) => entry.userId)
+      : [];
+    const rawSettings: UnknownRecord =
+      object.settings && typeof object.settings === "object"
+        ? (object.settings as UnknownRecord)
+        : {};
     this.settings = {
       ...rawSettings,
       theme: normalizeDashboardTheme(rawSettings.theme),
@@ -235,22 +254,26 @@ export class Dashboard {
     this.canManageSharing =
       object.canManageSharing === undefined ? this.isOwner : Boolean(object.canManageSharing);
 
-    object.datasources?.forEach((datasourceConfig) => {
-      const datasource = new Datasource();
-      datasource.deserialize(datasourceConfig);
-      this.addDatasource(datasource);
-    });
+    (object.datasources as Array<Record<string, unknown>> | undefined)?.forEach(
+      (datasourceConfig: Record<string, unknown>) => {
+        const datasource = new Datasource();
+        datasource.deserialize(datasourceConfig);
+        this.addDatasource(datasource);
+      },
+    );
 
-    object.panes?.forEach((paneConfig) => {
-      const pane = new Pane();
-      pane.deserialize(paneConfig);
-      this.addPane(pane);
-    });
+    (object.panes as Array<Record<string, unknown>> | undefined)?.forEach(
+      (paneConfig: Record<string, unknown>) => {
+        const pane = new Pane();
+        pane.deserialize(paneConfig);
+        this.addPane(pane);
+      },
+    );
 
     this.clampPaneLayoutHeights();
 
     const snapshot = this.buildDatasourceSnapshot();
-    const context = {
+    const context: WidgetRuntimeContext = {
       changedDatasource: null,
       changedDatasourceId: null,
       changedDatasourceTitle: null,
@@ -258,8 +281,8 @@ export class Dashboard {
       timestamp: new Date().toISOString(),
     };
 
-    this.panes?.forEach((pane) => {
-      pane.widgets?.forEach((widget) => widget.processDatasourceUpdate(null, context));
+    this.panes?.forEach((pane: Pane) => {
+      pane.widgets?.forEach((widget: Widget) => widget.processDatasourceUpdate(null, context));
     });
   }
 
@@ -268,7 +291,7 @@ export class Dashboard {
    *
    * @param {Datasource} datasource - Datasource instance to add.
    */
-  addDatasource(datasource) {
+  addDatasource(datasource: Datasource): void {
     if (!datasource.id) {
       datasource.id = generateModelId("ds");
     }
@@ -287,7 +310,7 @@ export class Dashboard {
    *
    * @param {Datasource} datasource - Datasource instance to remove.
    */
-  deleteDatasource(datasource) {
+  deleteDatasource(datasource: Datasource): void {
     datasource.dispose();
     this.datasources = this.datasources.filter((item) => {
       return item !== datasource;
@@ -299,7 +322,7 @@ export class Dashboard {
    *
    * @param {Pane} pane - Pane instance to add.
    */
-  addPane(pane) {
+  addPane(pane: Pane): void {
     this.ensurePaneWidgetIds(pane);
     this.ensurePaneLayoutId(pane);
     this.panes = [...this.panes, pane];
@@ -311,7 +334,7 @@ export class Dashboard {
    *
    * @param {Pane} pane - Pane instance to remove.
    */
-  deletePane(pane) {
+  deletePane(pane: Pane): void {
     pane.dispose();
     this.panes = this.panes.filter((item) => {
       return item !== pane;
@@ -341,7 +364,7 @@ export class Dashboard {
    * @param {Pane} pane - Pane to add the widget into.
    * @param {Widget} widget - Widget instance to add.
    */
-  addWidget(pane, widget) {
+  addWidget(pane: Pane, widget: Widget): void {
     if (!widget.id) {
       widget.id = generateModelId("w");
     }
@@ -374,7 +397,7 @@ export class Dashboard {
    * @param {Pane} pane - Pane containing the widget.
    * @param {Widget} widget - Widget instance to remove.
    */
-  deleteWidget(pane, widget) {
+  deleteWidget(pane: Pane, widget: Widget): void {
     widget.dispose();
     pane.widgets = pane.widgets.filter((item) => {
       return item !== widget;
@@ -404,9 +427,9 @@ export class Dashboard {
    *
    * @param {Datasource} datasource - Datasource that has new data.
    */
-  processDatasourceUpdate(datasource) {
+  processDatasourceUpdate(datasource: Datasource | null): void {
     const snapshot = this.buildDatasourceSnapshot();
-    const context = {
+    const context: WidgetRuntimeContext = {
       changedDatasource: datasource?.id ?? datasource?.title ?? null,
       changedDatasourceId: datasource?.id ?? null,
       changedDatasourceTitle: datasource?.title ?? null,
@@ -417,8 +440,8 @@ export class Dashboard {
           : new Date().toISOString(),
     };
 
-    this.panes?.forEach((pane) => {
-      pane.widgets?.forEach((widget) => {
+    this.panes?.forEach((pane: Pane) => {
+      pane.widgets?.forEach((widget: Widget) => {
         try {
           widget.processDatasourceUpdate(datasource, context);
         } catch (error) {
@@ -445,7 +468,7 @@ export class Dashboard {
    * @param {string|null} [excludeId]
    * @returns {boolean}
    */
-  hasDatasourceTitleConflict(title, excludeId = null) {
+  hasDatasourceTitleConflict(title: string, excludeId: string | null = null): boolean {
     return hasDatasourceTitleConflict(this.datasources, title, excludeId);
   }
 
@@ -456,7 +479,7 @@ export class Dashboard {
    * @param {string|null} [excludeId]
    * @returns {string}
    */
-  ensureUniqueDatasourceTitle(title, excludeId = null) {
+  ensureUniqueDatasourceTitle(title: string, excludeId: string | null = null): string {
     return ensureUniqueDatasourceTitle(this.datasources, title, excludeId);
   }
 
@@ -466,7 +489,7 @@ export class Dashboard {
    * @param {Pane} pane
    * @returns {number}
    */
-  getPaneMinRows(pane) {
+  getPaneMinRows(pane: Pane): number {
     return getPaneMinRows(pane);
   }
 
@@ -482,7 +505,7 @@ export class Dashboard {
    *
    * @param {Pane} pane
    */
-  ensurePaneLayoutId(pane) {
+  ensurePaneLayoutId(pane: Pane): void {
     if (!pane.layout || typeof pane.layout !== "object") {
       pane.layout = {};
     }
@@ -514,7 +537,7 @@ export class Dashboard {
    *
    * @param {Pane} pane
    */
-  ensurePaneWidgetIds(pane) {
+  ensurePaneWidgetIds(pane: Pane): void {
     if (!Array.isArray(pane.widgets)) {
       pane.widgets = [];
       return;
@@ -529,7 +552,7 @@ export class Dashboard {
     );
     const paneIds = new Set();
 
-    pane.widgets.forEach((widget) => {
+    pane.widgets.forEach((widget: Widget) => {
       if (!widget) {
         return;
       }
@@ -556,7 +579,7 @@ export class Dashboard {
    * @param {string} oldTitle
    * @param {string} newTitle
    */
-  renameDatasourceBindings(oldTitle, newTitle) {
+  renameDatasourceBindings(oldTitle: string, newTitle: string): void {
     const from = String(oldTitle || "").trim();
     const to = String(newTitle || "").trim();
 
@@ -564,9 +587,13 @@ export class Dashboard {
       return;
     }
 
-    this.panes?.forEach((pane) => {
-      pane.widgets?.forEach((widget) => {
-        widget.settings = this.replaceDatasourceReferences(widget.settings, from, to);
+    this.panes?.forEach((pane: Pane) => {
+      pane.widgets?.forEach((widget: Widget) => {
+        const replaced = this.replaceDatasourceReferences(widget.settings, from, to);
+        widget.settings =
+          replaced && typeof replaced === "object"
+            ? (replaced as UnknownRecord)
+            : ({} as UnknownRecord);
       });
     });
   }
@@ -580,7 +607,12 @@ export class Dashboard {
    * @param {string} [fieldName]
    * @returns {any}
    */
-  replaceDatasourceReferences(value, oldTitle, newTitle, fieldName = "") {
+  replaceDatasourceReferences(
+    value: unknown,
+    oldTitle: string,
+    newTitle: string,
+    fieldName = "",
+  ): unknown {
     return replaceDatasourceReferences(value, oldTitle, newTitle, fieldName);
   }
 }

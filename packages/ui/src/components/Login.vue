@@ -28,12 +28,16 @@ import {
 } from "../gql.js";
 
 const MODES = LOGIN_ACTION_MODES;
+type FormComponentRef = {
+  hasErrors: () => boolean;
+  getValue: () => Record<string, unknown>;
+};
 
 const authStore = useAuthStore();
 const dashboardStore = useDashboardStore();
 const route = useRoute();
 
-const form = ref(null);
+const form = ref<FormComponentRef | null>(null);
 const loginError = ref("");
 const infoMessageKey = ref("");
 const fields = ref([]);
@@ -228,8 +232,8 @@ const switchMode = (nextMode: LoginActionMode) => {
   actionMode.value = nextMode;
 };
 
-const ensureMatchingPasswords = (value) => {
-  if (value.password !== value.confirmPassword) {
+const ensureMatchingPasswords = (value: Record<string, unknown>) => {
+  if (String(value.password ?? "") !== String(value.confirmPassword ?? "")) {
     throw new Error("Passwords do not match.");
   }
 };
@@ -250,7 +254,7 @@ const resolveErrorMessage = (error: unknown): string => {
 
 const onDialogBoxOk = async () => {
   resetMessages();
-  if (form.value.hasErrors()) {
+  if (!form.value || form.value.hasErrors()) {
     return;
   }
 
@@ -270,7 +274,7 @@ const onDialogBoxOk = async () => {
       authStore.login(token);
       dashboardStore.syncEditingPermissions();
       const lastPath = router.options.history?.state?.back;
-      const targetPath = lastPath && lastPath !== "/login" ? lastPath : "/";
+      const targetPath = typeof lastPath === "string" && lastPath !== "/login" ? lastPath : "/";
       await router.push(targetPath);
       return;
     }

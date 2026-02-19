@@ -35,7 +35,7 @@ const closeModal = () => {
  *
  * @param {Event} event - Submit or click event.
  */
-const onOk = (event) => {
+const onOk = (event: Event) => {
   emit("ok", event);
 };
 
@@ -44,7 +44,7 @@ const onOk = (event) => {
  *
  * @param {Event} event - Click event.
  */
-const onCancel = (event) => {
+const onCancel = (event: Event) => {
   emit("cancel", event);
   closeModal();
 };

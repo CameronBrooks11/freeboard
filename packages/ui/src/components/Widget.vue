@@ -14,18 +14,25 @@ import { computed, getCurrentInstance, onBeforeUnmount, onMounted, ref, watch } 
 import ConfirmDialogBox from "./ConfirmDialogBox.vue";
 import { useI18n } from "vue-i18n";
 import { openModal } from "../ui/modalHost.js";
+import type { AppContext } from "vue";
+import type { Widget as WidgetModel } from "../models/Widget.js";
 
 const { t } = useI18n();
 
-// Widget instance passed from parent
-const { widget } = defineProps({ widget: Object });
+type WidgetDialogPayload = {
+  enabled?: boolean;
+  settings: Record<string, unknown>;
+  type: string;
+  title: string;
+};
+const { widget } = defineProps<{ widget: WidgetModel }>();
 
 const dashboardStore = useDashboardStore();
 const { isEditing, dashboard } = storeToRefs(dashboardStore);
 
 // Reference to the DOM element where the widget will render
-const widgetRef = ref(null);
-let resizeObserver = null;
+const widgetRef = ref<HTMLElement | null>(null);
+let resizeObserver: ResizeObserver | null = null;
 
 const widgetErrorMessage = computed(() => {
   const error = widget.lastError;
@@ -48,10 +55,13 @@ const widgetErrorMessage = computed(() => {
  * Open dialog to edit widget settings.
  */
 const openWidgetEditDialogBox = () => {
+  if (!instance?.appContext) {
+    return;
+  }
   openModal(WidgetDialogBox, instance.appContext, {
     header: t("widget.titleEdit"),
     widget,
-    onOk: (newSettings) => {
+    onOk: (newSettings: WidgetDialogPayload) => {
       if (!newSettings.enabled) {
         widget.enabled = false;
       }
@@ -71,9 +81,15 @@ const openWidgetEditDialogBox = () => {
  * Open confirmation dialog to delete widget from its pane.
  */
 const openWidgetDeleteDialogBox = () => {
+  if (!instance?.appContext) {
+    return;
+  }
   openModal(ConfirmDialogBox, instance.appContext, {
     title: t("widget.titleDelete"),
     onOk: () => {
+      if (!widget.pane) {
+        return;
+      }
       dashboard.value.deleteWidget(widget.pane, widget);
     },
   });
@@ -135,7 +151,7 @@ onBeforeUnmount(() => {
   }
 });
 
-const instance = getCurrentInstance();
+const instance = getCurrentInstance() as { appContext: AppContext } | null;
 </script>
 
 <template>
@@ -159,7 +175,7 @@ const instance = getCurrentInstance();
             </i>
           </li>
           <li
-            @click="() => widget.pane.moveWidgetUp(widget)"
+            @click="() => widget.pane?.moveWidgetUp(widget)"
             class="widget__sub-section__board-toolbar__item"
           >
             <i class="widget__sub-section__board-toolbar__item__icon">
@@ -167,7 +183,7 @@ const instance = getCurrentInstance();
             </i>
           </li>
           <li
-            @click="() => widget.pane.moveWidgetDown(widget)"
+            @click="() => widget.pane?.moveWidgetDown(widget)"
             class="widget__sub-section__board-toolbar__item"
           >
             <i class="widget__sub-section__board-toolbar__item__icon">

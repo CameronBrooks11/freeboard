@@ -15,17 +15,26 @@ import TextButton from "./TextButton.vue";
 import { useI18n } from "vue-i18n";
 import ActionButton from "./ActionButton.vue";
 import { openModal } from "../ui/modalHost.js";
+import type { AppContext } from "vue";
 
 const { t } = useI18n();
 
 const dashboardStore = useDashboardStore();
 const { dashboard } = storeToRefs(dashboardStore);
+const instance = getCurrentInstance();
+const appContext: AppContext | null = instance?.appContext ?? null;
+type DatasourceDialogPayload = {
+  title: string;
+  enabled: boolean;
+  type: string;
+  settings: Record<string, unknown>;
+};
 
-const formatDateTime = (value) => {
+const formatDateTime = (value: unknown) => {
   if (!value) {
     return "—";
   }
-  const parsed = new Date(value);
+  const parsed = new Date(String(value));
   if (Number.isNaN(parsed.getTime())) {
     return "—";
   }
@@ -33,11 +42,14 @@ const formatDateTime = (value) => {
 };
 
 // Open dialog to edit an existing datasource
-const openDatasourceEditDialogBox = (datasource) => {
-  openModal(DatasourceDialogBox, instance.appContext, {
+const openDatasourceEditDialogBox = (datasource: Datasource) => {
+  if (!appContext) {
+    return;
+  }
+  openModal(DatasourceDialogBox, appContext, {
     header: t("datasourcesList.titleEdit"),
     datasource,
-    onOk: (newSettings) => {
+    onOk: (newSettings: DatasourceDialogPayload) => {
       const previousTitle = datasource.title;
       datasource.title = dashboard.value.ensureUniqueDatasourceTitle(
         newSettings.title,
@@ -52,8 +64,11 @@ const openDatasourceEditDialogBox = (datasource) => {
 };
 
 // Open confirmation dialog before deleting a datasource
-const openDatasourceDeleteDialogBox = (datasource) => {
-  openModal(ConfirmDialogBox, instance.appContext, {
+const openDatasourceDeleteDialogBox = (datasource: Datasource) => {
+  if (!appContext) {
+    return;
+  }
+  openModal(ConfirmDialogBox, appContext, {
     title: t("datasourcesList.titleDelete"),
     onOk: () => {
       dashboard.value.deleteDatasource(datasource);
@@ -63,9 +78,12 @@ const openDatasourceDeleteDialogBox = (datasource) => {
 
 // Open dialog to add a new datasource
 const openDatasourceAddDialogBox = () => {
-  openModal(DatasourceDialogBox, instance.appContext, {
+  if (!appContext) {
+    return;
+  }
+  openModal(DatasourceDialogBox, appContext, {
     header: t("datasourcesList.titleAdd"),
-    onOk: (newSettings) => {
+    onOk: (newSettings: DatasourceDialogPayload) => {
       const newViewModel = new Datasource();
       newViewModel.title = dashboard.value.ensureUniqueDatasourceTitle(newSettings.title);
       newViewModel.enabled = newSettings.enabled;
@@ -76,8 +94,6 @@ const openDatasourceAddDialogBox = () => {
     },
   });
 };
-
-const instance = getCurrentInstance();
 </script>
 
 <template>

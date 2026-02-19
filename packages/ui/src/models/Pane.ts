@@ -5,20 +5,28 @@
 
 import { Widget } from "../models/Widget.js";
 
-const cloneMutableObject = (value, fallback) => {
+type PaneLayout = {
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  i?: string;
+} & Record<string, unknown>;
+
+const cloneMutableObject = (value: unknown, fallback: PaneLayout): PaneLayout => {
   if (!value || typeof value !== "object") {
     return fallback;
   }
 
   if (typeof structuredClone === "function") {
     try {
-      return structuredClone(value);
+      return structuredClone(value) as PaneLayout;
     } catch {
       // Fallback below.
     }
   }
 
-  return JSON.parse(JSON.stringify(value));
+  return JSON.parse(JSON.stringify(value)) as PaneLayout;
 };
 
 /**
@@ -28,13 +36,13 @@ const cloneMutableObject = (value, fallback) => {
  */
 export class Pane {
   /** @type {string|null} Pane title. */
-  title = null;
+  title: string | null = null;
 
   /** @type {Widget[]} Array of widgets in this pane. */
-  widgets = [];
+  widgets: Widget[] = [];
 
   /** @type {Object} Layout configuration for this pane. */
-  layout = {};
+  layout: PaneLayout = {};
 
   /**
    * Check if a widget can move up in the widgets array.
@@ -42,7 +50,7 @@ export class Pane {
    * @param {Widget} widget - The widget to check.
    * @returns {boolean} True if the widget is not the first item.
    */
-  widgetCanMoveUp(widget) {
+  widgetCanMoveUp(widget: Widget): boolean {
     const i = this.widgets.indexOf(widget);
     return i > 0; // avoids true if widget is not found (-1)
   }
@@ -53,7 +61,7 @@ export class Pane {
    * @param {Widget} widget - The widget to check.
    * @returns {boolean} True if the widget is not the last item.
    */
-  widgetCanMoveDown(widget) {
+  widgetCanMoveDown(widget: Widget): boolean {
     const i = this.widgets.indexOf(widget);
     return i >= 0 && i < this.widgets.length - 1;
   }
@@ -63,7 +71,7 @@ export class Pane {
    *
    * @param {Widget} widget - The widget instance to move.
    */
-  moveWidgetUp(widget) {
+  moveWidgetUp(widget: Widget): void {
     if (this.widgetCanMoveUp(widget)) {
       const i = this.widgets.indexOf(widget);
       const array = this.widgets;
@@ -76,7 +84,7 @@ export class Pane {
    *
    * @param {Widget} widget - The widget instance to move.
    */
-  moveWidgetDown(widget) {
+  moveWidgetDown(widget: Widget): void {
     if (this.widgetCanMoveDown(widget)) {
       const i = this.widgets.indexOf(widget);
       const array = this.widgets;
@@ -102,12 +110,16 @@ export class Pane {
    *
    * @param {{ title: string, layout?: Object, widgets?: Object[] }} object - Serialized pane data.
    */
-  deserialize(object) {
+  deserialize(object: {
+    title?: string | null;
+    layout?: unknown;
+    widgets?: Array<Record<string, unknown>>;
+  }): void {
     this.title = object.title;
     this.layout = cloneMutableObject(object.layout, {});
     this.widgets = [];
 
-    object.widgets?.forEach((widgetConfig) => {
+    object.widgets?.forEach((widgetConfig: Record<string, unknown>) => {
       const widget = new Widget();
       widget.deserialize(widgetConfig);
       widget.pane = this;
@@ -118,8 +130,8 @@ export class Pane {
   /**
    * Dispose all widgets when the pane is removed.
    */
-  dispose() {
-    this.widgets.forEach((widget) => {
+  dispose(): void {
+    this.widgets.forEach((widget: Widget) => {
       widget.dispose();
     });
   }

@@ -4,6 +4,7 @@
  */
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 
 /**
  * Indicator widget implementation.
@@ -19,7 +20,11 @@ export class IndicatorWidget extends ReactiveWidget {
 
   static label = "Indicator";
 
-  static fields = (widget, dashboard, general) => [
+  static fields = (
+    widget: WidgetFieldSource,
+    dashboard: unknown,
+    general: Record<string, unknown>,
+  ) => [
     general,
     {
       label: "Display",
@@ -97,11 +102,14 @@ export class IndicatorWidget extends ReactiveWidget {
     },
   ];
 
-  static newInstance(settings, newInstanceCallback) {
+  static newInstance(
+    settings: Record<string, unknown>,
+    newInstanceCallback: (instance: unknown) => void,
+  ) {
     newInstanceCallback(new IndicatorWidget(settings));
   }
 
-  constructor(settings) {
+  constructor(settings: Record<string, unknown>) {
     super(settings);
     this.isNarrow = false;
 
@@ -147,7 +155,7 @@ export class IndicatorWidget extends ReactiveWidget {
     this.rowElement.style.gap = this.isNarrow ? "7px" : "10px";
   }
 
-  onSettingsChanged(newSettings) {
+  onSettingsChanged(newSettings: Record<string, unknown>) {
     super.onSettingsChanged(newSettings);
     this.applyResponsiveSizing();
   }
@@ -161,7 +169,7 @@ export class IndicatorWidget extends ReactiveWidget {
     };
   }
 
-  onInputsChanged(inputs) {
+  onInputsChanged(inputs: { header: string; value: unknown; onText: string; offText: string }) {
     const isOn = Boolean(inputs.value);
 
     this.headerElement.textContent = inputs.header || "";

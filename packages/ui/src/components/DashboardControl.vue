@@ -10,6 +10,7 @@ import { useAuthStore } from "../stores/auth.js";
 import { useDashboardStore } from "../stores/dashboard.js";
 import Form from "./Form.vue";
 import { computed, getCurrentInstance, ref, watch } from "vue";
+import type { AppContext } from "vue";
 import DatasourcesDialogBox from "./DatasourcesDialogBox.vue";
 import SettingsDialogBox from "./SettingsDialogBox.vue";
 import ShareDialogBox from "./ShareDialogBox.vue";
@@ -19,6 +20,8 @@ import { openModal } from "../ui/modalHost.js";
 const authStore = useAuthStore();
 const dashboardStore = useDashboardStore();
 const { dashboard } = storeToRefs(dashboardStore);
+const instance = getCurrentInstance();
+const appContext: AppContext | null = instance?.appContext ?? null;
 
 // Inline settings schema and current values
 type SettingsSection = {
@@ -49,9 +52,20 @@ watch(
 
 /** Open the settings dialog and apply changes on OK */
 const openSettingsDialogBox = () => {
-  openModal(SettingsDialogBox, instance.appContext, {
-    onOk: (newSettings) => {
-      dashboard.value.settings = newSettings.settings;
+  if (!appContext) {
+    return;
+  }
+  openModal(SettingsDialogBox, appContext, {
+    onOk: (newSettings: { settings: Record<string, unknown>; title: string; columns: number }) => {
+      const currentSettings = dashboard.value.settings;
+      const incoming = newSettings.settings;
+      dashboard.value.settings = {
+        theme: typeof incoming.theme === "string" ? incoming.theme : currentSettings.theme,
+        allowMobileEdit:
+          typeof incoming.allowMobileEdit === "boolean"
+            ? incoming.allowMobileEdit
+            : currentSettings.allowMobileEdit,
+      };
       settings.value = {
         title: newSettings.title,
         columns: newSettings.columns,
@@ -65,12 +79,18 @@ const openSettingsDialogBox = () => {
 
 /** Open the datasources management dialog */
 const openDatasourcesDialogBox = () => {
-  openModal(DatasourcesDialogBox, instance.appContext);
+  if (!appContext) {
+    return;
+  }
+  openModal(DatasourcesDialogBox, appContext);
 };
 
 /** Open the dashboard share/collaboration dialog */
 const openShareDialogBox = () => {
-  openModal(ShareDialogBox, instance.appContext);
+  if (!appContext) {
+    return;
+  }
+  openModal(ShareDialogBox, appContext);
 };
 
 /**
@@ -83,8 +103,6 @@ const onChange = (s: unknown) => {
   dashboard.value.columns = parseInt(String(value.columns || dashboard.value.columns), 10);
   dashboard.value.title = String(value.title || "");
 };
-
-const instance = getCurrentInstance();
 </script>
 
 <template>

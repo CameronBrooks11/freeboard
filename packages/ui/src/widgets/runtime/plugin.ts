@@ -3,6 +3,8 @@
  * @description Validation helpers for widget plugin registration.
  */
 
+import type { UnknownRecord, WidgetPlugin } from "../../types/runtime.js";
+
 /**
  * Default widget fields provider used when plugin does not define one.
  *
@@ -11,7 +13,11 @@
  * @param {Object} general
  * @returns {Array<Object>}
  */
-export const defaultWidgetFields = (_widget, _dashboard, general) => [general];
+export const defaultWidgetFields = (
+  _widget: unknown,
+  _dashboard: unknown,
+  general: UnknownRecord,
+): UnknownRecord[] => [general];
 
 /**
  * Validate and normalize a widget plugin definition.
@@ -19,7 +25,7 @@ export const defaultWidgetFields = (_widget, _dashboard, general) => [general];
  * @param {Object} plugin
  * @returns {Object}
  */
-export const validateWidgetPlugin = (plugin) => {
+export const validateWidgetPlugin = (plugin: WidgetPlugin): WidgetPlugin => {
   if (!plugin || (typeof plugin !== "object" && typeof plugin !== "function")) {
     throw new Error("Widget plugin must be an object or class");
   }

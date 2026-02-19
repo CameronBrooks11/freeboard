@@ -5,6 +5,7 @@
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 import { isTrustedExecutionEnabled } from "../executionPolicy.js";
+type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 
 export class HtmlWidget extends ReactiveWidget {
   headerElement!: HTMLDivElement;
@@ -14,7 +15,11 @@ export class HtmlWidget extends ReactiveWidget {
   static label = "HTML";
   static preferredRows = 3;
 
-  static fields = (widget, dashboard, general) => [
+  static fields = (
+    widget: WidgetFieldSource,
+    dashboard: unknown,
+    general: Record<string, unknown>,
+  ) => [
     general,
     {
       label: "Display",
@@ -70,11 +75,14 @@ export class HtmlWidget extends ReactiveWidget {
     },
   ];
 
-  static newInstance(settings, newInstanceCallback) {
+  static newInstance(
+    settings: Record<string, unknown>,
+    newInstanceCallback: (instance: unknown) => void,
+  ) {
     newInstanceCallback(new HtmlWidget(settings));
   }
 
-  constructor(settings) {
+  constructor(settings: Record<string, unknown>) {
     super(settings);
 
     this.widgetElement.style.display = "flex";
@@ -106,7 +114,7 @@ export class HtmlWidget extends ReactiveWidget {
     };
   }
 
-  onInputsChanged(inputs) {
+  onInputsChanged(inputs: { header: string; content: unknown }) {
     this.headerElement.textContent = inputs.header || "";
     this.headerElement.style.display = inputs.header ? "block" : "none";
 

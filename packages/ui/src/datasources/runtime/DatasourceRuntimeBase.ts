@@ -3,12 +3,14 @@
  * @description Base runtime contract for datasource plugins.
  */
 
+import type { DatasourceStatusPayload, UnknownRecord } from "../../types/runtime.js";
+
 export class DatasourceRuntimeBase {
   /** @type {boolean} */
   enabled = true;
 
   /** @type {Object} */
-  currentSettings: Record<string, unknown> = {};
+  currentSettings: UnknownRecord = {};
 
   /** @type {Object} */
   metrics = {
@@ -18,36 +20,40 @@ export class DatasourceRuntimeBase {
   };
 
   /** @type {ReturnType<typeof setInterval>|null} */
-  pollInterval = null;
+  pollInterval: ReturnType<typeof setInterval> | null = null;
 
   /** @type {ReturnType<typeof setInterval>|null} */
-  staleInterval = null;
+  staleInterval: ReturnType<typeof setInterval> | null = null;
 
   /** @type {string} */
   status = "idle";
 
   /** @type {Date|null} */
-  lastMessageAt = null;
+  lastMessageAt: Date | null = null;
 
   /** @type {Date|null} */
-  lastUpdatedAt = null;
+  lastUpdatedAt: Date | null = null;
 
   /** @type {Date|null} */
-  lastErrorAt = null;
+  lastErrorAt: Date | null = null;
 
   /** @type {string|null} */
-  errorCode = null;
+  errorCode: string | null = null;
 
   /** @type {string|null} */
-  error = null;
+  error: string | null = null;
 
   /** @type {(payload: unknown) => void} */
-  emitDataCallback;
+  emitDataCallback: (payload: unknown) => void;
 
   /** @type {(payload: unknown) => void} */
-  emitStatusCallback;
+  emitStatusCallback: (payload: DatasourceStatusPayload & { metrics: UnknownRecord }) => void;
 
-  constructor(settings, emitDataCallback, emitStatusCallback) {
+  constructor(
+    settings: UnknownRecord,
+    emitDataCallback: (payload: unknown) => void,
+    emitStatusCallback: (payload: DatasourceStatusPayload & { metrics: UnknownRecord }) => void,
+  ) {
     this.emitDataCallback = emitDataCallback;
     this.emitStatusCallback = emitStatusCallback;
     this.currentSettings = settings || {};
@@ -212,11 +218,11 @@ export class DatasourceRuntimeBase {
    *
    * @param {Object} nextSettings
    */
-  applySettings(nextSettings: Record<string, unknown> = {}) {
+  applySettings(nextSettings: UnknownRecord = {}) {
     this.currentSettings = nextSettings;
   }
 
-  onSettingsChanged(nextSettings: Record<string, unknown> = {}) {
+  onSettingsChanged(nextSettings: UnknownRecord = {}) {
     this.applySettings(nextSettings);
   }
 

@@ -4,13 +4,26 @@
  */
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
+type MapInputs = { header: string; lat: unknown; lon: unknown; label: unknown };
 
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const clamp = (value: unknown, min: unknown, max: unknown): number =>
+  Math.min(Math.max(Number(value), Number(min)), Number(max));
 
 const mapProviders = {
   openstreetmap: {
     label: "OpenStreetMap",
-    buildEmbedUrl({ lat, lon, zoom, showMarker }) {
+    buildEmbedUrl({
+      lat,
+      lon,
+      zoom,
+      showMarker,
+    }: {
+      lat: number;
+      lon: number;
+      zoom: number;
+      showMarker: boolean;
+    }) {
       const spanLon = 360 / Math.pow(2, zoom + 1);
       const spanLat = 170 / Math.pow(2, zoom + 1);
 
@@ -42,7 +55,11 @@ export class MapWidget extends ReactiveWidget {
   static label = "Map";
   static preferredRows = 4;
 
-  static fields = (widget, dashboard, general) => [
+  static fields = (
+    widget: WidgetFieldSource,
+    dashboard: unknown,
+    general: Record<string, unknown>,
+  ) => [
     general,
     {
       label: "Display",
@@ -103,11 +120,14 @@ export class MapWidget extends ReactiveWidget {
     },
   ];
 
-  static newInstance(settings, newInstanceCallback) {
+  static newInstance(
+    settings: Record<string, unknown>,
+    newInstanceCallback: (instance: unknown) => void,
+  ) {
     newInstanceCallback(new MapWidget(settings));
   }
 
-  constructor(settings) {
+  constructor(settings: Record<string, unknown>) {
     super(settings);
 
     this.widgetElement.style.display = "flex";
@@ -147,7 +167,7 @@ export class MapWidget extends ReactiveWidget {
     };
   }
 
-  onInputsChanged(inputs) {
+  onInputsChanged(inputs: MapInputs) {
     this.headerElement.textContent = inputs.header || "";
     this.headerElement.style.display = inputs.header ? "block" : "none";
 

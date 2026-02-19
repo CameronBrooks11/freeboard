@@ -4,8 +4,10 @@
  */
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
+type PictureInputs = { header: string; src: unknown; alt: unknown };
 
-const withCacheBust = (url) => {
+const withCacheBust = (url: unknown): string => {
   const base = String(url || "").trim();
   if (!base) {
     return "";
@@ -26,7 +28,11 @@ export class PictureWidget extends ReactiveWidget {
   static label = "Picture";
   static preferredRows = 4;
 
-  static fields = (widget, dashboard, general) => [
+  static fields = (
+    widget: WidgetFieldSource,
+    dashboard: unknown,
+    general: Record<string, unknown>,
+  ) => [
     general,
     {
       label: "Display",
@@ -80,11 +86,14 @@ export class PictureWidget extends ReactiveWidget {
     },
   ];
 
-  static newInstance(settings, newInstanceCallback) {
+  static newInstance(
+    settings: Record<string, unknown>,
+    newInstanceCallback: (instance: unknown) => void,
+  ) {
     newInstanceCallback(new PictureWidget(settings));
   }
 
-  constructor(settings) {
+  constructor(settings: Record<string, unknown>) {
     super(settings);
 
     this.widgetElement.style.display = "flex";
@@ -127,7 +136,7 @@ export class PictureWidget extends ReactiveWidget {
     this.onSettingsChanged(settings);
   }
 
-  onSettingsChanged(newSettings) {
+  onSettingsChanged(newSettings: Record<string, unknown>) {
     super.onSettingsChanged(newSettings);
 
     this.imageElement.style.objectFit =
@@ -143,7 +152,7 @@ export class PictureWidget extends ReactiveWidget {
     };
   }
 
-  onInputsChanged(inputs) {
+  onInputsChanged(inputs: PictureInputs) {
     this.headerElement.textContent = inputs.header || "";
     this.headerElement.style.display = inputs.header ? "block" : "none";
 
@@ -168,7 +177,7 @@ export class PictureWidget extends ReactiveWidget {
     this.refreshTimer = setInterval(() => this.refreshImage(true), seconds * 1000);
   }
 
-  refreshImage(forceCacheBust) {
+  refreshImage(forceCacheBust: boolean) {
     if (!this.currentSrc) {
       this.imageElement.removeAttribute("src");
       this.placeholderElement.style.display = "flex";

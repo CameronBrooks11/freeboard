@@ -4,8 +4,11 @@
  */
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
+type GaugeInputs = { header: string; unit: string; value: unknown };
 
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const clamp = (value: unknown, min: unknown, max: unknown): number =>
+  Math.min(Math.max(Number(value), Number(min)), Number(max));
 
 /**
  * Gauge widget implementation.
@@ -25,7 +28,11 @@ export class GaugeWidget extends ReactiveWidget {
 
   static label = "Gauge";
 
-  static fields = (widget, dashboard, general) => [
+  static fields = (
+    widget: WidgetFieldSource,
+    dashboard: unknown,
+    general: Record<string, unknown>,
+  ) => [
     general,
     {
       label: "Display",
@@ -102,11 +109,14 @@ export class GaugeWidget extends ReactiveWidget {
     },
   ];
 
-  static newInstance(settings, newInstanceCallback) {
+  static newInstance(
+    settings: Record<string, unknown>,
+    newInstanceCallback: (instance: unknown) => void,
+  ) {
     newInstanceCallback(new GaugeWidget(settings));
   }
 
-  constructor(settings) {
+  constructor(settings: Record<string, unknown>) {
     super(settings);
 
     this.radius = 54;
@@ -199,20 +209,24 @@ export class GaugeWidget extends ReactiveWidget {
     this.unitElement.style.fontSize = isNarrow ? "11px" : "13px";
   }
 
-  onSettingsChanged(newSettings) {
+  onSettingsChanged(newSettings: Record<string, unknown>) {
     super.onSettingsChanged(newSettings);
     this.applyResponsiveSizing();
   }
 
-  resolveInputs() {
+  resolveInputs(): GaugeInputs {
+    const headerValue =
+      this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText;
+    const unitValue =
+      this.getBinding(this.currentSettings?.unitPath) ?? this.currentSettings?.unitText;
     return {
-      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
-      unit: this.getBinding(this.currentSettings?.unitPath) ?? this.currentSettings?.unitText,
+      header: headerValue === null || headerValue === undefined ? "" : String(headerValue),
+      unit: unitValue === null || unitValue === undefined ? "" : String(unitValue),
       value: this.getBinding(this.currentSettings?.valuePath),
     };
   }
 
-  formatValue(value) {
+  formatValue(value: number): string {
     if (!Number.isFinite(value)) {
       return "—";
     }
@@ -225,7 +239,7 @@ export class GaugeWidget extends ReactiveWidget {
     return String(value);
   }
 
-  onInputsChanged(inputs) {
+  onInputsChanged(inputs: GaugeInputs) {
     this.headerElement.textContent = inputs.header || "";
     this.headerElement.style.display = inputs.header ? "block" : "none";
 

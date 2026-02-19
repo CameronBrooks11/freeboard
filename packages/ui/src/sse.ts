@@ -6,13 +6,15 @@
 import { ApolloLink, Observable } from "@apollo/client/core";
 import { print } from "graphql";
 import { createClient } from "graphql-sse";
+import type { Client, ClientOptions } from "graphql-sse";
+import type { Operation, FetchResult } from "@apollo/client/core";
 
 /**
  * ApolloLink subclass that uses SSE (via graphql-sse) for GraphQL subscriptions.
  */
 export class SSELink extends ApolloLink {
   /** @type {import('graphql-sse').Client} Underlying SSE client instance */
-  client;
+  client: Client;
 
   /**
    * Initialize the SSELink.
@@ -21,7 +23,7 @@ export class SSELink extends ApolloLink {
    * @param {string} options.url - GraphQL endpoint URL for SSE.
    * @param {function(): Record<string, string>} [options.headers] - Function returning headers for each request.
    */
-  constructor(options) {
+  constructor(options: ClientOptions) {
     super();
     this.client = createClient(options);
   }
@@ -32,8 +34,8 @@ export class SSELink extends ApolloLink {
    * @param {import('@apollo/client').Operation} operation - GraphQL operation with query and variables.
    * @returns {import('@apollo/client').Observable<any>} Observable emitting subscription results.
    */
-  request(operation) {
-    return new Observable((sink) => {
+  request(operation: Operation): Observable<FetchResult> {
+    return new Observable<FetchResult>((sink) => {
       return this.client.subscribe(
         { ...operation, query: print(operation.query) },
         {

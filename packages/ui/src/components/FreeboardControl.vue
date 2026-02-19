@@ -29,7 +29,7 @@ const router = useRouter();
 const saveDashboard = async () => {
   const wasSaved = isSaved.value;
   const d = dashboard.value.serialize();
-  const id = d._id;
+  const id = typeof d._id === "string" ? d._id : null;
   // Remove _id so create mutation can generate a new one when needed
   delete d._id;
 
@@ -45,6 +45,9 @@ const saveDashboard = async () => {
 };
 
 const openSavedDashboards = () => {
+  if (!instance) {
+    return;
+  }
   openModal(SavedDashboardsDialogBox, instance.appContext);
 };
 </script>

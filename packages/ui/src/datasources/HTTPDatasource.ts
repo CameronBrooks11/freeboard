@@ -9,6 +9,8 @@ import {
 } from "./datasourceSessionToken.js";
 import { DatasourceRuntimeBase } from "./runtime/DatasourceRuntimeBase.js";
 import { getAuthToken, getDashboardId, getRuntimeShareToken } from "../runtime/runtimeContext.js";
+import type { DatasourceStatusPayload, UnknownRecord } from "../types/runtime.js";
+type DatasourceFieldModel = { settings?: UnknownRecord } | null | undefined;
 
 const ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 const ALLOWED_PARSERS = ["json", "text", "csv"];
@@ -26,24 +28,27 @@ const DIRECT_HTTP_ENABLED =
 type HTTPRuntimeContext = {
   dashboardId?: string;
   datasourceId?: string;
-  credentialProfiles?: Array<Record<string, unknown>>;
+  credentialProfiles?: Array<{
+    _id: string;
+    name: string;
+  }>;
 };
 
-const normalizeMethod = (value) => {
+const normalizeMethod = (value: unknown): string => {
   const method = String(value || "GET")
     .trim()
     .toUpperCase();
   return ALLOWED_METHODS.includes(method) ? method : "GET";
 };
 
-const normalizeParser = (value) => {
+const normalizeParser = (value: unknown): string => {
   const parser = String(value || "json")
     .trim()
     .toLowerCase();
   return ALLOWED_PARSERS.includes(parser) ? parser : "json";
 };
 
-const normalizeHeaders = (rawValue) => {
+const normalizeHeaders = (rawValue: unknown): Record<string, string> => {
   if (!rawValue) {
     return {};
   }
@@ -68,7 +73,7 @@ const normalizeHeaders = (rawValue) => {
   );
 };
 
-const parseCsv = (csvText) => {
+const parseCsv = (csvText: unknown): Array<Record<string, string>> => {
   const lines = String(csvText || "")
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -81,7 +86,7 @@ const parseCsv = (csvText) => {
   const headers = lines[0].split(",").map((part) => part.trim());
   return lines.slice(1).map((line) => {
     const values = line.split(",").map((part) => part.trim());
-    const item = {};
+    const item: Record<string, string> = {};
     headers.forEach((header, index) => {
       if (!header) {
         return;
@@ -92,7 +97,7 @@ const parseCsv = (csvText) => {
   });
 };
 
-const parseByMode = (text, parser) => {
+const parseByMode = (text: string, parser: string): unknown => {
   if (parser === "text") {
     return text;
   }
@@ -109,7 +114,12 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
 
   static label = "HTTP";
 
-  static fields = (datasource, dashboard, general, runtimeContext: HTTPRuntimeContext = {}) => {
+  static fields = (
+    datasource: DatasourceFieldModel,
+    dashboard: unknown,
+    general: UnknownRecord & { fields: UnknownRecord[]; settings: UnknownRecord },
+    runtimeContext: HTTPRuntimeContext = {},
+  ): UnknownRecord[] => {
     const credentialProfiles = Array.isArray(runtimeContext.credentialProfiles)
       ? runtimeContext.credentialProfiles
       : [];
@@ -246,12 +256,12 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
   };
 
   static newInstance(
-    settings,
-    newInstanceCallback,
-    updateCallback,
-    statusCallback,
-    runtimeContext,
-  ) {
+    settings: UnknownRecord,
+    newInstanceCallback: (instance: HTTPDatasource) => void,
+    updateCallback: (payload: unknown) => void,
+    statusCallback: (payload: DatasourceStatusPayload & { metrics: UnknownRecord }) => void,
+    runtimeContext?: HTTPRuntimeContext,
+  ): void {
     newInstanceCallback(
       new HTTPDatasource(settings, updateCallback, statusCallback, runtimeContext),
     );
@@ -259,13 +269,18 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
 
   retryStage = 0;
 
-  sessionToken = null;
+  sessionToken: string | null = null;
 
-  retryTimer = null;
+  retryTimer: ReturnType<typeof setTimeout> | null = null;
 
   requestInFlight = false;
 
-  constructor(settings, updateCallback, statusCallback, runtimeContext: HTTPRuntimeContext = {}) {
+  constructor(
+    settings: UnknownRecord,
+    updateCallback: (payload: unknown) => void,
+    statusCallback: (payload: DatasourceStatusPayload & { metrics: UnknownRecord }) => void,
+    runtimeContext: HTTPRuntimeContext = {},
+  ) {
     super(settings, updateCallback, statusCallback);
     this.runtimeContext = runtimeContext;
     this.onSettingsChanged(settings);

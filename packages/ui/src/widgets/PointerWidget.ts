@@ -4,8 +4,16 @@
  */
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
+type PointerInputs = {
+  header: string;
+  unit: string;
+  angle: unknown;
+  angleUnit: unknown;
+  valueText: unknown;
+};
 
-const normalizeAngle = (value) => {
+const normalizeAngle = (value: unknown): number | null => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return null;
@@ -16,7 +24,7 @@ const normalizeAngle = (value) => {
 
 const POINTER_DEFAULT_ANGLE_UNIT = "°";
 
-const resolveAngleUnit = (value) => {
+const resolveAngleUnit = (value: unknown): string => {
   if (value === null || value === undefined) {
     return POINTER_DEFAULT_ANGLE_UNIT;
   }
@@ -35,7 +43,11 @@ export class PointerWidget extends ReactiveWidget {
   static label = "Pointer";
   static preferredRows = 3;
 
-  static fields = (widget, dashboard, general) => [
+  static fields = (
+    widget: WidgetFieldSource,
+    dashboard: unknown,
+    general: Record<string, unknown>,
+  ) => [
     general,
     {
       label: "Display",
@@ -81,11 +93,14 @@ export class PointerWidget extends ReactiveWidget {
     },
   ];
 
-  static newInstance(settings, newInstanceCallback) {
+  static newInstance(
+    settings: Record<string, unknown>,
+    newInstanceCallback: (instance: unknown) => void,
+  ) {
     newInstanceCallback(new PointerWidget(settings));
   }
 
-  constructor(settings) {
+  constructor(settings: Record<string, unknown>) {
     super(settings);
     this.isNarrow = false;
 
@@ -177,10 +192,14 @@ export class PointerWidget extends ReactiveWidget {
     this.headerElement.style.marginBottom = this.isNarrow ? "6px" : "8px";
   }
 
-  resolveInputs() {
+  resolveInputs(): PointerInputs {
+    const headerValue =
+      this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText;
+    const unitValue =
+      this.getBinding(this.currentSettings?.unitPath) ?? this.currentSettings?.unitText;
     return {
-      header: this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText,
-      unit: this.getBinding(this.currentSettings?.unitPath) ?? this.currentSettings?.unitText,
+      header: headerValue === null || headerValue === undefined ? "" : String(headerValue),
+      unit: unitValue === null || unitValue === undefined ? "" : String(unitValue),
       angle: this.getBinding(this.currentSettings?.anglePath),
       angleUnit:
         this.getBinding(this.currentSettings?.angleUnitPath) ?? this.currentSettings?.angleUnitText,
@@ -189,7 +208,7 @@ export class PointerWidget extends ReactiveWidget {
     };
   }
 
-  onInputsChanged(inputs) {
+  onInputsChanged(inputs: PointerInputs) {
     const angle = normalizeAngle(inputs.angle);
 
     this.headerElement.textContent = inputs.header || "";
@@ -200,7 +219,10 @@ export class PointerWidget extends ReactiveWidget {
 
     if (angle === null) {
       this.pointerGroup.style.transform = "rotate(0deg)";
-      this.valueElement.textContent = inputs.valueText || "—";
+      this.valueElement.textContent =
+        inputs.valueText === null || inputs.valueText === undefined || inputs.valueText === ""
+          ? "—"
+          : String(inputs.valueText);
       return;
     }
 

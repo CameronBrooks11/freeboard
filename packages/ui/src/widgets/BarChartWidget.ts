@@ -4,28 +4,44 @@
  */
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
+type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
+type BarChartModel = {
+  labels: string[];
+  seriesKeys: string[];
+  data: number[][];
+  maxValue: number;
+};
+type BarChartInputs = {
+  header: string;
+  chartModel: BarChartModel;
+  orientation: string;
+  showValues: boolean;
+  showGrid: boolean;
+  animated: boolean;
+  colors: string[];
+};
 
 const DEFAULT_BAR_COLORS = ["#4f87ff", "#f59e0b", "#10b981", "#ef4444", "#a855f7", "#06b6d4"];
 
-const toFiniteNumber = (value) => {
+const toFiniteNumber = (value: unknown): number | null => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const normalizeOrientation = (value) => {
+const normalizeOrientation = (value: unknown): string => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
   return normalized === "horizontal" ? "horizontal" : "vertical";
 };
 
-const parseCsv = (value) =>
+const parseCsv = (value: unknown): string[] =>
   String(value || "")
     .split(",")
     .map((entry) => entry.trim())
     .filter(Boolean);
 
-const normalizeColorArray = (colors) => {
+const normalizeColorArray = (colors: unknown): string[] => {
   const fromArray = Array.isArray(colors) ? colors : [];
   const normalized = fromArray
     .map((entry) => {
@@ -49,10 +65,12 @@ const nowMs = () =>
 const requestFrame =
   typeof requestAnimationFrame === "function"
     ? requestAnimationFrame
-    : (callback) => setTimeout(() => callback(nowMs()), 16);
+    : (callback: (timestamp: number) => void) => setTimeout(() => callback(nowMs()), 16);
 
 const cancelFrame =
-  typeof cancelAnimationFrame === "function" ? cancelAnimationFrame : (id) => clearTimeout(id);
+  typeof cancelAnimationFrame === "function"
+    ? cancelAnimationFrame
+    : (id: ReturnType<typeof setTimeout>) => clearTimeout(id);
 
 export const normalizeBarChartRows = (rows: unknown, settings: Record<string, unknown> = {}) => {
   const arrayRows = Array.isArray(rows) ? rows : [];
@@ -60,9 +78,9 @@ export const normalizeBarChartRows = (rows: unknown, settings: Record<string, un
   const valueField = String(settings.valueField || "value").trim() || "value";
   const explicitSeriesFields = parseCsv(settings.seriesFields);
 
-  const normalizedRows = arrayRows
-    .map((row) => (row && typeof row === "object" ? row : null))
-    .filter(Boolean);
+  const normalizedRows: Array<Record<string, unknown>> = arrayRows
+    .map((row) => (row && typeof row === "object" ? (row as Record<string, unknown>) : null))
+    .filter((row): row is Record<string, unknown> => Boolean(row));
 
   if (!normalizedRows.length) {
     return {
@@ -89,8 +107,8 @@ export const normalizeBarChartRows = (rows: unknown, settings: Record<string, un
     seriesKeys = [valueField];
   }
 
-  const labels = [];
-  const data = [];
+  const labels: string[] = [];
+  const data: number[][] = [];
   let maxValue = 0;
 
   normalizedRows.forEach((row, index) => {
@@ -121,7 +139,7 @@ export const normalizeBarChartRows = (rows: unknown, settings: Record<string, un
 };
 
 export class BarChartWidget extends ReactiveWidget {
-  lastModel: unknown = null;
+  lastModel: BarChartInputs | null = null;
   lastDataLength = 0;
   animationFrame: ReturnType<typeof requestAnimationFrame> | ReturnType<typeof setTimeout> | null =
     null;
@@ -138,7 +156,11 @@ export class BarChartWidget extends ReactiveWidget {
   static typeName = "bar-chart";
   static label = "Bar Chart";
 
-  static fields = (widget, dashboard, general) => [
+  static fields = (
+    widget: WidgetFieldSource,
+    dashboard: unknown,
+    general: Record<string, unknown>,
+  ) => [
     general,
     {
       label: "Display",
@@ -225,11 +247,14 @@ export class BarChartWidget extends ReactiveWidget {
     },
   ];
 
-  static newInstance(settings, newInstanceCallback) {
+  static newInstance(
+    settings: Record<string, unknown>,
+    newInstanceCallback: (instance: unknown) => void,
+  ) {
     newInstanceCallback(new BarChartWidget(settings));
   }
 
-  constructor(settings) {
+  constructor(settings: Record<string, unknown>) {
     super(settings);
 
     this.lastModel = null;
@@ -276,14 +301,15 @@ export class BarChartWidget extends ReactiveWidget {
     this.applyResponsiveSizing();
   }
 
-  resolveInputs() {
+  resolveInputs(): BarChartInputs {
     const rawRows = this.getBinding(this.currentSettings?.valuePath);
     const chartModel = normalizeBarChartRows(rawRows, this.currentSettings || {});
     this.lastDataLength = chartModel.labels.length;
+    const headerValue =
+      this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText;
 
     return {
-      header:
-        this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText ?? "",
+      header: headerValue === null || headerValue === undefined ? "" : String(headerValue),
       chartModel,
       orientation: normalizeOrientation(this.currentSettings?.orientation),
       showValues: this.currentSettings?.showValues !== false,
@@ -293,7 +319,7 @@ export class BarChartWidget extends ReactiveWidget {
     };
   }
 
-  onInputsChanged(inputs) {
+  onInputsChanged(inputs: BarChartInputs) {
     this.headerElement.textContent = inputs.header || "";
     this.headerElement.style.display = inputs.header ? "block" : "none";
     this.canvas.setAttribute(
@@ -341,7 +367,7 @@ export class BarChartWidget extends ReactiveWidget {
     super.onDispose();
   }
 
-  animateToLatest(inputs) {
+  animateToLatest(inputs: BarChartInputs) {
     if (this.animationFrame) {
       cancelFrame(this.animationFrame);
       this.animationFrame = null;
@@ -350,7 +376,7 @@ export class BarChartWidget extends ReactiveWidget {
     const durationMs = 220;
     const startedAt = nowMs();
 
-    const step = (now) => {
+    const step = (now: number) => {
       const elapsed = now - startedAt;
       this.currentProgress = Math.min(1, elapsed / durationMs);
       this.draw(inputs);
@@ -366,7 +392,7 @@ export class BarChartWidget extends ReactiveWidget {
     this.animationFrame = requestFrame(step);
   }
 
-  draw(inputs) {
+  draw(inputs: BarChartInputs) {
     this.lastModel = inputs;
 
     const width = this.canvasWrap.clientWidth;
@@ -454,7 +480,7 @@ export class BarChartWidget extends ReactiveWidget {
     );
 
     chartModel.labels.forEach((label, rowIndex) => {
-      const valueSet = chartModel.data[rowIndex];
+      const valueSet = chartModel.data[rowIndex] || [];
       const previousValueSet = this.previousValues?.[rowIndex];
 
       if (orientation === "vertical") {
@@ -513,7 +539,7 @@ export class BarChartWidget extends ReactiveWidget {
     });
   }
 
-  renderLegend(seriesKeys, colors) {
+  renderLegend(seriesKeys: string[], colors: string[]) {
     if (!Array.isArray(seriesKeys) || seriesKeys.length <= 1) {
       this.legendElement.style.display = "none";
       this.legendElement.innerHTML = "";

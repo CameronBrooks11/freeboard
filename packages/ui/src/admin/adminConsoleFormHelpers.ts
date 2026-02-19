@@ -8,14 +8,17 @@ import { normalizeCredentialProfileTypeValue } from "./adminConsoleState.js";
 const toRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 
-export const roleToEnum = (role) => String(role || "viewer").toUpperCase();
-export const registrationModeToEnum = (mode) => String(mode || "disabled").toUpperCase();
-export const dashboardVisibilityToEnum = (visibility) =>
+export const roleToEnum = (role: unknown): string => String(role || "viewer").toUpperCase();
+export const registrationModeToEnum = (mode: unknown): string =>
+  String(mode || "disabled").toUpperCase();
+export const dashboardVisibilityToEnum = (visibility: unknown): string =>
   String(visibility || "private").toUpperCase();
-export const executionModeToEnum = (mode) => String(mode || "safe").toUpperCase();
-export const credentialProfileTypeToEnum = (type) => String(type || "none").toUpperCase();
-export const brokerProfileProtocolToEnum = (protocol) => String(protocol || "mqtt").toUpperCase();
-export const serviceAccountScopeToEnum = (scope) =>
+export const executionModeToEnum = (mode: unknown): string => String(mode || "safe").toUpperCase();
+export const credentialProfileTypeToEnum = (type: unknown): string =>
+  String(type || "none").toUpperCase();
+export const brokerProfileProtocolToEnum = (protocol: unknown): string =>
+  String(protocol || "mqtt").toUpperCase();
+export const serviceAccountScopeToEnum = (scope: unknown): string =>
   String(scope || "")
     .trim()
     .replace(/[:.-]/g, "_")
@@ -92,7 +95,7 @@ export const buildBrokerProfileMutationInput = (draft: unknown) => {
   };
 };
 
-export const formatDateTime = (value: unknown) => {
+export const formatDateTime = (value: unknown): string => {
   if (!value) {
     return "—";
   }
@@ -103,7 +106,7 @@ export const formatDateTime = (value: unknown) => {
   return parsed.toLocaleString();
 };
 
-export const extractErrorMessage = (error: unknown, fallback: string) => {
+export const extractErrorMessage = (error: unknown, fallback: string): string => {
   const normalizedError = toRecord(error);
   const graphQLErrors = Array.isArray(normalizedError.graphQLErrors)
     ? normalizedError.graphQLErrors

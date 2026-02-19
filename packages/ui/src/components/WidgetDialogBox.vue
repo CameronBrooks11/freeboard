@@ -18,6 +18,7 @@ import { usePluginRegistryStore } from "../stores/pluginRegistry.js";
 import { storeToRefs } from "pinia";
 import TabNavigator from "./TabNavigator.vue";
 import TypeSelect from "./TypeSelect.vue";
+import type { UnknownRecord, WidgetPlugin } from "../types/runtime.js";
 
 type FormComponentRef = {
   hasErrors: () => boolean;
@@ -27,11 +28,17 @@ type WidgetDialogSubmitPayload = {
   type: string | null;
   settings: Record<string, unknown>;
 } & Record<string, unknown>;
+type WidgetFieldSection = {
+  name: string;
+  settings: UnknownRecord;
+  fields: UnknownRecord[];
+};
 
 const dashboardStore = useDashboardStore();
 const pluginRegistryStore = usePluginRegistryStore();
 const { dashboard } = storeToRefs(dashboardStore);
 const { widgetPlugins } = storeToRefs(pluginRegistryStore);
+const widgetPluginMap = computed<Record<string, WidgetPlugin>>(() => widgetPlugins.value);
 
 // Props passed from parent component
 const { header, onClose, onOk, widget } = defineProps({
@@ -45,13 +52,26 @@ const { header, onClose, onOk, widget } = defineProps({
 const typeRef = ref<string | null>(widget && typeof widget.type === "string" ? widget.type : null);
 
 // Dynamic fields schema based on selected type
-const fields = ref<
-  Array<{
-    name: string;
-    settings: Record<string, unknown>;
-    fields: Array<Record<string, unknown>>;
-  }>
->([]);
+const toWidgetFieldSection = (value: unknown): WidgetFieldSection | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const candidate = value as Record<string, unknown>;
+  const name = typeof candidate.name === "string" ? candidate.name : "";
+  if (!name) {
+    return null;
+  }
+  return {
+    name,
+    settings:
+      candidate.settings && typeof candidate.settings === "object"
+        ? (candidate.settings as UnknownRecord)
+        : {},
+    fields: Array.isArray(candidate.fields) ? (candidate.fields as UnknownRecord[]) : [],
+  };
+};
+
+const fields = ref<WidgetFieldSection[]>([]);
 
 // Store child Form component refs for validation
 const components = ref<Record<string, FormComponentRef | null>>({});
@@ -70,12 +90,13 @@ const storeComponentRef = (name: string, el: unknown) => {
 watch(
   typeRef,
   (newValue) => {
-    const plugin = widgetPlugins.value[newValue];
+    const selectedType = typeof newValue === "string" ? newValue : "";
+    const plugin = widgetPluginMap.value[selectedType];
     if (!newValue || !plugin || typeof plugin.fields !== "function") {
       fields.value = [];
       return;
     }
-    fields.value = plugin.fields(widget, dashboard.value, {
+    const sections = plugin.fields?.(widget, dashboard.value, {
       label: "form.labelGeneral",
       icon: "hi-home",
       name: "general",
@@ -97,15 +118,20 @@ watch(
         },
       ],
     });
+    fields.value = Array.isArray(sections)
+      ? sections
+          .map((section) => toWidgetFieldSection(section))
+          .filter((section): section is WidgetFieldSection => Boolean(section))
+      : [];
   },
   { immediate: true },
 );
 
 // Build options list for the type select dropdown
 const widgetPluginsOptions = computed(() =>
-  Object.keys(widgetPlugins.value).map((key) => ({
+  Object.keys(widgetPluginMap.value).map((key) => ({
     value: key,
-    label: widgetPlugins.value[key].label,
+    label: widgetPluginMap.value[key].label || key,
   })),
 );
 

@@ -20,31 +20,36 @@ export const SERVICE_ACCOUNT_SCOPE_OPTIONS = Object.freeze([
 const toRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 
-const normalizeOptionValue = (value: unknown, allowed: readonly string[], fallback: string) => {
+const normalizeOptionValue = (
+  value: unknown,
+  allowed: readonly string[],
+  fallback: string,
+): string => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
   return allowed.includes(normalized) ? normalized : fallback;
 };
 
-export const normalizeRoleValue = (value) => normalizeOptionValue(value, ROLE_OPTIONS, "viewer");
+export const normalizeRoleValue = (value: unknown): string =>
+  normalizeOptionValue(value, ROLE_OPTIONS, "viewer");
 
-export const normalizeRegistrationDefaultRoleValue = (value) =>
+export const normalizeRegistrationDefaultRoleValue = (value: unknown): string =>
   normalizeOptionValue(value, REGISTRATION_DEFAULT_ROLE_OPTIONS, "viewer");
 
-export const normalizeRegistrationModeValue = (value) =>
+export const normalizeRegistrationModeValue = (value: unknown): string =>
   normalizeOptionValue(value, REGISTRATION_MODE_OPTIONS, "disabled");
 
-export const normalizeDashboardVisibilityValue = (value) =>
+export const normalizeDashboardVisibilityValue = (value: unknown): string =>
   normalizeOptionValue(value, DASHBOARD_VISIBILITY_OPTIONS, "private");
 
-export const normalizeExecutionModeValue = (value) =>
+export const normalizeExecutionModeValue = (value: unknown): string =>
   normalizeOptionValue(value, EXECUTION_MODE_OPTIONS, "safe");
 
-export const normalizeCredentialProfileTypeValue = (value) =>
+export const normalizeCredentialProfileTypeValue = (value: unknown): string =>
   normalizeOptionValue(value, CREDENTIAL_PROFILE_TYPE_OPTIONS, "none");
 
-export const normalizeBrokerProfileProtocolValue = (value) =>
+export const normalizeBrokerProfileProtocolValue = (value: unknown): string =>
   normalizeOptionValue(value, BROKER_PROFILE_PROTOCOL_OPTIONS, "mqtt");
 
 export const toUserDraft = (user: Record<string, unknown> = {}) => ({

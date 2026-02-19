@@ -32,8 +32,9 @@ const { result, loading, error } = useQuery(DASHBOARDS_LIST_QUERY);
 
 // UI state to track if a dashboard is being opened
 const picking = ref(false);
+type DashboardListEntry = { _id: string; title?: string; visibility?: string };
 
-const visibilityLabelKey = (visibility) => {
+const visibilityLabelKey = (visibility: unknown) => {
   const normalized = String(visibility || "").toLowerCase();
   if (normalized === "public") {
     return "savedDashboards.public";
@@ -53,7 +54,7 @@ const visibilityLabelKey = (visibility) => {
  * @param {string} id - Dashboard ID to load.
  * @returns {Promise<void>}
  */
-const openDashboard = async (id) => {
+const openDashboard = async (id: string) => {
   picking.value = true;
   try {
     // Navigate to dashboard route
@@ -63,7 +64,8 @@ const openDashboard = async (id) => {
     const { onResult } = useQuery(DASHBOARD_READ_QUERY, { id });
     await new Promise<void>((resolve) => {
       onResult(({ data }) => {
-        if (data?.dashboard) dashboardStore.loadDashboard(data.dashboard);
+        if (data?.dashboard)
+          dashboardStore.loadDashboard(data.dashboard as Record<string, unknown>);
         resolve();
       });
     });

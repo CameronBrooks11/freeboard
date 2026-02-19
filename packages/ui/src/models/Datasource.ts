@@ -9,21 +9,26 @@ import {
   getDatasourcePlugin,
   processDatasourceUpdate,
 } from "../runtime/runtimeContext.js";
+import type {
+  DatasourceLifecycleInstance,
+  DatasourceStatusPayload,
+  UnknownRecord,
+} from "../types/runtime.js";
 
-const cloneMutableSettings = (value) => {
+const cloneMutableSettings = (value: unknown): UnknownRecord => {
   if (!value || typeof value !== "object") {
     return {};
   }
 
   if (typeof structuredClone === "function") {
     try {
-      return structuredClone(value);
+      return structuredClone(value) as UnknownRecord;
     } catch {
       // Fallback below.
     }
   }
 
-  return JSON.parse(JSON.stringify(value));
+  return JSON.parse(JSON.stringify(value)) as UnknownRecord;
 };
 
 /**
@@ -32,39 +37,32 @@ const cloneMutableSettings = (value) => {
  * @class Datasource
  */
 export class Datasource {
-  datasourceInstance:
-    | {
-        applySettings?: (settings: Record<string, unknown>) => void;
-        onSettingsChanged?: (settings: Record<string, unknown>) => void;
-        onDispose?: () => void;
-        updateNow?: () => void;
-      }
-    | undefined;
+  datasourceInstance: DatasourceLifecycleInstance | undefined;
 
   /** @type {string} Stable datasource identifier used in bindings. */
   id = generateModelId("ds");
   /** @type {string|null} Display title of the datasource. */
-  title = null;
+  title: string | null = null;
   /** @private {boolean} Whether the datasource is enabled. */
   _enabled = true;
   /** @type {any} Most recently fetched data. */
-  latestData = null;
+  latestData: unknown = null;
   /** @private {Object} Current settings object for the datasource. */
-  _settings = {};
+  _settings: UnknownRecord = {};
   /** @private {string|null} Current datasource type key. */
-  _type = null;
+  _type: string | null = null;
   /** @type {Date|null} Timestamp of last successful update. */
-  lastUpdated = null;
+  lastUpdated: Date | null = null;
   /** @type {Date|null} Timestamp of last received message. */
-  lastMessageAt = null;
+  lastMessageAt: Date | null = null;
   /** @type {Date|null} Timestamp of last error. */
-  lastErrorAt = null;
+  lastErrorAt: Date | null = null;
   /** @type {Error|null} Last encountered error, if any. */
-  lastError = null;
+  lastError: Error | null = null;
   /** @type {string} Runtime status. */
   status = "idle";
   /** @type {string|null} Runtime error code. */
-  errorCode = null;
+  errorCode: string | null = null;
   /** @type {{messageCount: number, errorCount: number, retryCount: number}} Runtime metrics snapshot. */
   metrics = {
     messageCount: 0,
@@ -77,7 +75,7 @@ export class Datasource {
    *
    * @param {Object} newValue - New settings for the datasource.
    */
-  set settings(newValue) {
+  set settings(newValue: UnknownRecord) {
     const nextValue = newValue || {};
 
     if (this.datasourceInstance !== undefined) {
@@ -104,7 +102,7 @@ export class Datasource {
    *
    * @param {boolean} newValue
    */
-  set enabled(newValue) {
+  set enabled(newValue: boolean) {
     const nextValue = !!newValue;
     if (this._enabled === nextValue) {
       return;
@@ -144,19 +142,19 @@ export class Datasource {
     try {
       datasourceType.newInstance(
         this.settings,
-        (datasourceInstance) => {
+        (datasourceInstance: DatasourceLifecycleInstance) => {
           this.datasourceInstance = datasourceInstance;
           this.lastError = null;
         },
-        (newData) => this.updateCallback(newData),
-        (statusPayload) => this.statusCallback(statusPayload),
+        (newData: unknown) => this.updateCallback(newData),
+        (statusPayload: DatasourceStatusPayload) => this.statusCallback(statusPayload),
         {
           datasourceId: this.id,
           dashboardId: getDashboardId(),
         },
       );
     } catch (error) {
-      this.lastError = error;
+      this.lastError = error instanceof Error ? error : new Error(String(error));
       this.status = "error";
       console.error(`Datasource '${this._type}' failed to initialize`, error);
     }
@@ -167,7 +165,7 @@ export class Datasource {
    *
    * @param {string} newValue - Type key of the datasource plugin.
    */
-  set type(newValue) {
+  set type(newValue: string | null) {
     this._type = newValue;
     this.disposeDatasourceInstance();
     this.startDatasourceInstance();
@@ -201,7 +199,7 @@ export class Datasource {
    *
    * @param {any} newData - The newly fetched data payload.
    */
-  updateCallback(newData) {
+  updateCallback(newData: unknown): void {
     if (!this.enabled) {
       return;
     }
@@ -220,17 +218,7 @@ export class Datasource {
    *
    * @param {Object} statusPayload
    */
-  statusCallback(
-    statusPayload: Partial<{
-      status: string;
-      lastMessageAt: Date | string | number;
-      lastUpdatedAt: Date | string | number;
-      lastErrorAt: Date | string | number;
-      errorCode: string | null;
-      error: string | null;
-      metrics: { messageCount?: number; errorCount?: number; retryCount?: number };
-    }> = {},
-  ) {
+  statusCallback(statusPayload: DatasourceStatusPayload = {}) {
     if (statusPayload.status) {
       this.status = statusPayload.status;
     }
@@ -278,12 +266,12 @@ export class Datasource {
    *
    * @param {{ title: string, type: string, enabled: boolean, settings: Object }} object - Serialized data.
    */
-  deserialize(object) {
-    this.id = object.id || generateModelId("ds");
-    this.title = object.title;
+  deserialize(object: Record<string, unknown>): void {
+    this.id = typeof object.id === "string" ? object.id : generateModelId("ds");
+    this.title = typeof object.title === "string" ? object.title : null;
     this.enabled = object.enabled !== undefined ? !!object.enabled : true;
     this.settings = cloneMutableSettings(object.settings);
-    this.type = object.type;
+    this.type = typeof object.type === "string" ? object.type : null;
   }
 
   /**
@@ -292,7 +280,7 @@ export class Datasource {
    * @param {string} dataPath - JavaScript expression returning a value from `data`.
    * @returns {any} Evaluated value or error if expression invalid.
    */
-  getDataRepresentation(dataPath) {
+  getDataRepresentation(dataPath: string): unknown {
     const valueFunction = new Function("data", "return " + dataPath + ";");
     return valueFunction.call(undefined, this.latestData);
   }

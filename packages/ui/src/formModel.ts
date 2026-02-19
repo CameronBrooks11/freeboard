@@ -1,3 +1,10 @@
+type FieldModel = { value?: unknown };
+type FormField = {
+  name?: string;
+  model?: FieldModel;
+  default?: unknown;
+};
+
 /**
  * Resolve a field model value using nullish-aware precedence.
  *
@@ -10,9 +17,15 @@
  * @param {Object} [settings={}] - Current settings object.
  * @returns {*}
  */
-export const resolveFieldModelValue = (field, settings = {}) => {
+export const resolveFieldModelValue = (
+  field: FormField,
+  settings: Record<string, unknown> = {},
+): unknown => {
   const currentModelValue = field?.model?.value;
-  const hasExplicitSetting = Object.prototype.hasOwnProperty.call(settings, field?.name);
-  const settingValue = hasExplicitSetting ? settings[field.name] : undefined;
+  const fieldName = typeof field?.name === "string" ? field.name : "";
+  const hasExplicitSetting = fieldName
+    ? Object.prototype.hasOwnProperty.call(settings, fieldName)
+    : false;
+  const settingValue = hasExplicitSetting ? settings[fieldName] : undefined;
   return currentModelValue ?? settingValue ?? field?.default;
 };

@@ -16,13 +16,18 @@ const AUTH_MESSAGE_PATTERNS = [/unauthenticated/i, /invalid token/i, /jwt/i, /to
  * @param {Object} error - GraphQL error object.
  * @returns {boolean}
  */
-export const isAuthGraphQLError = (error) => {
-  const code = error?.extensions?.code;
+export const isAuthGraphQLError = (error: unknown): boolean => {
+  const errorRecord = error && typeof error === "object" ? (error as Record<string, unknown>) : {};
+  const extensions =
+    errorRecord.extensions && typeof errorRecord.extensions === "object"
+      ? (errorRecord.extensions as Record<string, unknown>)
+      : {};
+  const code = extensions.code;
   if (typeof code === "string" && AUTH_ERROR_CODES.has(code.toUpperCase())) {
     return true;
   }
 
-  const message = typeof error?.message === "string" ? error.message : "";
+  const message = typeof errorRecord.message === "string" ? errorRecord.message : "";
   return AUTH_MESSAGE_PATTERNS.some((pattern) => pattern.test(message));
 };
 

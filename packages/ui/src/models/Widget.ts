@@ -5,8 +5,14 @@
 
 import { generateModelId } from "./id.js";
 import { getWidgetPlugin } from "../runtime/runtimeContext.js";
+import type {
+  UnknownRecord,
+  WidgetRuntimeContext,
+  WidgetRuntimeInstance,
+} from "../types/runtime.js";
+import type { Pane } from "./Pane.js";
 
-const toPositiveInteger = (value, fallback = 1) => {
+const toPositiveInteger = (value: unknown, fallback = 1): number => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return fallback;
@@ -14,20 +20,20 @@ const toPositiveInteger = (value, fallback = 1) => {
   return Math.max(1, Math.ceil(parsed));
 };
 
-const cloneMutableSettings = (value) => {
+const cloneMutableSettings = (value: unknown): Record<string, unknown> => {
   if (!value || typeof value !== "object") {
     return {};
   }
 
   if (typeof structuredClone === "function") {
     try {
-      return structuredClone(value);
+      return structuredClone(value) as Record<string, unknown>;
     } catch {
       // Fallback below.
     }
   }
 
-  return JSON.parse(JSON.stringify(value));
+  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
 };
 
 /**
@@ -36,29 +42,7 @@ const cloneMutableSettings = (value) => {
  * @class Widget
  */
 export class Widget {
-  widgetInstance:
-    | {
-        onSettingsChanged?: (settings: Record<string, unknown>) => void;
-        onDispose?: () => void;
-        render?: (element: Element) => void;
-        processDatasourceUpdate?: (
-          datasource: unknown,
-          context?: {
-            changedDatasource?: string | null;
-            changedDatasourceId?: string | null;
-            changedDatasourceTitle?: string | null;
-            snapshot?: Record<string, unknown>;
-            timestamp?: string;
-          },
-        ) => void;
-        onResize?: (size: { width: number; height: number }) => void;
-        getPreferredRows?: (
-          settings: Record<string, unknown> | null,
-          snapshot: Record<string, unknown>,
-        ) => number;
-        lastError?: unknown;
-      }
-    | undefined;
+  widgetInstance: WidgetRuntimeInstance | undefined;
 
   element: Element | undefined;
 
@@ -69,17 +53,17 @@ export class Widget {
   /** @private {boolean} Whether the widget is enabled. */
   _enabled = true;
   /** @type {string|null} Widget title. */
-  title = null;
+  title: string | null = null;
   /** @type {Object|null} Parent pane instance (not used directly here). */
-  pane = null;
+  pane: Pane | null = null;
   /** @private {string|null} Current widget type key. */
-  _type = null;
+  _type: string | null = null;
   /** @private {Object|null} Current widget settings. */
-  _settings = null;
+  _settings: UnknownRecord | null = null;
   /** @type {{changedDatasource?: string|null, snapshot?: Record<string, unknown>, timestamp?: string}|null} */
-  lastContext = null;
+  lastContext: WidgetRuntimeContext | null = null;
   /** @type {unknown|null} Last widget runtime error. */
-  lastError = null;
+  lastError: unknown | null = null;
 
   /**
    * Construct a Widget with initial settings and type.
@@ -127,7 +111,7 @@ export class Widget {
    *
    * @param {string} newValue - Type key of the widget plugin.
    */
-  set type(newValue) {
+  set type(newValue: string | null) {
     this.disposeWidgetInstance();
     this._type = newValue;
 
@@ -152,7 +136,7 @@ export class Widget {
    *
    * @param {Object} newValue - New settings object.
    */
-  set settings(newValue) {
+  set settings(newValue: UnknownRecord | null) {
     const nextValue = newValue || {};
 
     if (
@@ -180,7 +164,7 @@ export class Widget {
    *
    * @param {boolean} newValue
    */
-  set enabled(newValue) {
+  set enabled(newValue: boolean) {
     const nextValue = !!newValue;
     if (this._enabled === nextValue) {
       return;
@@ -223,7 +207,7 @@ export class Widget {
    *
    * @param {Element} element - DOM element to render the widget into.
    */
-  render(element) {
+  render(element: Element): void {
     this.element = element;
     if (!this.enabled) {
       this.shouldRender = false;
@@ -269,12 +253,12 @@ export class Widget {
    *
    * @param {{ title: string, type: string, settings: Object, enabled: boolean }} object - Serialized widget data.
    */
-  deserialize(object) {
-    this.id = object.id || generateModelId("w");
-    this.title = object.title;
+  deserialize(object: Record<string, unknown>): void {
+    this.id = typeof object.id === "string" ? object.id : generateModelId("w");
+    this.title = typeof object.title === "string" ? object.title : null;
     this.enabled = object.enabled !== undefined ? !!object.enabled : true;
     this.settings = cloneMutableSettings(object.settings);
-    this.type = object.type;
+    this.type = typeof object.type === "string" ? object.type : null;
     this.shouldRender = true;
   }
 
@@ -284,16 +268,7 @@ export class Widget {
    * @param {Object} datasource - Datasource instance providing new data.
    * @param {{changedDatasource?: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot?: Record<string, unknown>, timestamp?: string}} [context]
    */
-  processDatasourceUpdate(
-    datasource,
-    context: {
-      changedDatasource?: string | null;
-      changedDatasourceId?: string | null;
-      changedDatasourceTitle?: string | null;
-      snapshot?: Record<string, unknown>;
-      timestamp?: string;
-    } = {},
-  ) {
+  processDatasourceUpdate(datasource: unknown, context: WidgetRuntimeContext = {}): void {
     this.lastContext = {
       ...context,
       snapshot: context.snapshot,
@@ -319,7 +294,7 @@ export class Widget {
    *
    * @param {{width:number, height:number}} size
    */
-  onResize(size) {
+  onResize(size: { width: number; height: number }): void {
     if (
       this.enabled &&
       this.widgetInstance !== undefined &&
@@ -338,7 +313,7 @@ export class Widget {
   /**
    * Synchronize wrapper error state with runtime widget instance error state.
    */
-  syncRuntimeError() {
+  syncRuntimeError(): void {
     this.lastError = this.widgetInstance?.lastError || null;
   }
 
@@ -347,7 +322,7 @@ export class Widget {
    *
    * @returns {number}
    */
-  getPreferredRows() {
+  getPreferredRows(): number {
     if (!this.enabled) {
       return 1;
     }

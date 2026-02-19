@@ -5,8 +5,13 @@
  * @param {{ addEventListener: Function, removeEventListener: Function }} target - Event target.
  * @returns {() => void} Cleanup function removing the listener.
  */
-export const bindEscapeKeyListener = (onEscape, target = window) => {
-  const onKey = (event) => {
+type KeyboardTarget = Pick<Window, "addEventListener" | "removeEventListener">;
+
+export const bindEscapeKeyListener = (
+  onEscape: (event: KeyboardEvent) => void,
+  target: KeyboardTarget = window,
+) => {
+  const onKey = (event: KeyboardEvent) => {
     if (event?.code === "Escape") {
       onEscape(event);
     }

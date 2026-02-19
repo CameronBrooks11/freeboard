@@ -176,9 +176,9 @@ export default (
               options: fetch("https://api.cdnjs.com/libraries/")
                 .then((r) => r.json())
                 .then((data) =>
-                  data.results.map((r) => ({
-                    value: r.latest,
-                    label: r.name,
+                  data.results.map((r: { latest?: string; name?: string }) => ({
+                    value: String(r.latest || ""),
+                    label: String(r.name || ""),
                   })),
                 ),
             },

@@ -5,6 +5,13 @@
 
 const DATASOURCES_PREFIX = "datasources.";
 const DATASOURCES_NODE = "datasources";
+type DatasourceSnapshot = Record<string, unknown> & {
+  datasourceTitles?: Record<string, string>;
+  datasources?: Record<string, unknown>;
+};
+
+const hasIndexableShape = (value: unknown): value is Record<string, unknown> | Array<unknown> =>
+  Boolean(value) && (Array.isArray(value) || typeof value === "object");
 
 /**
  * Convert a path string into path segments.
@@ -13,16 +20,16 @@ const DATASOURCES_NODE = "datasources";
  * @param {string} path
  * @returns {Array<string|number>}
  */
-export const toPathSegments = (path) => {
+export const toPathSegments = (path: unknown): Array<string | number> => {
   if (!path || typeof path !== "string") {
     return [];
   }
 
-  const segments = [];
+  const segments: Array<string | number> = [];
   const source = path.trim();
   const regex = /\[(.+?)\]|[^.[\]]+/g;
 
-  source.replace(regex, (match, bracket) => {
+  source.replace(regex, (match: string, bracket?: string) => {
     let part = bracket ?? match;
 
     if (
@@ -52,7 +59,7 @@ export const toPathSegments = (path) => {
  * @param {Record<string, unknown>} snapshot
  * @returns {any}
  */
-export const resolveBinding = (bindingPath, snapshot) => {
+export const resolveBinding = (bindingPath: unknown, snapshot: DatasourceSnapshot): unknown => {
   if (!bindingPath || typeof bindingPath !== "string" || !snapshot) {
     return undefined;
   }
@@ -86,7 +93,7 @@ export const resolveBinding = (bindingPath, snapshot) => {
     sourceId = snapshot.datasourceTitles[sourceRef];
   }
 
-  let current;
+  let current: unknown;
   if (snapshot.datasources && sourceId in snapshot.datasources) {
     current = snapshot.datasources[sourceId];
   } else {
@@ -95,10 +102,14 @@ export const resolveBinding = (bindingPath, snapshot) => {
   }
 
   for (const segment of rest) {
-    if (current === null || current === undefined) {
+    if (!hasIndexableShape(current)) {
       return undefined;
     }
-    current = current[segment];
+    if (typeof segment === "number") {
+      current = Array.isArray(current) ? current[segment] : undefined;
+    } else {
+      current = (current as Record<string, unknown>)[segment];
+    }
   }
 
   return current;
@@ -111,12 +122,12 @@ export const resolveBinding = (bindingPath, snapshot) => {
  * @param {Record<string, unknown>} snapshot
  * @returns {string}
  */
-export const resolveTemplate = (template, snapshot) => {
+export const resolveTemplate = (template: unknown, snapshot: DatasourceSnapshot): string => {
   if (typeof template !== "string" || !template.length) {
     return "";
   }
 
-  return template.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, path) => {
+  return template.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_: string, path: string) => {
     const value = resolveBinding(path, snapshot);
     return value === null || value === undefined ? "" : String(value);
   });
@@ -128,7 +139,7 @@ export const resolveTemplate = (template, snapshot) => {
  * @param {any} latestData
  * @returns {any}
  */
-export const normalizeDatasourceValue = (latestData) =>
+export const normalizeDatasourceValue = (latestData: unknown): unknown =>
   latestData && typeof latestData === "object" && "data" in latestData
     ? latestData.data
     : latestData;

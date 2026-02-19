@@ -4,6 +4,7 @@
  */
 
 import { resolveBinding, resolveTemplate } from "./bindings.js";
+import type { WidgetRuntimeContext } from "../../types/runtime.js";
 
 /**
  * Base widget class with snapshot-aware update flow.
@@ -13,13 +14,12 @@ export class ReactiveWidget {
   snapshot: Record<string, unknown> = {};
 
   /** @type {{changedDatasource: string|null, changedDatasourceId?: string|null, changedDatasourceTitle?: string|null, snapshot: Record<string, unknown>, timestamp?: string}|null} */
-  context: {
-    changedDatasource: string | null;
-    changedDatasourceId?: string | null;
-    changedDatasourceTitle?: string | null;
-    snapshot: Record<string, unknown>;
-    timestamp?: string;
-  } | null = null;
+  context:
+    | (WidgetRuntimeContext & {
+        changedDatasource: string | null;
+        snapshot: Record<string, unknown>;
+      })
+    | null = null;
   /** @type {unknown|null} */
   lastError: unknown | null = null;
 
@@ -97,7 +97,7 @@ export class ReactiveWidget {
       this.lastError = null;
     } catch (error) {
       this.lastError = error;
-      this.onError(error);
+      this.onError(error as unknown);
     }
   }
 
@@ -125,7 +125,7 @@ export class ReactiveWidget {
    *
    * @param {unknown} error
    */
-  onError(error) {
+  onError(error: unknown) {
     console.error("ReactiveWidget runtime error", error);
   }
 
@@ -135,7 +135,7 @@ export class ReactiveWidget {
    * @param {string} path
    * @returns {any}
    */
-  getBinding(path) {
+  getBinding(path: unknown): unknown {
     return resolveBinding(path, this.snapshot);
   }
 
@@ -145,7 +145,7 @@ export class ReactiveWidget {
    * @param {string} template
    * @returns {string}
    */
-  getTemplate(template) {
+  getTemplate(template: unknown): string {
     return resolveTemplate(template, this.snapshot);
   }
 

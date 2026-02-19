@@ -16,17 +16,20 @@ mutation MintDatasourceSessionToken($dashboardId: ID!, $datasourceId: ID!, $shar
 }
 `;
 
-const decodeBase64 = (value) => {
+const decodeBase64 = (value: string): string => {
+  const runtimeGlobal = globalThis as typeof globalThis & {
+    Buffer?: { from(value: string, encoding?: string): { toString(encoding?: string): string } };
+  };
   if (typeof globalThis.atob === "function") {
     return globalThis.atob(value);
   }
-  if (typeof globalThis.Buffer !== "undefined") {
-    return globalThis.Buffer.from(value, "base64").toString("utf8");
+  if (typeof runtimeGlobal.Buffer !== "undefined") {
+    return runtimeGlobal.Buffer.from(value, "base64").toString("utf8");
   }
   return "";
 };
 
-const parseJwtPayload = (token) => {
+const parseJwtPayload = (token: unknown): Record<string, unknown> | null => {
   if (!token || typeof token !== "string") {
     return null;
   }
@@ -48,7 +51,7 @@ const parseJwtPayload = (token) => {
   }
 };
 
-export const getDatasourceSessionTokenExpiry = (token) => {
+export const getDatasourceSessionTokenExpiry = (token: unknown): number | null => {
   const payload = parseJwtPayload(token);
   const exp = Number(payload?.exp);
   if (!Number.isFinite(exp)) {
@@ -68,7 +71,12 @@ export const mintDatasourceSessionToken = async ({
   datasourceId,
   shareToken = null,
   authToken = null,
-}) => {
+}: {
+  dashboardId: string;
+  datasourceId: string;
+  shareToken?: string | null;
+  authToken?: string | null;
+}): Promise<{ token: string; expiresAt: string }> => {
   const response = await fetch("/graphql", {
     method: "POST",
     headers: {
@@ -89,7 +97,7 @@ export const mintDatasourceSessionToken = async ({
     }),
   });
 
-  const payload = await response.json().catch(() => ({}));
+  const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
   const graphQLError = Array.isArray(payload?.errors) ? payload.errors[0] : null;
   if (!response.ok || graphQLError) {
     throw new Error(
@@ -97,10 +105,19 @@ export const mintDatasourceSessionToken = async ({
     );
   }
 
-  const tokenPayload = payload?.data?.mintDatasourceSessionToken;
+  const tokenPayload =
+    payload?.data &&
+    typeof payload.data === "object" &&
+    "mintDatasourceSessionToken" in payload.data
+      ? (payload.data as { mintDatasourceSessionToken?: { token?: string; expiresAt?: string } })
+          .mintDatasourceSessionToken
+      : null;
   if (!tokenPayload?.token) {
     throw new Error("Datasource session token response is invalid");
   }
 
-  return tokenPayload;
+  return {
+    token: tokenPayload.token,
+    expiresAt: String(tokenPayload.expiresAt || ""),
+  };
 };

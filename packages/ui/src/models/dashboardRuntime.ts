@@ -4,12 +4,29 @@
  */
 
 import { normalizeDatasourceValue } from "../widgets/runtime/bindings.js";
+import type { UnknownRecord } from "../types/runtime.js";
+import type { Datasource } from "./Datasource.js";
+import type { Pane } from "./Pane.js";
+import type { Widget } from "./Widget.js";
 
 const RESERVED_DATASOURCE_TITLES = new Set(["datasources", "datasourcetitles"]);
 
 type DatasourceSnapshot = Record<string, unknown> & {
   datasources: Record<string, unknown>;
   datasourceTitles: Record<string, string>;
+};
+
+type PaneLike = Pick<Pane, "layout" | "widgets" | "serialize">;
+type DashboardLike = {
+  panes: PaneLike[];
+  datasources: Datasource[];
+  _id: string | null;
+  title: string;
+  visibility: string;
+  image: string | null;
+  columns: number;
+  width: string;
+  settings: UnknownRecord;
 };
 
 /**
@@ -19,7 +36,7 @@ type DatasourceSnapshot = Record<string, unknown> & {
  * @param {Array<any>} datasources
  * @returns {Record<string, unknown>}
  */
-export const buildDatasourceSnapshot = (datasources = []) => {
+export const buildDatasourceSnapshot = (datasources: Datasource[] = []): DatasourceSnapshot => {
   const snapshot: DatasourceSnapshot = {
     datasources: {},
     datasourceTitles: {},
@@ -70,7 +87,11 @@ export const buildDatasourceSnapshot = (datasources = []) => {
  * @param {string|null} [excludeId]
  * @returns {boolean}
  */
-export const hasDatasourceTitleConflict = (datasources, title, excludeId = null) => {
+export const hasDatasourceTitleConflict = (
+  datasources: Datasource[],
+  title: string,
+  excludeId: string | null = null,
+): boolean => {
   const candidate = String(title || "")
     .trim()
     .toLowerCase();
@@ -107,7 +128,11 @@ export const hasDatasourceTitleConflict = (datasources, title, excludeId = null)
  * @param {string|null} [excludeId]
  * @returns {string}
  */
-export const ensureUniqueDatasourceTitle = (datasources, title, excludeId = null) => {
+export const ensureUniqueDatasourceTitle = (
+  datasources: Datasource[],
+  title: string,
+  excludeId: string | null = null,
+): string => {
   const base = String(title || "").trim() || "Datasource";
   let candidate = base;
   let suffix = 2;
@@ -126,9 +151,9 @@ export const ensureUniqueDatasourceTitle = (datasources, title, excludeId = null
  * @param {any} pane
  * @returns {number}
  */
-export const getPaneMinRows = (pane) => {
+export const getPaneMinRows = (pane: PaneLike): number => {
   const widgetRows =
-    pane?.widgets?.reduce((sum, widget) => {
+    pane?.widgets?.reduce((sum: number, widget: Widget) => {
       if (!widget || typeof widget.getPreferredRows !== "function") {
         return sum + 1;
       }
@@ -143,8 +168,8 @@ export const getPaneMinRows = (pane) => {
  *
  * @param {Array<any>} panes
  */
-export const clampPaneLayoutHeights = (panes) => {
-  panes.forEach((pane) => {
+export const clampPaneLayoutHeights = (panes: PaneLike[]): void => {
+  panes.forEach((pane: PaneLike) => {
     if (!pane.layout || typeof pane.layout !== "object") {
       pane.layout = {};
     }
@@ -166,7 +191,12 @@ export const clampPaneLayoutHeights = (panes) => {
  * @param {string} [fieldName]
  * @returns {any}
  */
-export const replaceDatasourceReferences = (value, oldTitle, newTitle, fieldName = "") => {
+export const replaceDatasourceReferences = (
+  value: unknown,
+  oldTitle: string,
+  newTitle: string,
+  fieldName = "",
+): unknown => {
   if (Array.isArray(value)) {
     return value.map((item) => replaceDatasourceReferences(item, oldTitle, newTitle, fieldName));
   }
@@ -210,14 +240,17 @@ export const replaceDatasourceReferences = (value, oldTitle, newTitle, fieldName
  * @param {string} version
  * @returns {Object}
  */
-export const serializeDashboardState = (dashboard, version) => {
-  const panes = [];
-  dashboard.panes.forEach((pane) => {
+export const serializeDashboardState = (
+  dashboard: DashboardLike,
+  version: string,
+): UnknownRecord => {
+  const panes: UnknownRecord[] = [];
+  dashboard.panes.forEach((pane: PaneLike) => {
     panes.push(pane.serialize());
   });
 
-  const datasources = [];
-  dashboard.datasources.forEach((datasource) => {
+  const datasources: UnknownRecord[] = [];
+  dashboard.datasources.forEach((datasource: Datasource) => {
     datasources.push(datasource.serialize());
   });
 
