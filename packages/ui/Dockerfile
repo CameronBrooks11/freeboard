@@ -13,6 +13,7 @@ RUN npm install -g npm@${NPM_VERSION}
 
 COPY package.json package-lock.json ./
 COPY packages/ui/package.json packages/ui/package.json
+COPY tsconfig.base.json ./tsconfig.base.json
 # Build stage must include root toolchain deps (shared workspace tooling/overrides).
 RUN npm ci --workspace=packages/ui --include-workspace-root=true \
   && npm cache clean --force
