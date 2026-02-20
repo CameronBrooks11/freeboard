@@ -80,6 +80,8 @@ Connection and rate limits:
 - `REALTIME_CONNECT_RATE_LIMIT_IP_PER_MIN`
 - `REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_IP_PER_MIN`
 - `REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_SHARE_TOKEN_PER_MIN`
+- `REALTIME_TRUST_PROXY_HOPS`
+- `API_TRUST_PROXY_HOPS`
 
 Revalidation:
 
@@ -107,5 +109,6 @@ MQTT policy:
 - Keep `EGRESS_ALLOW_INSECURE_TLS=false`.
 - Set MQTT allowlists (global and/or broker-level) before enabling MQTT broadly.
 - Keep protocol toggles off for unused transports.
-- Validate `REALTIME_TRUST_PROXY_HOPS` for reverse-proxy deployments.
+- Validate `REALTIME_TRUST_PROXY_HOPS` and `API_TRUST_PROXY_HOPS` for reverse-proxy deployments.
+- Ensure edge reverse proxies overwrite `X-Forwarded-For` instead of appending untrusted inbound values.
 - Use [Secrets Operations Runbook](/manual/secrets-operations) for token/key rotation windows.

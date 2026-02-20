@@ -107,6 +107,7 @@ Core env values:
 - `GATEWAY_SERVICE_TOKEN` (required gateway introspection auth token)
 - `CREDENTIAL_ENCRYPTION_KEY` (required API credential profile encryption key)
 - `EGRESS_ALLOWED_HOSTS` (required for containerized gateway startup)
+- `API_TRUST_PROXY_HOPS` / `REALTIME_TRUST_PROXY_HOPS` (trusted reverse-proxy hop counts for client IP derivation)
 - `REALTIME_*` (required to tune realtime policy, limits, and protocol toggles)
 
 Secret setup/rotation workflow is centralized in [Secrets Operations Runbook](/manual/secrets-operations).

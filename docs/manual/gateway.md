@@ -133,6 +133,7 @@ Realtime global:
 - `REALTIME_PUBLIC_REVALIDATE_INTERVAL_MS`
 - `REALTIME_PUBLIC_FULL_REVALIDATE_INTERVAL_MS`
 - `REALTIME_TRUST_PROXY_HOPS`
+- `API_TRUST_PROXY_HOPS` (API-side companion setting for consistent client IP derivation)
 
 Realtime protocol toggles:
 
@@ -154,6 +155,8 @@ Realtime protocol toggles:
 - Keep `EGRESS_ALLOW_INSECURE_TLS=false` in production.
 - Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false` unless on a trusted local-only network.
 - Review `EGRESS_ALLOWED_HOSTS` as part of deployment change control.
+- Keep `REALTIME_TRUST_PROXY_HOPS` and `API_TRUST_PROXY_HOPS` aligned for each reverse-proxy topology.
+- Configure edge proxies to overwrite `X-Forwarded-For` with authoritative client identity values.
 - Use the [Secrets Operations Runbook](/manual/secrets-operations) for `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`, and Mongo credential lifecycle operations.
 - Rotate credential encryption keys with the dedicated [Credential Key Rotation Runbook](/manual/credential-key-rotation).
 - In production, configure MQTT allowlists (`REALTIME_MQTT_ALLOWED_TOPICS` and/or broker `topicAllowlist`) before enabling MQTT datasources.

@@ -119,6 +119,7 @@ Services:
 - Keep `EGRESS_ALLOW_INSECURE_TLS=false`
 - Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false`
 - Set strict `EGRESS_ALLOWED_HOSTS`
+- Set `API_TRUST_PROXY_HOPS` and `REALTIME_TRUST_PROXY_HOPS` correctly for your reverse-proxy topology
 - Keep `CREATE_ADMIN=false` after bootstrap
 - Use non-default Mongo credentials
 - Follow [Secrets Operations Runbook](/manual/secrets-operations) for setup/rotation/incident workflow

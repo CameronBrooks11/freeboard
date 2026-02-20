@@ -31,6 +31,7 @@ import { consumeRateLimit } from "./rateLimit.js";
 import { recordAuditEvent } from "./audit.js";
 import { queryShareTokenRevocationFeed } from "./shareTokenRevocationFeed.js";
 import { recordApiHttpRequest } from "./runtimeMetrics.js";
+import { deriveClientIp } from "./clientIp.js";
 
 import dns from "dns";
 
@@ -105,15 +106,6 @@ const INTERNAL_GATEWAY_REVOKED_TOKENS_PATH = "/internal/gateway/revoked-tokens";
 
 type JsonObject = Record<string, unknown>;
 
-const getClientIp = (req: IncomingMessage): string => {
-  const forwardedForHeader = req.headers["x-forwarded-for"];
-  const forwardedFor =
-    typeof forwardedForHeader === "string"
-      ? forwardedForHeader.split(",")[0]?.trim() || null
-      : null;
-  return forwardedFor || req.socket?.remoteAddress || "unknown-ip";
-};
-
 const readJsonBody = async (req: IncomingMessage, maxBytes = 256 * 1024): Promise<JsonObject> => {
   const chunks: Buffer[] = [];
   let total = 0;
@@ -178,7 +170,10 @@ const handleGatewayIntrospection = async (
     return;
   }
 
-  const clientIp = getClientIp(req);
+  const clientIp = deriveClientIp(req, {
+    trustProxyHops: config.apiTrustProxyHops,
+    warningPrefix: "API gateway introspection warning: ",
+  });
   const rateLimit = consumeRateLimit(
     `gateway-introspection:${clientIp}`,
     config.gatewayIntrospectionRateLimitPerMin,
@@ -264,7 +259,10 @@ const handleGatewayRevokedTokens = async (
     return;
   }
 
-  const clientIp = getClientIp(req);
+  const clientIp = deriveClientIp(req, {
+    trustProxyHops: config.apiTrustProxyHops,
+    warningPrefix: "API gateway revoked-tokens warning: ",
+  });
   const rateLimit = consumeRateLimit(
     `gateway-revoked-tokens:${clientIp}`,
     config.gatewayRevokedTokensRateLimitPerMin,

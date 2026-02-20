@@ -99,6 +99,25 @@ const positiveInteger = (v: unknown, fallback: number): number => {
   return normalized;
 };
 
+const boundedInteger = (
+  v: unknown,
+  fallback: number,
+  {
+    min = Number.MIN_SAFE_INTEGER,
+    max = Number.MAX_SAFE_INTEGER,
+  }: { min?: number; max?: number } = {},
+): number => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) {
+    return fallback;
+  }
+  const normalized = Math.floor(n);
+  if (normalized < min || normalized > max) {
+    return fallback;
+  }
+  return normalized;
+};
+
 const decodeBase64 = (value: unknown): Buffer | null => {
   try {
     return Buffer.from(String(value || ""), "base64");
@@ -192,6 +211,7 @@ const credentialEncryptionKey =
  * @property {number} authLoginMaxAttempts - Failed login attempts before lockout.
  * @property {number} authLoginWindowSeconds - Rolling window for failed login attempts.
  * @property {number} authLoginLockSeconds - Temporary lockout duration after threshold is reached.
+ * @property {number} apiTrustProxyHops - Trusted proxy hops for deriving client IP from X-Forwarded-For.
  */
 
 /**
@@ -227,6 +247,10 @@ export const config = Object.freeze({
   authLoginMaxAttempts: positiveInteger(process.env.AUTH_LOGIN_MAX_ATTEMPTS, 5),
   authLoginWindowSeconds: positiveInteger(process.env.AUTH_LOGIN_WINDOW_SECONDS, 300),
   authLoginLockSeconds: positiveInteger(process.env.AUTH_LOGIN_LOCK_SECONDS, 300),
+  apiTrustProxyHops: Math.max(
+    0,
+    boundedInteger(process.env.API_TRUST_PROXY_HOPS, 0, { min: 0, max: 16 }),
+  ),
   jwtGatewaySecret: process.env.JWT_GATEWAY_SECRET || gatewaySecretDefault,
   gatewayServiceToken: process.env.GATEWAY_SERVICE_TOKEN || gatewayServiceTokenDefault,
   credentialEncryptionKey,

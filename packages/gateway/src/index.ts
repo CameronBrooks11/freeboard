@@ -23,6 +23,7 @@ import { createProtocolAdapterFactory } from "./realtime/protocolAdapters.js";
 import { SimpleMqttClient } from "./realtime/SimpleMqttClient.js";
 import { createClientError } from "./errors.js";
 import { consumeRateLimit } from "./rateLimit.js";
+import { deriveClientIp as deriveTrustedClientIp, type DeriveClientIpOptions } from "./clientIp.js";
 import {
   ensureResolvedDestinationIsAllowed,
   parseOutboundUrl,
@@ -190,11 +191,6 @@ const websocketRawDataToBuffer = (rawPayload: WebSocket.RawData): Buffer => {
   return Buffer.from(String(rawPayload));
 };
 
-const getSocketRemoteAddress = (request: http.IncomingMessage): string => {
-  const raw = String(request?.socket?.remoteAddress || "unknown-ip");
-  return raw.startsWith("::ffff:") ? raw.slice(7) : raw;
-};
-
 export const getTokenExpiryDelayMs = (
   tokenClaims: TokenClaims | null | undefined,
   nowMs = Date.now(),
@@ -206,38 +202,15 @@ export const getTokenExpiryDelayMs = (
   return Math.floor(expSeconds * 1000 - nowMs);
 };
 
-export const deriveClientIp = (request: http.IncomingMessage): string => {
-  const socketAddress = getSocketRemoteAddress(request);
-  if (REALTIME_TRUST_PROXY_HOPS <= 0) {
-    return socketAddress;
-  }
-
-  const forwardedForHeader = request?.headers?.["x-forwarded-for"];
-  if (typeof forwardedForHeader !== "string" || !forwardedForHeader.trim()) {
-    console.warn(
-      "Realtime gateway warning: REALTIME_TRUST_PROXY_HOPS>0 but X-Forwarded-For is missing; falling back to socket remote address.",
-    );
-    return socketAddress;
-  }
-
-  const forwardedEntries = forwardedForHeader
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-
-  if (forwardedEntries.length <= REALTIME_TRUST_PROXY_HOPS) {
-    console.warn(
-      "Realtime gateway warning: X-Forwarded-For has fewer entries than REALTIME_TRUST_PROXY_HOPS; falling back to socket remote address.",
-    );
-    return socketAddress;
-  }
-
-  const selected = forwardedEntries[forwardedEntries.length - 1 - REALTIME_TRUST_PROXY_HOPS];
-  if (!selected) {
-    return socketAddress;
-  }
-  return selected.startsWith("::ffff:") ? selected.slice(7) : selected;
-};
+export const deriveClientIp = (
+  request: http.IncomingMessage,
+  { trustProxyHops = REALTIME_TRUST_PROXY_HOPS, ...options }: DeriveClientIpOptions = {},
+): string =>
+  deriveTrustedClientIp(request, {
+    trustProxyHops,
+    warningPrefix: "Realtime gateway warning: ",
+    ...options,
+  });
 
 const mapStreamErrorCode = (
   error: unknown,

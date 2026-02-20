@@ -18,6 +18,7 @@ services:
     environment:
       - MONGO_URL=${FREEBOARD_MONGO_URL:?Set FREEBOARD_MONGO_URL in .env for containerized deployments}
       - NODE_ENV=${FREEBOARD_RUNTIME_ENV:-production}
+      - API_TRUST_PROXY_HOPS=${API_TRUST_PROXY_HOPS:-0}
       - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env for containerized deployments}
       - JWT_GATEWAY_SECRET=${JWT_GATEWAY_SECRET:?Set JWT_GATEWAY_SECRET in .env for containerized deployments}
       - GATEWAY_SERVICE_TOKEN=${GATEWAY_SERVICE_TOKEN:?Set GATEWAY_SERVICE_TOKEN in .env for containerized deployments}

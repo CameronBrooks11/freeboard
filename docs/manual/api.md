@@ -19,6 +19,7 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
   - `userLimit`, `adminEmail`, `adminPassword`, `createAdmin`
   - auth/runtime policy defaults (`registrationMode`, `editorCanPublish`, `executionMode`, etc.)
   - login abuse controls (`authLoginMaxAttempts`, `authLoginWindowSeconds`, `authLoginLockSeconds`)
+  - trusted proxy controls (`apiTrustProxyHops`)
   - datasource token/introspection controls (`datasourceTokenMintRateLimit*`, `gatewayIntrospectionRateLimitPerMin`)
   - datasource session/revocation controls (`datasourceSessionTtlSeconds`, `gatewayRevokedTokens*`, `realtimeRevokeEventRetentionSeconds`)
 
@@ -30,6 +31,12 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
   - `clientIp` (for auth throttling/audit context)
   - `user` (if a valid JWT `Authorization: Bearer <token>` header is present)
   - `serviceAccount` (if a valid service account bearer token `fsa_<id>.<secret>` is present)
+
+`clientIp` derivation:
+
+- Uses socket remote address by default (`API_TRUST_PROXY_HOPS=0`).
+- When `API_TRUST_PROXY_HOPS>0`, the API selects a trusted client IP from `X-Forwarded-For` using right-to-left hop parsing.
+- Reverse proxies in front of API should overwrite `X-Forwarded-For` with authoritative values (not append untrusted inbound chains).
 
 Token auth is validated against persisted user state (`active` + `sessionVersion`) so revoked tokens become invalid server-side.
 
