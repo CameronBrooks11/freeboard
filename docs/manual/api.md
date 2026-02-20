@@ -4,7 +4,7 @@
 
 The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB backend (`mongoose`). It provides dashboard and user management via queries, mutations and subscriptions, and uses JWT for authentication.
 
-## Configuration (`config.js`)
+## Configuration (`config.ts`)
 
 - Loads environment variables with deterministic precedence:
   - process env (shell/CI)
@@ -22,7 +22,7 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
   - datasource token/introspection controls (`datasourceTokenMintRateLimit*`, `gatewayIntrospectionRateLimitPerMin`)
   - datasource session/revocation controls (`datasourceSessionTtlSeconds`, `gatewayRevokedTokens*`, `realtimeRevokeEventRetentionSeconds`)
 
-## Request Context (`context.js`)
+## Request Context (`context.ts`)
 
 - `setContext({ req })` returns a context object containing:
   - `pubsub` (created via `createPubSub`)
@@ -33,72 +33,72 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
 
 Token auth is validated against persisted user state (`active` + `sessionVersion`) so revoked tokens become invalid server-side.
 
-## GraphQL Schema (`gql.js`)
+## GraphQL Schema (`gql.ts`)
 
 - Merges SDL type definitions and resolver maps:
-  - Types in `types/Dashboard.js` and `types/User.js`
+  - Types in `types/Dashboard.ts` and `types/User.ts`
   - Resolvers in `resolvers/*`
 - Produces an executable schema via `makeExecutableSchema`
 
 ## Models
 
-- **Dashboard** (`models/Dashboard.js`):
+- **Dashboard** (`models/Dashboard.ts`):
   - Uses `nanoid` for string `_id`
   - Fields include: `user`, `version`, `title`, `visibility`, `shareToken`, `shareTokenVersion`, `acl`, `image`, `datasources`, `columns`, `width`, `panes`, `settings`
   - Timestamps enabled
-- **CredentialProfile** (`models/CredentialProfile.js`):
+- **CredentialProfile** (`models/CredentialProfile.ts`):
   - Server-managed datasource credential profile metadata + encrypted secret payload
   - Supports type-specific secret resolution for gateway execution
-- **BrokerProfile** (`models/BrokerProfile.js`):
+- **BrokerProfile** (`models/BrokerProfile.ts`):
   - Admin-managed broker metadata for realtime transports (`mqtt`)
   - Holds broker endpoint/policy data and references optional credential profile
-- **ShareTokenRevocationEvent** (`models/ShareTokenRevocationEvent.js`):
+- **ShareTokenRevocationEvent** (`models/ShareTokenRevocationEvent.ts`):
   - Durable event feed used by gateway for public/link stream revocation polling
-- **User** (`models/User.js`):
+- **User** (`models/User.ts`):
   - `_id` via `nanoid`
   - Fields: `email`, `password`, `role`, `active`, `sessionVersion`, `registrationDate`, `lastLogin`
   - Pre-save hook hashes `password` with `bcrypt`
   - Model-level validators enforce email and password policy (defense in depth)
-- **ServiceAccount** (`models/ServiceAccount.js`):
+- **ServiceAccount** (`models/ServiceAccount.ts`):
   - Admin-managed machine principal with scoped permissions
   - Tracks active state and last-used timestamp
-- **ServiceAccountToken** (`models/ServiceAccountToken.js`):
+- **ServiceAccountToken** (`models/ServiceAccountToken.ts`):
   - One-way hashed bearer token records for service accounts
   - Supports expiry, revocation, label metadata, and last-used timestamp
 
 ## Resolvers
 
-- **Dashboard Resolvers** (`resolvers/Dashboard.js`):
+- **Dashboard Resolvers** (`resolvers/Dashboard.ts`):
   - `Query.dashboard(_id)`, `dashboardByShareToken`, `dashboards`, `dashboardCollaborators`
   - Visibility/share/collaboration mutations (`setDashboardVisibility`, `rotateDashboardShareToken`, ACL, ownership transfer)
   - `Mutation.createDashboard`, `updateDashboard`, `deleteDashboard`
   - `Subscription.dashboard(_id)`
   - Access policy and safe/trusted payload enforcement are server-side validated
-- **User Resolvers** (`resolvers/User.js`):
+- **User Resolvers** (`resolvers/User.ts`):
   - `Query.listAllUsers()`, `me`, invite listing
   - Registration/invite flows + password reset flows
   - Login throttling with audit events
   - Admin lifecycle flows (create/update/deactivate/delete, invites, reset issuance)
   - Session revocation paths on role/active/password transitions
-- **Merge Utility** (`resolvers/merge.js`):
+- **Merge Utility** (`resolvers/merge.ts`):
   - `transformDashboard(u)` converts Mongoose doc to GraphQL object
-- **Credential Profile Resolvers** (`resolvers/CredentialProfile.js`):
+- **Credential Profile Resolvers** (`resolvers/CredentialProfile.ts`):
   - Admin CRUD for credential profiles
   - Redacted secret metadata only in API responses
-- **Broker Profile Resolvers** (`resolvers/BrokerProfile.js`):
+- **Broker Profile Resolvers** (`resolvers/BrokerProfile.ts`):
   - Admin CRUD for broker profiles
   - Editor/admin read access for datasource configuration
-- **Datasource Resolvers** (`resolvers/Datasource.js`):
+- **Datasource Resolvers** (`resolvers/Datasource.ts`):
   - Session token minting for datasource runtime (`mintDatasourceSessionToken`)
-- **Datasource Diagnostics Resolvers** (`resolvers/DatasourceDiagnostics.js`):
+- **Datasource Diagnostics Resolvers** (`resolvers/DatasourceDiagnostics.ts`):
   - Datasource configuration/health rollup (`adminDatasourceDiagnostics`)
   - Includes realtime datasource types (`http`, `clock`, `static`, `sse`, `websocket`, `mqtt`)
-- **Service Account Resolvers** (`resolvers/ServiceAccount.js`):
+- **Service Account Resolvers** (`resolvers/ServiceAccount.ts`):
   - Admin service account CRUD + token lifecycle
   - Admin audit event query surface
   - Runtime metrics query for admin/scoped machine principals
 
-## Input Validation (`validators.js`)
+## Input Validation (`validators.ts`)
 
 - `normalizeEmail(email)` lowercases/trims email for consistent identity lookups
 - `isValidEmail(email)` enforces valid `name@domain.ext` format
@@ -110,7 +110,7 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
   - user registration (`registerUser`)
   - model persistence validation
 
-## Server Entry Point (`index.js`)
+## Server Entry Point (`index.ts`)
 
 - Connects to MongoDB (`mongoose.connect`)
 - Optionally creates default admin user
@@ -127,7 +127,7 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
 
 - **Development**: `npm run dev --workspace=packages/api`
 - **Tests**: `npm run test:api`
-  - Test location: `packages/api/test/*.test.js`
+  - Test location: `packages/api/test/*.test.ts`
   - Focus: auth/config validation, resolver authorization boundaries, model credential policy
 - **Generate reference docs**: `npm run docs:generate`
   - Runs TypeDoc, GraphQL Codegen, Vue DocGen (for component library)

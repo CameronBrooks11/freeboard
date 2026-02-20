@@ -11,7 +11,7 @@ Browse the generated API docs for the API and gateway packages.
   <div style="padding:14px 16px; border:1px solid var(--vp-c-divider); border-radius:12px; margin-bottom:1rem;">
     <div style="font-size:18px; font-weight:600; margin-bottom:6px;">Full Reference</div>
     <div style="opacity:.8; margin-bottom:.5rem;">Everything in one page (searchable).</div>
-    <a href="/dev/api/index.html">Open reference →</a>
+    <a href="/dev/api/">Open reference →</a>
   </div>
 
 ::: tip Pro tip

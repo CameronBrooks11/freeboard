@@ -21,18 +21,22 @@ dns.setDefaultResultOrder?.("ipv4first");
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
-  const API_HOST = env.FREEBOARD_API_HOST || "127.0.0.1";
-  const API_PORT = Number(env.FREEBOARD_API_PORT || 4001);
-  const GATEWAY_HOST = env.FREEBOARD_GATEWAY_HOST || "127.0.0.1";
-  const GATEWAY_PORT = Number(env.FREEBOARD_GATEWAY_PORT || 8001);
+  const API_HOST = process.env.FREEBOARD_API_HOST || env.FREEBOARD_API_HOST || "127.0.0.1";
+  const API_PORT = Number(process.env.FREEBOARD_API_PORT || env.FREEBOARD_API_PORT || 4001);
+  const GATEWAY_HOST =
+    process.env.FREEBOARD_GATEWAY_HOST || env.FREEBOARD_GATEWAY_HOST || "127.0.0.1";
+  const GATEWAY_PORT = Number(
+    process.env.FREEBOARD_GATEWAY_PORT || env.FREEBOARD_GATEWAY_PORT || 8001,
+  );
 
   const isStatic = ["1", "true", "yes", "on"].includes(
-    String(env.FREEBOARD_STATIC || "")
+    String(process.env.FREEBOARD_STATIC || env.FREEBOARD_STATIC || "")
       .trim()
       .toLowerCase(),
   );
 
-  const STATIC_BASE = env.FREEBOARD_BASE_PATH || (isStatic ? "/freeboard/" : "/");
+  const STATIC_BASE =
+    process.env.FREEBOARD_BASE_PATH || env.FREEBOARD_BASE_PATH || (isStatic ? "/freeboard/" : "/");
 
   return {
     plugins: [vue()],
