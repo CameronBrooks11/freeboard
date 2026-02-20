@@ -1,6 +1,6 @@
 # Security Controls Rollout Runbook
 
-Use this runbook for Phase 21 security-control deployments and incident rollback. It keeps trusted client identity and limiter behavior consistent across proxy, API, and gateway.
+Use this runbook for security-control deployments and incident rollback. It keeps trusted client identity and limiter behavior consistent across proxy, API, and gateway.
 
 ## Scope
 

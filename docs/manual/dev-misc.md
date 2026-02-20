@@ -65,7 +65,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
   - push events use diff-based per-package skip logic.
 - If Pages deploy did not run, verify changed files matched Pages workflow `paths` filters.
 
-## Phase 21 Guardrail Coverage in CI
+## Security Guardrail Coverage in CI
 
 - Required branch gate remains `Required CI` from `.github/workflows/ci.yml`.
 - `lint` job enforces runtime eval bans through ESLint (`no-eval`, `no-new-func`, `no-implied-eval`) and `npm run check:ts:debt`.
