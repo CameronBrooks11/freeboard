@@ -6,7 +6,6 @@
 [![Ansible Quality](https://github.com/CameronBrooks11/freeboard/actions/workflows/ansible-quality.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/ansible-quality.yml)
 
 [![GitHub Pages](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-pages.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-pages.yml)
-[![Dependency Security Audit](https://github.com/CameronBrooks11/freeboard/actions/workflows/dependency-security.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/dependency-security.yml)
 [![Repository Metrics](https://github.com/CameronBrooks11/freeboard/actions/workflows/metrics.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/metrics.yml)
 
 freeboard is a modern fork of [Jim Heising's Freeboard](https://github.com/Freeboard/freeboard) focused on secure, production-grade dashboard delivery for IoT and operations use cases.
