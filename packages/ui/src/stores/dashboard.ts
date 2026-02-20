@@ -97,8 +97,7 @@ export const useDashboardStore = defineStore("dashboard", {
   getters: {
     allowEdit(state) {
       const authStore = useAuthStore();
-      const staticMode =
-        typeof __FREEBOARD_STATIC__ !== "undefined" && __FREEBOARD_STATIC__ === "true";
+      const staticMode = __FREEBOARD_STATIC__;
       const roleCanEdit = staticMode || authStore.canEditDashboards();
       const dashboardCanEdit = !state.isSaved || state.dashboard?.canEdit !== false;
       return roleCanEdit && dashboardCanEdit;

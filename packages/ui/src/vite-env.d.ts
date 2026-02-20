@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 declare const __FREEBOARD_VERSION__: string;
-declare const __FREEBOARD_STATIC__: "true" | "false";
+declare const __FREEBOARD_STATIC__: boolean;
 declare const __FREEBOARD_BASE_PATH__: string;
 
 declare module "*.vue" {
