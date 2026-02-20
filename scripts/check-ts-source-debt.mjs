@@ -6,6 +6,7 @@ const SOURCE_ROOTS = [
   path.join(PROJECT_ROOT, "packages", "ui", "src"),
   path.join(PROJECT_ROOT, "packages", "api", "src"),
   path.join(PROJECT_ROOT, "packages", "gateway", "src"),
+  path.join(PROJECT_ROOT, "packages", "shared", "src"),
 ];
 
 const SOURCE_FILE_PATTERN = /\.(ts|vue)$/;

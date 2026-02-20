@@ -3,6 +3,7 @@ import type { IncomingMessage } from "http";
 import test from "node:test";
 
 import { deriveClientIp } from "../src/clientIp.js";
+import { deriveClientIp as deriveSharedClientIp } from "@freeboard/shared/clientIp.js";
 
 const createRequest = ({
   forwardedFor,
@@ -20,6 +21,10 @@ const createRequest = ({
     },
     ip: requestIp,
   }) as IncomingMessage & { ip?: string | null };
+
+test("API deriveClientIp delegates to the shared clientIp utility", () => {
+  assert.equal(deriveClientIp, deriveSharedClientIp);
+});
 
 test("deriveClientIp ignores X-Forwarded-For when trustProxyHops=0", () => {
   const ip = deriveClientIp(
@@ -84,6 +89,23 @@ test("deriveClientIp rejects invalid forwarded entries and falls back", () => {
   assert.equal(warnings.length, 1);
 });
 
+test("deriveClientIp fails closed when trusted proxy-side entries are malformed", () => {
+  const warnings: string[] = [];
+  const ip = deriveClientIp(
+    createRequest({
+      forwardedFor: "198.51.100.10, garbage, 203.0.113.5",
+      socketRemoteAddress: "::ffff:10.0.0.20",
+    }),
+    {
+      trustProxyHops: 2,
+      onWarning: (message) => warnings.push(message),
+    },
+  );
+
+  assert.equal(ip, "10.0.0.20");
+  assert.equal(warnings.length, 1);
+});
+
 test("deriveClientIp falls back when forwarded chain is shorter than trust hops", () => {
   const warnings: string[] = [];
   const ip = deriveClientIp(
@@ -99,4 +121,19 @@ test("deriveClientIp falls back when forwarded chain is shorter than trust hops"
 
   assert.equal(ip, "203.0.113.5");
   assert.equal(warnings.length, 1);
+});
+
+test("deriveClientIp tolerates non-function warning handler input", () => {
+  const ip = deriveClientIp(
+    createRequest({
+      forwardedFor: "198.51.100.10",
+      socketRemoteAddress: "::ffff:10.20.30.40",
+    }),
+    {
+      trustProxyHops: 2,
+      onWarning: null as unknown as (message: string) => void,
+    },
+  );
+
+  assert.equal(ip, "10.20.30.40");
 });

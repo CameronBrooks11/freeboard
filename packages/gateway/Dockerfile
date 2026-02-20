@@ -9,14 +9,18 @@ WORKDIR /app
 RUN npm install -g npm@${NPM_VERSION}
 
 COPY package.json package-lock.json ./
+COPY packages/shared/package.json packages/shared/package.json
 COPY packages/gateway/package.json packages/gateway/package.json
 COPY tsconfig.base.json ./tsconfig.base.json
+COPY packages/shared/tsconfig.json packages/shared/tsconfig.json
+COPY packages/shared/tsconfig.build.json packages/shared/tsconfig.build.json
 COPY packages/gateway/tsconfig.json packages/gateway/tsconfig.json
 COPY packages/gateway/tsconfig.build.json packages/gateway/tsconfig.build.json
 # Build stage must include root toolchain deps (e.g., TypeScript) plus workspace deps.
 RUN npm ci --workspace=packages/gateway --include-workspace-root=true \
   && npm cache clean --force
 
+COPY packages/shared ./packages/shared
 COPY packages/gateway ./packages/gateway
 RUN npm run build --workspace=packages/gateway
 
@@ -26,6 +30,7 @@ WORKDIR /app
 RUN npm install -g npm@${NPM_VERSION}
 
 COPY package.json package-lock.json ./
+COPY packages/shared/package.json packages/shared/package.json
 COPY packages/gateway/package.json packages/gateway/package.json
 RUN npm ci --omit=dev --workspace=packages/gateway --include-workspace-root=false \
   && npm cache clean --force
@@ -37,6 +42,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY packages/gateway/package.json ./packages/gateway/package.json
 COPY --from=build /app/packages/gateway/dist ./packages/gateway/dist
+COPY --from=build /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 RUN chown -R node:node /app
 
 USER node

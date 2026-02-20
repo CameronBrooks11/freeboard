@@ -50,6 +50,7 @@ It adds:
 - Package docs:
   - API: `packages/api/README.md`
   - Gateway: `packages/gateway/README.md`
+  - Shared: `packages/shared/README.md`
   - UI: `packages/ui/README.md`
 
 ## Requirements
@@ -204,7 +205,7 @@ npm run test:realtime:integration
 - `CI` (`.github/workflows/ci.yml`)
   - pull requests to `main`, merge queue, manual dispatch
   - docs-only changes skip heavy jobs
-  - includes path-gated `test-e2e-smoke` in the required workflow for API/UI/gateway/e2e changes
+  - includes path-gated `test-e2e-smoke` in the required workflow for API, UI, gateway, `packages/shared`, and e2e changes
   - stable required check: `Required CI`
 - `E2E smoke` (`.github/workflows/e2e-smoke.yml`)
   - manual dispatch only

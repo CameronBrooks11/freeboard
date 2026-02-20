@@ -160,6 +160,8 @@ Realtime protocol toggles:
 - Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false` unless on a trusted local-only network.
 - Review `EGRESS_ALLOWED_HOSTS` as part of deployment change control.
 - Keep `REALTIME_TRUST_PROXY_HOPS` and `API_TRUST_PROXY_HOPS` aligned for each reverse-proxy topology.
+- Gateway and API client-IP derivation share one implementation (`@freeboard/shared/clientIp.js`) to avoid parsing drift.
+- If trusted-side proxy hop entries are malformed, client-IP derivation fails closed and falls back to socket IP.
 - Keep `REALTIME_LIMITER_FAILURE_MODE=fail-closed` in production unless degraded-mode acceptance is explicitly approved.
 - Configure edge proxies to overwrite `X-Forwarded-For` with authoritative client identity values.
 - If realtime limiter backend becomes unavailable in fail-closed mode, gateway connect/subscribe limits fail with temporary-unavailable behavior (`503`) until backend recovery.

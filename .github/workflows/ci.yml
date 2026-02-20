@@ -76,6 +76,8 @@ jobs:
               - '.nvmrc'
               - '.env.dev'
               - '.github/workflows/ci.yml'
+            runtime_shared:
+              - 'packages/shared/**'
             shared:
               - 'package.json'
               - 'package-lock.json'
@@ -99,10 +101,11 @@ jobs:
           ui="${{ steps.filter.outputs.ui }}"
           gateway="${{ steps.filter.outputs.gateway }}"
           e2e="${{ steps.filter.outputs.e2e }}"
+          runtime_shared="${{ steps.filter.outputs.runtime_shared }}"
           shared="${{ steps.filter.outputs.shared }}"
 
           non_docs=false
-          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             non_docs=true
           fi
 
@@ -112,7 +115,7 @@ jobs:
           fi
 
           run_api_tests=false
-          if [[ "$api" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             run_api_tests=true
           fi
 
@@ -122,22 +125,22 @@ jobs:
           fi
 
           run_gateway_tests=false
-          if [[ "$gateway" == "true" || "$shared" == "true" ]]; then
+          if [[ "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             run_gateway_tests=true
           fi
 
           run_e2e_smoke=false
-          if [[ "$e2e" == "true" || "$api" == "true" || "$ui" == "true" || "$gateway" == "true" ]]; then
+          if [[ "$e2e" == "true" || "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" ]]; then
             run_e2e_smoke=true
           fi
 
           run_build_verify=false
-          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             run_build_verify=true
           fi
 
           run_typecheck=false
-          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             run_typecheck=true
           fi
 
@@ -163,6 +166,7 @@ jobs:
           echo "  run_e2e_smoke=$run_e2e_smoke"
           echo "  run_build_verify=$run_build_verify"
           echo "  run_typecheck=$run_typecheck"
+          echo "  runtime_shared=$runtime_shared"
 
   format:
     name: Format check

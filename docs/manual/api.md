@@ -37,6 +37,8 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
 
 - Uses socket remote address by default (`API_TRUST_PROXY_HOPS=0`).
 - When `API_TRUST_PROXY_HOPS>0`, the API selects a trusted client IP from `X-Forwarded-For` using right-to-left hop parsing.
+- API and gateway both consume the same shared `@freeboard/shared/clientIp.js` derivation utility to prevent policy drift.
+- If trusted-side proxy hop entries are malformed, derivation fails closed and falls back to socket/request IP.
 - Reverse proxies in front of API should overwrite `X-Forwarded-For` with authoritative values (not append untrusted inbound chains).
 - Security limiter key segments are hashed before persistence, so raw emails/share tokens/IP composites are not stored as limiter keys.
 

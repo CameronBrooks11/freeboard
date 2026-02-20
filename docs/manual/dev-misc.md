@@ -12,6 +12,7 @@
 - UI lint only: `npm run lint:ui`
 - API lint only: `npm run lint:api`
 - Build UI: `npm run build:ui`
+- Build shared runtime package: `npm run build:shared`
 - Build UI + print bundle metrics baseline: `npm run build:ui:analyze`
 - Print bundle metrics for an existing build: `npm run build:ui:metrics`
 - Run API tests: `npm run test:api`
@@ -44,7 +45,7 @@ npm run build:verify
 npm run typecheck
 ```
 
-For changes touching `packages/ui/**`, `packages/api/**`, `packages/gateway/**`, or `e2e/**`, also run:
+For changes touching `packages/ui/**`, `packages/api/**`, `packages/gateway/**`, `packages/shared/**`, or `e2e/**`, also run:
 
 ```bash
 npm run test:e2e:smoke
@@ -57,7 +58,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 - If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `typecheck`).
 - If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
 - If `Validate TS source debt` fails, remove unsafe TS patterns (`as any`, `as unknown as`, `: any`, `Record<string, any>`, `[key: string]: any`, `@ts-ignore`, `@ts-nocheck`) from `packages/*/src`.
-- If `Validate TS source artifacts` fails, remove legacy JS source files from `packages/*/src` (or classify intentionally retained artifacts in `docs/manual/typescript-standards.md`).
+- If `Validate TS source artifacts` fails, remove legacy JS source files from `packages/*/src`.
 - If a job was expected but appears skipped, check `Classify changes` output in the `changes` job.
 - If Docker publish unexpectedly rebuilds all images, verify event type:
   - `workflow_dispatch` intentionally rebuilds all packages.
@@ -69,7 +70,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 - Required branch gate remains `Required CI` from `.github/workflows/ci.yml`.
 - `lint` job enforces runtime eval bans through ESLint (`no-eval`, `no-new-func`, `no-implied-eval`) and `npm run check:ts:debt`.
 - `test-ui` job runs behavior-based UI regression tests (including layout policy behavior checks).
-- `test-e2e-smoke` job in `CI` runs cross-service browser assertions from `e2e/smoke.spec.js` on relevant API/UI/gateway/e2e changes and is included in `Required CI`.
+- `test-e2e-smoke` job in `CI` runs cross-service browser assertions from `e2e/smoke.spec.js` on relevant API, UI, gateway, `packages/shared`, and e2e changes and is included in `Required CI`.
 - Standalone `E2E smoke` workflow remains available for manual reruns (`workflow_dispatch`) and artifact triage.
 
 ## CI Workflow Matrix

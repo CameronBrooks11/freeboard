@@ -9,6 +9,7 @@ This document defines the TypeScript baseline and governance model for Freeboard
    - `packages/ui/src`
    - `packages/api/src`
    - `packages/gateway/src`
+   - `packages/shared/src`
 3. CI must enforce:
    - lint,
    - TS debt checks,

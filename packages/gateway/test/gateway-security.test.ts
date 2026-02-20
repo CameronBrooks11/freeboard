@@ -12,6 +12,8 @@ import {
   matchesMqttTopicPattern,
   parseTargetUrl,
 } from "../src/index.js";
+import { deriveClientIp as deriveGatewayClientIpUtility } from "../src/clientIp.js";
+import { deriveClientIp as deriveSharedClientIp } from "@freeboard/shared/clientIp.js";
 import { GATEWAY_SERVICE_TOKEN } from "../src/runtimeConfig.js";
 
 const createSessionToken = ({
@@ -51,6 +53,10 @@ const createClientRes = () => ({
 
 test("parseTargetUrl rejects missing target URL", () => {
   assert.throws(() => parseTargetUrl(""), /Target URL is required/);
+});
+
+test("gateway clientIp wrapper delegates to the shared clientIp utility", () => {
+  assert.equal(deriveGatewayClientIpUtility, deriveSharedClientIp);
 });
 
 test("parseTargetUrl rejects unsupported protocols", () => {
@@ -107,6 +113,24 @@ test("deriveClientIp ignores malformed forwarded chains when trustProxyHops is e
     },
   );
   assert.equal(ip, "10.0.0.8");
+  assert.equal(warnings.length, 1);
+});
+
+test("deriveClientIp fails closed when trusted proxy-side entries are malformed", () => {
+  const warnings: string[] = [];
+  const ip = deriveClientIp(
+    {
+      socket: { remoteAddress: "::ffff:203.0.113.70" },
+      headers: {
+        "x-forwarded-for": "198.51.100.20, garbage, 203.0.113.70",
+      },
+    },
+    {
+      trustProxyHops: 2,
+      onWarning: (message) => warnings.push(message),
+    },
+  );
+  assert.equal(ip, "203.0.113.70");
   assert.equal(warnings.length, 1);
 });
 

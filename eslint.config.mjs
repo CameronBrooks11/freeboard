@@ -116,7 +116,7 @@ export default [
     },
   },
   {
-    files: ["packages/{ui,api,gateway}/src/**/*.{ts,vue}"],
+    files: ["packages/{ui,api,gateway,shared}/src/**/*.{ts,vue}"],
     plugins: {
       "@typescript-eslint": tsPlugin,
     },
