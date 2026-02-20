@@ -16,6 +16,7 @@ import {
 } from "./dashboardRuntime.js";
 import { generateModelId } from "./id.js";
 import { resolveDashboardIsOwner } from "./ownership.js";
+import { runtimeConfig } from "../runtime/config.js";
 import type { UnknownRecord, WidgetRuntimeContext } from "../types/runtime.js";
 import type { Widget } from "./Widget.js";
 
@@ -211,7 +212,7 @@ export class Dashboard {
    * @returns {Object} Serialized dashboard data.
    */
   serialize() {
-    return serializeDashboardState(this, __FREEBOARD_VERSION__);
+    return serializeDashboardState(this, runtimeConfig.version);
   }
 
   /**

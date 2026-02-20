@@ -4,6 +4,7 @@ import { usePreferredColorScheme } from "@vueuse/core";
 import { disposeDashboardAssets } from "../dashboardAssets.js";
 import { normalizeCreateDashboardPayload } from "../auth/publishPolicy.js";
 import { useAuthStore } from "./auth.js";
+import { runtimeConfig } from "../runtime/config.js";
 import type { UnknownRecord } from "../types/runtime.js";
 import type { Dashboard as DashboardModel } from "../models/Dashboard.js";
 
@@ -97,9 +98,7 @@ export const useDashboardStore = defineStore("dashboard", {
   getters: {
     allowEdit(state) {
       const authStore = useAuthStore();
-      const staticMode =
-        typeof __FREEBOARD_STATIC__ !== "undefined" && __FREEBOARD_STATIC__ === "true";
-      const roleCanEdit = staticMode || authStore.canEditDashboards();
+      const roleCanEdit = runtimeConfig.isStaticBuild || authStore.canEditDashboards();
       const dashboardCanEdit = !state.isSaved || state.dashboard?.canEdit !== false;
       return roleCanEdit && dashboardCanEdit;
     },

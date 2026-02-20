@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       __FREEBOARD_VERSION__: JSON.stringify(process.env.npm_package_version),
-      __FREEBOARD_STATIC__: isStatic ? "true" : "false",
+      __FREEBOARD_STATIC__: JSON.stringify(isStatic),
       __FREEBOARD_BASE_PATH__: JSON.stringify(STATIC_BASE),
     },
     server: {

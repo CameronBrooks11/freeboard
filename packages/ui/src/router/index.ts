@@ -7,6 +7,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import type { Router } from "vue-router";
 import { useAuthStore } from "../stores/auth.js";
 import { resolveNavigationGuard } from "./authGuard.js";
+import { runtimeConfig } from "../runtime/config.js";
 
 let router: Router;
 
@@ -14,7 +15,7 @@ const Freeboard = () => import("../components/Freeboard.vue");
 const Login = () => import("../components/Login.vue");
 const AdminConsole = () => import("../components/AdminConsole.vue");
 
-if (__FREEBOARD_STATIC__) {
+if (runtimeConfig.isStaticBuild) {
   // Static deployment: only Home route
   router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
