@@ -1,6 +1,6 @@
 /**
  * @module models/ServiceAccountToken
- * @description Mongoose model for hashed, revocable service account tokens.
+ * Mongoose model for hashed, revocable service account tokens.
  */
 
 import mongoose from "mongoose";

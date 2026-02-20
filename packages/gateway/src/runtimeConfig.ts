@@ -1,6 +1,6 @@
 /**
  * @module gateway/runtimeConfig
- * @description Runtime config normalization and constants.
+ * Runtime config normalization and constants.
  */
 
 const toBoolean = (value: unknown, fallback = false): boolean => {

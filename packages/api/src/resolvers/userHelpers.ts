@@ -1,6 +1,6 @@
 /**
  * @module resolvers/userHelpers
- * @description Shared user resolver helper logic for auth, invites, resets, and offboarding.
+ * Shared user resolver helper logic for auth, invites, resets, and offboarding.
  */
 
 import { createGraphQLError } from "graphql-yoga";

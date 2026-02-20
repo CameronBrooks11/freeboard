@@ -18,7 +18,7 @@ For this project, we keep an explicit Pi fallback path and document the tradeoff
 
 For Pi-focused local/dev and kiosk appliance workflows, this repo keeps a pinned fallback in `.env.pi`:
 
-```env
+```dotenv
 FREEBOARD_MONGO_IMAGE=mongodb-raspberrypi4-unofficial-r7.0.28:latest
 ```
 

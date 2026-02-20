@@ -1,6 +1,6 @@
 /**
  * @module tokenSecurity
- * @description Helpers for generating and hashing one-time action tokens.
+ * Helpers for generating and hashing one-time action tokens.
  */
 
 import crypto from "node:crypto";

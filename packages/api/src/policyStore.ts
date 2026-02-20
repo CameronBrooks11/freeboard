@@ -1,6 +1,6 @@
 /**
  * @module policyStore
- * @description Persistence helpers for auth/registration policy values.
+ * Persistence helpers for auth/registration policy values.
  */
 
 import Policy from "./models/Policy.js";

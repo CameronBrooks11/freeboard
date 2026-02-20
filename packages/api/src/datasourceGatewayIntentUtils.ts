@@ -1,6 +1,6 @@
 /**
  * @module datasourceGatewayIntentUtils
- * @description Shared normalization/credential helpers for datasource gateway intents.
+ * Shared normalization/credential helpers for datasource gateway intents.
  */
 
 import { URL } from "url";

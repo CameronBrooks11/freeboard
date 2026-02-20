@@ -1,6 +1,6 @@
 /**
  * @module policy
- * @description Shared policy constants and normalization helpers.
+ * Shared policy constants and normalization helpers.
  */
 
 /** @type {string[]} */

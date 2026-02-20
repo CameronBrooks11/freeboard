@@ -1,6 +1,6 @@
 /**
  * @module gateway/networkPolicy
- * @description Egress URL parsing and destination-allow policy.
+ * Egress URL parsing and destination-allow policy.
  */
 
 import dns from "dns";

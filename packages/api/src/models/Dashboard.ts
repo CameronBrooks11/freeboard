@@ -1,6 +1,6 @@
 /**
  * @module models/Dashboard
- * @description Mongoose schema and model for dashboard ownership, visibility, and sharing.
+ * Mongoose schema and model for dashboard ownership, visibility, and sharing.
  */
 
 import crypto from "node:crypto";

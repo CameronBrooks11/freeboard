@@ -1,6 +1,6 @@
 /**
  * @module serviceAccountScopes
- * @description Canonical service account scope values.
+ * Canonical service account scope values.
  */
 
 export const SERVICE_ACCOUNT_SCOPES = Object.freeze([

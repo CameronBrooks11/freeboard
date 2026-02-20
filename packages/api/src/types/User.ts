@@ -1,6 +1,6 @@
 /**
  * @module types/User
- * @description
+ *
  * GraphQL SDL (Schema Definition Language) type definitions for the **User** entity.
  * Includes:
  * - Object type definitions for `User` and `Token`
@@ -12,8 +12,6 @@
  */
 
 /**
- * @constant {string} UserSchema
- * @description
  * GraphQL schema definition string for `User`, `Token`, and associated queries/mutations.
  */
 export default `

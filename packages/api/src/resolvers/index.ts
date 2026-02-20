@@ -1,6 +1,6 @@
 /**
  * @module resolvers/index
- * @description Aggregates and merges GraphQL resolver definitions for Freeboard API.
+ * Aggregates and merges GraphQL resolver definitions for Freeboard API.
  */
 
 /**

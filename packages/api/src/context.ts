@@ -1,6 +1,6 @@
 /**
  * @module context
- * @description Creates the GraphQL execution context, including PubSub, models, and authenticated user.
+ * Creates the GraphQL execution context, including PubSub, models, and authenticated user.
  */
 
 import { createPubSub } from "graphql-yoga";

@@ -1,6 +1,6 @@
 /**
  * @module validators
- * @description Utilities for validating user input such as email format and password strength.
+ * Utilities for validating user input such as email format and password strength.
  */
 
 export const EMAIL_POLICY_MESSAGE = "Email must be in valid format: name@domain.ext";

@@ -1,6 +1,6 @@
 /**
  * @module gateway/index
- * @description Datasource gateway service with secure HTTP fetch and realtime protocol adapters.
+ * Datasource gateway service with secure HTTP fetch and realtime protocol adapters.
  */
 
 import "dotenv/config";

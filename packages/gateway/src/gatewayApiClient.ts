@@ -1,6 +1,6 @@
 /**
  * @module gateway/gatewayApiClient
- * @description Internal API calls and session-token validation.
+ * Internal API calls and session-token validation.
  */
 
 import jwt from "jsonwebtoken";

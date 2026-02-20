@@ -1,6 +1,6 @@
 /**
  * @module gateway/runtimeMetrics
- * @description Lightweight in-memory runtime telemetry for gateway operations.
+ * Lightweight in-memory runtime telemetry for gateway operations.
  */
 
 const state = {

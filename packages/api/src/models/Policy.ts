@@ -1,6 +1,6 @@
 /**
  * @module models/Policy
- * @description Mongoose model for mutable application policy values.
+ * Mongoose model for mutable application policy values.
  */
 
 import mongoose from "mongoose";

@@ -1,6 +1,6 @@
 /**
  * @module types/index
- * @description Aggregates and merges GraphQL type definitions for the Freeboard API.
+ * Aggregates and merges GraphQL type definitions for the Freeboard API.
  */
 
 /**

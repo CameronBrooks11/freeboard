@@ -64,7 +64,6 @@ const PATH = {
   DEV,
   PUBLIC_DEV,
   AUTO_API_HTML: join(AUTO, "api"),
-  AUTO_API_MD: join(AUTO, "api-md"),
   AUTO_GRAPHQL: join(AUTO, "graphql"),
   AUTO_COMPONENTS: join(AUTO, "components"),
   DEV_API: join(DEV, "api"),
@@ -131,8 +130,7 @@ const stageDocs = () => {
     ["# Components", "", componentList, ""].join("\n"),
   );
 
-  if (existsSync(PATH.AUTO_API_MD)) {
-    cpSync(PATH.AUTO_API_MD, PATH.DEV_API, { recursive: true });
+  if (existsSync(PATH.AUTO_API_HTML)) {
     writeText(join(PATH.DEV_API, "index.md"), requireText(PATH.TPL_API_INDEX, "API index"));
   } else {
     writeText(join(PATH.DEV_API, "index.md"), "# API Reference\n\n_No API docs generated._\n");

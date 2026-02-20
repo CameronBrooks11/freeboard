@@ -1,6 +1,6 @@
 /**
  * @module resolvers/ServiceAccount
- * @description Admin service-account lifecycle + operational telemetry resolvers.
+ * Admin service-account lifecycle + operational telemetry resolvers.
  */
 
 import { createGraphQLError } from "graphql-yoga";

@@ -1,0 +1,13 @@
+{
+  "entryPointStrategy": "expand",
+  "entryPoints": ["packages/api/src", "packages/gateway/src"],
+  "tsconfig": "tsconfig.typedoc.json",
+  "out": "docs/auto/api",
+  "exclude": ["**/*.d.ts", "**/*.test.ts", "**/*.spec.ts"],
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "readme": "none",
+  "categorizeByGroup": false,
+  "sort": ["source-order"]
+}

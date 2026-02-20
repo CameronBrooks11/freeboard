@@ -1,6 +1,6 @@
 /**
  * @module models/User
- * @description Mongoose schema and model for user authentication and management in the Freeboard application.
+ * Mongoose schema and model for user authentication and management in the Freeboard application.
  *  - Uses `nanoid` for unique user IDs
  *  - Hashes passwords automatically before save
  *  - Tracks registration and last login timestamps

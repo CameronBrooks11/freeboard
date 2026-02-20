@@ -1,6 +1,6 @@
 /**
  * @module models/ServiceAccount
- * @description Mongoose model for machine-to-machine service principals.
+ * Mongoose model for machine-to-machine service principals.
  */
 
 import mongoose from "mongoose";

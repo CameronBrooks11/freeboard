@@ -1,6 +1,6 @@
 /**
  * @module index
- * @description Entry point for the Freeboard API server.
+ * Entry point for the Freeboard API server.
  *  - Establishes MongoDB connection
  *  - Ensures default admin user creation
  *  - Sets DNS result order to IPv4 first to avoid IPv6 localhost issues

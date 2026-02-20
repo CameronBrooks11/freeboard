@@ -1,6 +1,6 @@
 /**
  * @module resolvers/Datasource
- * @description GraphQL resolver for datasource runtime session token minting.
+ * GraphQL resolver for datasource runtime session token minting.
  */
 
 import { createGraphQLError } from "graphql-yoga";

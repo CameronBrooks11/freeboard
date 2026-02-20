@@ -1,6 +1,6 @@
 /**
  * @module datasourceGateway
- * @description Canonical datasource intent + session token helpers for API/gateway trust flow.
+ * Canonical datasource intent + session token helpers for API/gateway trust flow.
  */
 
 import crypto from "node:crypto";
