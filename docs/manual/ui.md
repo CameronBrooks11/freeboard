@@ -80,7 +80,7 @@ npm run test:ui
 npm run check:ui:store-boundaries
 ```
 
-UI runtime tests live in `packages/ui/test/*.test.js` and target binding resolution, plugin validation, and reactive widget runtime behavior.
+UI runtime tests live in `packages/ui/test/*.test.ts` and target binding resolution, plugin validation, and reactive widget runtime behavior.
 
 ## Component/API References
 
