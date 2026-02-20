@@ -1,6 +1,6 @@
 /**
  * @module gateway/errors
- * @description Shared client-facing gateway error helpers.
+ * Shared client-facing gateway error helpers.
  */
 
 export const createClientError = (

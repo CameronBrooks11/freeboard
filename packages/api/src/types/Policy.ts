@@ -1,6 +1,6 @@
 /**
  * @module types/Policy
- * @description GraphQL policy and enum definitions for role/auth policy controls.
+ * GraphQL policy and enum definitions for role/auth policy controls.
  */
 
 export default `

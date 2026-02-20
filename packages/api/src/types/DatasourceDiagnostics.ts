@@ -1,6 +1,6 @@
 /**
  * @module types/DatasourceDiagnostics
- * @description GraphQL types for admin datasource diagnostics rollup.
+ * GraphQL types for admin datasource diagnostics rollup.
  */
 
 export default `

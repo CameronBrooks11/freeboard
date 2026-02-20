@@ -1,6 +1,6 @@
 /**
  * @module models/ShareTokenRevocationEvent
- * @description Durable revocation feed entries consumed by gateway polling.
+ * Durable revocation feed entries consumed by gateway polling.
  */
 
 import mongoose from "mongoose";

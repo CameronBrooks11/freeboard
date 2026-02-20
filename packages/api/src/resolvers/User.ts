@@ -1,6 +1,6 @@
 /**
  * @module resolvers/User
- * @description GraphQL resolver definitions for user queries and mutations.
+ * GraphQL resolver definitions for user queries and mutations.
  */
 
 import { createGraphQLError } from "graphql-yoga";

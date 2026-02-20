@@ -1,6 +1,6 @@
 /**
  * @module realtime/protocolAdapters
- * @description Realtime protocol adapter factory for SSE, WebSocket, and MQTT transports.
+ * Realtime protocol adapter factory for SSE, WebSocket, and MQTT transports.
  */
 
 import { URL } from "url";

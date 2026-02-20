@@ -13,7 +13,8 @@ COPY packages/api/package.json packages/api/package.json
 COPY tsconfig.base.json ./tsconfig.base.json
 COPY packages/api/tsconfig.json packages/api/tsconfig.json
 COPY packages/api/tsconfig.build.json packages/api/tsconfig.build.json
-RUN npm ci --workspace=packages/api --include-workspace-root=false \
+# Build stage must include root toolchain deps (e.g., TypeScript) plus workspace deps.
+RUN npm ci --workspace=packages/api --include-workspace-root=true \
   && npm cache clean --force
 
 COPY packages/api ./packages/api

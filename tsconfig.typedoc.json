@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["packages/api/src/**/*.ts", "packages/gateway/src/**/*.ts"],
+  "exclude": [
+    "packages/ui/**",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "docs/**",
+    "scripts/**",
+    "node_modules/**",
+    "**/dist/**"
+  ]
+}

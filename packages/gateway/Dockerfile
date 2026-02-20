@@ -13,7 +13,8 @@ COPY packages/gateway/package.json packages/gateway/package.json
 COPY tsconfig.base.json ./tsconfig.base.json
 COPY packages/gateway/tsconfig.json packages/gateway/tsconfig.json
 COPY packages/gateway/tsconfig.build.json packages/gateway/tsconfig.build.json
-RUN npm ci --workspace=packages/gateway --include-workspace-root=false \
+# Build stage must include root toolchain deps (e.g., TypeScript) plus workspace deps.
+RUN npm ci --workspace=packages/gateway --include-workspace-root=true \
   && npm cache clean --force
 
 COPY packages/gateway ./packages/gateway

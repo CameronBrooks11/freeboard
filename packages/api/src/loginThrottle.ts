@@ -1,6 +1,6 @@
 /**
  * @module loginThrottle
- * @description In-memory login attempt throttle with rolling-window lockout.
+ * In-memory login attempt throttle with rolling-window lockout.
  */
 
 import { config } from "./config.js";

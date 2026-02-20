@@ -1,6 +1,6 @@
 /**
  * @module credentialEncryption
- * @description AES-256-GCM helpers for credential profile secret payloads.
+ * AES-256-GCM helpers for credential profile secret payloads.
  */
 
 import crypto from "node:crypto";

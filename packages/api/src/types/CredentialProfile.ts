@@ -1,6 +1,6 @@
 /**
  * @module types/CredentialProfile
- * @description GraphQL types for server-managed datasource credential profiles.
+ * GraphQL types for server-managed datasource credential profiles.
  */
 
 export default `

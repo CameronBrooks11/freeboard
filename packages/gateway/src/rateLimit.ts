@@ -1,6 +1,6 @@
 /**
  * @module gateway/rateLimit
- * @description Sliding one-minute in-memory rate-limit buckets.
+ * Sliding one-minute in-memory rate-limit buckets.
  */
 
 type RateLimitBucket = {

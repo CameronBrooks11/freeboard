@@ -1,6 +1,6 @@
 /**
  * @module serviceAccountAuth
- * @description Service account token issuance and bearer-token authentication helpers.
+ * Service account token issuance and bearer-token authentication helpers.
  */
 
 import crypto from "node:crypto";

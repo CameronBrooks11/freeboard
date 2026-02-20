@@ -1,6 +1,6 @@
 /**
  * @module rateLimit
- * @description Small in-memory fixed-window rate limiter for non-distributed controls.
+ * Small in-memory fixed-window rate limiter for non-distributed controls.
  */
 
 const WINDOW_MS = 60_000;

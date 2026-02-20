@@ -1,6 +1,6 @@
 /**
  * @module models/CredentialProfile
- * @description Mongoose model for server-managed datasource credential profiles.
+ * Mongoose model for server-managed datasource credential profiles.
  */
 
 import mongoose from "mongoose";

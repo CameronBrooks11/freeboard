@@ -1,6 +1,6 @@
 /**
  * @module resolvers/BrokerProfile
- * @description GraphQL resolver implementations for broker profile management.
+ * GraphQL resolver implementations for broker profile management.
  */
 
 import { URL } from "url";

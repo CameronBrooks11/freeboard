@@ -1,6 +1,6 @@
 /**
  * @module realtime/mqttCodec
- * @description MQTT topic matching and packet codec helpers used by gateway realtime transport.
+ * MQTT topic matching and packet codec helpers used by gateway realtime transport.
  */
 
 export const matchesMqttTopicPattern = (topic: string, pattern: string): boolean => {

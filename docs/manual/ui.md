@@ -87,5 +87,5 @@ UI runtime tests live in `packages/ui/test/*.test.js` and target binding resolut
 For full generated references:
 
 - UI component docs: `/dev/components/`
-- API JSDoc: `/dev/api/`
+- API TypeDoc: `/dev/api/`
 - GraphQL schema: `/dev/graphql/`

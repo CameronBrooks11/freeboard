@@ -1,6 +1,6 @@
 /**
  * @module shareTokenRevocationFeed
- * @description Helper functions for recording and querying share-token revocation feed events.
+ * Helper functions for recording and querying share-token revocation feed events.
  */
 
 import mongoose from "mongoose";

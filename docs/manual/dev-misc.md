@@ -18,6 +18,7 @@
 - Run UI runtime tests: `npm run test:ui`
 - Run all tests: `npm run test`
 - Run TypeScript type checks: `npm run typecheck`
+- Verify docs pipeline (generate + stage): `npm run docs:verify`
 - Verify build/syntax: `npm run build:verify`
 - Full local CI pass: `npm run ci`
 - Start realtime fixture stack: `npm run demo:realtime:up`

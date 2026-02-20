@@ -1,6 +1,6 @@
 /**
  * @module audit
- * @description Small helper for persisting non-blocking audit events.
+ * Small helper for persisting non-blocking audit events.
  */
 
 import mongoose from "mongoose";

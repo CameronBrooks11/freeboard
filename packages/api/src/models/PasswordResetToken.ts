@@ -1,6 +1,6 @@
 /**
  * @module models/PasswordResetToken
- * @description Mongoose model for one-time password reset tokens.
+ * Mongoose model for one-time password reset tokens.
  */
 
 import mongoose from "mongoose";

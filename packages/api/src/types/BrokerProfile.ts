@@ -1,6 +1,6 @@
 /**
  * @module types/BrokerProfile
- * @description GraphQL types for broker profile management.
+ * GraphQL types for broker profile management.
  */
 
 export default `

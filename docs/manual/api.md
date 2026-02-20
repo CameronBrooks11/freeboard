@@ -130,4 +130,4 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
   - Test location: `packages/api/test/*.test.js`
   - Focus: auth/config validation, resolver authorization boundaries, model credential policy
 - **Generate reference docs**: `npm run docs:generate`
-  - Runs JSDoc, GraphQL Codegen, Vue DocGen (for component library)
+  - Runs TypeDoc, GraphQL Codegen, Vue DocGen (for component library)

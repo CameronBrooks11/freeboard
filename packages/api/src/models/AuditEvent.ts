@@ -1,6 +1,6 @@
 /**
  * @module models/AuditEvent
- * @description Mongoose model for auditable security/policy/user events.
+ * Mongoose model for auditable security/policy/user events.
  */
 
 import mongoose from "mongoose";

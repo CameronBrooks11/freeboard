@@ -1,6 +1,6 @@
 /**
  * @module config
- * @description Environment and default configuration values for Freeboard API.
+ * Environment and default configuration values for Freeboard API.
  */
 
 import fs from "node:fs";

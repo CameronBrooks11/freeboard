@@ -1,6 +1,6 @@
 /**
  * @module resolvers/CredentialProfile
- * @description GraphQL resolver implementations for credential profile management.
+ * GraphQL resolver implementations for credential profile management.
  */
 
 import { createGraphQLError } from "graphql-yoga";

@@ -1,6 +1,6 @@
 /**
  * @module resolvers/Policy
- * @description GraphQL resolver implementations for auth/registration policy controls.
+ * GraphQL resolver implementations for auth/registration policy controls.
  */
 
 import { createGraphQLError } from "graphql-yoga";

@@ -1,6 +1,6 @@
 /**
  * @module resolvers/DatasourceDiagnostics
- * @description Admin-only datasource diagnostics rollup resolver.
+ * Admin-only datasource diagnostics rollup resolver.
  */
 
 import { ensureThatPrincipalHasServiceScope } from "../auth.js";

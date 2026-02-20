@@ -1,6 +1,6 @@
 /**
  * @module types/ServiceAccount
- * @description GraphQL schema for service-account lifecycle and operational telemetry.
+ * GraphQL schema for service-account lifecycle and operational telemetry.
  */
 
 export default `

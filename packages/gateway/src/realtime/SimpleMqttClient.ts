@@ -1,6 +1,6 @@
 /**
  * @module realtime/SimpleMqttClient
- * @description Lightweight MQTT client with reconnect and subscribe management for gateway pooling.
+ * Lightweight MQTT client with reconnect and subscribe management for gateway pooling.
  */
 
 import crypto from "node:crypto";

@@ -1,6 +1,6 @@
 /**
  * @module gql
- * @description Builds and exports the executable GraphQL schema using type definitions and resolvers.
+ * Builds and exports the executable GraphQL schema using type definitions and resolvers.
  */
 
 import { makeExecutableSchema } from "@graphql-tools/schema";

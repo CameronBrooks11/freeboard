@@ -1,6 +1,6 @@
 /**
  * @module auth
- * @description Authentication and authorization utilities for Freeboard GraphQL API.
+ * Authentication and authorization utilities for Freeboard GraphQL API.
  */
 
 import { createGraphQLError } from "graphql-yoga";

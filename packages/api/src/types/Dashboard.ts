@@ -1,6 +1,6 @@
 /**
  * @module types/Dashboard
- * @description GraphQL schema for dashboard visibility, sharing, and collaboration.
+ * GraphQL schema for dashboard visibility, sharing, and collaboration.
  */
 
 export default `

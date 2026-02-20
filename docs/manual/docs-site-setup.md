@@ -17,9 +17,12 @@ This project ships a VitePress site that combines:
 ## Core Scripts
 
 - `npm run docs:generate`
-  - runs API JSDoc + API markdown + GraphQL SDL + Vue component docs
+  - runs API TypeDoc + GraphQL SDL + Vue component docs
+  - TypeDoc source boundary is controlled by `typedoc.json` + `tsconfig.typedoc.json`
 - `npm run site:stage`
   - stages generated outputs into VitePress-consumable paths
+- `npm run docs:verify`
+  - runs `docs:generate` + `site:stage` as a fast docs pipeline sanity check
 - `npm run site:local`
   - full local docs+demo build pipeline
 - `npm run site:pages`
@@ -40,6 +43,12 @@ Or use the full pipeline in one command:
 
 ```bash
 npm run site:local
+```
+
+Quick verification without full site build:
+
+```bash
+npm run docs:verify
 ```
 
 ## CI Notes

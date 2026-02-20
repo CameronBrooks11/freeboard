@@ -1,6 +1,6 @@
 /**
  * @module types/Datasource
- * @description GraphQL types for datasource runtime session token minting.
+ * GraphQL types for datasource runtime session token minting.
  */
 
 export default `

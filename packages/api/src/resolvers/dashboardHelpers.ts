@@ -1,6 +1,6 @@
 /**
  * @module resolvers/dashboardHelpers
- * @description Shared dashboard resolver helper logic for policy, ACL, and datasource validation.
+ * Shared dashboard resolver helper logic for policy, ACL, and datasource validation.
  */
 
 import crypto from "node:crypto";

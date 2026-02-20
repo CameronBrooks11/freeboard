@@ -1,6 +1,6 @@
 /**
  * @module gateway/gatewayHttp
- * @description HTTP datasource fetch execution and Express handler.
+ * HTTP datasource fetch execution and Express handler.
  */
 
 import * as http from "http";

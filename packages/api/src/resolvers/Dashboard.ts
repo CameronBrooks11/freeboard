@@ -1,6 +1,6 @@
 /**
  * @module resolvers/Dashboard
- * @description GraphQL resolver implementations for dashboard visibility, sharing, and ACL flows.
+ * GraphQL resolver implementations for dashboard visibility, sharing, and ACL flows.
  */
 
 import { createGraphQLError, createPubSub } from "graphql-yoga";

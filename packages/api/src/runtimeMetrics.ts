@@ -1,6 +1,6 @@
 /**
  * @module runtimeMetrics
- * @description Lightweight in-memory runtime telemetry for API operational visibility.
+ * Lightweight in-memory runtime telemetry for API operational visibility.
  */
 
 const LATENCY_WINDOW_SIZE = 512;

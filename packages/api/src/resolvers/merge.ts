@@ -1,6 +1,6 @@
 /**
  * @module resolvers/merge
- * @description Utility to map dashboard documents to GraphQL response objects.
+ * Utility to map dashboard documents to GraphQL response objects.
  */
 
 /**

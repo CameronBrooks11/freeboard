@@ -1,6 +1,6 @@
 /**
  * @module models/InviteToken
- * @description Mongoose model for role-scoped account invitation tokens.
+ * Mongoose model for role-scoped account invitation tokens.
  */
 
 import mongoose from "mongoose";
