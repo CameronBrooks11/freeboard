@@ -113,6 +113,7 @@ Core env values:
 - `REALTIME_*` (required to tune realtime policy, limits, and protocol toggles)
 
 Secret setup/rotation workflow is centralized in [Secrets Operations Runbook](/manual/secrets-operations).
+Security control deployment/rollback workflow is centralized in [Security Controls Rollout Runbook](/manual/security-controls-rollout).
 
 ## Security Defaults
 

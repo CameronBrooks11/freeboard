@@ -10,11 +10,12 @@ import { GridLayout, GridItem } from "vue-grid-layout-v3";
 import { useDashboardStore } from "../stores/dashboard.js";
 import { computed, watch } from "vue";
 import Pane from "./Pane.vue";
+import { isSmallDashboardLayout } from "../uiLayoutPolicy";
 
 // Access dashboard state and editing flag from the store
 const dashboardStore = useDashboardStore();
 const { dashboard, isEditing } = storeToRefs(dashboardStore);
-const isSmallLayout = computed(() => dashboard.value?.width === "sm");
+const isSmallLayout = computed(() => isSmallDashboardLayout(dashboard.value?.width));
 
 watch(
   () =>

@@ -40,6 +40,10 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
 - Reverse proxies in front of API should overwrite `X-Forwarded-For` with authoritative values (not append untrusted inbound chains).
 - Security limiter key segments are hashed before persistence, so raw emails/share tokens/IP composites are not stored as limiter keys.
 
+Operational rollout and rollback guidance for trust-hop and limiter controls is documented in:
+
+- [Security Controls Rollout Runbook](/manual/security-controls-rollout)
+
 Token auth is validated against persisted user state (`active` + `sessionVersion`) so revoked tokens become invalid server-side.
 
 ## GraphQL Schema (`gql.ts`)

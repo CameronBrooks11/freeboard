@@ -30,6 +30,7 @@ Use this manual in two tracks:
 - [UI](/manual/ui)
 - [Datasource Gateway](/manual/gateway)
 - [Realtime Operations Runbook](/manual/realtime-operations)
+- [Security Controls Rollout Runbook](/manual/security-controls-rollout)
 - [Credential Key Rotation](/manual/credential-key-rotation)
 - [Ansible](/manual/ansible)
 - [Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)

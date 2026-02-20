@@ -162,6 +162,8 @@ Realtime protocol toggles:
 - Keep `REALTIME_TRUST_PROXY_HOPS` and `API_TRUST_PROXY_HOPS` aligned for each reverse-proxy topology.
 - Keep `REALTIME_LIMITER_FAILURE_MODE=fail-closed` in production unless degraded-mode acceptance is explicitly approved.
 - Configure edge proxies to overwrite `X-Forwarded-For` with authoritative client identity values.
+- If realtime limiter backend becomes unavailable in fail-closed mode, gateway connect/subscribe limits fail with temporary-unavailable behavior (`503`) until backend recovery.
+- Use [Security Controls Rollout Runbook](/manual/security-controls-rollout) for staged deploy, canary watch, and rollback procedure.
 - Use the [Secrets Operations Runbook](/manual/secrets-operations) for `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`, and Mongo credential lifecycle operations.
 - Rotate credential encryption keys with the dedicated [Credential Key Rotation Runbook](/manual/credential-key-rotation).
 - In production, configure MQTT allowlists (`REALTIME_MQTT_ALLOWED_TOPICS` and/or broker `topicAllowlist`) before enabling MQTT datasources.

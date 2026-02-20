@@ -275,17 +275,6 @@ export class Datasource {
   }
 
   /**
-   * Evaluate a data path expression against the latest data.
-   *
-   * @param {string} dataPath - JavaScript expression returning a value from `data`.
-   * @returns {any} Evaluated value or error if expression invalid.
-   */
-  getDataRepresentation(dataPath: string): unknown {
-    const valueFunction = new Function("data", "return " + dataPath + ";");
-    return valueFunction.call(undefined, this.latestData);
-  }
-
-  /**
    * Trigger an immediate data update if supported by the plugin instance.
    */
   updateNow() {

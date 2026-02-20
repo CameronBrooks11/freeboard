@@ -67,6 +67,10 @@ If the same appliance host also runs the API/gateway compose stack, keep runtime
 - `SECURITY_LIMITER_FAILURE_MODE=fail-closed`
 - `REALTIME_LIMITER_FAILURE_MODE=fail-closed`
 
+For staged rollout and rollback of these security controls, follow:
+
+- [Security Controls Rollout Runbook](/manual/security-controls-rollout)
+
 Reference defaults are listed under `server_runtime_env_defaults` in `ansible/vars.yml`.
 
 If using `appliance_with_runtime` profiles on 32-bit Raspberry Pi OS, pin image tags to the

@@ -25,6 +25,8 @@ const graphql = async ({ request, token, query, variables = {} }) => {
 
 const loginViaUi = async (page) => {
   await page.goto("/login");
+  await expect(page.locator(".dialog-box__footer .login__footer-action")).toBeVisible();
+  await expect(page.locator(".login__actions .login__footer-action")).toHaveCount(0);
   await page.getByLabel("Email").fill(ADMIN_EMAIL);
   await page.getByLabel("Password").fill(ADMIN_PASSWORD);
   await page.getByRole("button", { name: "Login" }).click();
@@ -159,4 +161,141 @@ test("smoke flow covers login, datasource render, share view, and policy save", 
   await page.goto("/admin");
   await page.getByRole("button", { name: "Save Policy" }).click();
   await expect(page.getByText("Policy updated.")).toBeVisible();
+});
+
+test("small-layout dashboard renders stacked pane flow in authenticated and shared views", async ({
+  page,
+  browser,
+}) => {
+  await loginViaUi(page);
+  const authToken = await readSessionToken(page);
+  expect(authToken).toBeTruthy();
+
+  const createMutation = `
+    mutation CreateDashboard($dashboard: CreateDashboardInput!) {
+      createDashboard(dashboard: $dashboard) {
+        _id
+      }
+    }
+  `;
+
+  const dashboardPayload = {
+    title: "E2E Small Layout Dashboard",
+    version: "1",
+    columns: 1,
+    width: "sm",
+    settings: { theme: "auto" },
+    datasources: [
+      {
+        id: "dse2esmall",
+        title: "SmallSource",
+        type: "static",
+        enabled: true,
+        settings: {
+          value: '{"value":7}',
+          refresh: 0,
+        },
+      },
+    ],
+    panes: [
+      {
+        title: "Small Pane A",
+        layout: {
+          x: 0,
+          y: 0,
+          w: 1,
+          h: 2,
+          i: "pane-small-a",
+        },
+        widgets: [
+          {
+            id: "widget-small-a",
+            title: "Small Widget A",
+            type: "text",
+            enabled: true,
+            settings: {
+              headerText: "Small A",
+              valuePath: "datasources.dse2esmall.value",
+            },
+          },
+        ],
+      },
+      {
+        title: "Small Pane B",
+        layout: {
+          x: 0,
+          y: 2,
+          w: 1,
+          h: 2,
+          i: "pane-small-b",
+        },
+        widgets: [
+          {
+            id: "widget-small-b",
+            title: "Small Widget B",
+            type: "text",
+            enabled: true,
+            settings: {
+              headerText: "Small B",
+              valuePath: "datasources.dse2esmall.value",
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  const created = await graphql({
+    request: page.request,
+    token: authToken,
+    query: createMutation,
+    variables: {
+      dashboard: dashboardPayload,
+    },
+  });
+
+  const dashboardId = created?.createDashboard?._id;
+  expect(dashboardId).toBeTruthy();
+
+  await page.goto(`/${dashboardId}`);
+  await expect(page.locator(".board__stack")).toBeVisible();
+  await expect(page.locator(".board__grid")).toHaveCount(0);
+  await expect(page.locator(".board__stack-item")).toHaveCount(2);
+  await expect(page.locator(".board__stack-item .pane__header h1")).toHaveText([
+    "Small Pane A",
+    "Small Pane B",
+  ]);
+
+  const visibilityMutation = `
+    mutation SetVisibility($id: ID!, $visibility: DashboardVisibility!) {
+      setDashboardVisibility(_id: $id, visibility: $visibility) {
+        visibility
+        shareToken
+      }
+    }
+  `;
+
+  const visibilityResult = await graphql({
+    request: page.request,
+    token: authToken,
+    query: visibilityMutation,
+    variables: {
+      id: dashboardId,
+      visibility: "LINK",
+    },
+  });
+  const shareToken = visibilityResult?.setDashboardVisibility?.shareToken;
+  expect(shareToken).toBeTruthy();
+
+  const sharedContext = await browser.newContext({
+    baseURL: E2E_BASE_URL,
+  });
+  const sharedPage = await sharedContext.newPage();
+  await sharedPage.goto(`/s/${shareToken}`);
+  await expect(sharedPage.locator(".board__stack")).toBeVisible();
+  await expect(sharedPage.locator(".board__grid")).toHaveCount(0);
+  await expect(sharedPage.locator(".board__stack-item")).toHaveCount(2);
+  await expect(sharedPage.getByText("Small A")).toBeVisible();
+  await expect(sharedPage.getByText("Small B")).toBeVisible();
+  await sharedContext.close();
 });

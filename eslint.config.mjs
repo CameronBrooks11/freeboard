@@ -122,6 +122,9 @@ export default [
     },
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
+      "no-eval": "error",
+      "no-new-func": "error",
+      "no-implied-eval": "error",
     },
   },
   {

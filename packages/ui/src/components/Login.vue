@@ -18,6 +18,7 @@ import {
   type LoginActionMode,
   resolveLoginActionMode,
 } from "../auth/loginMode";
+import { shouldShowForgotPasswordFooterAction } from "../uiLayoutPolicy";
 import {
   ACCEPT_INVITE_MUTATION,
   PUBLIC_AUTH_POLICY_QUERY,
@@ -359,6 +360,10 @@ const helperTextKey = computed(() => {
   }
   return "";
 });
+
+const showForgotPasswordFooterAction = computed(() =>
+  shouldShowForgotPasswordFooterAction(actionMode.value),
+);
 </script>
 
 <template>
@@ -372,7 +377,7 @@ const helperTextKey = computed(() => {
     >
       <template #footer>
         <button
-          v-if="actionMode === MODES.login"
+          v-if="showForgotPasswordFooterAction"
           class="login__footer-action"
           type="button"
           @click="switchMode(MODES.requestReset)"

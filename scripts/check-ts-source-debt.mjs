@@ -20,6 +20,12 @@ const DEBT_PATTERNS = [
   { label: "proptype-any", regex: /PropType<any>/g },
   { label: "ts-ignore", regex: /@ts-ignore/g },
   { label: "ts-nocheck", regex: /@ts-nocheck/g },
+  { label: "dynamic-function-constructor", regex: /\bnew\s+Function\s*\(/g },
+  { label: "direct-eval", regex: /\beval\s*\(/g },
+  {
+    label: "implied-eval-timeout-interval",
+    regex: /\b(setTimeout|setInterval|setImmediate)\s*\(\s*["'`]/g,
+  },
 ];
 
 const walkFiles = async (rootDir) => {

@@ -125,3 +125,11 @@ Services:
 - Keep `CREATE_ADMIN=false` after bootstrap
 - Use non-default Mongo credentials
 - Follow [Secrets Operations Runbook](/manual/secrets-operations) for setup/rotation/incident workflow
+
+## Security Rollout Runbook
+
+For security-control changes (proxy trust headers/hops, limiter backend/failure-mode policy, gateway realtime limiter behavior), use:
+
+- [Security Controls Rollout Runbook](/manual/security-controls-rollout)
+
+This runbook defines staged deploy order (`proxy -> API -> gateway`), canary watch metrics, and rollback steps.
