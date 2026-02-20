@@ -18,6 +18,11 @@ const state = {
     messagesIn: 0,
     messagesOut: 0,
     errorCount: 0,
+    limiterAllowedCount: 0,
+    limiterRejectedCount: 0,
+    limiterBackendErrorCount: 0,
+    limiterFailOpenCount: 0,
+    limiterFailClosedCount: 0,
   },
 };
 
@@ -40,6 +45,11 @@ type RuntimeMetricsSnapshot = {
   realtimeMessagesIn: number;
   realtimeMessagesOut: number;
   realtimeErrorCount: number;
+  realtimeLimiterAllowedCount: number;
+  realtimeLimiterRejectedCount: number;
+  realtimeLimiterBackendErrorCount: number;
+  realtimeLimiterFailOpenCount: number;
+  realtimeLimiterFailClosedCount: number;
 };
 
 export const recordGatewayHttpRequest = ({ statusCode, durationMs }: HttpMetric): void => {
@@ -82,6 +92,30 @@ export const recordRealtimeError = (): void => {
   state.realtime.errorCount += 1;
 };
 
+export const recordRealtimeLimiterDecision = ({
+  outcome,
+}: {
+  outcome: "allowed" | "rejected" | "backend_error" | "fail_open" | "fail_closed";
+}): void => {
+  if (outcome === "allowed") {
+    state.realtime.limiterAllowedCount += 1;
+    return;
+  }
+  if (outcome === "rejected") {
+    state.realtime.limiterRejectedCount += 1;
+    return;
+  }
+  if (outcome === "backend_error") {
+    state.realtime.limiterBackendErrorCount += 1;
+    return;
+  }
+  if (outcome === "fail_open") {
+    state.realtime.limiterFailOpenCount += 1;
+    return;
+  }
+  state.realtime.limiterFailClosedCount += 1;
+};
+
 export const getGatewayRuntimeMetricsSnapshot = (): RuntimeMetricsSnapshot => {
   const now = new Date();
   const uptimeSeconds = Math.max(0, Math.floor((now.getTime() - state.startedAt.getTime()) / 1000));
@@ -102,5 +136,10 @@ export const getGatewayRuntimeMetricsSnapshot = (): RuntimeMetricsSnapshot => {
     realtimeMessagesIn: state.realtime.messagesIn,
     realtimeMessagesOut: state.realtime.messagesOut,
     realtimeErrorCount: state.realtime.errorCount,
+    realtimeLimiterAllowedCount: state.realtime.limiterAllowedCount,
+    realtimeLimiterRejectedCount: state.realtime.limiterRejectedCount,
+    realtimeLimiterBackendErrorCount: state.realtime.limiterBackendErrorCount,
+    realtimeLimiterFailOpenCount: state.realtime.limiterFailOpenCount,
+    realtimeLimiterFailClosedCount: state.realtime.limiterFailClosedCount,
   };
 };

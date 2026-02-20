@@ -22,7 +22,7 @@ import {
 import { createProtocolAdapterFactory } from "./realtime/protocolAdapters.js";
 import { SimpleMqttClient } from "./realtime/SimpleMqttClient.js";
 import { createClientError } from "./errors.js";
-import { consumeRateLimit } from "./rateLimit.js";
+import { deriveClientIp as deriveTrustedClientIp, type DeriveClientIpOptions } from "./clientIp.js";
 import {
   ensureResolvedDestinationIsAllowed,
   parseOutboundUrl,
@@ -36,6 +36,7 @@ import {
   parseStreamPayload,
 } from "./gatewayHttp.js";
 import {
+  consumeGatewayLimiter,
   fetchIntrospection,
   fetchRevokedTokens,
   validateSessionToken,
@@ -51,6 +52,7 @@ import {
   REALTIME_CONNECT_RATE_LIMIT_IP_PER_MIN,
   REALTIME_CONNECT_TIMEOUT_MS,
   REALTIME_ENABLED,
+  getRealtimeLimiterFailureMode,
   REALTIME_MAX_CLIENT_CONNECTIONS_PER_IP,
   REALTIME_MAX_CONNECTIONS_PER_DASHBOARD,
   REALTIME_MAX_MESSAGE_BYTES,
@@ -85,6 +87,7 @@ import {
   recordRealtimeConnectionClosed,
   recordRealtimeConnectionRejected,
   recordRealtimeError,
+  recordRealtimeLimiterDecision,
   recordRealtimeMessageIn,
   recordRealtimeMessageOut,
 } from "./runtimeMetrics.js";
@@ -95,6 +98,7 @@ export { createGatewayFetchHandler };
 
 type RealtimeGatewayOptions = {
   server: http.Server;
+  trustProxyHops?: number;
   lookup?: typeof dns.promises.lookup;
   fetchFn?: typeof fetch;
   wsServerFactory?: (options: ConstructorParameters<typeof WebSocketServer>[0]) => WebSocketServer;
@@ -190,10 +194,16 @@ const websocketRawDataToBuffer = (rawPayload: WebSocket.RawData): Buffer => {
   return Buffer.from(String(rawPayload));
 };
 
-const getSocketRemoteAddress = (request: http.IncomingMessage): string => {
-  const raw = String(request?.socket?.remoteAddress || "unknown-ip");
-  return raw.startsWith("::ffff:") ? raw.slice(7) : raw;
-};
+const hashLimiterKeyPart = (value: unknown): string =>
+  crypto
+    .createHash("sha256")
+    .update(
+      String(value || "")
+        .trim()
+        .toLowerCase(),
+    )
+    .digest("hex")
+    .slice(0, 32);
 
 export const getTokenExpiryDelayMs = (
   tokenClaims: TokenClaims | null | undefined,
@@ -206,38 +216,15 @@ export const getTokenExpiryDelayMs = (
   return Math.floor(expSeconds * 1000 - nowMs);
 };
 
-export const deriveClientIp = (request: http.IncomingMessage): string => {
-  const socketAddress = getSocketRemoteAddress(request);
-  if (REALTIME_TRUST_PROXY_HOPS <= 0) {
-    return socketAddress;
-  }
-
-  const forwardedForHeader = request?.headers?.["x-forwarded-for"];
-  if (typeof forwardedForHeader !== "string" || !forwardedForHeader.trim()) {
-    console.warn(
-      "Realtime gateway warning: REALTIME_TRUST_PROXY_HOPS>0 but X-Forwarded-For is missing; falling back to socket remote address.",
-    );
-    return socketAddress;
-  }
-
-  const forwardedEntries = forwardedForHeader
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-
-  if (forwardedEntries.length <= REALTIME_TRUST_PROXY_HOPS) {
-    console.warn(
-      "Realtime gateway warning: X-Forwarded-For has fewer entries than REALTIME_TRUST_PROXY_HOPS; falling back to socket remote address.",
-    );
-    return socketAddress;
-  }
-
-  const selected = forwardedEntries[forwardedEntries.length - 1 - REALTIME_TRUST_PROXY_HOPS];
-  if (!selected) {
-    return socketAddress;
-  }
-  return selected.startsWith("::ffff:") ? selected.slice(7) : selected;
-};
+export const deriveClientIp = (
+  request: http.IncomingMessage,
+  { trustProxyHops = REALTIME_TRUST_PROXY_HOPS, ...options }: DeriveClientIpOptions = {},
+): string =>
+  deriveTrustedClientIp(request, {
+    trustProxyHops,
+    warningPrefix: "Realtime gateway warning: ",
+    ...options,
+  });
 
 const mapStreamErrorCode = (
   error: unknown,
@@ -326,6 +313,7 @@ const parseRealtimeTargetUrl = ({
  */
 export const createRealtimeGateway = ({
   server,
+  trustProxyHops,
   lookup = dns.promises.lookup,
   fetchFn = fetch,
   wsServerFactory = (options) => new WebSocketServer(options),
@@ -344,6 +332,78 @@ export const createRealtimeGateway = ({
 
   let revocationCursor: string | null = null;
   let pollingRevocations = false;
+
+  const consumeRealtimeRateLimit = async ({
+    scope,
+    key,
+    limitPerMinute,
+  }: {
+    scope: string;
+    key: string;
+    limitPerMinute: number;
+  }): Promise<{ allowed: boolean; retryAfterMs: number; unavailable: boolean }> => {
+    try {
+      const decision = await consumeGatewayLimiter({
+        scope,
+        key: hashLimiterKeyPart(key),
+        limitPerMinute,
+        fetchFn,
+      });
+      const allowed = Boolean(decision?.allowed);
+      const reason = String(decision?.reason || "")
+        .trim()
+        .toLowerCase();
+      const retryAfterMs = Math.max(0, Number(decision?.retryAfterMs) || 0);
+
+      if (allowed) {
+        if (reason === "backend_fail_open") {
+          recordRealtimeLimiterDecision({ outcome: "backend_error" });
+          recordRealtimeLimiterDecision({ outcome: "fail_open" });
+          return { allowed: true, retryAfterMs: 0, unavailable: false };
+        }
+        recordRealtimeLimiterDecision({ outcome: "allowed" });
+        return { allowed: true, retryAfterMs: 0, unavailable: false };
+      }
+
+      if (reason === "backend_fail_closed") {
+        recordRealtimeLimiterDecision({ outcome: "backend_error" });
+        if (getRealtimeLimiterFailureMode() === "fail-open") {
+          recordRealtimeLimiterDecision({ outcome: "fail_open" });
+          return { allowed: true, retryAfterMs: 0, unavailable: false };
+        }
+
+        recordRealtimeLimiterDecision({ outcome: "fail_closed" });
+        return {
+          allowed: false,
+          retryAfterMs: 1000,
+          unavailable: true,
+        };
+      }
+
+      recordRealtimeLimiterDecision({ outcome: "rejected" });
+      return {
+        allowed: false,
+        retryAfterMs: Math.max(1, retryAfterMs),
+        unavailable: false,
+      };
+    } catch {
+      recordRealtimeLimiterDecision({ outcome: "backend_error" });
+      if (getRealtimeLimiterFailureMode() === "fail-open") {
+        console.warn(
+          "Realtime gateway warning: security limiter consume failed; allowing by fail-open policy.",
+        );
+        recordRealtimeLimiterDecision({ outcome: "fail_open" });
+        return { allowed: true, retryAfterMs: 0, unavailable: false };
+      }
+
+      recordRealtimeLimiterDecision({ outcome: "fail_closed" });
+      return {
+        allowed: false,
+        retryAfterMs: 1000,
+        unavailable: true,
+      };
+    }
+  };
 
   const sendWsResponse = (
     connection: RealtimeConnection | null,
@@ -831,7 +891,7 @@ export const createRealtimeGateway = ({
     decrementConnectionCountByIp(connection.ip);
   };
 
-  const handlePublicSubscriptionRateLimit = ({
+  const handlePublicSubscriptionRateLimit = async ({
     connection,
     dashboardId,
     tokenClaims,
@@ -839,11 +899,19 @@ export const createRealtimeGateway = ({
     connection: RealtimeConnection;
     dashboardId: string;
     tokenClaims: TokenClaims;
-  }): void => {
-    const ipBucket = consumeRateLimit(
-      `realtime-public-subscribe-ip:${connection.ip}`,
-      REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_IP_PER_MIN,
-    );
+  }): Promise<void> => {
+    const ipBucket = await consumeRealtimeRateLimit({
+      scope: "realtime-public-subscribe-ip",
+      key: connection.ip,
+      limitPerMinute: REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_IP_PER_MIN,
+    });
+    if (ipBucket.unavailable) {
+      throw createClientError(
+        503,
+        "Realtime security limiter is temporarily unavailable",
+        STREAM_ERROR_CODES.RATE_LIMITED,
+      );
+    }
     if (!ipBucket.allowed) {
       throw createClientError(
         429,
@@ -853,10 +921,18 @@ export const createRealtimeGateway = ({
     }
 
     const shareVersion = Math.max(0, Math.floor(Number(tokenClaims.shareTokenVersion) || 0));
-    const shareBucket = consumeRateLimit(
-      `realtime-public-subscribe-share:${dashboardId}:${shareVersion}`,
-      REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_SHARE_TOKEN_PER_MIN,
-    );
+    const shareBucket = await consumeRealtimeRateLimit({
+      scope: "realtime-public-subscribe-share",
+      key: `${dashboardId}:${shareVersion}`,
+      limitPerMinute: REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_SHARE_TOKEN_PER_MIN,
+    });
+    if (shareBucket.unavailable) {
+      throw createClientError(
+        503,
+        "Realtime security limiter is temporarily unavailable",
+        STREAM_ERROR_CODES.RATE_LIMITED,
+      );
+    }
     if (!shareBucket.allowed) {
       throw createClientError(
         429,
@@ -931,7 +1007,7 @@ export const createRealtimeGateway = ({
       }
 
       if (String(tokenClaims.sub || "") === "public") {
-        handlePublicSubscriptionRateLimit({
+        await handlePublicSubscriptionRateLimit({
           connection,
           dashboardId,
           tokenClaims,
@@ -1317,31 +1393,51 @@ export const createRealtimeGateway = ({
       return;
     }
 
-    const clientIp = deriveClientIp(request);
-
-    const connectRateLimit = consumeRateLimit(
-      `realtime-connect:${clientIp}`,
-      REALTIME_CONNECT_RATE_LIMIT_IP_PER_MIN,
+    const clientIp = deriveClientIp(
+      request,
+      trustProxyHops === undefined
+        ? undefined
+        : {
+            trustProxyHops,
+          },
     );
-    if (!connectRateLimit.allowed) {
-      recordRealtimeConnectionRejected();
-      socket.write("HTTP/1.1 429 Too Many Requests\r\n\r\n");
-      socket.destroy();
-      return;
-    }
 
-    const activeConnectionsForIp = connectionCountByIp.get(clientIp) || 0;
-    if (activeConnectionsForIp >= REALTIME_MAX_CLIENT_CONNECTIONS_PER_IP) {
-      recordRealtimeConnectionRejected();
-      socket.write("HTTP/1.1 429 Too Many Requests\r\n\r\n");
-      socket.destroy();
-      return;
-    }
+    void (async () => {
+      const connectRateLimit = await consumeRealtimeRateLimit({
+        scope: "realtime-connect-ip",
+        key: clientIp,
+        limitPerMinute: REALTIME_CONNECT_RATE_LIMIT_IP_PER_MIN,
+      });
+      if (connectRateLimit.unavailable) {
+        recordRealtimeConnectionRejected();
+        socket.write("HTTP/1.1 503 Service Unavailable\r\n\r\n");
+        socket.destroy();
+        return;
+      }
+      if (!connectRateLimit.allowed) {
+        recordRealtimeConnectionRejected();
+        socket.write("HTTP/1.1 429 Too Many Requests\r\n\r\n");
+        socket.destroy();
+        return;
+      }
 
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      (ws as WebSocket & { __clientIp?: string }).__clientIp = clientIp;
-      recordRealtimeConnectionAccepted();
-      wss.emit("connection", ws, request);
+      const activeConnectionsForIp = connectionCountByIp.get(clientIp) || 0;
+      if (activeConnectionsForIp >= REALTIME_MAX_CLIENT_CONNECTIONS_PER_IP) {
+        recordRealtimeConnectionRejected();
+        socket.write("HTTP/1.1 429 Too Many Requests\r\n\r\n");
+        socket.destroy();
+        return;
+      }
+
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        (ws as WebSocket & { __clientIp?: string }).__clientIp = clientIp;
+        recordRealtimeConnectionAccepted();
+        wss.emit("connection", ws, request);
+      });
+    })().catch(() => {
+      recordRealtimeConnectionRejected();
+      socket.write("HTTP/1.1 503 Service Unavailable\r\n\r\n");
+      socket.destroy();
     });
   });
 

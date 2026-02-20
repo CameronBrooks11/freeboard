@@ -80,6 +80,10 @@ Connection and rate limits:
 - `REALTIME_CONNECT_RATE_LIMIT_IP_PER_MIN`
 - `REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_IP_PER_MIN`
 - `REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_SHARE_TOKEN_PER_MIN`
+- `REALTIME_TRUST_PROXY_HOPS`
+- `API_TRUST_PROXY_HOPS`
+- `REALTIME_LIMITER_FAILURE_MODE`
+- `GATEWAY_LIMITER_TIMEOUT_MS`
 
 Revalidation:
 
@@ -107,5 +111,28 @@ MQTT policy:
 - Keep `EGRESS_ALLOW_INSECURE_TLS=false`.
 - Set MQTT allowlists (global and/or broker-level) before enabling MQTT broadly.
 - Keep protocol toggles off for unused transports.
-- Validate `REALTIME_TRUST_PROXY_HOPS` for reverse-proxy deployments.
+- Validate `REALTIME_TRUST_PROXY_HOPS` and `API_TRUST_PROXY_HOPS` for reverse-proxy deployments.
+- Ensure edge reverse proxies overwrite `X-Forwarded-For` instead of appending untrusted inbound values.
+- Keep `SECURITY_LIMITER_BACKEND=mongo` and `SECURITY_LIMITER_FAILURE_MODE=fail-closed` for non-dev runtime.
+- Keep `REALTIME_LIMITER_FAILURE_MODE=fail-closed` unless a controlled degraded-mode runbook explicitly allows fail-open.
 - Use [Secrets Operations Runbook](/manual/secrets-operations) for token/key rotation windows.
+
+## Limiter Outage Response Expectations
+
+Default non-dev behavior is fail-closed.
+
+- API limiter backend unavailable:
+  - login can return temporary-unavailable failures.
+  - datasource session mint and gateway internal limiter consume paths can return `503`.
+- Gateway realtime limiter unavailable:
+  - connect and public subscribe limiter paths return temporary-unavailable behavior (`503`).
+
+Temporary fail-open is an exception path only:
+
+- require explicit change approval window and incident tracking.
+- monitor `backend_error` and `fail_open` limiter metrics continuously.
+- revert to fail-closed after backend recovery.
+
+For staged deployment, canary watchlist, and rollback order, use:
+
+- [Security Controls Rollout Runbook](/manual/security-controls-rollout)

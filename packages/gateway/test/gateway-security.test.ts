@@ -12,6 +12,8 @@ import {
   matchesMqttTopicPattern,
   parseTargetUrl,
 } from "../src/index.js";
+import { deriveClientIp as deriveGatewayClientIpUtility } from "../src/clientIp.js";
+import { deriveClientIp as deriveSharedClientIp } from "@freeboard/shared/clientIp.js";
 import { GATEWAY_SERVICE_TOKEN } from "../src/runtimeConfig.js";
 
 const createSessionToken = ({
@@ -53,6 +55,10 @@ test("parseTargetUrl rejects missing target URL", () => {
   assert.throws(() => parseTargetUrl(""), /Target URL is required/);
 });
 
+test("gateway clientIp wrapper delegates to the shared clientIp utility", () => {
+  assert.equal(deriveGatewayClientIpUtility, deriveSharedClientIp);
+});
+
 test("parseTargetUrl rejects unsupported protocols", () => {
   assert.throws(
     () => parseTargetUrl("ftp://example.com/data"),
@@ -75,6 +81,88 @@ test("deriveClientIp falls back to socket remote address by default", () => {
     },
   });
   assert.equal(ip, "127.0.0.1");
+});
+
+test("deriveClientIp applies right-to-left trusted proxy hop parsing", () => {
+  const ip = deriveClientIp(
+    {
+      socket: { remoteAddress: "::ffff:192.0.2.40" },
+      headers: {
+        "x-forwarded-for": "198.51.100.10, 203.0.113.20",
+      },
+    },
+    {
+      trustProxyHops: 1,
+    },
+  );
+  assert.equal(ip, "203.0.113.20");
+});
+
+test("deriveClientIp ignores malformed forwarded chains when trustProxyHops is enabled", () => {
+  const warnings: string[] = [];
+  const ip = deriveClientIp(
+    {
+      socket: { remoteAddress: "::ffff:10.0.0.8" },
+      headers: {
+        "x-forwarded-for": "garbage,still-bad",
+      },
+    },
+    {
+      trustProxyHops: 1,
+      onWarning: (message) => warnings.push(message),
+    },
+  );
+  assert.equal(ip, "10.0.0.8");
+  assert.equal(warnings.length, 1);
+});
+
+test("deriveClientIp fails closed when trusted proxy-side entries are malformed", () => {
+  const warnings: string[] = [];
+  const ip = deriveClientIp(
+    {
+      socket: { remoteAddress: "::ffff:203.0.113.70" },
+      headers: {
+        "x-forwarded-for": "198.51.100.20, garbage, 203.0.113.70",
+      },
+    },
+    {
+      trustProxyHops: 2,
+      onWarning: (message) => warnings.push(message),
+    },
+  );
+  assert.equal(ip, "203.0.113.70");
+  assert.equal(warnings.length, 1);
+});
+
+test("deriveClientIp falls back when forwarded chain is shorter than trust hops", () => {
+  const warnings: string[] = [];
+  const ip = deriveClientIp(
+    {
+      socket: { remoteAddress: "::ffff:203.0.113.8" },
+      headers: {
+        "x-forwarded-for": "198.51.100.20",
+      },
+    },
+    {
+      trustProxyHops: 2,
+      onWarning: (message) => warnings.push(message),
+    },
+  );
+  assert.equal(ip, "203.0.113.8");
+  assert.equal(warnings.length, 1);
+});
+
+test("deriveClientIp selects trusted rightmost entry when spoofed values are prepended", () => {
+  const ip = deriveClientIp(
+    {
+      socket: { remoteAddress: "::ffff:203.0.113.8" },
+      headers: {
+        "x-forwarded-for": "198.51.100.99, 198.51.100.21, 203.0.113.8",
+      },
+    },
+    { trustProxyHops: 1 },
+  );
+  assert.equal(ip, "203.0.113.8");
 });
 
 test("getTokenExpiryDelayMs returns ms until expiration", () => {

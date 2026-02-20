@@ -16,6 +16,12 @@ npm run test
 npm run build:verify
 ```
 
+For changes touching `packages/ui/**`, `packages/api/**`, `packages/gateway/**`, `packages/shared/**`, or `e2e/**`, also run:
+
+```bash
+npm run test:e2e:smoke
+```
+
 ## Branch and PR Expectations
 
 - Keep PRs scoped to one logical change.
@@ -36,6 +42,13 @@ TypeScript regression prevention checklist:
 - New boundary inputs start as `unknown` and are narrowed with guards/adapters.
 - `npm run check:ts:debt`, `npm run check:ts:source-artifacts`, and `npm run typecheck` must pass.
 - Any new ambient declaration (`*.d.ts`) must be documented in `docs/manual/typescript-standards.md`.
+
+Security/control guardrails:
+
+- UI behavior regression tests must assert runtime behavior (component behavior or e2e), not source text shape/regex patterns.
+- Runtime source under `packages/{ui,api,gateway,shared}/src` must not use `eval`, `new Function`, or string-based timer eval patterns.
+- Changes to trusted IP derivation, limiter policy, auth throttling, or gateway security controls require integration coverage in affected package tests.
+- Cross-service security-control changes (UI + API + gateway behavior path) require an `e2e/smoke` update or assertion review in the same PR.
 
 ## Widget Contribution Process
 

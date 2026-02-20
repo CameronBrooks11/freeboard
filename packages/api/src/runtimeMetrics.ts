@@ -21,6 +21,13 @@ const state = {
     mintSuccessCount: 0,
     mintFailureCount: 0,
   },
+  limiter: {
+    allowedCount: 0,
+    rejectedCount: 0,
+    backendErrorCount: 0,
+    failOpenCount: 0,
+    failClosedCount: 0,
+  },
   audit: {
     writeFailureCount: 0,
   },
@@ -72,6 +79,30 @@ export const recordDatasourceMintMetric = ({ ok }: { ok: boolean }): void => {
   state.datasource.mintFailureCount += 1;
 };
 
+export const recordApiLimiterDecision = ({
+  outcome,
+}: {
+  outcome: "allowed" | "rejected" | "backend_error" | "fail_open" | "fail_closed";
+}): void => {
+  if (outcome === "allowed") {
+    state.limiter.allowedCount += 1;
+    return;
+  }
+  if (outcome === "rejected") {
+    state.limiter.rejectedCount += 1;
+    return;
+  }
+  if (outcome === "backend_error") {
+    state.limiter.backendErrorCount += 1;
+    return;
+  }
+  if (outcome === "fail_open") {
+    state.limiter.failOpenCount += 1;
+    return;
+  }
+  state.limiter.failClosedCount += 1;
+};
+
 export const recordAuditWriteFailureMetric = (): void => {
   state.audit.writeFailureCount += 1;
 };
@@ -96,6 +127,11 @@ export const getApiRuntimeMetricsSnapshot = () => {
     authFailureCount: state.auth.failureCount,
     datasourceMintSuccessCount: state.datasource.mintSuccessCount,
     datasourceMintFailureCount: state.datasource.mintFailureCount,
+    limiterAllowedCount: state.limiter.allowedCount,
+    limiterRejectedCount: state.limiter.rejectedCount,
+    limiterBackendErrorCount: state.limiter.backendErrorCount,
+    limiterFailOpenCount: state.limiter.failOpenCount,
+    limiterFailClosedCount: state.limiter.failClosedCount,
     auditWriteFailureCount: state.audit.writeFailureCount,
   };
 };

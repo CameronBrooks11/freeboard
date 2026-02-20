@@ -99,6 +99,60 @@ const positiveInteger = (v: unknown, fallback: number): number => {
   return normalized;
 };
 
+const boundedInteger = (
+  v: unknown,
+  fallback: number,
+  {
+    min = Number.MIN_SAFE_INTEGER,
+    max = Number.MAX_SAFE_INTEGER,
+  }: { min?: number; max?: number } = {},
+): number => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) {
+    return fallback;
+  }
+  const normalized = Math.floor(n);
+  if (normalized < min || normalized > max) {
+    return fallback;
+  }
+  return normalized;
+};
+
+const normalizeSecurityLimiterBackend = (
+  value: unknown,
+  fallback: "memory" | "mongo",
+): "memory" | "mongo" => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (normalized === "memory" || normalized === "mongo") {
+    return normalized;
+  }
+  return fallback;
+};
+
+const normalizeLimiterFailureMode = (
+  value: unknown,
+  fallback: "fail-open" | "fail-closed",
+): "fail-open" | "fail-closed" => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (normalized === "fail-open" || normalized === "fail-closed") {
+    return normalized;
+  }
+  return fallback;
+};
+
+const normalizeLimiterNamespace = (value: unknown, fallback: string): string => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9:._-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return (normalized || fallback).slice(0, 96);
+};
+
 const decodeBase64 = (value: unknown): Buffer | null => {
   try {
     return Buffer.from(String(value || ""), "base64");
@@ -192,6 +246,13 @@ const credentialEncryptionKey =
  * @property {number} authLoginMaxAttempts - Failed login attempts before lockout.
  * @property {number} authLoginWindowSeconds - Rolling window for failed login attempts.
  * @property {number} authLoginLockSeconds - Temporary lockout duration after threshold is reached.
+ * @property {number} apiTrustProxyHops - Trusted proxy hops for deriving client IP from X-Forwarded-For.
+ * @property {"memory"|"mongo"} securityLimiterBackend - Backing store for security limiter state.
+ * @property {"fail-open"|"fail-closed"} securityLimiterFailureMode - Behavior when limiter backend is unavailable.
+ * @property {string} securityLimiterNamespace - Prefix namespace for limiter keys.
+ * @property {string} securityLimiterHashSalt - HMAC salt for hashing untrusted key material.
+ * @property {number} securityLimiterMongoTimeoutMs - Mongo operation timeout for limiter reads/writes.
+ * @property {number} securityLimiterMemoryMaxKeys - Max in-memory limiter keys in local fallback mode.
  */
 
 /**
@@ -227,6 +288,35 @@ export const config = Object.freeze({
   authLoginMaxAttempts: positiveInteger(process.env.AUTH_LOGIN_MAX_ATTEMPTS, 5),
   authLoginWindowSeconds: positiveInteger(process.env.AUTH_LOGIN_WINDOW_SECONDS, 300),
   authLoginLockSeconds: positiveInteger(process.env.AUTH_LOGIN_LOCK_SECONDS, 300),
+  apiTrustProxyHops: Math.max(
+    0,
+    boundedInteger(process.env.API_TRUST_PROXY_HOPS, 0, { min: 0, max: 16 }),
+  ),
+  securityLimiterBackend: normalizeSecurityLimiterBackend(
+    process.env.SECURITY_LIMITER_BACKEND,
+    isNonDevRuntime ? "mongo" : "memory",
+  ),
+  securityLimiterFailureMode: normalizeLimiterFailureMode(
+    process.env.SECURITY_LIMITER_FAILURE_MODE,
+    isNonDevRuntime ? "fail-closed" : "fail-open",
+  ),
+  securityLimiterNamespace: normalizeLimiterNamespace(
+    process.env.SECURITY_LIMITER_NAMESPACE,
+    "freeboard:security-limiter",
+  ),
+  securityLimiterHashSalt: String(
+    process.env.SECURITY_LIMITER_HASH_SALT || process.env.JWT_SECRET || "freeboard-local-limiter",
+  )
+    .trim()
+    .slice(0, 512),
+  securityLimiterMongoTimeoutMs: positiveInteger(
+    process.env.SECURITY_LIMITER_MONGO_TIMEOUT_MS,
+    2500,
+  ),
+  securityLimiterMemoryMaxKeys: positiveInteger(
+    process.env.SECURITY_LIMITER_MEMORY_MAX_KEYS,
+    10000,
+  ),
   jwtGatewaySecret: process.env.JWT_GATEWAY_SECRET || gatewaySecretDefault,
   gatewayServiceToken: process.env.GATEWAY_SERVICE_TOKEN || gatewayServiceTokenDefault,
   credentialEncryptionKey,
@@ -286,6 +376,10 @@ if (isNonDevRuntime && !credentialEncryptionKey) {
   throw new Error(
     "CREDENTIAL_ENCRYPTION_KEY must be set to a valid base64-encoded 32-byte key in non-development runtime.",
   );
+}
+
+if (isNonDevRuntime && config.securityLimiterBackend !== "mongo") {
+  throw new Error("SECURITY_LIMITER_BACKEND must be set to 'mongo' in non-development runtime.");
 }
 
 if (config.createAdmin) {

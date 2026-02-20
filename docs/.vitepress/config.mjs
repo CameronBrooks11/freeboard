@@ -51,6 +51,7 @@ export default defineConfig({
             { text: "UI", link: "/manual/ui" },
             { text: "Gateway", link: "/manual/gateway" },
             { text: "Realtime Operations", link: "/manual/realtime-operations" },
+            { text: "Security Controls Rollout", link: "/manual/security-controls-rollout" },
             { text: "Credential Key Rotation", link: "/manual/credential-key-rotation" },
             { text: "Ansible", link: "/manual/ansible" },
             { text: "Raspberry Pi MongoDB", link: "/manual/raspberry-pi-mongodb" },

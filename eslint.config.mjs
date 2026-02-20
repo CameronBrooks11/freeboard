@@ -116,12 +116,15 @@ export default [
     },
   },
   {
-    files: ["packages/{ui,api,gateway}/src/**/*.{ts,vue}"],
+    files: ["packages/{ui,api,gateway,shared}/src/**/*.{ts,vue}"],
     plugins: {
       "@typescript-eslint": tsPlugin,
     },
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
+      "no-eval": "error",
+      "no-new-func": "error",
+      "no-implied-eval": "error",
     },
   },
   {

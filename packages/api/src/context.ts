@@ -10,6 +10,8 @@ import User from "./models/User.js";
 import Dashboard from "./models/Dashboard.js";
 import { authenticateServiceAccountToken } from "./serviceAccountAuth.js";
 import { recordAuthFailureMetric } from "./runtimeMetrics.js";
+import { config } from "./config.js";
+import { deriveClientIp } from "./clientIp.js";
 
 export type ServiceAccountPrincipal = {
   _id: unknown;
@@ -74,12 +76,10 @@ export const setContext = async ({
 }: {
   req: IncomingMessage & { ip?: string };
 }): Promise<ApiContext> => {
-  const forwardedForHeader = req?.headers?.["x-forwarded-for"];
-  const forwardedFor =
-    typeof forwardedForHeader === "string"
-      ? forwardedForHeader.split(",")[0]?.trim() || null
-      : null;
-  const clientIp = forwardedFor || req?.socket?.remoteAddress || req?.ip || null;
+  const clientIp = deriveClientIp(req, {
+    trustProxyHops: config.apiTrustProxyHops,
+    warningPrefix: "API context warning: ",
+  });
 
   const context: ApiContext = {
     pubsub: createPubSub(),

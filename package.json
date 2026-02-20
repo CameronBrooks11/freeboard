@@ -1,7 +1,7 @@
 {
   "name": "freeboard",
   "title": "freeboard",
-  "version": "1.2.0-dev",
+  "version": "2.0.0",
   "engines": {
     "node": ">=24.13.1 <25",
     "npm": ">=11.10.0 <12"
@@ -9,7 +9,7 @@
   "packageManager": "npm@11.10.0",
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "dev:services": "concurrently --kill-others --names \"ui,api,gateway\" --prefix \"[{name}]\" \"npm run dev:ui\" \"npm run dev:api\" \"npm run dev:gateway\"",
+    "dev:services": "npm run build:shared && concurrently --kill-others --names \"ui,api,gateway\" --prefix \"[{name}]\" \"npm run dev:ui\" \"npm run dev:raw --workspace=packages/api\" \"npm run dev:raw --workspace=packages/gateway\"",
     "dev:mongo": "docker compose -f docker-compose.mongo.yml up --build",
     "dev:mongo:up": "docker compose -f docker-compose.mongo.yml up -d --build --wait --wait-timeout 180",
     "dev:mongo:status": "docker compose -f docker-compose.mongo.yml ps",
@@ -25,6 +25,7 @@
     "dev:ui": "npm run dev --workspace=packages/ui",
     "start:api": "npm run start --workspace=packages/api",
     "start:gateway": "npm run start --workspace=packages/gateway",
+    "build:shared": "npm run build --workspace=@freeboard/shared",
     "build": "npm run build:all",
     "build:all": "npm run build:ui",
     "build:ui": "npm run build --workspace=packages/ui",
@@ -53,9 +54,10 @@
     "check:ts:source-artifacts": "node scripts/check-ts-source-artifacts.mjs",
     "check:ui:bundle-budget": "node scripts/check-ui-bundle-budget.mjs",
     "typecheck:ui": "vue-tsc --noEmit -p packages/ui/tsconfig.json",
+    "typecheck:shared": "tsc --noEmit -p packages/shared/tsconfig.json",
     "typecheck:gateway": "tsc --noEmit -p packages/gateway/tsconfig.json",
     "typecheck:api": "tsc --noEmit -p packages/api/tsconfig.json",
-    "typecheck": "npm run typecheck:ui && npm run typecheck:gateway && npm run typecheck:api",
+    "typecheck": "npm run typecheck:ui && npm run typecheck:shared && npm run typecheck:gateway && npm run typecheck:api",
     "security:audit:prod": "npm audit --omit=dev --audit-level=high",
     "security:audit:all": "npm audit",
     "credentials:reencrypt": "tsx scripts/credentials-reencrypt.mjs",
@@ -117,6 +119,7 @@
   "workspaces": [
     "packages/ui",
     "packages/api",
-    "packages/gateway"
+    "packages/gateway",
+    "packages/shared"
   ]
 }

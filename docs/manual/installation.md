@@ -119,6 +119,17 @@ Services:
 - Keep `EGRESS_ALLOW_INSECURE_TLS=false`
 - Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false`
 - Set strict `EGRESS_ALLOWED_HOSTS`
+- Set `API_TRUST_PROXY_HOPS` and `REALTIME_TRUST_PROXY_HOPS` correctly for your reverse-proxy topology
+- Keep `SECURITY_LIMITER_BACKEND=mongo` and `SECURITY_LIMITER_FAILURE_MODE=fail-closed` in non-dev runtime
+- Keep `REALTIME_LIMITER_FAILURE_MODE=fail-closed` unless degraded-mode fail-open is intentionally approved
 - Keep `CREATE_ADMIN=false` after bootstrap
 - Use non-default Mongo credentials
 - Follow [Secrets Operations Runbook](/manual/secrets-operations) for setup/rotation/incident workflow
+
+## Security Rollout Runbook
+
+For security-control changes (proxy trust headers/hops, limiter backend/failure-mode policy, gateway realtime limiter behavior), use:
+
+- [Security Controls Rollout Runbook](/manual/security-controls-rollout)
+
+This runbook defines staged deploy order (`proxy -> API -> gateway`), canary watch metrics, and rollback steps.

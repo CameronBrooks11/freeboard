@@ -4,14 +4,16 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p ../shared/tsconfig.build.json && tsx watch src/index.ts",
+    "dev:raw": "tsx watch src/index.ts",
+    "build": "tsc -p ../shared/tsconfig.build.json && tsc -p tsconfig.build.json",
     "start": "npm run build && node dist/index.js",
-    "test": "tsx --test",
-    "test:ci": "tsx --test"
+    "test": "tsc -p ../shared/tsconfig.build.json && tsx --test",
+    "test:ci": "tsc -p ../shared/tsconfig.build.json && tsx --test"
   },
   "private": true,
   "dependencies": {
+    "@freeboard/shared": "0.1.0",
     "body-parser": "^1.20.3",
     "dotenv": "^17.3.1",
     "express": "^4.21.2",

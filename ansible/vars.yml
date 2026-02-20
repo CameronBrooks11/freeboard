@@ -168,3 +168,10 @@ kiosk_boot_cmdline_required_tokens:
 
 # Optional hardening toggles for constrained devices.
 kiosk_disable_swap: false
+
+# Optional compose runtime defaults for appliance hosts that also run API/gateway services.
+server_runtime_env_defaults:
+  SECURITY_LIMITER_BACKEND: mongo
+  SECURITY_LIMITER_FAILURE_MODE: fail-closed
+  REALTIME_LIMITER_FAILURE_MODE: fail-closed
+  GATEWAY_LIMITER_TIMEOUT_MS: "3000"

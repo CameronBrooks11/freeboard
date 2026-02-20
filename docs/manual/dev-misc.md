@@ -12,6 +12,7 @@
 - UI lint only: `npm run lint:ui`
 - API lint only: `npm run lint:api`
 - Build UI: `npm run build:ui`
+- Build shared runtime package: `npm run build:shared`
 - Build UI + print bundle metrics baseline: `npm run build:ui:analyze`
 - Print bundle metrics for an existing build: `npm run build:ui:metrics`
 - Run API tests: `npm run test:api`
@@ -44,34 +45,48 @@ npm run build:verify
 npm run typecheck
 ```
 
+For changes touching `packages/ui/**`, `packages/api/**`, `packages/gateway/**`, `packages/shared/**`, or `e2e/**`, also run:
+
+```bash
+npm run test:e2e:smoke
+```
+
 If your change is docs-only, run `npm run format:check` to verify Markdown/YAML formatting consistency.
 
 ## CI Troubleshooting (Quick)
 
-- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-ui`, `build-verify`, `typecheck`).
+- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `typecheck`).
 - If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
 - If `Validate TS source debt` fails, remove unsafe TS patterns (`as any`, `as unknown as`, `: any`, `Record<string, any>`, `[key: string]: any`, `@ts-ignore`, `@ts-nocheck`) from `packages/*/src`.
-- If `Validate TS source artifacts` fails, remove legacy JS source files from `packages/*/src` (or classify intentionally retained artifacts in `docs/manual/typescript-standards.md`).
+- If `Validate TS source artifacts` fails, remove legacy JS source files from `packages/*/src`.
 - If a job was expected but appears skipped, check `Classify changes` output in the `changes` job.
 - If Docker publish unexpectedly rebuilds all images, verify event type:
   - `workflow_dispatch` intentionally rebuilds all packages.
   - push events use diff-based per-package skip logic.
 - If Pages deploy did not run, verify changed files matched Pages workflow `paths` filters.
 
+## Security Guardrail Coverage in CI
+
+- Required branch gate remains `Required CI` from `.github/workflows/ci.yml`.
+- `lint` job enforces runtime eval bans through ESLint (`no-eval`, `no-new-func`, `no-implied-eval`) and `npm run check:ts:debt`.
+- `test-ui` job runs behavior-based UI regression tests (including layout policy behavior checks).
+- `test-e2e-smoke` job in `CI` runs cross-service browser assertions from `e2e/smoke.spec.js` on relevant API, UI, gateway, `packages/shared`, and e2e changes and is included in `Required CI`.
+- Standalone `E2E smoke` workflow remains available for manual reruns (`workflow_dispatch`) and artifact triage.
+
 ## CI Workflow Matrix
 
-| Workflow                                                                      | Trigger                                                                      | Heavy-work cancellation                 | Notes                                                           |
-| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------- |
-| `CI` (`.github/workflows/ci.yml`)                                             | `pull_request` to `main`, `merge_group`, `workflow_dispatch`                 | Yes (`concurrency: ci-<pr/ref>`)        | Required gate via `Required CI` job; path-gated jobs            |
-| `E2E smoke` (`.github/workflows/e2e-smoke.yml`)                               | `pull_request` to `main` (path filtered), `merge_group`, `workflow_dispatch` | Yes (`concurrency: e2e-smoke-<pr/ref>`) | Browser smoke flow using Playwright and local service bootstrap |
-| `Deploy to GitHub Pages` (`.github/workflows/build-pages.yml`)                | `push` to `main` on docs/demo-related paths, `workflow_dispatch`             | Yes (`concurrency: pages-<ref>`)        | Builds docs + demo site                                         |
-| `Build & publish docker images` (`.github/workflows/build-docker-images.yml`) | `push` to `main`, `workflow_dispatch`                                        | No (intentional)                        | Per-package diff skip; manual dispatch forces full rebuild      |
-| `Dependency security audit` (`.github/workflows/dependency-security.yml`)     | Weekly schedule + manual dispatch                                            | N/A                                     | Fails on production dependency vulnerabilities (high/critical)  |
+| Workflow                                                                      | Trigger                                                          | Heavy-work cancellation                 | Notes                                                          |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------- |
+| `CI` (`.github/workflows/ci.yml`)                                             | `pull_request` to `main`, `merge_group`, `workflow_dispatch`     | Yes (`concurrency: ci-<pr/ref>`)        | Required gate via `Required CI` job; path-gated jobs           |
+| `E2E smoke` (`.github/workflows/e2e-smoke.yml`)                               | `workflow_dispatch`                                              | Yes (`concurrency: e2e-smoke-<pr/ref>`) | Manual browser smoke rerun with Playwright artifacts           |
+| `Deploy to GitHub Pages` (`.github/workflows/build-pages.yml`)                | `push` to `main` on docs/demo-related paths, `workflow_dispatch` | Yes (`concurrency: pages-<ref>`)        | Builds docs + demo site                                        |
+| `Build & publish docker images` (`.github/workflows/build-docker-images.yml`) | `push` to `main`, `workflow_dispatch`                            | No (intentional)                        | Per-package diff skip; manual dispatch forces full rebuild     |
+| `Dependency security audit` (`.github/workflows/dependency-security.yml`)     | Weekly schedule + manual dispatch                                | N/A                                     | Fails on production dependency vulnerabilities (high/critical) |
 
 ## CI Runtime Budget (Targets)
 
 - `CI` docs-only PR: under 5 minutes
-- `CI` code PR (lint + selective tests + build verify): under 15 minutes
+- `CI` code PR (lint + selective tests + build verify + path-gated e2e smoke): under 30 minutes
 - `Deploy to GitHub Pages`: under 15 minutes for build job
 - `Build & publish docker images`: under 90 minutes worst case (all images, multi-arch)
 

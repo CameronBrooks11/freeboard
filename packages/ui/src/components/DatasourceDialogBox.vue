@@ -21,6 +21,7 @@ import TypeSelect from "./TypeSelect.vue";
 import router from "../router";
 import type { Router } from "vue-router";
 import type { DatasourcePlugin, UnknownRecord } from "../types/runtime.js";
+import { shouldShowBrokerProfileQuickCreate } from "../uiLayoutPolicy";
 
 type FormComponentRef = {
   hasErrors: () => boolean;
@@ -188,8 +189,11 @@ const datasourcePluginsOptions = computed(() =>
     .filter((entry): entry is { value: string; label: string } => Boolean(entry)),
 );
 
-const showBrokerProfileQuickCreate = computed(
-  () => typeRef.value === "mqtt" && brokerProfiles.value.length === 0,
+const showBrokerProfileQuickCreate = computed(() =>
+  shouldShowBrokerProfileQuickCreate({
+    datasourceType: typeRef.value,
+    brokerProfilesCount: brokerProfiles.value.length,
+  }),
 );
 const adminBrokerProfilesHref = computed(() => routerTyped.resolve({ path: "/admin" }).href);
 

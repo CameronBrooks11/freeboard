@@ -107,9 +107,13 @@ Core env values:
 - `GATEWAY_SERVICE_TOKEN` (required gateway introspection auth token)
 - `CREDENTIAL_ENCRYPTION_KEY` (required API credential profile encryption key)
 - `EGRESS_ALLOWED_HOSTS` (required for containerized gateway startup)
+- `API_TRUST_PROXY_HOPS` / `REALTIME_TRUST_PROXY_HOPS` (trusted reverse-proxy hop counts for client IP derivation)
+- `SECURITY_LIMITER_BACKEND` / `SECURITY_LIMITER_FAILURE_MODE` / `SECURITY_LIMITER_NAMESPACE` (API shared limiter backend + fail policy)
+- `REALTIME_LIMITER_FAILURE_MODE` / `GATEWAY_LIMITER_TIMEOUT_MS` (gateway realtime limiter outage behavior)
 - `REALTIME_*` (required to tune realtime policy, limits, and protocol toggles)
 
 Secret setup/rotation workflow is centralized in [Secrets Operations Runbook](/manual/secrets-operations).
+Security control deployment/rollback workflow is centralized in [Security Controls Rollout Runbook](/manual/security-controls-rollout).
 
 ## Security Defaults
 
@@ -119,15 +123,19 @@ Secret setup/rotation workflow is centralized in [Secrets Operations Runbook](/m
   - API requires `FREEBOARD_MONGO_URL`
   - API requires `JWT_SECRET`
   - API requires `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`, `CREDENTIAL_ENCRYPTION_KEY`
+  - API security limiter defaults to Mongo-backed shared state in non-dev runtime
   - Gateway requires `EGRESS_ALLOWED_HOSTS`, `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`
   - Gateway realtime policy defaults to enabled, with protocol toggles and per-IP/per-dashboard limits
 
 ## CI Topology
 
 - Required PR workflow: `.github/workflows/ci.yml`
-  - Jobs: `changes` -> conditional `lint`, `test-api`, `test-ui`, `test-gateway`, `build-verify` -> always-run `Required CI`.
+  - Jobs: `changes` -> conditional `lint`, `test-api`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `typecheck` -> always-run `Required CI`.
   - Concurrency: cancels superseded PR runs using PR-number/ref keyed group.
   - Required check target for branch protection: `Required CI`.
+- Manual E2E rerun workflow: `.github/workflows/e2e-smoke.yml`
+  - Trigger: `workflow_dispatch`
+  - Purpose: ad-hoc Playwright smoke reruns and artifact collection outside required PR gating.
 - Pages workflow: `.github/workflows/build-pages.yml`
   - Runs only on docs/demo-relevant path changes on `main`.
   - Concurrency cancellation enabled per ref.

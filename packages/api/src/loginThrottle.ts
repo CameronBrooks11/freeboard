@@ -1,52 +1,26 @@
 /**
  * @module loginThrottle
- * In-memory login attempt throttle with rolling-window lockout.
+ * Login throttle built on shared security limiter primitives.
  */
 
 import { config } from "./config.js";
-
-type AttemptEntry = {
-  failedAt: number[];
-  lockUntil: number;
-};
-
-const attemptState = new Map<string, AttemptEntry>();
+import {
+  buildLimiterCompositeKey,
+  clearSecurityLimiterState,
+  consumeSecurityLimiterFixedWindow,
+  getSecurityLimiterLockState,
+  hashLimiterKeyPart,
+  resetSecurityLimiterMemoryState,
+  setSecurityLimiterLock,
+} from "./securityLimiter.js";
+import { recordApiLimiterDecision } from "./runtimeMetrics.js";
 
 const toMs = (seconds: number): number => Number(seconds) * 1000;
 const WINDOW_MS = toMs(config.authLoginWindowSeconds);
 const LOCK_MS = toMs(config.authLoginLockSeconds);
 const MAX_ATTEMPTS = Number(config.authLoginMaxAttempts);
-
-const trimFailures = (entry: AttemptEntry, now: number): void => {
-  entry.failedAt = entry.failedAt.filter((ts) => now - ts <= WINDOW_MS);
-};
-
-const ensureEntry = (key: string): AttemptEntry => {
-  const existing = attemptState.get(key);
-  if (existing) {
-    return existing;
-  }
-
-  const created: AttemptEntry = {
-    failedAt: [],
-    lockUntil: 0,
-  };
-  attemptState.set(key, created);
-  return created;
-};
-
-const destroyIfIdle = (key: string, entry: AttemptEntry): void => {
-  if (entry.failedAt.length === 0 && entry.lockUntil <= 0) {
-    attemptState.delete(key);
-  }
-};
-
-const normalizeKeyPart = (value: unknown, fallback: string): string => {
-  const normalized = String(value || "")
-    .trim()
-    .toLowerCase();
-  return normalized || fallback;
-};
+const THROTTLE_SCOPE = "auth-login-throttle";
+const FALLBACK_RETRY_AFTER_MS = 1000;
 
 /**
  * Build stable throttle key from login email and client ip.
@@ -59,9 +33,10 @@ export const buildLoginThrottleKey = (
   email: string,
   clientIp: string | undefined | null,
 ): string => {
-  const normalizedEmail = normalizeKeyPart(email, "unknown-email");
-  const normalizedIp = normalizeKeyPart(clientIp, "unknown-ip");
-  return `${normalizedEmail}::${normalizedIp}`;
+  return buildLimiterCompositeKey(
+    hashLimiterKeyPart(email),
+    hashLimiterKeyPart(clientIp || "unknown-ip"),
+  );
 };
 
 /**
@@ -69,28 +44,39 @@ export const buildLoginThrottleKey = (
  *
  * @param {string} key
  * @param {number} [now=Date.now()]
- * @returns {{ blocked: boolean, retryAfterMs: number }}
+ * @returns {Promise<{ blocked: boolean, retryAfterMs: number, unavailable?: boolean }>}
  */
 export const getLoginThrottleState = (
   key: string,
   now = Date.now(),
-): { blocked: boolean; retryAfterMs: number } => {
-  const entry = attemptState.get(key);
-  if (!entry) {
-    return { blocked: false, retryAfterMs: 0 };
-  }
+): Promise<{ blocked: boolean; retryAfterMs: number; unavailable?: boolean }> => {
+  return getSecurityLimiterLockState({
+    scope: THROTTLE_SCOPE,
+    keyMaterial: key,
+    nowMs: now,
+  }).catch((error: unknown) => {
+    const errorMessage =
+      error && typeof error === "object" && "message" in error
+        ? String((error as { message?: string }).message || "unknown error")
+        : "unknown error";
+    console.warn(`Security limiter warning: failed to read login lock state (${errorMessage}).`);
+    recordApiLimiterDecision({ outcome: "backend_error" });
 
-  trimFailures(entry, now);
-  if (entry.lockUntil > now) {
+    if (config.securityLimiterFailureMode === "fail-open") {
+      recordApiLimiterDecision({ outcome: "fail_open" });
+      return {
+        blocked: false,
+        retryAfterMs: 0,
+      };
+    }
+
+    recordApiLimiterDecision({ outcome: "fail_closed" });
     return {
       blocked: true,
-      retryAfterMs: entry.lockUntil - now,
+      retryAfterMs: FALLBACK_RETRY_AFTER_MS,
+      unavailable: true,
     };
-  }
-
-  entry.lockUntil = 0;
-  destroyIfIdle(key, entry);
-  return { blocked: false, retryAfterMs: 0 };
+  });
 };
 
 /**
@@ -98,39 +84,86 @@ export const getLoginThrottleState = (
  *
  * @param {string} key
  * @param {number} [now=Date.now()]
- * @returns {{ blocked: boolean, retryAfterMs: number, justLocked: boolean }}
+ * @returns {Promise<{ blocked: boolean, retryAfterMs: number, justLocked: boolean, unavailable?: boolean }>}
  */
 export const recordFailedLoginAttempt = (
   key: string,
   now = Date.now(),
-): { blocked: boolean; retryAfterMs: number; justLocked: boolean } => {
-  const entry = ensureEntry(key);
-  trimFailures(entry, now);
+): Promise<{
+  blocked: boolean;
+  retryAfterMs: number;
+  justLocked: boolean;
+  unavailable?: boolean;
+}> => {
+  return getSecurityLimiterLockState({
+    scope: THROTTLE_SCOPE,
+    keyMaterial: key,
+    nowMs: now,
+  })
+    .then(async (lockState) => {
+      if (lockState.blocked) {
+        return {
+          blocked: true,
+          retryAfterMs: lockState.retryAfterMs,
+          justLocked: false,
+        };
+      }
 
-  if (entry.lockUntil > now) {
-    return {
-      blocked: true,
-      retryAfterMs: entry.lockUntil - now,
-      justLocked: false,
-    };
-  }
+      const consumeResult = await consumeSecurityLimiterFixedWindow({
+        scope: THROTTLE_SCOPE,
+        keyMaterial: key,
+        limit: MAX_ATTEMPTS,
+        windowMs: WINDOW_MS,
+        nowMs: now,
+      });
+      const reachedThreshold = consumeResult.allowed && consumeResult.remaining === 0;
+      if (consumeResult.allowed && !reachedThreshold) {
+        recordApiLimiterDecision({ outcome: "allowed" });
+        return {
+          blocked: false,
+          retryAfterMs: 0,
+          justLocked: false,
+        };
+      }
 
-  entry.failedAt.push(now);
-  if (entry.failedAt.length < MAX_ATTEMPTS) {
-    return {
-      blocked: false,
-      retryAfterMs: 0,
-      justLocked: false,
-    };
-  }
+      recordApiLimiterDecision({ outcome: "rejected" });
+      await setSecurityLimiterLock({
+        scope: THROTTLE_SCOPE,
+        keyMaterial: key,
+        ttlMs: LOCK_MS,
+        nowMs: now,
+      });
+      return {
+        blocked: true,
+        retryAfterMs: LOCK_MS,
+        justLocked: true,
+      };
+    })
+    .catch((error: unknown) => {
+      const errorMessage =
+        error && typeof error === "object" && "message" in error
+          ? String((error as { message?: string }).message || "unknown error")
+          : "unknown error";
+      console.warn(`Security limiter warning: failed to record login attempt (${errorMessage}).`);
+      recordApiLimiterDecision({ outcome: "backend_error" });
 
-  entry.failedAt = [];
-  entry.lockUntil = now + LOCK_MS;
-  return {
-    blocked: true,
-    retryAfterMs: LOCK_MS,
-    justLocked: true,
-  };
+      if (config.securityLimiterFailureMode === "fail-open") {
+        recordApiLimiterDecision({ outcome: "fail_open" });
+        return {
+          blocked: false,
+          retryAfterMs: 0,
+          justLocked: false,
+        };
+      }
+
+      recordApiLimiterDecision({ outcome: "fail_closed" });
+      return {
+        blocked: true,
+        retryAfterMs: FALLBACK_RETRY_AFTER_MS,
+        justLocked: false,
+        unavailable: true,
+      };
+    });
 };
 
 /**
@@ -138,13 +171,25 @@ export const recordFailedLoginAttempt = (
  *
  * @param {string} key
  */
-export const clearLoginThrottle = (key: string): void => {
-  attemptState.delete(key);
+export const clearLoginThrottle = async (key: string): Promise<void> => {
+  await clearSecurityLimiterState({
+    scope: THROTTLE_SCOPE,
+    keyMaterial: key,
+  }).catch((error: unknown) => {
+    const errorMessage =
+      error && typeof error === "object" && "message" in error
+        ? String((error as { message?: string }).message || "unknown error")
+        : "unknown error";
+    console.warn(
+      `Security limiter warning: failed to clear login throttle state (${errorMessage}).`,
+    );
+    recordApiLimiterDecision({ outcome: "backend_error" });
+  });
 };
 
 /**
- * Test helper to reset all in-memory throttle state.
+ * Test helper to reset local memory throttle state.
  */
 export const resetLoginThrottleState = (): void => {
-  attemptState.clear();
+  resetSecurityLimiterMemoryState();
 };

@@ -55,6 +55,19 @@ test("setContext hydrates authenticated user when sessionVersion matches", async
   assert.equal(context.user.sessionVersion, 2);
 });
 
+test("setContext derives clientIp from socket address when trust hops are disabled", async () => {
+  const context = await setContext({
+    req: {
+      headers: {
+        "x-forwarded-for": "198.51.100.10, 203.0.113.20",
+      },
+      socket: { remoteAddress: "::ffff:127.0.0.1" },
+    },
+  });
+
+  assert.equal(context.clientIp, "127.0.0.1");
+});
+
 test("setContext rejects stale JWT when sessionVersion no longer matches", async () => {
   const token = createAuthToken("viewer@example.com", "viewer", true, "user-1", 0);
 

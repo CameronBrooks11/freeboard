@@ -27,6 +27,7 @@ jobs:
       run_api_tests: ${{ steps.classify.outputs.run_api_tests }}
       run_ui_tests: ${{ steps.classify.outputs.run_ui_tests }}
       run_gateway_tests: ${{ steps.classify.outputs.run_gateway_tests }}
+      run_e2e_smoke: ${{ steps.classify.outputs.run_e2e_smoke }}
       run_build_verify: ${{ steps.classify.outputs.run_build_verify }}
       run_typecheck: ${{ steps.classify.outputs.run_typecheck }}
     steps:
@@ -65,6 +66,18 @@ jobs:
               - 'packages/gateway/tsconfig*.json'
               - 'packages/gateway/package.json'
               - 'packages/gateway/Dockerfile'
+            e2e:
+              - 'e2e/**'
+              - 'scripts/e2e-smoke.mjs'
+              - 'playwright.e2e.config.mjs'
+              - 'docker-compose.mongo.yml'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.nvmrc'
+              - '.env.dev'
+              - '.github/workflows/ci.yml'
+            runtime_shared:
+              - 'packages/shared/**'
             shared:
               - 'package.json'
               - 'package-lock.json'
@@ -87,10 +100,12 @@ jobs:
           api="${{ steps.filter.outputs.api }}"
           ui="${{ steps.filter.outputs.ui }}"
           gateway="${{ steps.filter.outputs.gateway }}"
+          e2e="${{ steps.filter.outputs.e2e }}"
+          runtime_shared="${{ steps.filter.outputs.runtime_shared }}"
           shared="${{ steps.filter.outputs.shared }}"
 
           non_docs=false
-          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             non_docs=true
           fi
 
@@ -100,7 +115,7 @@ jobs:
           fi
 
           run_api_tests=false
-          if [[ "$api" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             run_api_tests=true
           fi
 
@@ -110,17 +125,22 @@ jobs:
           fi
 
           run_gateway_tests=false
-          if [[ "$gateway" == "true" || "$shared" == "true" ]]; then
+          if [[ "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             run_gateway_tests=true
           fi
 
+          run_e2e_smoke=false
+          if [[ "$e2e" == "true" || "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" ]]; then
+            run_e2e_smoke=true
+          fi
+
           run_build_verify=false
-          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             run_build_verify=true
           fi
 
           run_typecheck=false
-          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             run_typecheck=true
           fi
 
@@ -132,6 +152,7 @@ jobs:
           echo "run_api_tests=$run_api_tests" >> "$GITHUB_OUTPUT"
           echo "run_ui_tests=$run_ui_tests" >> "$GITHUB_OUTPUT"
           echo "run_gateway_tests=$run_gateway_tests" >> "$GITHUB_OUTPUT"
+          echo "run_e2e_smoke=$run_e2e_smoke" >> "$GITHUB_OUTPUT"
           echo "run_build_verify=$run_build_verify" >> "$GITHUB_OUTPUT"
           echo "run_typecheck=$run_typecheck" >> "$GITHUB_OUTPUT"
 
@@ -142,8 +163,10 @@ jobs:
           echo "  run_api_tests=$run_api_tests"
           echo "  run_ui_tests=$run_ui_tests"
           echo "  run_gateway_tests=$run_gateway_tests"
+          echo "  run_e2e_smoke=$run_e2e_smoke"
           echo "  run_build_verify=$run_build_verify"
           echo "  run_typecheck=$run_typecheck"
+          echo "  runtime_shared=$runtime_shared"
 
   format:
     name: Format check
@@ -246,6 +269,43 @@ jobs:
       - name: Run gateway tests
         run: npm run test:gateway
 
+  test-e2e-smoke:
+    name: Test E2E smoke
+    needs: changes
+    if: needs.changes.outputs.run_e2e_smoke == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Prepare e2e env
+        run: cp .env.dev .env
+      - name: Install Playwright browser (Chromium)
+        run: npx playwright install --with-deps chromium
+      - name: Run smoke E2E
+        env:
+          E2E_BASE_URL: http://127.0.0.1:5173
+          E2E_API_URL: http://127.0.0.1:4001/graphql
+          E2E_GATEWAY_URL: http://127.0.0.1:8001
+        run: npm run test:e2e:smoke
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
   build-verify:
     name: Build verify
     needs: changes
@@ -294,6 +354,7 @@ jobs:
       - test-api
       - test-ui
       - test-gateway
+      - test-e2e-smoke
       - build-verify
       - typecheck
     runs-on: ubuntu-latest
@@ -326,6 +387,7 @@ jobs:
           check_required "${{ needs.changes.outputs.run_api_tests }}" "${{ needs.test-api.result }}" "test-api"
           check_required "${{ needs.changes.outputs.run_ui_tests }}" "${{ needs.test-ui.result }}" "test-ui"
           check_required "${{ needs.changes.outputs.run_gateway_tests }}" "${{ needs.test-gateway.result }}" "test-gateway"
+          check_required "${{ needs.changes.outputs.run_e2e_smoke }}" "${{ needs.test-e2e-smoke.result }}" "test-e2e-smoke"
           check_required "${{ needs.changes.outputs.run_build_verify }}" "${{ needs.build-verify.result }}" "build-verify"
           check_required "${{ needs.changes.outputs.run_typecheck }}" "${{ needs.typecheck.result }}" "typecheck"
 

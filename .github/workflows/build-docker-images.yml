@@ -85,6 +85,12 @@ jobs:
               PACKAGE_CHANGED=true
               break
             fi
+            if [[ "$file" == packages/shared/* ]]; then
+              if [[ "${{ matrix.name }}" == "api" || "${{ matrix.name }}" == "gateway" ]]; then
+                PACKAGE_CHANGED=true
+                break
+              fi
+            fi
             case "$file" in
               package.json|package-lock.json|.dockerignore)
                 PACKAGE_CHANGED=true
