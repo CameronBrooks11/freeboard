@@ -16,6 +16,12 @@ npm run test
 npm run build:verify
 ```
 
+For changes touching `packages/ui/**`, `packages/api/**`, `packages/gateway/**`, or `e2e/**`, also run:
+
+```bash
+npm run test:e2e:smoke
+```
+
 ## Branch and PR Expectations
 
 - Keep PRs scoped to one logical change.

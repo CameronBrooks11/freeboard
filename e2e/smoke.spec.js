@@ -25,7 +25,7 @@ const graphql = async ({ request, token, query, variables = {} }) => {
 
 const loginViaUi = async (page) => {
   await page.goto("/login");
-  await expect(page.locator(".dialog-box__footer .login__footer-action")).toBeVisible();
+  await expect(page.locator(".dialog-box__modal__footer .login__footer-action")).toBeVisible();
   await expect(page.locator(".login__actions .login__footer-action")).toHaveCount(0);
   await page.getByLabel("Email").fill(ADMIN_EMAIL);
   await page.getByLabel("Password").fill(ADMIN_PASSWORD);

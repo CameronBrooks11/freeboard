@@ -1,23 +1,6 @@
 name: E2E smoke
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "packages/ui/**"
-      - "packages/api/**"
-      - "packages/gateway/**"
-      - "e2e/**"
-      - "scripts/e2e-smoke.mjs"
-      - "playwright.e2e.config.mjs"
-      - "docker-compose.mongo.yml"
-      - "package.json"
-      - "package-lock.json"
-      - ".nvmrc"
-      - ".env.dev"
-      - ".github/workflows/e2e-smoke.yml"
-  merge_group:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

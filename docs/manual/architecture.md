@@ -130,9 +130,12 @@ Security control deployment/rollback workflow is centralized in [Security Contro
 ## CI Topology
 
 - Required PR workflow: `.github/workflows/ci.yml`
-  - Jobs: `changes` -> conditional `lint`, `test-api`, `test-ui`, `test-gateway`, `build-verify` -> always-run `Required CI`.
+  - Jobs: `changes` -> conditional `lint`, `test-api`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `typecheck` -> always-run `Required CI`.
   - Concurrency: cancels superseded PR runs using PR-number/ref keyed group.
   - Required check target for branch protection: `Required CI`.
+- Manual E2E rerun workflow: `.github/workflows/e2e-smoke.yml`
+  - Trigger: `workflow_dispatch`
+  - Purpose: ad-hoc Playwright smoke reruns and artifact collection outside required PR gating.
 - Pages workflow: `.github/workflows/build-pages.yml`
   - Runs only on docs/demo-relevant path changes on `main`.
   - Concurrency cancellation enabled per ref.

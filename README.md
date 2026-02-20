@@ -204,10 +204,11 @@ npm run test:realtime:integration
 - `CI` (`.github/workflows/ci.yml`)
   - pull requests to `main`, merge queue, manual dispatch
   - docs-only changes skip heavy jobs
+  - includes path-gated `test-e2e-smoke` in the required workflow for API/UI/gateway/e2e changes
   - stable required check: `Required CI`
 - `E2E smoke` (`.github/workflows/e2e-smoke.yml`)
-  - pull requests to `main` (path-filtered), merge queue, manual dispatch
-  - browser smoke flow for login, datasource render, share view, and admin policy save
+  - manual dispatch only
+  - ad-hoc browser smoke rerun with Playwright artifacts
 - `Build & publish docker images` (`.github/workflows/build-docker-images.yml`)
   - push to `main`, manual dispatch
   - package-aware matrix build skips unchanged images
