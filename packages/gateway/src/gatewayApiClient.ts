@@ -6,6 +6,8 @@
 import jwt from "jsonwebtoken";
 import {
   GATEWAY_INTROSPECTION_URL,
+  GATEWAY_LIMITER_CONSUME_URL,
+  GATEWAY_LIMITER_TIMEOUT_MS,
   GATEWAY_REVOKED_TOKENS_URL,
   GATEWAY_SERVICE_TOKEN,
   INTROSPECTION_TIMEOUT_MS,
@@ -45,6 +47,13 @@ type FetchRevokedTokensParams = {
   fetchFn?: typeof fetch;
 };
 
+type ConsumeLimiterParams = {
+  scope: string;
+  key: string;
+  limitPerMinute: number;
+  fetchFn?: typeof fetch;
+};
+
 export type DatasourceIntrospectionResponse = {
   scope?: string;
   intent?: Record<string, unknown>;
@@ -59,6 +68,13 @@ export type RevokedTokensFeedResponse = {
   nextCursor?: string | null;
   cursorExpired?: boolean;
   events?: RevokedTokenEvent[];
+};
+
+export type GatewayLimiterConsumeResponse = {
+  allowed?: boolean;
+  retryAfterMs?: number;
+  remaining?: number;
+  reason?: string;
 };
 
 export const validateSessionToken = (
@@ -163,5 +179,22 @@ export const fetchRevokedTokens = async ({
       limit,
     },
     timeoutMs: REVOKED_TOKENS_TIMEOUT_MS,
+    fetchFn,
+  });
+
+export const consumeGatewayLimiter = async ({
+  scope,
+  key,
+  limitPerMinute,
+  fetchFn = fetch,
+}: ConsumeLimiterParams): Promise<GatewayLimiterConsumeResponse> =>
+  fetchJson<GatewayLimiterConsumeResponse>({
+    url: GATEWAY_LIMITER_CONSUME_URL,
+    body: {
+      scope,
+      key,
+      limitPerMinute: Math.max(1, Math.floor(Number(limitPerMinute) || 1)),
+    },
+    timeoutMs: GATEWAY_LIMITER_TIMEOUT_MS,
     fetchFn,
   });

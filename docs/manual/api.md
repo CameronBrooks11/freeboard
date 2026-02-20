@@ -20,6 +20,7 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
   - auth/runtime policy defaults (`registrationMode`, `editorCanPublish`, `executionMode`, etc.)
   - login abuse controls (`authLoginMaxAttempts`, `authLoginWindowSeconds`, `authLoginLockSeconds`)
   - trusted proxy controls (`apiTrustProxyHops`)
+  - shared security limiter controls (`securityLimiterBackend`, `securityLimiterFailureMode`, `securityLimiterNamespace`, `securityLimiter*`)
   - datasource token/introspection controls (`datasourceTokenMintRateLimit*`, `gatewayIntrospectionRateLimitPerMin`)
   - datasource session/revocation controls (`datasourceSessionTtlSeconds`, `gatewayRevokedTokens*`, `realtimeRevokeEventRetentionSeconds`)
 
@@ -37,6 +38,7 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
 - Uses socket remote address by default (`API_TRUST_PROXY_HOPS=0`).
 - When `API_TRUST_PROXY_HOPS>0`, the API selects a trusted client IP from `X-Forwarded-For` using right-to-left hop parsing.
 - Reverse proxies in front of API should overwrite `X-Forwarded-For` with authoritative values (not append untrusted inbound chains).
+- Security limiter key segments are hashed before persistence, so raw emails/share tokens/IP composites are not stored as limiter keys.
 
 Token auth is validated against persisted user state (`active` + `sessionVersion`) so revoked tokens become invalid server-side.
 
@@ -128,6 +130,9 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
   - `POST /internal/gateway/datasource-introspect`
 - Exposes internal service-auth revocation feed endpoint for gateway:
   - `POST /internal/gateway/revoked-tokens`
+- Exposes internal service-auth shared limiter endpoint for gateway realtime controls:
+  - `POST /internal/gateway/rate-limit/consume`
+  - accepts only gateway realtime limiter scopes (`realtime-connect-ip`, `realtime-public-subscribe-ip`, `realtime-public-subscribe-share`)
 - Listens on `config.port` (`0.0.0.0`)
 
 ## Running & Docs

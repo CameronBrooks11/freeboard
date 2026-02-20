@@ -32,6 +32,7 @@ import { recordAuditEvent } from "./audit.js";
 import { queryShareTokenRevocationFeed } from "./shareTokenRevocationFeed.js";
 import { recordApiHttpRequest } from "./runtimeMetrics.js";
 import { deriveClientIp } from "./clientIp.js";
+import { hashLimiterKeyPart } from "./securityLimiter.js";
 
 import dns from "dns";
 
@@ -103,6 +104,13 @@ const yoga = createYoga({
 
 const INTERNAL_GATEWAY_INTROSPECTION_PATH = "/internal/gateway/datasource-introspect";
 const INTERNAL_GATEWAY_REVOKED_TOKENS_PATH = "/internal/gateway/revoked-tokens";
+const INTERNAL_GATEWAY_RATE_LIMIT_CONSUME_PATH = "/internal/gateway/rate-limit/consume";
+const ALLOWED_GATEWAY_LIMITER_SCOPES = new Set([
+  "realtime-connect-ip",
+  "realtime-public-subscribe-ip",
+  "realtime-public-subscribe-share",
+]);
+const GATEWAY_LIMITER_MAX_PER_MINUTE = 10_000;
 
 type JsonObject = Record<string, unknown>;
 
@@ -174,21 +182,29 @@ const handleGatewayIntrospection = async (
     trustProxyHops: config.apiTrustProxyHops,
     warningPrefix: "API gateway introspection warning: ",
   });
-  const rateLimit = consumeRateLimit(
-    `gateway-introspection:${clientIp}`,
+  const limiterKey = hashLimiterKeyPart(clientIp);
+  const rateLimit = await consumeRateLimit(
+    `gateway-introspection:${limiterKey}`,
     config.gatewayIntrospectionRateLimitPerMin,
   );
   if (!rateLimit.allowed) {
+    const limiterUnavailable = rateLimit.reason === "backend_fail_closed";
     await recordAuditEvent({
       actorUserId: null,
-      action: "gateway.introspection.rate_limited",
+      action: limiterUnavailable
+        ? "gateway.introspection.limiter_unavailable"
+        : "gateway.introspection.rate_limited",
       targetType: "gateway",
       metadata: {
         clientIp,
-        retryAfterMs: rateLimit.retryAfterMs,
+        retryAfterMs: limiterUnavailable ? null : rateLimit.retryAfterMs,
       },
     });
-    sendJson(res, 429, { error: "Too many introspection requests" });
+    sendJson(res, limiterUnavailable ? 503 : 429, {
+      error: limiterUnavailable
+        ? "Security limiter unavailable"
+        : "Too many introspection requests",
+    });
     return;
   }
 
@@ -263,21 +279,29 @@ const handleGatewayRevokedTokens = async (
     trustProxyHops: config.apiTrustProxyHops,
     warningPrefix: "API gateway revoked-tokens warning: ",
   });
-  const rateLimit = consumeRateLimit(
-    `gateway-revoked-tokens:${clientIp}`,
+  const limiterKey = hashLimiterKeyPart(clientIp);
+  const rateLimit = await consumeRateLimit(
+    `gateway-revoked-tokens:${limiterKey}`,
     config.gatewayRevokedTokensRateLimitPerMin,
   );
   if (!rateLimit.allowed) {
+    const limiterUnavailable = rateLimit.reason === "backend_fail_closed";
     await recordAuditEvent({
       actorUserId: null,
-      action: "gateway.revoked_tokens.rate_limited",
+      action: limiterUnavailable
+        ? "gateway.revoked_tokens.limiter_unavailable"
+        : "gateway.revoked_tokens.rate_limited",
       targetType: "gateway",
       metadata: {
         clientIp,
-        retryAfterMs: rateLimit.retryAfterMs,
+        retryAfterMs: limiterUnavailable ? null : rateLimit.retryAfterMs,
       },
     });
-    sendJson(res, 429, { error: "Too many revoked token polling requests" });
+    sendJson(res, limiterUnavailable ? 503 : 429, {
+      error: limiterUnavailable
+        ? "Security limiter unavailable"
+        : "Too many revoked token polling requests",
+    });
     return;
   }
 
@@ -315,6 +339,81 @@ const handleGatewayRevokedTokens = async (
   }
 };
 
+const handleGatewayRateLimitConsume = async (
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> => {
+  if (req.method !== "POST") {
+    sendJson(res, 405, { error: "Method not allowed" });
+    return;
+  }
+
+  const authHeader = String(req.headers.authorization || "");
+  const serviceToken = authHeader.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length).trim()
+    : "";
+  if (!serviceToken || serviceToken !== config.gatewayServiceToken) {
+    sendJson(res, 401, { error: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const body = await readJsonBody(req);
+    const scope = String(body?.scope || "")
+      .trim()
+      .toLowerCase()
+      .slice(0, 96);
+    const key = String(body?.key || "")
+      .trim()
+      .toLowerCase()
+      .slice(0, 512);
+    const requestedLimit = Number(body?.limitPerMinute);
+    const limitPerMinute = Number.isFinite(requestedLimit)
+      ? Math.max(1, Math.min(GATEWAY_LIMITER_MAX_PER_MINUTE, Math.floor(requestedLimit)))
+      : 1;
+
+    if (!scope || !key) {
+      sendJson(res, 400, { error: "scope and key are required" });
+      return;
+    }
+    if (!ALLOWED_GATEWAY_LIMITER_SCOPES.has(scope)) {
+      sendJson(res, 400, { error: "scope is not supported" });
+      return;
+    }
+
+    const rateLimit = await consumeRateLimit(`gateway-realtime:${scope}:${key}`, limitPerMinute);
+    if (!rateLimit.allowed && rateLimit.reason === "backend_fail_closed") {
+      await recordAuditEvent({
+        actorUserId: null,
+        action: "gateway.realtime.limiter_unavailable",
+        targetType: "gateway",
+        metadata: {
+          scope,
+        },
+      });
+      sendJson(res, 503, {
+        error: "Security limiter unavailable",
+        reason: rateLimit.reason,
+      });
+      return;
+    }
+
+    sendJson(res, 200, {
+      allowed: rateLimit.allowed,
+      retryAfterMs: rateLimit.retryAfterMs,
+      remaining: rateLimit.remaining,
+      reason: rateLimit.reason,
+    });
+  } catch (error: unknown) {
+    const statusCode = resolveErrorStatusCode(error);
+    const message =
+      statusCode >= 500
+        ? "Gateway limiter consume request failed"
+        : resolveErrorMessage(error, "Gateway limiter consume request failed");
+    sendJson(res, statusCode, { error: message });
+  }
+};
+
 /**
  * HTTP server wrapping GraphQL Yoga instance plus internal gateway endpoints.
  * @type {HTTPServer}
@@ -335,6 +434,10 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
   }
   if (requestUrl.pathname === INTERNAL_GATEWAY_REVOKED_TOKENS_PATH) {
     handleGatewayRevokedTokens(req, res);
+    return;
+  }
+  if (requestUrl.pathname === INTERNAL_GATEWAY_RATE_LIMIT_CONSUME_PATH) {
+    handleGatewayRateLimitConsume(req, res);
     return;
   }
   yoga(req, res);

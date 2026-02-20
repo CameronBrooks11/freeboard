@@ -19,6 +19,12 @@ const CONFIG_ENV_KEYS = [
   "AUTH_LOGIN_MAX_ATTEMPTS",
   "AUTH_LOGIN_WINDOW_SECONDS",
   "AUTH_LOGIN_LOCK_SECONDS",
+  "SECURITY_LIMITER_BACKEND",
+  "SECURITY_LIMITER_FAILURE_MODE",
+  "SECURITY_LIMITER_NAMESPACE",
+  "SECURITY_LIMITER_HASH_SALT",
+  "SECURITY_LIMITER_MONGO_TIMEOUT_MS",
+  "SECURITY_LIMITER_MEMORY_MAX_KEYS",
   "JWT_GATEWAY_SECRET",
   "GATEWAY_SERVICE_TOKEN",
   "CREDENTIAL_ENCRYPTION_KEY",
@@ -83,6 +89,27 @@ test("config rejects weak JWT secret in non-development runtime", async () => {
     },
     async () => {
       await assert.rejects(() => importConfigFresh(), /JWT_SECRET is missing or too weak/);
+    },
+  );
+});
+
+test("config enforces mongo security limiter backend in non-development runtime", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "production",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      SECURITY_LIMITER_BACKEND: "memory",
+      CREATE_ADMIN: "false",
+      MONGO_URL: "mongodb://127.0.0.1:27017/freeboard",
+      JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
+      GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
+      CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
+    },
+    async () => {
+      await assert.rejects(
+        () => importConfigFresh(),
+        /SECURITY_LIMITER_BACKEND must be set to 'mongo'/,
+      );
     },
   );
 });

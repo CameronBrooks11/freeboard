@@ -153,11 +153,13 @@ const loadRealtimeGatewayModule = async ({
   realtimePublicRevalidateIntervalMs = 25,
   realtimePublicFullRevalidateIntervalMs = 300,
   realtimeWsPingIntervalMs = 30,
+  realtimeLimiterFailureMode = "fail-open",
 } = {}) => {
   process.env.NODE_ENV = "test";
   process.env.JWT_GATEWAY_SECRET = JWT_GATEWAY_SECRET;
   process.env.GATEWAY_SERVICE_TOKEN = GATEWAY_SERVICE_TOKEN;
   process.env.REALTIME_ENABLED = "true";
+  process.env.REALTIME_LIMITER_FAILURE_MODE = String(realtimeLimiterFailureMode);
   process.env.REALTIME_PUBLIC_REVALIDATE_INTERVAL_MS = String(realtimePublicRevalidateIntervalMs);
   process.env.REALTIME_PUBLIC_FULL_REVALIDATE_INTERVAL_MS = String(
     realtimePublicFullRevalidateIntervalMs,
@@ -169,12 +171,48 @@ const loadRealtimeGatewayModule = async ({
   return import(moduleUrl.href);
 };
 
+const expectRealtimeHandshakeStatus = async (port: number, expectedStatusCode: number) =>
+  new Promise((resolve, reject) => {
+    const client = new WebSocket(`ws://127.0.0.1:${port}/gateway/realtime`);
+    const timeoutId = setTimeout(() => {
+      reject(new Error("Timed out waiting for realtime handshake response"));
+    }, 2000);
+
+    client.once("unexpected-response", (_request, response) => {
+      clearTimeout(timeoutId);
+      const statusCode = Number(response.statusCode || 0);
+      if (statusCode !== expectedStatusCode) {
+        reject(new Error(`Expected handshake ${expectedStatusCode}, received ${statusCode}`));
+        return;
+      }
+      response.resume();
+      client.terminate();
+      resolve(statusCode);
+    });
+    client.once("open", () => {
+      clearTimeout(timeoutId);
+      client.close();
+      reject(new Error("Expected handshake failure but websocket opened"));
+    });
+    client.once("error", () => {
+      // `unexpected-response` is authoritative for these handshake tests.
+    });
+  });
+
 test("realtime gateway websocket subscribe/unsubscribe lifecycle emits ack, status, and data", async () => {
   const { createRealtimeGateway } = await loadRealtimeGatewayModule();
   const upstreamSockets = [];
 
   const fetchStub = async (url) => {
     const normalizedUrl = String(url || "");
+    if (normalizedUrl.endsWith("/internal/gateway/rate-limit/consume")) {
+      return makeJsonResponse(200, {
+        allowed: true,
+        retryAfterMs: 0,
+        remaining: 100,
+        reason: "allowed",
+      });
+    }
     if (normalizedUrl.endsWith("/internal/gateway/datasource-introspect")) {
       return makeJsonResponse(200, {
         scope: "datasource:stream",
@@ -299,6 +337,14 @@ test("realtime gateway disconnects stale public subscriptions from revoked feed 
   let revokedFeedCalls = 0;
   const fetchStub = async (url) => {
     const normalizedUrl = String(url || "");
+    if (normalizedUrl.endsWith("/internal/gateway/rate-limit/consume")) {
+      return makeJsonResponse(200, {
+        allowed: true,
+        retryAfterMs: 0,
+        remaining: 100,
+        reason: "allowed",
+      });
+    }
     if (normalizedUrl.endsWith("/internal/gateway/datasource-introspect")) {
       return makeJsonResponse(200, {
         scope: "datasource:stream",
@@ -408,6 +454,14 @@ test("realtime gateway runs full revalidation when revocation cursor expires", a
   let revokedFeedCalls = 0;
   const fetchStub = async (url) => {
     const normalizedUrl = String(url || "");
+    if (normalizedUrl.endsWith("/internal/gateway/rate-limit/consume")) {
+      return makeJsonResponse(200, {
+        allowed: true,
+        retryAfterMs: 0,
+        remaining: 100,
+        reason: "allowed",
+      });
+    }
 
     if (normalizedUrl.endsWith("/internal/gateway/datasource-introspect")) {
       introspectionCalls += 1;
@@ -505,6 +559,97 @@ test("realtime gateway runs full revalidation when revocation cursor expires", a
     assert.match(String(revokeError.message || ""), /revoked/i);
     assert.equal(introspectionCalls >= 2, true);
     assert.equal(revokedFeedCalls >= 1, true);
+  } finally {
+    await closeRealtimeHarness({ client, gateway, server });
+  }
+});
+
+test("realtime websocket handshake fails closed when limiter backend is unavailable", async () => {
+  const { createRealtimeGateway } = await loadRealtimeGatewayModule({
+    realtimeLimiterFailureMode: "fail-closed",
+  });
+
+  const fetchStub = async (url) => {
+    const normalizedUrl = String(url || "");
+    if (normalizedUrl.endsWith("/internal/gateway/rate-limit/consume")) {
+      return makeJsonResponse(503, {
+        error: "Security limiter unavailable",
+      });
+    }
+    if (normalizedUrl.endsWith("/internal/gateway/revoked-tokens")) {
+      return makeJsonResponse(200, {
+        events: [],
+        nextCursor: "cursor-empty",
+        cursorExpired: false,
+      });
+    }
+    throw new Error(`Unexpected fetch URL in test: ${normalizedUrl}`);
+  };
+
+  const server = createServer((_req, res) => {
+    res.statusCode = 404;
+    res.end();
+  });
+  const gateway = createRealtimeGateway({
+    server,
+    lookup: async () => [{ address: "93.184.216.34", family: 4 }],
+    fetchFn: fetchStub,
+    wsClientFactory: () => new FakeUpstreamWebSocket(),
+  });
+
+  try {
+    await new Promise((resolve) => {
+      server.listen(0, "127.0.0.1", resolve);
+    });
+    const port = Number(server.address()?.port || 0);
+    await expectRealtimeHandshakeStatus(port, 503);
+  } finally {
+    await closeRealtimeHarness({ gateway, server });
+  }
+});
+
+test("realtime websocket handshake allows fail-open limiter policy during backend outage", async () => {
+  const { createRealtimeGateway } = await loadRealtimeGatewayModule({
+    realtimeLimiterFailureMode: "fail-open",
+  });
+
+  const fetchStub = async (url) => {
+    const normalizedUrl = String(url || "");
+    if (normalizedUrl.endsWith("/internal/gateway/rate-limit/consume")) {
+      return makeJsonResponse(503, {
+        error: "Security limiter unavailable",
+      });
+    }
+    if (normalizedUrl.endsWith("/internal/gateway/revoked-tokens")) {
+      return makeJsonResponse(200, {
+        events: [],
+        nextCursor: "cursor-empty",
+        cursorExpired: false,
+      });
+    }
+    throw new Error(`Unexpected fetch URL in test: ${normalizedUrl}`);
+  };
+
+  const server = createServer((_req, res) => {
+    res.statusCode = 404;
+    res.end();
+  });
+  const gateway = createRealtimeGateway({
+    server,
+    lookup: async () => [{ address: "93.184.216.34", family: 4 }],
+    fetchFn: fetchStub,
+    wsClientFactory: () => new FakeUpstreamWebSocket(),
+  });
+
+  let client;
+  try {
+    await new Promise((resolve) => {
+      server.listen(0, "127.0.0.1", resolve);
+    });
+    const port = Number(server.address()?.port || 0);
+    const connection = await connectRealtimeClient(port);
+    client = connection.client;
+    assert.equal(client.readyState === WebSocket.OPEN, true);
   } finally {
     await closeRealtimeHarness({ client, gateway, server });
   }

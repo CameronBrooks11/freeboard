@@ -20,6 +20,8 @@ The gateway is the execution boundary for outbound datasource traffic. It valida
   - preserve original host header and TLS SNI
 - Requires datasource session token (`JWT_GATEWAY_SECRET` trust contract).
 - Requires API introspection service-auth (`GATEWAY_SERVICE_TOKEN`).
+- Uses API-backed shared limiter checks for realtime connect/subscribe controls (`/internal/gateway/rate-limit/consume`).
+- Hashes sensitive/high-cardinality limiter key segments before sending internal limiter consume requests.
 
 ## Endpoints
 
@@ -112,6 +114,7 @@ Shared/egress:
 - `FETCH_MAX_RESPONSE_BYTES` (default: `5242880`)
 - `GATEWAY_INTROSPECTION_TIMEOUT_MS` (default: `5000`)
 - `GATEWAY_REVOKED_TOKENS_TIMEOUT_MS` (default: `5000`)
+- `GATEWAY_LIMITER_TIMEOUT_MS` (default: `3000`)
 - `GATEWAY_REVOKED_TOKENS_MAX_BATCH` (default: `500`)
 - `JWT_GATEWAY_SECRET` (required shared key)
 - `GATEWAY_SERVICE_TOKEN` (required internal API service token)
@@ -133,6 +136,7 @@ Realtime global:
 - `REALTIME_PUBLIC_REVALIDATE_INTERVAL_MS`
 - `REALTIME_PUBLIC_FULL_REVALIDATE_INTERVAL_MS`
 - `REALTIME_TRUST_PROXY_HOPS`
+- `REALTIME_LIMITER_FAILURE_MODE` (`fail-open` or `fail-closed`)
 - `API_TRUST_PROXY_HOPS` (API-side companion setting for consistent client IP derivation)
 
 Realtime protocol toggles:
@@ -156,6 +160,7 @@ Realtime protocol toggles:
 - Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false` unless on a trusted local-only network.
 - Review `EGRESS_ALLOWED_HOSTS` as part of deployment change control.
 - Keep `REALTIME_TRUST_PROXY_HOPS` and `API_TRUST_PROXY_HOPS` aligned for each reverse-proxy topology.
+- Keep `REALTIME_LIMITER_FAILURE_MODE=fail-closed` in production unless degraded-mode acceptance is explicitly approved.
 - Configure edge proxies to overwrite `X-Forwarded-For` with authoritative client identity values.
 - Use the [Secrets Operations Runbook](/manual/secrets-operations) for `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`, and Mongo credential lifecycle operations.
 - Rotate credential encryption keys with the dedicated [Credential Key Rotation Runbook](/manual/credential-key-rotation).

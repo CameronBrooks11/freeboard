@@ -54,6 +54,19 @@ const parseCsvList = (value: unknown): string[] =>
     .map((entry) => entry.trim())
     .filter(Boolean);
 
+const toLimiterFailureMode = (
+  value: unknown,
+  fallback: "fail-open" | "fail-closed",
+): "fail-open" | "fail-closed" => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (normalized === "fail-open" || normalized === "fail-closed") {
+    return normalized;
+  }
+  return fallback;
+};
+
 export const PORT = Number(process.env.PORT || 8001);
 export const HOST = process.env.HOST || "0.0.0.0";
 export const NODE_ENV = String(process.env.NODE_ENV || "development").toLowerCase();
@@ -94,6 +107,16 @@ export const GATEWAY_SERVICE_TOKEN =
 export const GATEWAY_API_BASE_URL = process.env.GATEWAY_API_BASE_URL || "http://127.0.0.1:4001";
 export const GATEWAY_INTROSPECTION_URL = `${GATEWAY_API_BASE_URL.replace(/\/$/, "")}/internal/gateway/datasource-introspect`;
 export const GATEWAY_REVOKED_TOKENS_URL = `${GATEWAY_API_BASE_URL.replace(/\/$/, "")}/internal/gateway/revoked-tokens`;
+export const GATEWAY_LIMITER_CONSUME_URL = `${GATEWAY_API_BASE_URL.replace(/\/$/, "")}/internal/gateway/rate-limit/consume`;
+export const GATEWAY_LIMITER_TIMEOUT_MS = toPositiveInteger(
+  process.env.GATEWAY_LIMITER_TIMEOUT_MS,
+  3000,
+);
+export const getRealtimeLimiterFailureMode = (): "fail-open" | "fail-closed" =>
+  toLimiterFailureMode(
+    process.env.REALTIME_LIMITER_FAILURE_MODE,
+    IS_PRODUCTION ? "fail-closed" : "fail-open",
+  );
 
 export const REALTIME_ENABLED = toBoolean(process.env.REALTIME_ENABLED, true);
 export const REALTIME_MAX_CLIENT_CONNECTIONS_PER_IP = toPositiveInteger(

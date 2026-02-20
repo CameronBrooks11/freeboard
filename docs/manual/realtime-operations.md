@@ -82,6 +82,8 @@ Connection and rate limits:
 - `REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_SHARE_TOKEN_PER_MIN`
 - `REALTIME_TRUST_PROXY_HOPS`
 - `API_TRUST_PROXY_HOPS`
+- `REALTIME_LIMITER_FAILURE_MODE`
+- `GATEWAY_LIMITER_TIMEOUT_MS`
 
 Revalidation:
 
@@ -111,4 +113,6 @@ MQTT policy:
 - Keep protocol toggles off for unused transports.
 - Validate `REALTIME_TRUST_PROXY_HOPS` and `API_TRUST_PROXY_HOPS` for reverse-proxy deployments.
 - Ensure edge reverse proxies overwrite `X-Forwarded-For` instead of appending untrusted inbound values.
+- Keep `SECURITY_LIMITER_BACKEND=mongo` and `SECURITY_LIMITER_FAILURE_MODE=fail-closed` for non-dev runtime.
+- Keep `REALTIME_LIMITER_FAILURE_MODE=fail-closed` unless a controlled degraded-mode runbook explicitly allows fail-open.
 - Use [Secrets Operations Runbook](/manual/secrets-operations) for token/key rotation windows.

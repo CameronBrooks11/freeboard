@@ -11,6 +11,7 @@ import { config } from "../config.js";
 import { createClientError, mintDatasourceSessionToken } from "../datasourceGateway.js";
 import Dashboard from "../models/Dashboard.js";
 import { consumeRateLimit } from "../rateLimit.js";
+import { buildLimiterCompositeKey, hashLimiterKeyPart } from "../securityLimiter.js";
 import { ensureThatPrincipalHasServiceScope } from "../auth.js";
 import { recordDatasourceMintMetric } from "../runtimeMetrics.js";
 
@@ -33,7 +34,12 @@ const toGraphQLError = (
       ? (error as { statusCode?: number; message?: string })
       : null;
   if (typedError?.statusCode) {
-    const code = typedError.statusCode === 429 ? "TOO_MANY_REQUESTS" : "FORBIDDEN";
+    const code =
+      typedError.statusCode === 429
+        ? "TOO_MANY_REQUESTS"
+        : typedError.statusCode === 503
+          ? "SERVICE_UNAVAILABLE"
+          : "FORBIDDEN";
     return createGraphQLError(typedError.message || fallbackMessage, {
       extensions: { code },
     });
@@ -55,81 +61,118 @@ const enforceMintRateLimit = async ({
 
   if (context.user?._id) {
     const userId = toComparableId(context.user._id);
-    const userBucket = consumeRateLimit(
-      `datasource-mint:user:${userId}`,
+    const userBucket = await consumeRateLimit(
+      `datasource-mint:user:${buildLimiterCompositeKey(hashLimiterKeyPart(userId))}`,
       config.datasourceTokenMintRateLimitUserPerMin,
     );
     if (!userBucket.allowed) {
+      const limiterUnavailable = userBucket.reason === "backend_fail_closed";
       await recordAuditEvent({
         actorUserId: userId,
-        action: "datasource.session_token.rate_limited",
+        action: limiterUnavailable
+          ? "datasource.session_token.limiter_unavailable"
+          : "datasource.session_token.rate_limited",
         targetType: "dashboard",
         targetId: normalizedDashboardId,
         metadata: {
           scope: "user",
-          retryAfterMs: userBucket.retryAfterMs,
+          retryAfterMs: limiterUnavailable ? null : userBucket.retryAfterMs,
         },
       });
-      throw createClientError(429, "Too many datasource session token requests");
+      throw createClientError(
+        limiterUnavailable ? 503 : 429,
+        limiterUnavailable
+          ? "Datasource session token limiter is temporarily unavailable"
+          : "Too many datasource session token requests",
+      );
     }
 
-    const dashboardBucket = consumeRateLimit(
-      `datasource-mint:user-dashboard:${userId}:${normalizedDashboardId || "unknown-dashboard"}`,
+    const dashboardBucket = await consumeRateLimit(
+      `datasource-mint:user-dashboard:${buildLimiterCompositeKey(
+        hashLimiterKeyPart(userId),
+        hashLimiterKeyPart(normalizedDashboardId || "unknown-dashboard"),
+      )}`,
       config.datasourceTokenMintRateLimitUserPerMin,
     );
     if (!dashboardBucket.allowed) {
+      const limiterUnavailable = dashboardBucket.reason === "backend_fail_closed";
       await recordAuditEvent({
         actorUserId: userId,
-        action: "datasource.session_token.rate_limited",
+        action: limiterUnavailable
+          ? "datasource.session_token.limiter_unavailable"
+          : "datasource.session_token.rate_limited",
         targetType: "dashboard",
         targetId: normalizedDashboardId,
         metadata: {
           scope: "user-dashboard",
-          retryAfterMs: dashboardBucket.retryAfterMs,
+          retryAfterMs: limiterUnavailable ? null : dashboardBucket.retryAfterMs,
         },
       });
-      throw createClientError(429, "Too many datasource session token requests");
+      throw createClientError(
+        limiterUnavailable ? 503 : 429,
+        limiterUnavailable
+          ? "Datasource session token limiter is temporarily unavailable"
+          : "Too many datasource session token requests",
+      );
     }
     return;
   }
 
-  const ipBucket = consumeRateLimit(
-    `datasource-mint:public-ip:${clientIp}`,
+  const ipBucket = await consumeRateLimit(
+    `datasource-mint:public-ip:${buildLimiterCompositeKey(hashLimiterKeyPart(clientIp))}`,
     config.datasourceTokenMintRateLimitPublicIpPerMin,
   );
   if (!ipBucket.allowed) {
+    const limiterUnavailable = ipBucket.reason === "backend_fail_closed";
     await recordAuditEvent({
       actorUserId: null,
-      action: "datasource.session_token.rate_limited",
+      action: limiterUnavailable
+        ? "datasource.session_token.limiter_unavailable"
+        : "datasource.session_token.rate_limited",
       targetType: "dashboard",
       targetId: normalizedDashboardId,
       metadata: {
         scope: "public-ip",
         clientIp,
-        retryAfterMs: ipBucket.retryAfterMs,
+        retryAfterMs: limiterUnavailable ? null : ipBucket.retryAfterMs,
       },
     });
-    throw createClientError(429, "Too many datasource session token requests");
+    throw createClientError(
+      limiterUnavailable ? 503 : 429,
+      limiterUnavailable
+        ? "Datasource session token limiter is temporarily unavailable"
+        : "Too many datasource session token requests",
+    );
   }
 
-  const normalizedShareKey = String(shareToken || normalizedDashboardId || "public").trim();
-  const shareBucket = consumeRateLimit(
+  const normalizedShareKey = buildLimiterCompositeKey(
+    hashLimiterKeyPart(shareToken || normalizedDashboardId || "public"),
+  );
+  const shareBucket = await consumeRateLimit(
     `datasource-mint:public-share:${normalizedShareKey}`,
     config.datasourceTokenMintRateLimitShareTokenPerMin,
   );
   if (!shareBucket.allowed) {
+    const limiterUnavailable = shareBucket.reason === "backend_fail_closed";
     await recordAuditEvent({
       actorUserId: null,
-      action: "datasource.session_token.rate_limited",
+      action: limiterUnavailable
+        ? "datasource.session_token.limiter_unavailable"
+        : "datasource.session_token.rate_limited",
       targetType: "dashboard",
       targetId: normalizedDashboardId,
       metadata: {
         scope: "public-share",
-        shareToken: normalizedShareKey,
-        retryAfterMs: shareBucket.retryAfterMs,
+        shareTokenProvided: Boolean(shareToken),
+        retryAfterMs: limiterUnavailable ? null : shareBucket.retryAfterMs,
       },
     });
-    throw createClientError(429, "Too many datasource session token requests");
+    throw createClientError(
+      limiterUnavailable ? 503 : 429,
+      limiterUnavailable
+        ? "Datasource session token limiter is temporarily unavailable"
+        : "Too many datasource session token requests",
+    );
   }
 };
 

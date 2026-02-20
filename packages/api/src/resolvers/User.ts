@@ -239,9 +239,14 @@ const resolvers: IResolvers = {
 
       const normalizedEmail = normalizeEmail(email);
       const throttleKey = buildLoginThrottleKey(normalizedEmail, context?.clientIp);
-      const throttleState = getLoginThrottleState(throttleKey);
+      const throttleState = await getLoginThrottleState(throttleKey);
       if (throttleState.blocked) {
         recordAuthFailureMetric();
+        if (throttleState.unavailable) {
+          throw createGraphQLError("Login is temporarily unavailable. Try again shortly.", {
+            extensions: { code: "SERVICE_UNAVAILABLE" },
+          });
+        }
         const retryAfterSeconds = Math.max(1, Math.ceil(throttleState.retryAfterMs / 1000));
         await recordAuditEvent({
           actorUserId: null,
@@ -264,9 +269,18 @@ const resolvers: IResolvers = {
 
       const registerFailure = async () => {
         recordAuthFailureMetric();
-        const failure = recordFailedLoginAttempt(throttleKey);
+        const failure = await recordFailedLoginAttempt(throttleKey);
+        if (failure.unavailable) {
+          return {
+            limiterUnavailable: true,
+            failure,
+          };
+        }
         if (!failure.justLocked) {
-          return;
+          return {
+            limiterUnavailable: false,
+            failure,
+          };
         }
         await recordAuditEvent({
           actorUserId: null,
@@ -279,6 +293,10 @@ const resolvers: IResolvers = {
             retryAfterSeconds: Math.max(1, Math.ceil(failure.retryAfterMs / 1000)),
           },
         });
+        return {
+          limiterUnavailable: false,
+          failure,
+        };
       };
 
       const user = await User.findOne({
@@ -286,11 +304,21 @@ const resolvers: IResolvers = {
       }).lean();
 
       if (!user) {
-        await registerFailure();
+        const failureState = await registerFailure();
+        if (failureState.limiterUnavailable) {
+          throw createGraphQLError("Login is temporarily unavailable. Try again shortly.", {
+            extensions: { code: "SERVICE_UNAVAILABLE" },
+          });
+        }
         throw createGraphQLError("Invalid credentials");
       }
       if (!user.active) {
-        await registerFailure();
+        const failureState = await registerFailure();
+        if (failureState.limiterUnavailable) {
+          throw createGraphQLError("Login is temporarily unavailable. Try again shortly.", {
+            extensions: { code: "SERVICE_UNAVAILABLE" },
+          });
+        }
         throw createGraphQLError("Your account is deactivated. Contact an administrator.", {
           extensions: { code: "FORBIDDEN" },
         });
@@ -298,11 +326,16 @@ const resolvers: IResolvers = {
 
       const isCorrectPassword = await bcrypt.compare(password, user.password);
       if (!isCorrectPassword) {
-        await registerFailure();
+        const failureState = await registerFailure();
+        if (failureState.limiterUnavailable) {
+          throw createGraphQLError("Login is temporarily unavailable. Try again shortly.", {
+            extensions: { code: "SERVICE_UNAVAILABLE" },
+          });
+        }
         throw createGraphQLError("Invalid credentials");
       }
 
-      clearLoginThrottle(throttleKey);
+      await clearLoginThrottle(throttleKey);
 
       await User.findOneAndUpdate(
         { _id: user._id },

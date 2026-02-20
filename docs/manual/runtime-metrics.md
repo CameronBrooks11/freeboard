@@ -14,6 +14,7 @@ Freeboard exposes lightweight runtime telemetry for operations visibility.
 - avg / p95 / max request latency
 - auth failure count
 - datasource mint success/failure counts
+- limiter allow/reject/backend-error/fail-open/fail-closed counts
 - audit write failure count
 
 ## Gateway Metrics (in-memory)
@@ -22,6 +23,7 @@ Freeboard exposes lightweight runtime telemetry for operations visibility.
 - realtime connection attempts/accepted/rejected/active
 - realtime inbound/outbound message counts
 - realtime error count
+- realtime limiter allow/reject/backend-error/fail-open/fail-closed counts
 
 ## Access Control
 

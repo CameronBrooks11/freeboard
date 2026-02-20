@@ -1,30 +1,40 @@
 /**
  * @module rateLimit
- * Small in-memory fixed-window rate limiter for non-distributed controls.
+ * Security limiter wrapper with explicit backend outage behavior.
  */
 
+import { config } from "./config.js";
+import {
+  consumeSecurityLimiterFixedWindow,
+  resetSecurityLimiterMemoryState,
+} from "./securityLimiter.js";
+import { recordApiLimiterDecision } from "./runtimeMetrics.js";
+
 const WINDOW_MS = 60_000;
-type RateLimitBucket = {
-  hits: number[];
-};
-const buckets = new Map<string, RateLimitBucket>();
 
-const trimWindow = (bucket: RateLimitBucket, now: number): void => {
-  bucket.hits = bucket.hits.filter((ts) => now - ts < WINDOW_MS);
+export type RateLimitDecisionReason =
+  | "allowed"
+  | "limited"
+  | "backend_fail_open"
+  | "backend_fail_closed";
+
+export type RateLimitDecision = {
+  allowed: boolean;
+  retryAfterMs: number;
+  remaining: number;
+  reason: RateLimitDecisionReason;
 };
 
-const ensureBucket = (key: string): RateLimitBucket => {
-  const existing = buckets.get(key);
-  if (existing) {
-    return existing;
-  }
-
-  const created: RateLimitBucket = {
-    hits: [],
-  };
-  buckets.set(key, created);
-  return created;
+type ConsumeRateLimitDeps = {
+  consumeFixedWindow?: typeof consumeSecurityLimiterFixedWindow;
+  failureMode?: "fail-open" | "fail-closed";
 };
+
+const normalizeLimiterKey = (value: unknown): string =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .slice(0, 512) || "unknown";
 
 /**
  * Consume one rate-limit token from a fixed 1-minute window bucket.
@@ -32,38 +42,77 @@ const ensureBucket = (key: string): RateLimitBucket => {
  * @param {string} key
  * @param {number} limit
  * @param {number} [now=Date.now()]
- * @returns {{allowed: boolean, retryAfterMs: number, remaining: number}}
+ * @returns {Promise<{allowed: boolean, retryAfterMs: number, remaining: number, reason: string}>}
  */
 export const consumeRateLimit = (
   key: string,
   limit: number,
   now = Date.now(),
-): { allowed: boolean; retryAfterMs: number; remaining: number } => {
+  {
+    consumeFixedWindow = consumeSecurityLimiterFixedWindow,
+    failureMode = config.securityLimiterFailureMode,
+  }: ConsumeRateLimitDeps = {},
+): Promise<RateLimitDecision> => {
   const safeLimit = Math.max(1, Number(limit) || 1);
-  const bucket = ensureBucket(key);
-  trimWindow(bucket, now);
+  const normalizedKey = normalizeLimiterKey(key);
 
-  if (bucket.hits.length >= safeLimit) {
-    const oldest = bucket.hits[0] || now;
-    const retryAfterMs = Math.max(1, WINDOW_MS - (now - oldest));
-    return {
-      allowed: false,
-      retryAfterMs,
-      remaining: 0,
-    };
-  }
+  return consumeFixedWindow({
+    scope: "api-rate-limit",
+    keyMaterial: normalizedKey,
+    limit: safeLimit,
+    windowMs: WINDOW_MS,
+    nowMs: now,
+  })
+    .then((result) => {
+      if (result.allowed) {
+        recordApiLimiterDecision({ outcome: "allowed" });
+        return {
+          allowed: true,
+          retryAfterMs: 0,
+          remaining: result.remaining,
+          reason: "allowed" as const,
+        };
+      }
 
-  bucket.hits.push(now);
-  return {
-    allowed: true,
-    retryAfterMs: 0,
-    remaining: Math.max(0, safeLimit - bucket.hits.length),
-  };
+      recordApiLimiterDecision({ outcome: "rejected" });
+      return {
+        allowed: false,
+        retryAfterMs: result.retryAfterMs,
+        remaining: 0,
+        reason: "limited" as const,
+      };
+    })
+    .catch((error: unknown) => {
+      const errorMessage =
+        error && typeof error === "object" && "message" in error
+          ? String((error as { message?: string }).message || "unknown error")
+          : "unknown error";
+      console.warn(`Security limiter warning: backend consume failed (${errorMessage}).`);
+      recordApiLimiterDecision({ outcome: "backend_error" });
+
+      if (failureMode === "fail-open") {
+        recordApiLimiterDecision({ outcome: "fail_open" });
+        return {
+          allowed: true,
+          retryAfterMs: 0,
+          remaining: safeLimit,
+          reason: "backend_fail_open" as const,
+        };
+      }
+
+      recordApiLimiterDecision({ outcome: "fail_closed" });
+      return {
+        allowed: false,
+        retryAfterMs: 1000,
+        remaining: 0,
+        reason: "backend_fail_closed" as const,
+      };
+    });
 };
 
 /**
- * Test helper to clear all limiter state.
+ * Test helper to clear local memory limiter state.
  */
 export const resetRateLimitState = (): void => {
-  buckets.clear();
+  resetSecurityLimiterMemoryState();
 };

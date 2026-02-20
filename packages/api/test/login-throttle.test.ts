@@ -15,16 +15,18 @@ afterEach(() => {
 
 test("buildLoginThrottleKey normalizes email and client ip", () => {
   const key = buildLoginThrottleKey("  User@Example.Com  ", " 10.0.0.5 ");
-  assert.equal(key, "user@example.com::10.0.0.5");
+  assert.equal(key.includes("|"), true);
+  assert.equal(key.includes("user@example.com"), false);
+  assert.equal(key.includes("10.0.0.5"), false);
 });
 
-test("recordFailedLoginAttempt locks after configured threshold", () => {
+test("recordFailedLoginAttempt locks after configured threshold", async () => {
   const key = buildLoginThrottleKey("viewer@example.com", "127.0.0.1");
   const start = Date.now();
 
   let last = null;
   for (let i = 0; i < 5; i += 1) {
-    last = recordFailedLoginAttempt(key, start + i);
+    last = await recordFailedLoginAttempt(key, start + i);
   }
 
   assert.ok(last);
@@ -32,20 +34,20 @@ test("recordFailedLoginAttempt locks after configured threshold", () => {
   assert.equal(last.blocked, true);
   assert.ok(last.retryAfterMs > 0);
 
-  const state = getLoginThrottleState(key, start + 6);
+  const state = await getLoginThrottleState(key, start + 6);
   assert.equal(state.blocked, true);
   assert.ok(state.retryAfterMs > 0);
 });
 
-test("clearLoginThrottle removes active lock state", () => {
+test("clearLoginThrottle removes active lock state", async () => {
   const key = buildLoginThrottleKey("viewer@example.com", "127.0.0.1");
   const start = Date.now();
   for (let i = 0; i < 5; i += 1) {
-    recordFailedLoginAttempt(key, start + i);
+    await recordFailedLoginAttempt(key, start + i);
   }
 
-  clearLoginThrottle(key);
-  const state = getLoginThrottleState(key, start + 10);
+  await clearLoginThrottle(key);
+  const state = await getLoginThrottleState(key, start + 10);
   assert.equal(state.blocked, false);
   assert.equal(state.retryAfterMs, 0);
 });
