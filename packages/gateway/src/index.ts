@@ -98,6 +98,7 @@ export { createGatewayFetchHandler };
 
 type RealtimeGatewayOptions = {
   server: http.Server;
+  trustProxyHops?: number;
   lookup?: typeof dns.promises.lookup;
   fetchFn?: typeof fetch;
   wsServerFactory?: (options: ConstructorParameters<typeof WebSocketServer>[0]) => WebSocketServer;
@@ -312,6 +313,7 @@ const parseRealtimeTargetUrl = ({
  */
 export const createRealtimeGateway = ({
   server,
+  trustProxyHops,
   lookup = dns.promises.lookup,
   fetchFn = fetch,
   wsServerFactory = (options) => new WebSocketServer(options),
@@ -1391,7 +1393,14 @@ export const createRealtimeGateway = ({
       return;
     }
 
-    const clientIp = deriveClientIp(request);
+    const clientIp = deriveClientIp(
+      request,
+      trustProxyHops === undefined
+        ? undefined
+        : {
+            trustProxyHops,
+          },
+    );
 
     void (async () => {
       const connectRateLimit = await consumeRealtimeRateLimit({
