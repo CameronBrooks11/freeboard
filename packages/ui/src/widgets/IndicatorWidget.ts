@@ -35,8 +35,8 @@ export class IndicatorWidget extends ReactiveWidget {
         headerText: widget?.settings?.headerText ?? widget?.title ?? "",
         onText: widget?.settings?.onText ?? "On",
         offText: widget?.settings?.offText ?? "Off",
-        onColor: widget?.settings?.onColor ?? "#16a34a",
-        offColor: widget?.settings?.offColor ?? "#4b5563",
+        onColor: widget?.settings?.onColor ?? "var(--status-success)",
+        offColor: widget?.settings?.offColor ?? "var(--color-shade-5)",
       },
       fields: [
         {
@@ -176,8 +176,8 @@ export class IndicatorWidget extends ReactiveWidget {
     this.headerElement.textContent = inputs.header || "";
     this.headerElement.style.display = inputs.header ? "block" : "none";
 
-    const onColor = String(this.currentSettings?.onColor || "#16a34a");
-    const offColor = String(this.currentSettings?.offColor || "#4b5563");
+    const onColor = String(this.currentSettings?.onColor || "var(--status-success)");
+    const offColor = String(this.currentSettings?.offColor || "var(--color-shade-5)");
 
     this.lightElement.style.backgroundColor = isOn ? onColor : offColor;
 

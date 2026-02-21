@@ -455,7 +455,7 @@ const transferOwnership = async () => {
 }
 
 .share-dialog__error {
-  color: #d35f5f;
+  color: var(--color-error);
 }
 
 .share-dialog__hint {

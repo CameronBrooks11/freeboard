@@ -39,6 +39,9 @@ const installBrowserStubs = () => {
   globalThis.window = {
     location,
     history,
+    matchMedia() {
+      return { matches: false };
+    },
     addEventListener() {
       return undefined;
     },
@@ -47,7 +50,22 @@ const installBrowserStubs = () => {
     },
   };
 
+  const rootAttributes = {};
+  const documentElement = {
+    style: {},
+    setAttribute(name, value) {
+      rootAttributes[name] = String(value);
+    },
+    getAttribute(name) {
+      return rootAttributes[name] ?? null;
+    },
+    removeAttribute(name) {
+      delete rootAttributes[name];
+    },
+  };
+
   globalThis.document = {
+    documentElement,
     querySelector() {
       return null;
     },
@@ -233,19 +251,27 @@ test("dashboard store blocks mobile editing for sm width unless allowMobileEdit 
   assert.equal(dashboardStore.isEditing, true);
 });
 
-test("dashboard store applies curated and fallback themes to document body class", async () => {
+test("dashboard store applies curated and fallback themes to document root attributes", async () => {
   const { useDashboardStore } = await import("../src/stores/dashboard.js");
   const dashboardStore = useDashboardStore();
+  const root = globalThis.document.documentElement;
 
-  dashboardStore.dashboard.settings.theme = "professional";
+  dashboardStore.dashboard.settings.theme = "slate";
   dashboardStore.loadDashboardTheme();
-  assert.equal(globalThis.document.body.className, "professional");
+  assert.equal(root.getAttribute("data-theme-selection"), "slate");
+  assert.equal(root.getAttribute("data-theme"), "slate");
+  assert.equal(root.style.colorScheme, "dark");
 
   dashboardStore.dashboard.settings.theme = "high-contrast";
   dashboardStore.loadDashboardTheme();
-  assert.equal(globalThis.document.body.className, "high-contrast");
+  assert.equal(root.getAttribute("data-theme-selection"), "high-contrast");
+  assert.equal(root.getAttribute("data-theme"), "high-contrast");
+  assert.equal(root.style.colorScheme, "dark");
 
+  globalThis.window.matchMedia = () => ({ matches: true });
   dashboardStore.dashboard.settings.theme = "invalid-theme";
   dashboardStore.loadDashboardTheme();
-  assert.match(globalThis.document.body.className, /^(light|dark)$/);
+  assert.equal(root.getAttribute("data-theme-selection"), "auto");
+  assert.equal(root.getAttribute("data-theme"), "dark");
+  assert.equal(root.style.colorScheme, "dark");
 });

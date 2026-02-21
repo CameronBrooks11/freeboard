@@ -1,24 +1,52 @@
-body.light {
-  --color-primary: #b87051;
-  --color-accent: #b87051;
-  --color-secondary: #802b00;
-  --color-error: #b8515b;
-  --color-foreground: #2a2a2a;
-  --color-background: #a1a1a1;
+:root[data-theme="light"] {
+  --bg-canvas: #f1f5f9;
+  --bg-surface-1: #ffffff;
+  --bg-surface-2: #f8fafc;
+  --bg-surface-3: #e2e8f0;
 
-  --color-shade-10: #2a2a2a;
-  --color-shade-9: #272727;
-  --color-shade-8: #313131;
-  --color-shade-7: #363636;
-  --color-shade-6: #3d3d3d;
-  --color-shade-5: #4b4b4b;
-  --color-shade-4: #555555;
-  --color-shade-3: #636363;
-  --color-shade-2: #8b8b8b;
-  --color-shade-1: #a1a1a1;
-  --color-shade-0: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #1e293b;
+  --text-muted: #475569;
+  --text-on-primary: #ffffff;
+  --text-on-accent: #08243b;
 
-  --color-overlay: rgba(0, 0, 0, 0.8);
-  --color-shadow: rgba(0, 0, 0, 0.075);
-  --color-highlight: rgba(184, 112, 81, 0.8);
+  --status-success: #15803d;
+  --status-warning: #b45309;
+  --status-error: #b91c1c;
+  --status-info: #0c4a6e;
+  --status-on-error: #ffffff;
+  --status-error-surface: rgba(185, 28, 28, 0.9);
+  --status-error-border: rgba(153, 27, 27, 0.95);
+
+  --chart-1: #2563eb;
+  --chart-2: #0ea5e9;
+  --chart-3: #0891b2;
+  --chart-4: #9333ea;
+  --chart-5: #f59e0b;
+  --chart-6: #dc2626;
+  --chart-7: #059669;
+  --chart-8: #475569;
+
+  --color-primary: #2563eb;
+  --color-accent: #0ea5e9;
+  --color-secondary: #334155;
+  --color-error: var(--status-error);
+  --color-foreground: var(--text-primary);
+  --color-background: var(--bg-canvas);
+
+  --color-shade-0: var(--bg-surface-1);
+  --color-shade-1: var(--bg-surface-2);
+  --color-shade-2: var(--bg-surface-3);
+  --color-shade-3: #cbd5e1;
+  --color-shade-4: #94a3b8;
+  --color-shade-5: #64748b;
+  --color-shade-6: #475569;
+  --color-shade-7: #334155;
+  --color-shade-8: var(--text-secondary);
+  --color-shade-9: #111827;
+  --color-shade-10: var(--text-primary);
+
+  --color-overlay: rgba(15, 23, 42, 0.65);
+  --color-shadow: rgba(15, 23, 42, 0.18);
+  --color-highlight: rgba(37, 99, 235, 0.45);
 }

@@ -57,11 +57,11 @@ test("parseStatusColorsMap merges defaults with object/string values", () => {
   const fromObject = parseStatusColorsMap({ ok: "#00ff00", custom: "#123456" });
   assert.equal(fromObject.ok, "#00ff00");
   assert.equal(fromObject.custom, "#123456");
-  assert.equal(fromObject.error, "#ef4444");
+  assert.equal(fromObject.error, "var(--status-error)");
 
   const fromJsonString = parseStatusColorsMap('{"warn":"#ffaa00"}');
   assert.equal(fromJsonString.warn, "#ffaa00");
-  assert.equal(fromJsonString.ok, "#16a34a");
+  assert.equal(fromJsonString.ok, "var(--status-success)");
 });
 
 test("StatusListWidget renders empty state when list binding is missing", () => {

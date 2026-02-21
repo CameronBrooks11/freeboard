@@ -236,6 +236,8 @@ jobs:
         run: npm run lint
       - name: Validate UI store boundaries
         run: npm run check:ui:store-boundaries
+      - name: Validate UI theme contrast
+        run: npm run check:ui:theme-contrast
       - name: Validate TS source debt
         run: npm run check:ts:debt
       - name: Validate TS source artifacts

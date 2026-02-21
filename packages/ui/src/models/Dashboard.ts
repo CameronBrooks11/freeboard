@@ -68,31 +68,32 @@ export const DASHBOARD_THEME_PRESETS = Object.freeze([
   "auto",
   "light",
   "dark",
-  "professional",
+  "slate",
   "high-contrast",
   "colorblind",
-  "warm",
-  "cool",
-]);
+  "amber-night",
+] as const);
+
+export type DashboardThemePreset = (typeof DASHBOARD_THEME_PRESETS)[number];
 
 /**
  * Default dashboard theme preset.
  * @constant {string}
  */
-export const DEFAULT_DASHBOARD_THEME = "auto";
+export const DEFAULT_DASHBOARD_THEME: DashboardThemePreset = "auto";
 
 /**
  * Normalize dashboard theme values from persisted payloads/settings.
  *
  * @param {string} value
- * @returns {"auto"|"light"|"dark"|"professional"|"high-contrast"|"colorblind"|"warm"|"cool"}
+ * @returns {"auto"|"light"|"dark"|"slate"|"high-contrast"|"colorblind"|"amber-night"}
  */
-export const normalizeDashboardTheme = (value: unknown): string => {
+export const normalizeDashboardTheme = (value: unknown): DashboardThemePreset => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
-  if (DASHBOARD_THEME_PRESETS.includes(normalized)) {
-    return normalized;
+  if ((DASHBOARD_THEME_PRESETS as readonly string[]).includes(normalized)) {
+    return normalized as DashboardThemePreset;
   }
   return DEFAULT_DASHBOARD_THEME;
 };

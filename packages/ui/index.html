@@ -1,13 +1,32 @@
 <!-- Main HTML entry point for Freeboard UI -->
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme-selection="auto" data-theme="light" style="color-scheme: light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Freeboard</title>
+    <script>
+      (() => {
+        try {
+          const root = document.documentElement;
+          const selection = root.getAttribute("data-theme-selection");
+          if (selection !== "auto") {
+            return;
+          }
+          const prefersDark =
+            typeof window.matchMedia === "function" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches;
+          const resolvedTheme = prefersDark ? "dark" : "light";
+          root.setAttribute("data-theme", resolvedTheme);
+          root.style.colorScheme = resolvedTheme;
+        } catch {
+          // no-op
+        }
+      })();
+    </script>
   </head>
-  <body class="light">
+  <body>
     <!-- Vue will mount here -->
     <div id="app"></div>
     <!-- Load main JavaScript module -->

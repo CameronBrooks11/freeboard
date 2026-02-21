@@ -6,6 +6,7 @@
 - Validate formatting: `npm run format:check`
 - Full lint: `npm run lint`
 - UI store boundary guardrail: `npm run check:ui:store-boundaries`
+- UI theme contrast guardrail: `npm run check:ui:theme-contrast`
 - TS source debt guardrail: `npm run check:ts:debt`
 - TS source artifact guardrail: `npm run check:ts:source-artifacts`
 - UI bundle budget guardrail (warn-first): `npm run check:ui:bundle-budget`
@@ -38,6 +39,7 @@ Run this sequence before opening a PR:
 npm run format:check
 npm run lint
 npm run check:ui:store-boundaries
+npm run check:ui:theme-contrast
 npm run check:ts:debt
 npm run check:ts:source-artifacts
 npm run check:runtime-deps
@@ -59,6 +61,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 - If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-shared`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `docker-sanity`, `typecheck`).
 - If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
 - If `Validate TS source debt` fails, remove unsafe TS patterns (`as any`, `as unknown as`, `: any`, `Record<string, any>`, `[key: string]: any`, `@ts-ignore`, `@ts-nocheck`) from `packages/*/src`.
+- If `Validate UI theme contrast` fails, update theme token values in `packages/ui/src/assets/css/themes/*.css` so critical foreground/background token pairs meet the script threshold.
 - If `Validate TS source artifacts` fails, remove legacy JS source files from `packages/*/src`.
 - If a job was expected but appears skipped, check `Classify changes` output in the `changes` job.
 - If Docker publish unexpectedly rebuilds all images, verify event type:
@@ -192,3 +195,22 @@ Run it before and after bundle/loading architecture changes to compare impact wi
 - Enforced mode (opt-in): set `FREEBOARD_ENFORCE_UI_BUNDLE_BUDGET=1` to fail only on core-route budget regressions.
 - Optional editor payload (Monaco/workers) is tracked and reported separately as warn-only so it does not mask core app health signals.
 - Budget thresholds live in `packages/ui/build-budget.json` and should be changed only when accompanied by fresh `npm run build:ui:analyze` baseline evidence.
+
+## Theme System Rules
+
+- Canonical dashboard theme options are `auto`, `light`, `dark`, `slate`, `high-contrast`, `colorblind`, `amber-night`.
+- Theme runtime is centralized through document-root attributes (`data-theme-selection`, `data-theme`); do not reintroduce route-local theme application.
+- Settings dialog uses live preview semantics:
+  - preview on selection change
+  - rollback on dialog cancel/close
+  - persistence only after dashboard `Save`/`Update`
+- Keep theme metadata single-sourced in `packages/ui/src/ui/themeCatalog.ts`; do not duplicate theme swatches/labels in component-local constants.
+- Use semantic tokens for themed surfaces/states (`--bg-*`, `--text-*`, `--status-*`, `--chart-*`); avoid hardcoded color literals in themeable UI paths.
+
+## Theme Change Checklist
+
+- Update `DASHBOARD_THEME_PRESETS` and `DASHBOARD_THEME_CATALOG` together.
+- Confirm settings option labels and preview cards come only from `themeCatalog.ts`.
+- Run `npm run check:ui:theme-contrast`.
+- Verify live preview/cancel/apply behavior in Settings dialog.
+- Run `npm run test:ui` and `npm run test:e2e:smoke`.

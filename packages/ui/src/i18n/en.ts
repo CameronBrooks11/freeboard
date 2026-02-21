@@ -56,6 +56,7 @@ export const en = {
     titleSettings: "Settings",
     titleConfirm: "Confirm",
     buttonOk: "Ok",
+    buttonApply: "Apply",
     buttonCancel: "Cancel",
   },
 
@@ -144,11 +145,10 @@ export const en = {
     labelThemeAuto: "Auto",
     labelThemeDark: "Dark",
     labelThemeLight: "Light",
-    labelThemeProfessional: "Professional",
+    labelThemeSlate: "Slate",
     labelThemeHighContrast: "High Contrast",
     labelThemeColorblind: "Colorblind Friendly",
-    labelThemeWarm: "Warm",
-    labelThemeCool: "Cool",
+    labelThemeAmberNight: "Amber Night",
     suffixRefresh: "seconds",
     placeholderCredentialProfile: "Select a credential profile",
     placeholderBrokerProfile: "Select a broker profile",
@@ -156,6 +156,12 @@ export const en = {
     placeholderWebSocketProtocols: "json, telemetry-v1",
     optionCredentialProfileNone: "None",
     placeholderList: "Search...",
+  },
+
+  settings: {
+    themePreviewTitle: "Theme Preview",
+    themePreviewAutoResolves: "Auto resolves to {theme}",
+    themePreviewHint: "Preview updates immediately. Use Save/Update Dashboard to persist.",
   },
 
   // Controls for Freeboard actions

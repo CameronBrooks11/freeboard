@@ -1,12 +1,12 @@
 import { defineStore } from "pinia";
 import { Dashboard, normalizeDashboardTheme } from "../models/Dashboard.js";
-import { usePreferredColorScheme } from "@vueuse/core";
 import { disposeDashboardAssets } from "../dashboardAssets.js";
 import { normalizeCreateDashboardPayload } from "../auth/publishPolicy.js";
 import { useAuthStore } from "./auth.js";
 import { runtimeConfig } from "../runtime/config.js";
 import type { UnknownRecord } from "../types/runtime.js";
 import type { Dashboard as DashboardModel } from "../models/Dashboard.js";
+import { applyDashboardThemeSelection } from "../ui/themeRuntime.js";
 
 type DashboardMutationPayload = {
   _id?: string;
@@ -245,16 +245,11 @@ export const useDashboardStore = defineStore("dashboard", {
       this.showLoadingIndicator = false;
     },
 
-    loadDashboardTheme() {
-      const selectedTheme = normalizeDashboardTheme(this.dashboard.settings?.theme);
-      let cssClass;
-      if (selectedTheme === "auto") {
-        const colorScheme = usePreferredColorScheme();
-        cssClass = colorScheme.value === "dark" ? "dark" : "light";
-      } else {
-        cssClass = selectedTheme;
-      }
-      document.body.className = cssClass;
+    loadDashboardTheme(themeValue?: unknown) {
+      const selectedTheme = normalizeDashboardTheme(
+        themeValue === undefined ? this.dashboard.settings?.theme : themeValue,
+      );
+      return applyDashboardThemeSelection(selectedTheme);
     },
 
     loadDashboard(dashboardData: Record<string, unknown>) {

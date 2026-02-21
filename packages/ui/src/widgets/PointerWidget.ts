@@ -134,7 +134,7 @@ export class PointerWidget extends ReactiveWidget {
     ring.setAttribute("cy", "50");
     ring.setAttribute("r", "44");
     ring.setAttribute("fill", "transparent");
-    ring.setAttribute("stroke", "rgba(148,163,184,0.4)");
+    ring.setAttribute("stroke", "var(--color-shade-4)");
     ring.setAttribute("stroke-width", "3");
 
     this.pointerGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -143,13 +143,13 @@ export class PointerWidget extends ReactiveWidget {
 
     const pointer = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
     pointer.setAttribute("points", "50,8 58,50 50,40 42,50");
-    pointer.setAttribute("fill", "hsl(34 100% 50%)");
+    pointer.setAttribute("fill", "var(--color-accent)");
 
     const centerDot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     centerDot.setAttribute("cx", "50");
     centerDot.setAttribute("cy", "50");
     centerDot.setAttribute("r", "4");
-    centerDot.setAttribute("fill", "#ffffff");
+    centerDot.setAttribute("fill", "var(--text-on-accent)");
 
     this.pointerGroup.append(pointer);
     svg.append(ring, this.pointerGroup, centerDot);

@@ -5,6 +5,7 @@
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 import type { WidgetRuntimeInstance } from "../types/runtime.js";
+import { resolveThemeChartColor } from "./runtime/themeColors.js";
 type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 type SparklineInputs = { header: string; series: unknown[] };
 
@@ -293,8 +294,9 @@ export class SparklineWidget extends ReactiveWidget {
     this.seriesHistory.forEach((series, seriesIndex) => {
       context.beginPath();
       context.lineWidth = lineWidth;
-      context.strokeStyle =
+      const fallbackColor =
         DEFAULT_COLORS[seriesIndex % DEFAULT_COLORS.length] || DEFAULT_COLORS[0] || "#f59e0b";
+      context.strokeStyle = resolveThemeChartColor(seriesIndex, fallbackColor);
       context.lineJoin = "round";
       context.lineCap = "round";
 
@@ -345,8 +347,9 @@ export class SparklineWidget extends ReactiveWidget {
 
       const marker = document.createElement("span");
       marker.textContent = "●";
-      marker.style.color =
+      const fallbackColor =
         DEFAULT_COLORS[index % DEFAULT_COLORS.length] || DEFAULT_COLORS[0] || "#f59e0b";
+      marker.style.color = resolveThemeChartColor(index, fallbackColor);
 
       const label = document.createElement("span");
       label.textContent = labels[index] || `Series ${index + 1}`;
