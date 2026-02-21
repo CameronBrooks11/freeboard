@@ -18,12 +18,12 @@ type StatusInputs = {
 };
 
 const DEFAULT_STATUS_COLORS: Record<string, string> = {
-  ok: "#16a34a",
-  warn: "#f59e0b",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  offline: "#6b7280",
-  unknown: "#64748b",
+  ok: "var(--status-success)",
+  warn: "var(--status-warning)",
+  warning: "var(--status-warning)",
+  error: "var(--status-error)",
+  offline: "var(--color-shade-6)",
+  unknown: "var(--status-info)",
 };
 
 const DEFAULT_STATUS_ICONS: Record<string, string> = {
@@ -228,7 +228,7 @@ export class StatusListWidget extends ReactiveWidget {
         inputs.colorMap[item.status] ||
           inputs.colorMap.unknown ||
           DEFAULT_STATUS_COLORS.unknown ||
-          "#64748b",
+          "var(--status-info)",
       );
       const icon = DEFAULT_STATUS_ICONS[item.status] || DEFAULT_STATUS_ICONS.unknown || "•";
 

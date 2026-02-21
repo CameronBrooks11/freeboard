@@ -114,7 +114,7 @@ export class PictureWidget extends ReactiveWidget {
     this.imageWrap.style.position = "relative";
     this.imageWrap.style.borderRadius = "4px";
     this.imageWrap.style.overflow = "hidden";
-    this.imageWrap.style.backgroundColor = "rgba(15,23,42,0.35)";
+    this.imageWrap.style.backgroundColor = "var(--color-overlay)";
 
     this.imageElement = document.createElement("img");
     this.imageElement.style.width = "100%";

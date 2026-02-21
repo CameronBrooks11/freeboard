@@ -11,6 +11,16 @@ type GaugeInputs = { header: string; unit: string; value: unknown };
 const clamp = (value: unknown, min: unknown, max: unknown): number =>
   Math.min(Math.max(Number(value), Number(min)), Number(max));
 
+const resolveGaugeStrokeColor = (normalized: number): string => {
+  if (normalized >= 0.67) {
+    return "var(--status-success)";
+  }
+  if (normalized >= 0.34) {
+    return "var(--status-warning)";
+  }
+  return "var(--status-error)";
+};
+
 /**
  * Gauge widget implementation.
  */
@@ -152,7 +162,7 @@ export class GaugeWidget extends ReactiveWidget {
     track.setAttribute("cy", "70");
     track.setAttribute("r", String(this.radius));
     track.setAttribute("fill", "transparent");
-    track.setAttribute("stroke", "rgba(148,163,184,0.3)");
+    track.setAttribute("stroke", "var(--color-shade-4)");
     track.setAttribute("stroke-width", "12");
 
     this.progress = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -160,7 +170,7 @@ export class GaugeWidget extends ReactiveWidget {
     this.progress.setAttribute("cy", "70");
     this.progress.setAttribute("r", String(this.radius));
     this.progress.setAttribute("fill", "transparent");
-    this.progress.setAttribute("stroke", "hsl(120 70% 45%)");
+    this.progress.setAttribute("stroke", "var(--status-success)");
     this.progress.setAttribute("stroke-width", "12");
     this.progress.setAttribute("stroke-linecap", "round");
     this.progress.setAttribute("stroke-dasharray", String(this.circumference));
@@ -265,12 +275,11 @@ export class GaugeWidget extends ReactiveWidget {
 
     const clamped = clamp(rawValue, min, safeMax);
     const normalized = (clamped - min) / (safeMax - min);
-    const hue = Math.round(normalized * 120);
     const offset = this.circumference * (1 - normalized);
 
     this.valueElement.textContent = this.formatValue(clamped);
     this.progress.setAttribute("stroke-dashoffset", String(offset));
-    this.progress.setAttribute("stroke", `hsl(${hue} 70% 45%)`);
+    this.progress.setAttribute("stroke", resolveGaugeStrokeColor(normalized));
   }
 
   onResize(size: { width?: number } = {}) {

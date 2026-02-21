@@ -30,7 +30,6 @@ import {
   disposeAllStreamingManagers,
   disposeStreamingManager,
 } from "../datasources/runtime/StreamingManager";
-import { usePreferredColorScheme } from "@vueuse/core";
 
 // ----------------------------------------------------------------------------
 // Store & theming
@@ -39,12 +38,6 @@ const authStore = useAuthStore();
 const dashboardStore = useDashboardStore();
 const profileCatalogStore = useProfileCatalogStore();
 const { showLoadingIndicator, isSaved, dashboard } = storeToRefs(dashboardStore);
-
-// React to system color scheme changes
-const preferredColorScheme = usePreferredColorScheme();
-watch(preferredColorScheme, () => dashboardStore.loadDashboardTheme(), {
-  immediate: true,
-});
 
 // ----------------------------------------------------------------------------
 // Props & reactive route id

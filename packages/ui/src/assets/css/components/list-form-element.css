@@ -4,8 +4,9 @@
 }
 
 .list-form-element .list-form-element__drop-button {
-  background-color: var(--color-background);
-  color: var(--color-primary);
+  background-color: var(--color-primary);
+  color: var(--text-on-primary);
+  border: 1px solid transparent;
   transition: all 250ms;
   text-transform: uppercase;
   font-weight: 800;
@@ -17,8 +18,8 @@
 
 .list-form-element .list-form-element__drop-button:hover,
 .list-form-element__drop-button:focus {
-  color: var(--color-background);
-  background-color: var(--color-primary);
+  color: var(--text-on-accent);
+  background-color: var(--color-accent);
 }
 
 .list-form-element .list-form-element__dropdown-content__input {
@@ -52,13 +53,13 @@
 }
 
 .list-form-element .list-form-element__dropdown-content__link {
-  color: var(--color-background);
+  color: var(--text-on-accent);
   padding: 8px 16px;
   text-decoration: none;
   display: block;
 }
 
 .list-form-element .list-form-element__dropdown-content__link:hover {
-  background-color: var(--color-primary);
-  color: var(--color-background);
+  background-color: var(--color-accent);
+  color: var(--text-on-accent);
 }

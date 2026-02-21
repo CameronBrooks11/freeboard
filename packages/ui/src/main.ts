@@ -3,7 +3,7 @@
  * @description Entry point for Freeboard UI: configures Vue app, Apollo client, routing, state, i18n, and mounts the App component.
  */
 
-import { createApp } from "vue";
+import { createApp, watch } from "vue";
 import { DefaultApolloClient } from "@vue/apollo-composable";
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/client/core";
 import { onError } from "@apollo/client/link/error";
@@ -49,6 +49,7 @@ import { createHead } from "@unhead/vue";
 import { createI18n } from "vue-i18n";
 import { en } from "./i18n/en.js";
 import { shouldForceLogoutOnGraphQLErrors } from "./apolloAuthError.js";
+import { subscribeToSystemThemeChanges } from "./ui/themeRuntime.js";
 
 // Register icon set for use throughout the app
 addIcons(
@@ -176,5 +177,25 @@ const app = createApp(App);
 app.provide(DefaultApolloClient, apolloClient);
 app.use(pinia);
 bootstrapApp({ pinia });
+
+const syncDashboardTheme = () => {
+  dashboardStore.loadDashboardTheme();
+};
+
+watch(
+  () => dashboardStore.dashboard.settings?.theme,
+  () => {
+    syncDashboardTheme();
+  },
+  { immediate: true },
+);
+
+const stopSystemThemeListener = subscribeToSystemThemeChanges(() => {
+  syncDashboardTheme();
+});
+
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", stopSystemThemeListener, { once: true });
+}
 
 app.use(routerTyped).use(i18n).use(head).component("v-icon", OhVueIcon).mount("#app");

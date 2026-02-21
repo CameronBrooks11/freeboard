@@ -5,6 +5,7 @@
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 import type { WidgetRuntimeInstance } from "../types/runtime.js";
+import { resolveThemeChartColor, resolveThemeColor } from "./runtime/themeColors.js";
 type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 type BarChartModel = {
   labels: string[];
@@ -55,7 +56,7 @@ const normalizeColorArray = (colors: unknown): string[] => {
       return "";
     })
     .filter(Boolean);
-  return normalized.length ? normalized : DEFAULT_BAR_COLORS;
+  return normalized;
 };
 
 const nowMs = () =>
@@ -417,11 +418,26 @@ export class BarChartWidget extends ReactiveWidget {
     context.clearRect(0, 0, width, height);
 
     const { chartModel, colors, orientation, showGrid, showValues } = inputs;
+    const chartLabelColor = resolveThemeColor("--color-shade-8", "#94a3b8");
+    const gridLineColor = resolveThemeColor("--color-shade-4", "#94a3b8");
+    const axisLineColor = resolveThemeColor("--color-shade-5", "#64748b");
+    const resolveSeriesColor = (seriesIndex: number) => {
+      if (colors.length > 0) {
+        const configuredColor = colors[seriesIndex % colors.length];
+        if (configuredColor) {
+          return configuredColor;
+        }
+      }
+      return resolveThemeChartColor(
+        seriesIndex,
+        DEFAULT_BAR_COLORS[seriesIndex % DEFAULT_BAR_COLORS.length]!,
+      );
+    };
     const allowValueLabels = showValues && !this.isNarrow;
     const rowsCount = chartModel.labels.length;
     const seriesCount = chartModel.seriesKeys.length;
     if (!rowsCount || !seriesCount) {
-      context.fillStyle = "var(--color-shade-8)";
+      context.fillStyle = chartLabelColor;
       context.font = "12px sans-serif";
       context.fillText("No chart data", 8, 20);
       return;
@@ -440,7 +456,7 @@ export class BarChartWidget extends ReactiveWidget {
     const baselineY = chartPadding.top + chartHeight;
 
     if (showGrid) {
-      context.strokeStyle = "rgba(148,163,184,0.22)";
+      context.strokeStyle = gridLineColor;
       context.lineWidth = 1;
       const gridLines = 4;
       for (let index = 0; index <= gridLines; index += 1) {
@@ -460,7 +476,7 @@ export class BarChartWidget extends ReactiveWidget {
       }
     }
 
-    context.strokeStyle = "rgba(148,163,184,0.35)";
+    context.strokeStyle = axisLineColor;
     context.lineWidth = 1;
     context.beginPath();
     context.moveTo(chartPadding.left, chartPadding.top);
@@ -469,7 +485,7 @@ export class BarChartWidget extends ReactiveWidget {
     context.stroke();
 
     context.font = "11px sans-serif";
-    context.fillStyle = "var(--color-shade-8)";
+    context.fillStyle = chartLabelColor;
     const categorySize =
       orientation === "vertical" ? chartWidth / rowsCount : chartHeight / rowsCount;
     const groupGap = 4;
@@ -497,13 +513,11 @@ export class BarChartWidget extends ReactiveWidget {
           const barX = categoryStartX + seriesIndex * (barThickness + innerGap);
           const barY = baselineY - barHeight;
 
-          context.fillStyle =
-            colors[seriesIndex % colors.length] ||
-            DEFAULT_BAR_COLORS[seriesIndex % DEFAULT_BAR_COLORS.length]!;
+          context.fillStyle = resolveSeriesColor(seriesIndex);
           context.fillRect(barX, barY, barThickness, barHeight);
 
           if (allowValueLabels) {
-            context.fillStyle = "var(--color-shade-8)";
+            context.fillStyle = chartLabelColor;
             context.textAlign = "center";
             context.fillText(
               String(Math.round(animatedValue * 100) / 100),
@@ -525,13 +539,11 @@ export class BarChartWidget extends ReactiveWidget {
           const barX = baselineX;
           const barY = categoryStartY + seriesIndex * (barThickness + innerGap);
 
-          context.fillStyle =
-            colors[seriesIndex % colors.length] ||
-            DEFAULT_BAR_COLORS[seriesIndex % DEFAULT_BAR_COLORS.length]!;
+          context.fillStyle = resolveSeriesColor(seriesIndex);
           context.fillRect(barX, barY, barWidth, barThickness);
 
           if (allowValueLabels) {
-            context.fillStyle = "var(--color-shade-8)";
+            context.fillStyle = chartLabelColor;
             context.textAlign = "left";
             context.fillText(
               String(Math.round(animatedValue * 100) / 100),
@@ -553,6 +565,18 @@ export class BarChartWidget extends ReactiveWidget {
 
     this.legendElement.style.display = "flex";
     this.legendElement.innerHTML = "";
+    const resolveSeriesColor = (seriesIndex: number) => {
+      if (colors.length > 0) {
+        const configuredColor = colors[seriesIndex % colors.length];
+        if (configuredColor) {
+          return configuredColor;
+        }
+      }
+      return resolveThemeChartColor(
+        seriesIndex,
+        DEFAULT_BAR_COLORS[seriesIndex % DEFAULT_BAR_COLORS.length]!,
+      );
+    };
 
     seriesKeys.forEach((seriesKey, index) => {
       const item = document.createElement("div");
@@ -561,8 +585,7 @@ export class BarChartWidget extends ReactiveWidget {
       item.style.gap = "4px";
       const marker = document.createElement("span");
       marker.textContent = "■";
-      marker.style.color =
-        colors[index % colors.length] || DEFAULT_BAR_COLORS[index % DEFAULT_BAR_COLORS.length]!;
+      marker.style.color = resolveSeriesColor(index);
 
       const label = document.createElement("span");
       label.textContent = String(seriesKey);

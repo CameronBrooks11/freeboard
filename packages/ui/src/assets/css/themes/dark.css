@@ -1,24 +1,52 @@
-body.dark {
-  --color-primary: #b88f51;
-  --color-accent: #b88f51;
-  --color-secondary: #005580;
-  --color-error: #aa7575;
-  --color-foreground: #d3d4d4;
-  --color-background: #101214;
+:root[data-theme="dark"] {
+  --bg-canvas: #0b1220;
+  --bg-surface-1: #111827;
+  --bg-surface-2: #172133;
+  --bg-surface-3: #1f2b3f;
 
-  --color-shade-0: #2a2a2a;
-  --color-shade-1: #272727;
-  --color-shade-2: #313131;
-  --color-shade-3: #363636;
-  --color-shade-4: #3d3d3d;
-  --color-shade-5: #4b4b4b;
-  --color-shade-6: #555555;
-  --color-shade-7: #636363;
-  --color-shade-8: #8b8b8b;
-  --color-shade-9: #a1a1a1;
-  --color-shade-10: #ffffff;
+  --text-primary: #e5e7eb;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-on-primary: #08111f;
+  --text-on-accent: #08111f;
 
-  --color-overlay: rgba(0, 0, 0, 0.8);
-  --color-shadow: rgba(0, 0, 0, 0.075);
-  --color-highlight: rgba(184, 143, 81, 0.8);
+  --status-success: #22c55e;
+  --status-warning: #f59e0b;
+  --status-error: #f87171;
+  --status-info: #38bdf8;
+  --status-on-error: #190808;
+  --status-error-surface: rgba(248, 113, 113, 0.92);
+  --status-error-border: rgba(254, 202, 202, 0.9);
+
+  --chart-1: #60a5fa;
+  --chart-2: #22d3ee;
+  --chart-3: #34d399;
+  --chart-4: #f59e0b;
+  --chart-5: #f472b6;
+  --chart-6: #f87171;
+  --chart-7: #a78bfa;
+  --chart-8: #94a3b8;
+
+  --color-primary: #60a5fa;
+  --color-accent: #22d3ee;
+  --color-secondary: #38bdf8;
+  --color-error: var(--status-error);
+  --color-foreground: var(--text-primary);
+  --color-background: var(--bg-canvas);
+
+  --color-shade-0: var(--bg-surface-1);
+  --color-shade-1: var(--bg-surface-2);
+  --color-shade-2: var(--bg-surface-3);
+  --color-shade-3: #273852;
+  --color-shade-4: #34506f;
+  --color-shade-5: #4a6788;
+  --color-shade-6: #6684a9;
+  --color-shade-7: #8aa5c2;
+  --color-shade-8: var(--text-secondary);
+  --color-shade-9: #d7e2ef;
+  --color-shade-10: #eef4fb;
+
+  --color-overlay: rgba(2, 6, 23, 0.82);
+  --color-shadow: rgba(2, 6, 23, 0.4);
+  --color-highlight: rgba(34, 211, 238, 0.4);
 }

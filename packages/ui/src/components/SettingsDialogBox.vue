@@ -17,6 +17,8 @@ import { storeToRefs } from "pinia";
 import TabNavigator from "./TabNavigator.vue";
 import createSettings from "../settings";
 import { usePreferredColorScheme } from "@vueuse/core";
+import { normalizeDashboardTheme } from "../models/Dashboard.js";
+import { DASHBOARD_THEME_CATALOG, type DashboardThemeCatalogEntry } from "../ui/themeCatalog.js";
 
 type FormComponentRef = {
   hasErrors: () => boolean;
@@ -50,9 +52,10 @@ const storeComponentRef = (name: string, el: unknown) => {
 };
 
 // Props passed from parent
-const { onClose, onOk } = defineProps({
+const { onClose, onOk, onThemePreviewChange } = defineProps({
   onClose: Function as PropType<(event?: Event) => void>,
   onOk: Function as PropType<(payload: SettingsDialogSubmitPayload) => void>,
+  onThemePreviewChange: Function as PropType<(themeValue: string) => void>,
 });
 
 // Compute tab fields schema from current dashboard settings
@@ -65,55 +68,12 @@ const fields = computed<SettingsSection[]>(
 
 const preferredColorScheme = usePreferredColorScheme();
 
-const THEME_PREVIEWS = Object.freeze([
-  {
-    value: "auto",
-    label: "form.labelThemeAuto",
-    swatches: ["#9ca3af", "#d1d5db", "#374151"],
-  },
-  {
-    value: "light",
-    label: "form.labelThemeLight",
-    swatches: ["#ffffff", "#a1a1a1", "#b87051"],
-  },
-  {
-    value: "dark",
-    label: "form.labelThemeDark",
-    swatches: ["#101214", "#363636", "#b88f51"],
-  },
-  {
-    value: "professional",
-    label: "form.labelThemeProfessional",
-    swatches: ["#111827", "#334155", "#2563eb"],
-  },
-  {
-    value: "high-contrast",
-    label: "form.labelThemeHighContrast",
-    swatches: ["#000000", "#ffffff", "#ffff00"],
-  },
-  {
-    value: "colorblind",
-    label: "form.labelThemeColorblind",
-    swatches: ["#0f172a", "#0072b2", "#e69f00"],
-  },
-  {
-    value: "warm",
-    label: "form.labelThemeWarm",
-    swatches: ["#1c1917", "#f59e0b", "#c2410c"],
-  },
-  {
-    value: "cool",
-    label: "form.labelThemeCool",
-    swatches: ["#0b1120", "#06b6d4", "#2563eb"],
-  },
-]);
-
-const selectedTheme = ref(dashboard.value?.settings?.theme || "auto");
+const selectedTheme = ref(normalizeDashboardTheme(dashboard.value?.settings?.theme));
 
 watch(
   () => dashboard.value?.settings?.theme,
   (themeValue) => {
-    selectedTheme.value = String(themeValue || "auto");
+    selectedTheme.value = normalizeDashboardTheme(themeValue);
   },
   { immediate: true },
 );
@@ -126,12 +86,14 @@ const onFormChange = (sectionName: string, formValue: unknown) => {
     formValue && typeof formValue === "object"
       ? (formValue as Record<string, unknown>).theme
       : undefined;
-  selectedTheme.value = String(nextValue || "auto");
+  selectedTheme.value = normalizeDashboardTheme(nextValue);
+  onThemePreviewChange?.(selectedTheme.value);
 };
 
 const onThemePreviewSelect = (themeValue: string) => {
-  selectedTheme.value = themeValue;
-  components.value.theme?.setFieldValue?.("theme", themeValue);
+  selectedTheme.value = normalizeDashboardTheme(themeValue);
+  components.value.theme?.setFieldValue?.("theme", selectedTheme.value);
+  onThemePreviewChange?.(selectedTheme.value);
 };
 
 const resolvedAutoThemeLabel = computed(() =>
@@ -139,7 +101,7 @@ const resolvedAutoThemeLabel = computed(() =>
 );
 
 const themePreviewCards = computed(() =>
-  THEME_PREVIEWS.map((preview) => ({
+  DASHBOARD_THEME_CATALOG.map((preview: DashboardThemeCatalogEntry) => ({
     ...preview,
     selected: selectedTheme.value === preview.value,
   })),
@@ -177,7 +139,7 @@ const onDialogBoxOk = () => {
   <DialogBox
     :header="$t('dialogBox.titleSettings')"
     ref="dialog"
-    :ok="$t('dialogBox.buttonOk')"
+    :ok="$t('dialogBox.buttonApply')"
     :cancel="$t('dialogBox.buttonCancel')"
     @close="onClose"
     @ok="onDialogBoxOk"
@@ -193,13 +155,20 @@ const onDialogBoxOk = () => {
         />
         <div v-if="field.name === 'theme'" class="settings-dialog-theme-preview">
           <div class="settings-dialog-theme-preview__heading">
-            Theme Preview
+            {{ $t("settings.themePreviewTitle") }}
             <span
               v-if="selectedTheme === 'auto'"
               class="settings-dialog-theme-preview__auto-caption"
             >
-              (Auto resolves to {{ $t(resolvedAutoThemeLabel) }})
+              ({{
+                $t("settings.themePreviewAutoResolves", {
+                  theme: $t(resolvedAutoThemeLabel),
+                })
+              }})
             </span>
+          </div>
+          <div class="settings-dialog-theme-preview__hint">
+            {{ $t("settings.themePreviewHint") }}
           </div>
           <div class="settings-dialog-theme-preview__grid">
             <button
@@ -214,13 +183,13 @@ const onDialogBoxOk = () => {
             >
               <div class="settings-dialog-theme-preview__swatches">
                 <span
-                  v-for="swatch in theme.swatches"
+                  v-for="swatch in theme.previewSwatches"
                   :key="`${theme.value}-${swatch}`"
                   class="settings-dialog-theme-preview__swatch"
                   :style="{ backgroundColor: swatch }"
                 />
               </div>
-              <div class="settings-dialog-theme-preview__label">{{ $t(theme.label) }}</div>
+              <div class="settings-dialog-theme-preview__label">{{ $t(theme.labelKey) }}</div>
             </button>
           </div>
         </div>
@@ -242,7 +211,7 @@ const onDialogBoxOk = () => {
   font-weight: 600;
   text-transform: uppercase;
   color: var(--color-shade-8);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   letter-spacing: 0.04em;
 }
 
@@ -251,6 +220,12 @@ const onDialogBoxOk = () => {
   text-transform: none;
   letter-spacing: normal;
   margin-left: 6px;
+}
+
+.settings-dialog-theme-preview__hint {
+  color: var(--color-shade-7);
+  font-size: 12px;
+  margin-bottom: 8px;
 }
 
 .settings-dialog-theme-preview__grid {

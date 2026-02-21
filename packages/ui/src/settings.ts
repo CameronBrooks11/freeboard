@@ -3,12 +3,8 @@
  * @description Generates configuration schema for dashboard settings forms.
  */
 
-import {
-  DASHBOARD_THEME_PRESETS,
-  MAX_COLUMNS,
-  MIN_COLUMNS,
-  normalizeDashboardTheme,
-} from "./models/Dashboard.js";
+import { MAX_COLUMNS, MIN_COLUMNS, normalizeDashboardTheme } from "./models/Dashboard.js";
+import { DASHBOARD_THEME_CATALOG } from "./ui/themeCatalog.js";
 
 /**
  * Build settings panels and fields for the dashboard editor.
@@ -80,19 +76,9 @@ export default (
           type: "option",
           default: "auto",
           required: true,
-          options: DASHBOARD_THEME_PRESETS.map((themeValue) => ({
-            value: themeValue,
-            label:
-              {
-                auto: "form.labelThemeAuto",
-                light: "form.labelThemeLight",
-                dark: "form.labelThemeDark",
-                professional: "form.labelThemeProfessional",
-                "high-contrast": "form.labelThemeHighContrast",
-                colorblind: "form.labelThemeColorblind",
-                warm: "form.labelThemeWarm",
-                cool: "form.labelThemeCool",
-              }[themeValue] || "form.labelThemeAuto",
+          options: DASHBOARD_THEME_CATALOG.map((themeEntry) => ({
+            value: themeEntry.value,
+            label: themeEntry.labelKey,
           })),
         },
       ],

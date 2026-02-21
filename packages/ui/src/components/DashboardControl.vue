@@ -16,6 +16,7 @@ import SettingsDialogBox from "./SettingsDialogBox.vue";
 import ShareDialogBox from "./ShareDialogBox.vue";
 import createSettings from "../settings";
 import { openModal } from "../ui/modalHost.js";
+import { normalizeDashboardTheme } from "../models/Dashboard.js";
 
 const authStore = useAuthStore();
 const dashboardStore = useDashboardStore();
@@ -55,17 +56,29 @@ const openSettingsDialogBox = () => {
   if (!appContext) {
     return;
   }
+  const initialThemeSelection = normalizeDashboardTheme(dashboard.value?.settings?.theme);
+  let settingsApplied = false;
+
   openModal(SettingsDialogBox, appContext, {
+    onThemePreviewChange: (themeValue: string) => {
+      dashboardStore.loadDashboardTheme(themeValue);
+    },
     onOk: (newSettings: { settings: Record<string, unknown>; title: string; columns: number }) => {
+      settingsApplied = true;
       const currentSettings = dashboard.value.settings;
       const incoming = newSettings.settings;
-      dashboard.value.settings = {
-        theme: typeof incoming.theme === "string" ? incoming.theme : currentSettings.theme,
+      const mergedSettings: typeof dashboard.value.settings = {
+        ...currentSettings,
+        ...incoming,
+        theme: normalizeDashboardTheme(
+          typeof incoming.theme === "string" ? incoming.theme : currentSettings.theme,
+        ),
         allowMobileEdit:
           typeof incoming.allowMobileEdit === "boolean"
             ? incoming.allowMobileEdit
             : currentSettings.allowMobileEdit,
       };
+      dashboard.value.settings = mergedSettings;
       settings.value = {
         title: newSettings.title,
         columns: newSettings.columns,
@@ -73,6 +86,11 @@ const openSettingsDialogBox = () => {
       onChange(settings.value);
       dashboardStore.loadDashboardAssets();
       dashboardStore.loadDashboardTheme();
+    },
+    onClose: () => {
+      if (!settingsApplied) {
+        dashboardStore.loadDashboardTheme(initialThemeSelection);
+      }
     },
   });
 };
