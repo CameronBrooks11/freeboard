@@ -1,22 +1,22 @@
 :root[data-theme="colorblind"] {
-  --bg-canvas: #0f172a;
-  --bg-surface-1: #162033;
-  --bg-surface-2: #1e293b;
-  --bg-surface-3: #253449;
+  --bg-canvas: #eef2f7;
+  --bg-surface-1: #f7f8fb;
+  --bg-surface-2: #edf1f6;
+  --bg-surface-3: #e3e9f2;
 
-  --text-primary: #e2e8f0;
-  --text-secondary: #d4dee9;
-  --text-muted: #a7b9ce;
+  --text-primary: #1f2937;
+  --text-secondary: #334155;
+  --text-muted: #5b6b80;
   --text-on-primary: #ffffff;
-  --text-on-accent: #1b1207;
+  --text-on-accent: #1f1400;
 
   --status-success: #009e73;
   --status-warning: #e69f00;
   --status-error: #d55e00;
-  --status-info: #56b4e9;
-  --status-on-error: #0a0500;
+  --status-info: #0072b2;
+  --status-on-error: #140800;
   --status-error-surface: rgba(213, 94, 0, 0.92);
-  --status-error-border: rgba(255, 220, 176, 0.86);
+  --status-error-border: rgba(120, 54, 0, 0.85);
 
   --chart-1: #0072b2;
   --chart-2: #e69f00;
@@ -25,7 +25,7 @@
   --chart-5: #56b4e9;
   --chart-6: #d55e00;
   --chart-7: #f0e442;
-  --chart-8: #93a8c1;
+  --chart-8: #4b5d73;
 
   --color-primary: #0072b2;
   --color-accent: #e69f00;
@@ -37,16 +37,16 @@
   --color-shade-0: var(--bg-surface-1);
   --color-shade-1: var(--bg-surface-2);
   --color-shade-2: var(--bg-surface-3);
-  --color-shade-3: #2f4159;
-  --color-shade-4: #435976;
-  --color-shade-5: #5f7596;
-  --color-shade-6: #8198b8;
-  --color-shade-7: #a7b9ce;
+  --color-shade-3: #d2dbe8;
+  --color-shade-4: #b7c3d6;
+  --color-shade-5: #93a5bf;
+  --color-shade-6: #7188a8;
+  --color-shade-7: #5b6f8f;
   --color-shade-8: var(--text-secondary);
-  --color-shade-9: #e2e8f0;
-  --color-shade-10: #f5f8fb;
+  --color-shade-9: #1f2937;
+  --color-shade-10: #0f172a;
 
-  --color-overlay: rgba(2, 6, 23, 0.84);
-  --color-shadow: rgba(2, 6, 23, 0.42);
-  --color-highlight: rgba(230, 159, 0, 0.44);
+  --color-overlay: rgba(15, 23, 42, 0.62);
+  --color-shadow: rgba(15, 23, 42, 0.16);
+  --color-highlight: rgba(230, 159, 0, 0.38);
 }

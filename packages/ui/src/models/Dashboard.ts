@@ -67,6 +67,7 @@ export const normalizeDashboardWidth = (value: unknown): string => {
 export const DASHBOARD_THEME_PRESETS = Object.freeze([
   "auto",
   "light",
+  "paper",
   "dark",
   "slate",
   "high-contrast",
@@ -86,7 +87,7 @@ export const DEFAULT_DASHBOARD_THEME: DashboardThemePreset = "auto";
  * Normalize dashboard theme values from persisted payloads/settings.
  *
  * @param {string} value
- * @returns {"auto"|"light"|"dark"|"slate"|"high-contrast"|"colorblind"|"amber-night"}
+ * @returns {"auto"|"light"|"paper"|"dark"|"slate"|"high-contrast"|"colorblind"|"amber-night"}
  */
 export const normalizeDashboardTheme = (value: unknown): DashboardThemePreset => {
   const normalized = String(value || "")

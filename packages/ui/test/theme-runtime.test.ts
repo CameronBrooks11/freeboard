@@ -59,6 +59,13 @@ test("applyDashboardThemeSelection applies canonical selection and resolved them
     assert.equal(documentElement.getAttribute("data-theme"), "slate");
     assert.equal(documentElement.style.colorScheme, "dark");
 
+    const paperResult = applyDashboardThemeSelection("paper");
+    assert.equal(paperResult.selection, "paper");
+    assert.equal(paperResult.resolvedTheme, "paper");
+    assert.equal(documentElement.getAttribute("data-theme-selection"), "paper");
+    assert.equal(documentElement.getAttribute("data-theme"), "paper");
+    assert.equal(documentElement.style.colorScheme, "light");
+
     const autoResult = applyDashboardThemeSelection("not-real-theme");
     assert.equal(autoResult.selection, "auto");
     assert.equal(autoResult.resolvedTheme, "light");

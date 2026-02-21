@@ -145,6 +145,7 @@ export const en = {
     labelThemeAuto: "Auto",
     labelThemeDark: "Dark",
     labelThemeLight: "Light",
+    labelThemePaper: "Paper",
     labelThemeSlate: "Slate",
     labelThemeHighContrast: "High Contrast",
     labelThemeColorblind: "Colorblind Friendly",

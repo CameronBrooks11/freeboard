@@ -16,8 +16,10 @@ const isSystemDarkMode = (): boolean =>
 const resolveThemeFromSelection = (selection: string): string =>
   selection === "auto" ? (isSystemDarkMode() ? "dark" : "light") : selection;
 
+const LIGHT_COLOR_SCHEME_THEMES = new Set(["light", "paper"]);
+
 const resolveColorScheme = (resolvedTheme: string): "light" | "dark" =>
-  resolvedTheme === "light" ? "light" : "dark";
+  LIGHT_COLOR_SCHEME_THEMES.has(resolvedTheme) ? "light" : "dark";
 
 const getThemeTarget = (): HTMLElement | null => {
   if (typeof document === "undefined") {

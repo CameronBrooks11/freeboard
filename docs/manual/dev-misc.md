@@ -198,7 +198,7 @@ Run it before and after bundle/loading architecture changes to compare impact wi
 
 ## Theme System Rules
 
-- Canonical dashboard theme options are `auto`, `light`, `dark`, `slate`, `high-contrast`, `colorblind`, `amber-night`.
+- Canonical dashboard theme options are `auto`, `light`, `paper`, `dark`, `slate`, `high-contrast`, `colorblind`, `amber-night`.
 - Theme runtime is centralized through document-root attributes (`data-theme-selection`, `data-theme`); do not reintroduce route-local theme application.
 - Settings dialog uses live preview semantics:
   - preview on selection change

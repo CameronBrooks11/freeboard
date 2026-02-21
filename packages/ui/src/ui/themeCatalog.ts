@@ -25,6 +25,11 @@ const entries: DashboardThemeCatalogEntry[] = [
     previewSwatches: ["#f8fafc", "#0f172a", "#2563eb"],
   },
   {
+    value: "paper",
+    labelKey: "form.labelThemePaper",
+    previewSwatches: ["#fcfaf5", "#1f2937", "#0f766e"],
+  },
+  {
     value: "dark",
     labelKey: "form.labelThemeDark",
     previewSwatches: ["#0b1220", "#e5e7eb", "#60a5fa"],
@@ -42,7 +47,7 @@ const entries: DashboardThemeCatalogEntry[] = [
   {
     value: "colorblind",
     labelKey: "form.labelThemeColorblind",
-    previewSwatches: ["#0f172a", "#e2e8f0", "#0072b2"],
+    previewSwatches: ["#f7f8fb", "#1f2937", "#e69f00"],
   },
   {
     value: "amber-night",
