@@ -49,7 +49,7 @@ In private -> external (`link/public`) transitions, share tokens are rotated.
 
 ## Theme packs
 
-- Dashboard settings include: `auto`, `light`, `dark`, `slate`, `high-contrast`, `colorblind`, `amber-night`.
+- Dashboard settings include: `auto`, `light`, `paper`, `dark`, `slate`, `high-contrast`, `colorblind`, `amber-night`.
 - `auto` follows the browser/system color scheme and resolves to `light` or `dark`.
 - Theme preview updates immediately when selected in Settings.
 - `Cancel` reverts preview changes; `Apply` keeps the selection in the dashboard draft.

@@ -23,6 +23,6 @@ test("settings schema exposes full curated theme option set", () => {
 
   assert.deepEqual(
     themeField.options.map((option) => option.value),
-    ["auto", "light", "dark", "slate", "high-contrast", "colorblind", "amber-night"],
+    ["auto", "light", "paper", "dark", "slate", "high-contrast", "colorblind", "amber-night"],
   );
 });

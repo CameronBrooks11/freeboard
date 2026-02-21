@@ -262,6 +262,12 @@ test("dashboard store applies curated and fallback themes to document root attri
   assert.equal(root.getAttribute("data-theme"), "slate");
   assert.equal(root.style.colorScheme, "dark");
 
+  dashboardStore.dashboard.settings.theme = "paper";
+  dashboardStore.loadDashboardTheme();
+  assert.equal(root.getAttribute("data-theme-selection"), "paper");
+  assert.equal(root.getAttribute("data-theme"), "paper");
+  assert.equal(root.style.colorScheme, "light");
+
   dashboardStore.dashboard.settings.theme = "high-contrast";
   dashboardStore.loadDashboardTheme();
   assert.equal(root.getAttribute("data-theme-selection"), "high-contrast");

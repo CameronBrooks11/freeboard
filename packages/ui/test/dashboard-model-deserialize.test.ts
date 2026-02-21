@@ -100,6 +100,7 @@ test("Dashboard increase/decrease width traverses sm -> md -> lg -> xl", () => {
 
 test("Dashboard theme normalization accepts curated presets and falls back to auto", () => {
   assert.equal(normalizeDashboardTheme("SLATE"), "slate");
+  assert.equal(normalizeDashboardTheme("PAPER"), "paper");
   assert.equal(normalizeDashboardTheme("AMBER-NIGHT"), "amber-night");
   assert.equal(normalizeDashboardTheme("HIGH-CONTRAST"), "high-contrast");
   assert.equal(normalizeDashboardTheme("unknown-theme"), "auto");
