@@ -23,6 +23,26 @@ const graphql = async ({ request, token, query, variables = {} }) => {
   return body.data;
 };
 
+const graphqlRaw = async ({ request, token, query, variables = {}, headers = {} }) => {
+  const response = await request.post("/graphql", {
+    headers: {
+      ...(token
+        ? {
+            authorization: `Bearer ${token}`,
+          }
+        : {}),
+      ...headers,
+    },
+    data: {
+      query,
+      variables,
+    },
+  });
+
+  expect(response.ok()).toBeTruthy();
+  return response.json();
+};
+
 const loginViaUi = async (page) => {
   await page.goto("/login");
   await expect(page.locator(".login__dialog-box .login__footer-action")).toBeVisible();
@@ -298,4 +318,59 @@ test("small-layout dashboard renders stacked pane flow in authenticated and shar
   await expect(sharedPage.getByText("Small A")).toBeVisible();
   await expect(sharedPage.getByText("Small B")).toBeVisible();
   await sharedContext.close();
+});
+
+test("login throttle is spoof-resistant through proxy path when X-Forwarded-For is manipulated", async ({
+  request,
+}) => {
+  const authMutation = `
+    mutation AuthUser($email: String!, $password: String!) {
+      authUser(email: $email, password: $password) {
+        token
+      }
+    }
+  `;
+
+  const trustedProxyIdentity = "203.0.113.77";
+  let rateLimited = false;
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const spoofedClient = `198.51.100.${20 + attempt}`;
+    const body = await graphqlRaw({
+      request,
+      query: authMutation,
+      variables: {
+        email: ADMIN_EMAIL,
+        password: "wrong-password",
+      },
+      headers: {
+        "x-forwarded-for": `${spoofedClient}, ${trustedProxyIdentity}`,
+      },
+    });
+
+    const message = String(body?.errors?.[0]?.message || "");
+    if (/Too many login attempts/i.test(message)) {
+      rateLimited = true;
+      break;
+    }
+
+    expect(message).toMatch(/Invalid credentials/i);
+  }
+
+  expect(rateLimited).toBeTruthy();
+
+  const bypassAttempt = await graphqlRaw({
+    request,
+    query: authMutation,
+    variables: {
+      email: ADMIN_EMAIL,
+      password: "wrong-password",
+    },
+    headers: {
+      "x-forwarded-for": `198.51.100.250, ${trustedProxyIdentity}`,
+    },
+  });
+
+  const bypassMessage = String(bypassAttempt?.errors?.[0]?.message || "");
+  expect(bypassMessage).toMatch(/Too many login attempts/i);
 });

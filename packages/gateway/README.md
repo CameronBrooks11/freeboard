@@ -30,7 +30,7 @@ Datasource execution boundary service (HTTP fetch + realtime SSE/WebSocket/MQTT 
 
 - `JWT_GATEWAY_SECRET`
 - `GATEWAY_SERVICE_TOKEN`
-- `EGRESS_ALLOWED_HOSTS` (required for production-safe runtime)
+- `EGRESS_ALLOWED_HOSTS` (required for non-development runtime)
 
 Optional tuning is documented in root `.env.example` (`REALTIME_*`, `FETCH_*`, `EGRESS_*`).
 

@@ -25,11 +25,13 @@ jobs:
       non_docs: ${{ steps.classify.outputs.non_docs }}
       run_format_check: ${{ steps.classify.outputs.run_format_check }}
       run_api_tests: ${{ steps.classify.outputs.run_api_tests }}
+      run_shared_tests: ${{ steps.classify.outputs.run_shared_tests }}
       run_ui_tests: ${{ steps.classify.outputs.run_ui_tests }}
       run_gateway_tests: ${{ steps.classify.outputs.run_gateway_tests }}
       run_e2e_smoke: ${{ steps.classify.outputs.run_e2e_smoke }}
       run_build_verify: ${{ steps.classify.outputs.run_build_verify }}
       run_typecheck: ${{ steps.classify.outputs.run_typecheck }}
+      run_docker_sanity: ${{ steps.classify.outputs.run_docker_sanity }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -60,12 +62,24 @@ jobs:
               - 'packages/ui/vite.config.mjs'
               - 'packages/ui/index.html'
               - 'packages/ui/eslint.config.js'
+              - 'packages/ui/nginx.conf'
+              - 'packages/ui/Dockerfile'
             gateway:
               - 'packages/gateway/src/**'
               - 'packages/gateway/test/**'
               - 'packages/gateway/tsconfig*.json'
               - 'packages/gateway/package.json'
               - 'packages/gateway/Dockerfile'
+            docker_sanity:
+              - 'packages/api/Dockerfile'
+              - 'packages/gateway/Dockerfile'
+              - 'packages/ui/Dockerfile'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'packages/api/package.json'
+              - 'packages/gateway/package.json'
+              - 'packages/ui/package.json'
+              - 'packages/shared/package.json'
             e2e:
               - 'e2e/**'
               - 'scripts/e2e-smoke.mjs'
@@ -100,6 +114,7 @@ jobs:
           api="${{ steps.filter.outputs.api }}"
           ui="${{ steps.filter.outputs.ui }}"
           gateway="${{ steps.filter.outputs.gateway }}"
+          docker_sanity="${{ steps.filter.outputs.docker_sanity }}"
           e2e="${{ steps.filter.outputs.e2e }}"
           runtime_shared="${{ steps.filter.outputs.runtime_shared }}"
           shared="${{ steps.filter.outputs.shared }}"
@@ -124,6 +139,11 @@ jobs:
             run_ui_tests=true
           fi
 
+          run_shared_tests=false
+          if [[ "$runtime_shared" == "true" || "$shared" == "true" ]]; then
+            run_shared_tests=true
+          fi
+
           run_gateway_tests=false
           if [[ "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             run_gateway_tests=true
@@ -144,28 +164,37 @@ jobs:
             run_typecheck=true
           fi
 
+          run_docker_sanity=false
+          if [[ "$docker_sanity" == "true" ]]; then
+            run_docker_sanity=true
+          fi
+
           run_format_check=true
 
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
           echo "non_docs=$non_docs" >> "$GITHUB_OUTPUT"
           echo "run_format_check=$run_format_check" >> "$GITHUB_OUTPUT"
           echo "run_api_tests=$run_api_tests" >> "$GITHUB_OUTPUT"
+          echo "run_shared_tests=$run_shared_tests" >> "$GITHUB_OUTPUT"
           echo "run_ui_tests=$run_ui_tests" >> "$GITHUB_OUTPUT"
           echo "run_gateway_tests=$run_gateway_tests" >> "$GITHUB_OUTPUT"
           echo "run_e2e_smoke=$run_e2e_smoke" >> "$GITHUB_OUTPUT"
           echo "run_build_verify=$run_build_verify" >> "$GITHUB_OUTPUT"
           echo "run_typecheck=$run_typecheck" >> "$GITHUB_OUTPUT"
+          echo "run_docker_sanity=$run_docker_sanity" >> "$GITHUB_OUTPUT"
 
           echo "CI classification:"
           echo "  docs_only=$docs_only"
           echo "  non_docs=$non_docs"
           echo "  run_format_check=$run_format_check"
           echo "  run_api_tests=$run_api_tests"
+          echo "  run_shared_tests=$run_shared_tests"
           echo "  run_ui_tests=$run_ui_tests"
           echo "  run_gateway_tests=$run_gateway_tests"
           echo "  run_e2e_smoke=$run_e2e_smoke"
           echo "  run_build_verify=$run_build_verify"
           echo "  run_typecheck=$run_typecheck"
+          echo "  run_docker_sanity=$run_docker_sanity"
           echo "  runtime_shared=$runtime_shared"
 
   format:
@@ -211,6 +240,8 @@ jobs:
         run: npm run check:ts:debt
       - name: Validate TS source artifacts
         run: npm run check:ts:source-artifacts
+      - name: Validate runtime dependency hygiene
+        run: npm run check:runtime-deps
 
   test-api:
     name: Test API
@@ -230,6 +261,25 @@ jobs:
         run: npm ci
       - name: Run API tests
         run: npm run test:api
+
+  test-shared:
+    name: Test Shared
+    needs: changes
+    if: needs.changes.outputs.run_shared_tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Run shared tests
+        run: npm run test:shared
 
   test-ui:
     name: Test UI runtime
@@ -325,6 +375,22 @@ jobs:
       - name: Build verify
         run: npm run build:verify
 
+  docker-sanity:
+    name: Docker build sanity
+    needs: changes
+    if: needs.changes.outputs.run_docker_sanity == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Build API image
+        run: docker build -f packages/api/Dockerfile . -t freeboard-api-ci:pr
+      - name: Build Gateway image
+        run: docker build -f packages/gateway/Dockerfile . -t freeboard-gateway-ci:pr
+      - name: Build UI image
+        run: docker build -f packages/ui/Dockerfile . -t freeboard-ui-ci:pr
+
   typecheck:
     name: Typecheck
     needs: changes
@@ -352,10 +418,12 @@ jobs:
       - format
       - lint
       - test-api
+      - test-shared
       - test-ui
       - test-gateway
       - test-e2e-smoke
       - build-verify
+      - docker-sanity
       - typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -385,10 +453,12 @@ jobs:
           check_required "${{ needs.changes.outputs.run_format_check }}" "${{ needs.format.result }}" "format"
           check_required "${{ needs.changes.outputs.non_docs }}" "${{ needs.lint.result }}" "lint"
           check_required "${{ needs.changes.outputs.run_api_tests }}" "${{ needs.test-api.result }}" "test-api"
+          check_required "${{ needs.changes.outputs.run_shared_tests }}" "${{ needs.test-shared.result }}" "test-shared"
           check_required "${{ needs.changes.outputs.run_ui_tests }}" "${{ needs.test-ui.result }}" "test-ui"
           check_required "${{ needs.changes.outputs.run_gateway_tests }}" "${{ needs.test-gateway.result }}" "test-gateway"
           check_required "${{ needs.changes.outputs.run_e2e_smoke }}" "${{ needs.test-e2e-smoke.result }}" "test-e2e-smoke"
           check_required "${{ needs.changes.outputs.run_build_verify }}" "${{ needs.build-verify.result }}" "build-verify"
+          check_required "${{ needs.changes.outputs.run_docker_sanity }}" "${{ needs.docker-sanity.result }}" "docker-sanity"
           check_required "${{ needs.changes.outputs.run_typecheck }}" "${{ needs.typecheck.result }}" "typecheck"
 
           if [[ "$status" -ne 0 ]]; then

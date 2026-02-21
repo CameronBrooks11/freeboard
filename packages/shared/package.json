@@ -13,9 +13,15 @@
     "./clientIp.js": {
       "types": "./src/clientIp.ts",
       "import": "./dist/clientIp.js"
+    },
+    "./runtimePolicy.js": {
+      "types": "./src/runtimePolicy.ts",
+      "import": "./dist/runtimePolicy.js"
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "test": "tsx --test --test-concurrency=1",
+    "test:ci": "tsx --test --test-concurrency=1"
   }
 }

@@ -71,7 +71,10 @@ const withEnv = async (overrides, run) => {
 const importConfigFresh = async () =>
   import(`../src/config.js?case=${Date.now()}-${Math.random()}`);
 
-const TEST_CREDENTIAL_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
+const TEST_CREDENTIAL_ENCRYPTION_KEY = Buffer.from(
+  "4f9d2acb71e84c36a90f5e12d7b3c4aa5d61e8f90b2c47d38ea16f4bc9d2037f",
+  "hex",
+).toString("base64");
 
 test("config rejects weak JWT secret in non-development runtime", async () => {
   await withEnv(
@@ -89,6 +92,43 @@ test("config rejects weak JWT secret in non-development runtime", async () => {
     },
     async () => {
       await assert.rejects(() => importConfigFresh(), /JWT_SECRET is missing or too weak/);
+    },
+  );
+});
+
+test("config rejects deterministic local-dev JWT secret pattern in non-development runtime", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "production",
+      JWT_SECRET: "freeboard-local-dev-jwt-secret-0123456789",
+      CREATE_ADMIN: "false",
+      MONGO_URL: "mongodb://127.0.0.1:27017/freeboard",
+      JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
+      GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
+      CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
+    },
+    async () => {
+      await assert.rejects(() => importConfigFresh(), /JWT_SECRET is missing or too weak/);
+    },
+  );
+});
+
+test("config rejects deterministic local-dev credential encryption key in non-development runtime", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "production",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      CREATE_ADMIN: "false",
+      MONGO_URL: "mongodb://127.0.0.1:27017/freeboard",
+      JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
+      GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
+      CREDENTIAL_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
+    },
+    async () => {
+      await assert.rejects(
+        () => importConfigFresh(),
+        /CREDENTIAL_ENCRYPTION_KEY is missing, invalid, or weak/,
+      );
     },
   );
 });

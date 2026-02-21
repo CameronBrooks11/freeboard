@@ -9,6 +9,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import {
+  isNonDevRuntimeEnv,
+  isWeakCredentialEncryptionKey,
+  isWeakSharedSecret,
+  parseBase64Key,
+} from "@freeboard/shared/runtimePolicy.js";
+import {
   getCredentialPolicyHints,
   isStrongPassword,
   isValidEmail,
@@ -153,50 +159,10 @@ const normalizeLimiterNamespace = (value: unknown, fallback: string): string => 
   return (normalized || fallback).slice(0, 96);
 };
 
-const decodeBase64 = (value: unknown): Buffer | null => {
-  try {
-    return Buffer.from(String(value || ""), "base64");
-  } catch {
-    return null;
-  }
-};
-
-const parseBase64Key = (value: unknown, expectedLength: number): Buffer | null => {
-  if (typeof value !== "string" || value.trim() === "") {
-    return null;
-  }
-  const decoded = decodeBase64(value.trim());
-  if (!decoded || decoded.length !== expectedLength) {
-    return null;
-  }
-  return decoded;
-};
-
 const environment = String(process.env.NODE_ENV || "development").toLowerCase();
-const isNonDevRuntime = !["development", "test"].includes(environment);
+const isNonDevRuntime = isNonDevRuntimeEnv(environment);
 const hasExplicitMongoUrl =
   typeof process.env.MONGO_URL === "string" && process.env.MONGO_URL.trim() !== "";
-
-const isWeakJwtSecret = (secret: unknown): boolean => {
-  if (!secret || typeof secret !== "string") {
-    return true;
-  }
-
-  const normalized = secret.trim().toLowerCase();
-  if (secret.length < 32) {
-    return true;
-  }
-
-  if (
-    normalized.includes("replace-with") ||
-    normalized.includes("example") ||
-    normalized.includes("local-only")
-  ) {
-    return true;
-  }
-
-  return ["freeboard", "changeme", "default", "secret", "password"].includes(normalized);
-};
 
 const credentialPolicy = getCredentialPolicyHints();
 
@@ -350,7 +316,7 @@ export const config = Object.freeze({
   ),
 });
 
-if (isNonDevRuntime && isWeakJwtSecret(config.jwtSecret)) {
+if (isNonDevRuntime && isWeakSharedSecret(config.jwtSecret)) {
   throw new Error(
     "JWT_SECRET is missing or too weak for non-development runtime. Provide a strong secret (>=32 chars).",
   );
@@ -360,21 +326,21 @@ if (isNonDevRuntime && !hasExplicitMongoUrl) {
   throw new Error("MONGO_URL must be explicitly configured for non-development runtime.");
 }
 
-if (isNonDevRuntime && isWeakJwtSecret(config.jwtGatewaySecret)) {
+if (isNonDevRuntime && isWeakSharedSecret(config.jwtGatewaySecret)) {
   throw new Error(
     "JWT_GATEWAY_SECRET is missing or too weak for non-development runtime. Provide a strong secret (>=32 chars).",
   );
 }
 
-if (isNonDevRuntime && isWeakJwtSecret(config.gatewayServiceToken)) {
+if (isNonDevRuntime && isWeakSharedSecret(config.gatewayServiceToken)) {
   throw new Error(
     "GATEWAY_SERVICE_TOKEN is missing or too weak for non-development runtime. Provide a strong token (>=32 chars).",
   );
 }
 
-if (isNonDevRuntime && !credentialEncryptionKey) {
+if (isNonDevRuntime && isWeakCredentialEncryptionKey(process.env.CREDENTIAL_ENCRYPTION_KEY)) {
   throw new Error(
-    "CREDENTIAL_ENCRYPTION_KEY must be set to a valid base64-encoded 32-byte key in non-development runtime.",
+    "CREDENTIAL_ENCRYPTION_KEY is missing, invalid, or weak for non-development runtime. Provide a strong base64-encoded 32-byte key.",
   );
 }
 

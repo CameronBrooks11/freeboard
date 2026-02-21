@@ -10,7 +10,7 @@ import {
   ALLOWED_HOST_PATTERNS,
   ALLOWED_PORTS,
   ALLOW_PRIVATE_DESTINATIONS,
-  IS_PRODUCTION,
+  IS_NON_DEV_RUNTIME,
 } from "./runtimeConfig.js";
 import { createClientError } from "./errors.js";
 
@@ -112,7 +112,7 @@ const isBlockedHostname = (hostname: string): boolean => {
 
 const hostMatchesPattern = (hostname: string, pattern: string): boolean => {
   if (pattern === "*") {
-    return !IS_PRODUCTION;
+    return !IS_NON_DEV_RUNTIME;
   }
   if (pattern.startsWith("*.")) {
     const suffix = pattern.slice(2);
@@ -123,7 +123,7 @@ const hostMatchesPattern = (hostname: string, pattern: string): boolean => {
 
 const isAllowedHost = (hostname: string): boolean => {
   if (ALLOWED_HOST_PATTERNS.length === 0) {
-    return !IS_PRODUCTION;
+    return !IS_NON_DEV_RUNTIME;
   }
   return ALLOWED_HOST_PATTERNS.some((pattern) => hostMatchesPattern(hostname, pattern));
 };
