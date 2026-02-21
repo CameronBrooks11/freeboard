@@ -3,6 +3,8 @@
  * Runtime config normalization and constants.
  */
 
+import { isNonDevRuntimeEnv, isWeakSharedSecret } from "@freeboard/shared/runtimePolicy.js";
+
 const toBoolean = (value: unknown, fallback = false): boolean => {
   if (value === undefined || value === null || value === "") {
     return fallback;
@@ -70,7 +72,7 @@ const toLimiterFailureMode = (
 export const PORT = Number(process.env.PORT || 8001);
 export const HOST = process.env.HOST || "0.0.0.0";
 export const NODE_ENV = String(process.env.NODE_ENV || "development").toLowerCase();
-export const IS_PRODUCTION = NODE_ENV === "production";
+export const IS_NON_DEV_RUNTIME = isNonDevRuntimeEnv(NODE_ENV);
 
 export const ALLOW_INSECURE_TLS = toBoolean(process.env.EGRESS_ALLOW_INSECURE_TLS, false);
 export const ALLOW_PRIVATE_DESTINATIONS = toBoolean(
@@ -115,7 +117,7 @@ export const GATEWAY_LIMITER_TIMEOUT_MS = toPositiveInteger(
 export const getRealtimeLimiterFailureMode = (): "fail-open" | "fail-closed" =>
   toLimiterFailureMode(
     process.env.REALTIME_LIMITER_FAILURE_MODE,
-    IS_PRODUCTION ? "fail-closed" : "fail-open",
+    IS_NON_DEV_RUNTIME ? "fail-closed" : "fail-open",
   );
 
 export const REALTIME_ENABLED = toBoolean(process.env.REALTIME_ENABLED, true);
@@ -223,38 +225,20 @@ export const STREAM_ERROR_CODES = Object.freeze({
   RATE_LIMITED: "STREAM_RATE_LIMITED",
 });
 
-const isWeakSecret = (secret: unknown): boolean => {
-  if (!secret || typeof secret !== "string") {
-    return true;
-  }
-  const normalized = secret.trim().toLowerCase();
-  if (normalized.length < 32) {
-    return true;
-  }
-  if (
-    normalized.includes("replace-with") ||
-    normalized.includes("example") ||
-    normalized.includes("local-only")
-  ) {
-    return true;
-  }
-  return ["freeboard", "changeme", "default", "secret", "password"].includes(normalized);
-};
-
-if (IS_PRODUCTION && ALLOW_INSECURE_TLS) {
-  throw new Error("EGRESS_ALLOW_INSECURE_TLS=true is not allowed in production.");
+if (IS_NON_DEV_RUNTIME && ALLOW_INSECURE_TLS) {
+  throw new Error("EGRESS_ALLOW_INSECURE_TLS=true is not allowed in non-development runtime.");
 }
 
-if (IS_PRODUCTION && ALLOWED_HOST_PATTERNS.length === 0) {
+if (IS_NON_DEV_RUNTIME && ALLOWED_HOST_PATTERNS.length === 0) {
   throw new Error(
-    "EGRESS_ALLOWED_HOSTS must be configured in production (comma-separated host allowlist).",
+    "EGRESS_ALLOWED_HOSTS must be configured in non-development runtime (comma-separated host allowlist).",
   );
 }
 
-if (IS_PRODUCTION && isWeakSecret(JWT_GATEWAY_SECRET)) {
-  throw new Error("JWT_GATEWAY_SECRET is missing or too weak for production runtime.");
+if (IS_NON_DEV_RUNTIME && isWeakSharedSecret(JWT_GATEWAY_SECRET)) {
+  throw new Error("JWT_GATEWAY_SECRET is missing or too weak for non-development runtime.");
 }
 
-if (IS_PRODUCTION && isWeakSecret(GATEWAY_SERVICE_TOKEN)) {
-  throw new Error("GATEWAY_SERVICE_TOKEN is missing or too weak for production runtime.");
+if (IS_NON_DEV_RUNTIME && isWeakSharedSecret(GATEWAY_SERVICE_TOKEN)) {
+  throw new Error("GATEWAY_SERVICE_TOKEN is missing or too weak for non-development runtime.");
 }

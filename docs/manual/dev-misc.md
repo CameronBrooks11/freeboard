@@ -40,6 +40,7 @@ npm run lint
 npm run check:ui:store-boundaries
 npm run check:ts:debt
 npm run check:ts:source-artifacts
+npm run check:runtime-deps
 npm run test
 npm run build:verify
 npm run typecheck
@@ -55,7 +56,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 
 ## CI Troubleshooting (Quick)
 
-- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `typecheck`).
+- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-shared`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `docker-sanity`, `typecheck`).
 - If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
 - If `Validate TS source debt` fails, remove unsafe TS patterns (`as any`, `as unknown as`, `: any`, `Record<string, any>`, `[key: string]: any`, `@ts-ignore`, `@ts-nocheck`) from `packages/*/src`.
 - If `Validate TS source artifacts` fails, remove legacy JS source files from `packages/*/src`.
@@ -68,9 +69,11 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 ## Security Guardrail Coverage in CI
 
 - Required branch gate remains `Required CI` from `.github/workflows/ci.yml`.
-- `lint` job enforces runtime eval bans through ESLint (`no-eval`, `no-new-func`, `no-implied-eval`) and `npm run check:ts:debt`.
+- `lint` job enforces runtime eval bans through ESLint (`no-eval`, `no-new-func`, `no-implied-eval`), `npm run check:ts:debt`, and runtime dependency hygiene (`npm run check:runtime-deps`).
+- `test-shared` job validates shared runtime policy/client-IP utility behavior for `packages/shared` and shared-surface changes.
 - `test-ui` job runs behavior-based UI regression tests (including layout policy behavior checks).
 - `test-e2e-smoke` job in `CI` runs cross-service browser assertions from `e2e/smoke.spec.js` on relevant API, UI, gateway, `packages/shared`, and e2e changes and is included in `Required CI`.
+- `docker-sanity` job validates API/gateway/UI Docker builds on Dockerfile/runtime dependency changes.
 - Standalone `E2E smoke` workflow remains available for manual reruns (`workflow_dispatch`) and artifact triage.
 
 ## CI Workflow Matrix

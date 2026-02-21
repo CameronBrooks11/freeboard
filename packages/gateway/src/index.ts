@@ -47,7 +47,7 @@ import {
   ALLOW_INSECURE_TLS,
   GATEWAY_SERVICE_TOKEN,
   HOST,
-  IS_PRODUCTION,
+  IS_NON_DEV_RUNTIME,
   PORT,
   REALTIME_CONNECT_RATE_LIMIT_IP_PER_MIN,
   REALTIME_CONNECT_TIMEOUT_MS,
@@ -738,13 +738,13 @@ export const createRealtimeGateway = ({
     }
 
     if (
-      IS_PRODUCTION &&
+      IS_NON_DEV_RUNTIME &&
       brokerAllowlist.length === 0 &&
       REALTIME_MQTT_ALLOWED_TOPICS.length === 0
     ) {
       throw createClientError(
         403,
-        "MQTT topic allowlist is required in production",
+        "MQTT topic allowlist is required in non-development runtime",
         STREAM_ERROR_CODES.POLICY_BLOCKED,
       );
     }

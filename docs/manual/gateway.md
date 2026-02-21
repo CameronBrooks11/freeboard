@@ -10,7 +10,7 @@ The gateway is the execution boundary for outbound datasource traffic. It valida
   - HTTP datasource fetch: `http`, `https`
   - Realtime adapters: `http`, `https`, `ws`, `wss`, `mqtt`, `mqtts`
 - Rejects URL credentials (`user:pass@host`).
-- Enforces host allowlist in production (`EGRESS_ALLOWED_HOSTS`).
+- Enforces host allowlist in non-development runtime (`EGRESS_ALLOWED_HOSTS`).
 - Enforces port allowlist (`EGRESS_ALLOWED_PORTS`).
 - Blocks private/internal hostnames and resolved IP ranges by default.
 - Uses DNS-pinned outbound routing:
@@ -106,7 +106,7 @@ Error responses are sanitized and do not include decrypted credentials or intern
 
 Shared/egress:
 
-- `EGRESS_ALLOWED_HOSTS` (required in production)
+- `EGRESS_ALLOWED_HOSTS` (required in non-development runtime)
 - `EGRESS_ALLOWED_PORTS` (default: `80,443,1883,8883`)
 - `EGRESS_ALLOW_PRIVATE_DESTINATIONS` (default: `false`)
 - `EGRESS_ALLOW_INSECURE_TLS` (default: `false`)
@@ -156,16 +156,16 @@ Realtime protocol toggles:
 
 ## Operational Notes
 
-- Keep `EGRESS_ALLOW_INSECURE_TLS=false` in production.
+- Keep `EGRESS_ALLOW_INSECURE_TLS=false` in non-development runtime.
 - Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false` unless on a trusted local-only network.
 - Review `EGRESS_ALLOWED_HOSTS` as part of deployment change control.
 - Keep `REALTIME_TRUST_PROXY_HOPS` and `API_TRUST_PROXY_HOPS` aligned for each reverse-proxy topology.
 - Gateway and API client-IP derivation share one implementation (`@freeboard/shared/clientIp.js`) to avoid parsing drift.
 - If trusted-side proxy hop entries are malformed, client-IP derivation fails closed and falls back to socket IP.
-- Keep `REALTIME_LIMITER_FAILURE_MODE=fail-closed` in production unless degraded-mode acceptance is explicitly approved.
+- Keep `REALTIME_LIMITER_FAILURE_MODE=fail-closed` in non-development runtime unless degraded-mode acceptance is explicitly approved.
 - Configure edge proxies to overwrite `X-Forwarded-For` with authoritative client identity values.
 - If realtime limiter backend becomes unavailable in fail-closed mode, gateway connect/subscribe limits fail with temporary-unavailable behavior (`503`) until backend recovery.
 - Use [Security Controls Rollout Runbook](/manual/security-controls-rollout) for staged deploy, canary watch, and rollback procedure.
 - Use the [Secrets Operations Runbook](/manual/secrets-operations) for `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`, and Mongo credential lifecycle operations.
 - Rotate credential encryption keys with the dedicated [Credential Key Rotation Runbook](/manual/credential-key-rotation).
-- In production, configure MQTT allowlists (`REALTIME_MQTT_ALLOWED_TOPICS` and/or broker `topicAllowlist`) before enabling MQTT datasources.
+- In non-development runtime, configure MQTT allowlists (`REALTIME_MQTT_ALLOWED_TOPICS` and/or broker `topicAllowlist`) before enabling MQTT datasources.

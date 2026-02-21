@@ -117,7 +117,7 @@ Security control deployment/rollback workflow is centralized in [Security Contro
 
 ## Security Defaults
 
-- API and gateway are hardened for production behavior when `NODE_ENV=production`.
+- API and gateway are hardened for non-development behavior when `NODE_ENV` is not `development`/`test`.
 - Container artifacts default to production mode.
 - Docker Compose startup is fail-fast for missing critical env:
   - API requires `FREEBOARD_MONGO_URL`
@@ -130,7 +130,7 @@ Security control deployment/rollback workflow is centralized in [Security Contro
 ## CI Topology
 
 - Required PR workflow: `.github/workflows/ci.yml`
-  - Jobs: `changes` -> conditional `lint`, `test-api`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `typecheck` -> always-run `Required CI`.
+  - Jobs: `changes` -> conditional `format`, `lint`, `test-api`, `test-shared`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `docker-sanity`, `typecheck` -> always-run `Required CI`.
   - Concurrency: cancels superseded PR runs using PR-number/ref keyed group.
   - Required check target for branch protection: `Required CI`.
 - Manual E2E rerun workflow: `.github/workflows/e2e-smoke.yml`
