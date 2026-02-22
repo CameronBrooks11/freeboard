@@ -57,6 +57,7 @@ export default defineConfig({
             { text: "Raspberry Pi MongoDB", link: "/manual/raspberry-pi-mongodb" },
             { text: "Docs Site Setup", link: "/manual/docs-site-setup" },
             { text: "Development Misc", link: "/manual/dev-misc" },
+            { text: "Translation Contributions", link: "/manual/translations" },
           ],
         },
       ],

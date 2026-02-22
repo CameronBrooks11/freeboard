@@ -27,6 +27,7 @@ import {
   DASHBOARD_TRANSFER_OWNERSHIP_MUTATION,
   DASHBOARD_UPSERT_ACCESS_MUTATION,
 } from "../gql.js";
+import { useI18n } from "vue-i18n";
 
 type CollaboratorEntry = {
   userId: string;
@@ -46,6 +47,7 @@ const { onClose } = defineProps({
 
 const dashboardStore = useDashboardStore();
 const { dashboard, isSaved } = storeToRefs(dashboardStore);
+const { t } = useI18n();
 
 const visibilityDraft = ref("private");
 const collaboratorEmail = ref("");
@@ -118,9 +120,10 @@ const clearMessages = () => {
   errorMessage.value = "";
 };
 
-const setGraphQLError = (error: unknown, fallback: string) => {
+const setGraphQLError = (error: unknown, fallbackKey: string) => {
   const normalized = (error as GraphQLErrorLike | undefined) || undefined;
-  errorMessage.value = normalized?.graphQLErrors?.[0]?.message || normalized?.message || fallback;
+  errorMessage.value =
+    normalized?.graphQLErrors?.[0]?.message || normalized?.message || t(fallbackKey);
 };
 
 const visibilityToEnum = (visibility: string) => String(visibility || "private").toUpperCase();
@@ -145,7 +148,7 @@ const saveVisibility = async () => {
     canManageSharing: canManageSharing.value,
   });
   if (guardError) {
-    errorMessage.value = guardError;
+    errorMessage.value = t(guardError);
     return;
   }
 
@@ -155,9 +158,9 @@ const saveVisibility = async () => {
       visibility: visibilityToEnum(visibilityDraft.value),
     });
     applyDashboardMutationPayload(result?.data?.setDashboardVisibility);
-    statusMessage.value = "Visibility updated.";
+    statusMessage.value = t("share.statusVisibilityUpdated");
   } catch (error) {
-    setGraphQLError(error, "Could not update visibility.");
+    setGraphQLError(error, "share.errorVisibilityUpdateFailed");
   }
 };
 
@@ -170,9 +173,9 @@ const rotateLink = async () => {
   try {
     const result = await rotateShareToken({ id: dashboard.value._id });
     applyDashboardMutationPayload(result?.data?.rotateDashboardShareToken);
-    statusMessage.value = "Share link rotated.";
+    statusMessage.value = t("share.statusShareLinkRotated");
   } catch (error) {
-    setGraphQLError(error, "Could not rotate share link.");
+    setGraphQLError(error, "share.errorRotateShareLinkFailed");
   }
 };
 
@@ -218,14 +221,14 @@ const shareLink = computed(() => {
 const copyShareLink = async () => {
   clearMessages();
   if (!shareLink.value) {
-    errorMessage.value = "No share link is currently available.";
+    errorMessage.value = t("share.errorNoShareLinkAvailable");
     return;
   }
   try {
     await navigator.clipboard.writeText(shareLink.value);
-    statusMessage.value = "Share link copied.";
+    statusMessage.value = t("share.statusShareLinkCopied");
   } catch {
-    errorMessage.value = "Could not copy share link.";
+    errorMessage.value = t("share.errorCopyShareLinkFailed");
   }
 };
 
@@ -236,14 +239,14 @@ const addCollaborator = async () => {
     canManageSharing: canManageSharing.value,
   });
   if (guardError) {
-    errorMessage.value = guardError;
+    errorMessage.value = t(guardError);
     return;
   }
   const inputError = getCollaboratorInputError({
     collaboratorEmail: collaboratorEmail.value,
   });
   if (inputError) {
-    errorMessage.value = inputError;
+    errorMessage.value = t(inputError);
     return;
   }
 
@@ -257,9 +260,9 @@ const addCollaborator = async () => {
     collaboratorEmail.value = "";
     collaboratorAccessLevel.value = "viewer";
     await refetchCollaborators();
-    statusMessage.value = "Collaborator access updated.";
+    statusMessage.value = t("share.statusCollaboratorUpdated");
   } catch (error) {
-    setGraphQLError(error, "Could not update collaborator access.");
+    setGraphQLError(error, "share.errorCollaboratorUpdateFailed");
   }
 };
 
@@ -270,7 +273,7 @@ const removeCollaborator = async (userId: string) => {
     canManageSharing: canManageSharing.value,
   });
   if (guardError) {
-    errorMessage.value = guardError;
+    errorMessage.value = t(guardError);
     return;
   }
 
@@ -281,9 +284,9 @@ const removeCollaborator = async (userId: string) => {
     });
     applyDashboardMutationPayload(result?.data?.revokeDashboardAccess);
     await refetchCollaborators();
-    statusMessage.value = "Collaborator removed.";
+    statusMessage.value = t("share.statusCollaboratorRemoved");
   } catch (error) {
-    setGraphQLError(error, "Could not remove collaborator.");
+    setGraphQLError(error, "share.errorCollaboratorRemoveFailed");
   }
 };
 
@@ -294,14 +297,14 @@ const transferOwnership = async () => {
     canManageSharing: canManageSharing.value,
   });
   if (guardError) {
-    errorMessage.value = guardError;
+    errorMessage.value = t(guardError);
     return;
   }
   const inputError = getOwnershipTransferInputError({
     transferTargetUserId: transferTargetUserId.value,
   });
   if (inputError) {
-    errorMessage.value = inputError;
+    errorMessage.value = t(inputError);
     return;
   }
 
@@ -313,9 +316,9 @@ const transferOwnership = async () => {
     applyDashboardMutationPayload(result?.data?.transferDashboardOwnership);
     transferTargetUserId.value = "";
     await refetchCollaborators();
-    statusMessage.value = "Ownership transferred.";
+    statusMessage.value = t("share.statusOwnershipTransferred");
   } catch (error) {
-    setGraphQLError(error, "Could not transfer ownership.");
+    setGraphQLError(error, "share.errorOwnershipTransferFailed");
   }
 };
 </script>

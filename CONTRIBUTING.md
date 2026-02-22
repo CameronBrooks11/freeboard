@@ -27,6 +27,14 @@ npm run test:e2e:smoke
 - Keep PRs scoped to one logical change.
 - Include docs updates in the same PR when behavior changes.
 - Include tests for regressions and new behavior.
+- Use the PR template checklist and include exact validation commands in the PR description.
+
+## Reporting Bugs and Security Issues
+
+- General defects: use the GitHub **Bug Report** issue form.
+- Widget proposals: use the existing **Widget Proposal** issue form.
+- Support/questions: use GitHub Discussions.
+- Security vulnerabilities: do **not** open public issues; report privately via `SECURITY.md`.
 
 TypeScript PR policy:
 
@@ -89,3 +97,18 @@ Required docs for new/updated widgets:
 
 If implementation changes invalidate existing docs, update docs in the same PR.  
 Do not defer documentation alignment for “later cleanup”.
+
+## Translation Contributions (UI + Docs)
+
+UI translation baseline:
+
+- English (`en`) is canonical source for keys and placeholder contract.
+- Locale messages live in `packages/ui/src/i18n/locales/`.
+- Keep locale key sets aligned with English. Run `npm run check:ui:i18n-parity`.
+- Do not introduce hardcoded user-facing strings in runtime UI paths.
+
+Docs translation baseline:
+
+- Translation workflow and file conventions are defined in `docs/manual/translations.md`.
+- Keep translated docs scoped and track source/translation drift explicitly.
+- Do not convert docs-site navigation to full multi-locale mode without maintainers explicitly approving that scope.

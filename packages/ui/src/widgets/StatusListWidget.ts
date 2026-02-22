@@ -7,6 +7,7 @@ import { resolveTableRowValue } from "./TableWidget.js";
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 import type { WidgetRuntimeInstance } from "../types/runtime.js";
 import { setStylePropertyCompat } from "../utils/styleCompat.js";
+import { translateUiText } from "../i18n/index.js";
 type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 type StatusItem = { label: string; value: string; status: string };
 type StatusInputs = {
@@ -215,7 +216,7 @@ export class StatusListWidget extends ReactiveWidget {
       const emptyItem = document.createElement("li");
       emptyItem.style.opacity = "0.8";
       emptyItem.style.fontSize = "12px";
-      emptyItem.textContent = "No status items";
+      emptyItem.textContent = translateUiText("widget.emptyStatusItems", {}, "No status items");
       this.listElement.append(emptyItem);
       return;
     }

@@ -17,12 +17,19 @@ import ShareDialogBox from "./ShareDialogBox.vue";
 import createSettings from "../settings";
 import { openModal } from "../ui/modalHost.js";
 import { normalizeDashboardTheme } from "../models/Dashboard.js";
+import {
+  buildBugReportIssueUrl,
+  collectBugReportContext,
+  copyBugReportContext,
+} from "../ui/issueReport.js";
+import { useI18n } from "vue-i18n";
 
 const authStore = useAuthStore();
 const dashboardStore = useDashboardStore();
 const { dashboard } = storeToRefs(dashboardStore);
 const instance = getCurrentInstance();
 const appContext: AppContext | null = instance?.appContext ?? null;
+const { t } = useI18n();
 
 // Inline settings schema and current values
 type SettingsSection = {
@@ -111,6 +118,25 @@ const openShareDialogBox = () => {
   openModal(ShareDialogBox, appContext);
 };
 
+const onReportBug = async () => {
+  const context = collectBugReportContext();
+  const issueUrl = buildBugReportIssueUrl({ context });
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const popup = window.open(issueUrl, "_blank", "noopener,noreferrer");
+  if (popup) {
+    return;
+  }
+
+  const copied = await copyBugReportContext(context);
+  window.alert(
+    copied ? t("issueReport.popupBlockedCopied") : t("issueReport.popupBlockedCopyFailed"),
+  );
+};
+
 /**
  * Apply inline form changes to the dashboard model.
  *
@@ -142,6 +168,13 @@ const onChange = (s: unknown) => {
         <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-collection" /></i
         ><label class="dashboard-control__board-toolbar__item__label">{{
           $t("dashboardControl.labelShare")
+        }}</label>
+      </li>
+      <li @click="onReportBug" class="dashboard-control__board-toolbar__item">
+        <i class="dashboard-control__board-toolbar__item__icon"
+          ><v-icon name="hi-clipboard-list" /></i
+        ><label class="dashboard-control__board-toolbar__item__label">{{
+          $t("dashboardControl.labelReportBug")
         }}</label>
       </li>
       <li @click="() => dashboard.createPane()" class="dashboard-control__board-toolbar__item">

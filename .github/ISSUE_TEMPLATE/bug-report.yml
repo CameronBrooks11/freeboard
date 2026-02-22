@@ -1,0 +1,95 @@
+name: Bug Report
+description: Report a reproducible defect in Freeboard.
+title: "[Bug] <short summary>"
+labels:
+  - bug
+  - triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for functional defects and regressions.
+
+        Security issues must not be filed publicly. Follow `SECURITY.md` for private disclosure.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: One concise summary of the defect.
+      placeholder: A clear statement of the observed issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps that reliably reproduce the issue.
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: What happened instead?
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: App version (and commit SHA if available).
+      placeholder: "2.0.0 (sha abc1234)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, and deployment mode (dev, docker, kiosk, etc.).
+      placeholder: |
+        Browser: Chrome 123
+        OS: Windows 11
+        Deploy mode: Docker Compose
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Autofilled context (optional)
+      description: Context copied from in-app report tooling if available.
+      placeholder: Paste copied context here.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, screenshots, and recordings
+      description: Include relevant logs or media. Remove secrets/tokens first.
+      render: shell
+
+  - type: checkboxes
+    id: report_checks
+    attributes:
+      label: Report quality checks
+      options:
+        - label: I confirmed this is not a security disclosure.
+          required: true
+        - label: I removed secrets/tokens from logs and screenshots.
+          required: true

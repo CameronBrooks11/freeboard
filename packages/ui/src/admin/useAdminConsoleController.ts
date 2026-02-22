@@ -5,6 +5,7 @@
 
 import { computed, ref, watch } from "vue";
 import { useMutation, useQuery } from "@vue/apollo-composable";
+import { useI18n } from "vue-i18n";
 import { useAuthStore } from "../stores/auth.js";
 import { useDashboardStore } from "../stores/dashboard.js";
 import { useProfileCatalogStore } from "../stores/profileCatalog.js";
@@ -126,6 +127,7 @@ type AuditEvent = {
 };
 
 export const useAdminConsoleController = () => {
+  const { t } = useI18n();
   const authStore = useAuthStore();
   const dashboardStore = useDashboardStore();
   const profileCatalogStore = useProfileCatalogStore();
@@ -489,14 +491,14 @@ export const useAdminConsoleController = () => {
     ),
   ];
 
-  const setErrorMessage = (error: unknown, fallback: string): void => {
-    actionError.value = extractErrorMessage(error, fallback);
+  const setErrorMessage = (error: unknown, fallbackKey: string): void => {
+    actionError.value = extractErrorMessage(error, t(fallbackKey));
   };
 
   const savePolicy = async () => {
     clearMessages();
     if (isPolicyLocked.value) {
-      actionError.value = "Policy updates are locked by environment configuration.";
+      actionError.value = t("admin.errorPolicyLocked");
       return;
     }
 
@@ -521,16 +523,16 @@ export const useAdminConsoleController = () => {
       } else {
         await refetchPolicy();
       }
-      statusMessage.value = "Policy updated.";
+      statusMessage.value = t("admin.statusPolicyUpdated");
     } catch (error) {
-      setErrorMessage(error, "Could not update policy.");
+      setErrorMessage(error, "admin.errorUpdatePolicyFailed");
     }
   };
 
   const createUser = async () => {
     clearMessages();
     if (!createUserInput.value.email || !createUserInput.value.password) {
-      actionError.value = "Email and password are required.";
+      actionError.value = t("admin.errorUserEmailPasswordRequired");
       return;
     }
 
@@ -548,9 +550,9 @@ export const useAdminConsoleController = () => {
         active: true,
       };
       await refetchUsers();
-      statusMessage.value = "User created.";
+      statusMessage.value = t("admin.statusUserCreated");
     } catch (error) {
-      setErrorMessage(error, "Could not create user.");
+      setErrorMessage(error, "admin.errorCreateUserFailed");
     }
   };
 
@@ -568,15 +570,15 @@ export const useAdminConsoleController = () => {
         active: Boolean(draft.active),
       });
       await refetchUsers();
-      statusMessage.value = "User updated.";
+      statusMessage.value = t("admin.statusUserUpdated");
     } catch (error) {
-      setErrorMessage(error, "Could not update user.");
+      setErrorMessage(error, "admin.errorUpdateUserFailed");
     }
   };
 
   const deleteUser = async (user: User) => {
     clearMessages();
-    const accepted = window.confirm(`Delete user '${user.email}'?`);
+    const accepted = window.confirm(t("admin.confirmDeleteUser", { email: user.email }));
     if (!accepted) {
       return;
     }
@@ -584,9 +586,9 @@ export const useAdminConsoleController = () => {
     try {
       await adminDeleteUser({ id: user._id });
       await refetchUsers();
-      statusMessage.value = "User deleted.";
+      statusMessage.value = t("admin.statusUserDeleted");
     } catch (error) {
-      setErrorMessage(error, "Could not delete user.");
+      setErrorMessage(error, "admin.errorDeleteUserFailed");
     }
   };
 
@@ -605,9 +607,9 @@ export const useAdminConsoleController = () => {
       });
       createServiceAccountInput.value = toServiceAccountDraft({ scopes: ["ops:read"] });
       await refetchServiceAccounts();
-      statusMessage.value = "Service account created.";
+      statusMessage.value = t("admin.statusServiceAccountCreated");
     } catch (error) {
-      setErrorMessage(error, "Could not create service account.");
+      setErrorMessage(error, "admin.errorCreateServiceAccountFailed");
     }
   };
 
@@ -628,24 +630,26 @@ export const useAdminConsoleController = () => {
         },
       });
       await refetchServiceAccounts();
-      statusMessage.value = "Service account updated.";
+      statusMessage.value = t("admin.statusServiceAccountUpdated");
     } catch (error) {
-      setErrorMessage(error, "Could not update service account.");
+      setErrorMessage(error, "admin.errorUpdateServiceAccountFailed");
     }
   };
 
   const deleteServiceAccount = async (serviceAccount: ServiceAccount) => {
     clearMessages();
-    const accepted = window.confirm(`Delete service account '${serviceAccount.name}'?`);
+    const accepted = window.confirm(
+      t("admin.confirmDeleteServiceAccount", { name: serviceAccount.name }),
+    );
     if (!accepted) {
       return;
     }
     try {
       await adminDeleteServiceAccount({ id: serviceAccount._id });
       await refetchServiceAccounts();
-      statusMessage.value = "Service account deleted.";
+      statusMessage.value = t("admin.statusServiceAccountDeleted");
     } catch (error) {
-      setErrorMessage(error, "Could not delete service account.");
+      setErrorMessage(error, "admin.errorDeleteServiceAccountFailed");
     }
   };
 
@@ -655,7 +659,7 @@ export const useAdminConsoleController = () => {
       createServiceAccountTokenInput.value.serviceAccountId || "",
     ).trim();
     if (!serviceAccountId) {
-      actionError.value = "Select a service account before issuing a token.";
+      actionError.value = t("admin.errorSelectServiceAccountForToken");
       return;
     }
     try {
@@ -675,9 +679,9 @@ export const useAdminConsoleController = () => {
         };
       }
       await Promise.all([refetchServiceAccounts(), refetchServiceAccountTokens()]);
-      statusMessage.value = "Service account token issued.";
+      statusMessage.value = t("admin.statusServiceAccountTokenIssued");
     } catch (error) {
-      setErrorMessage(error, "Could not issue service account token.");
+      setErrorMessage(error, "admin.errorIssueServiceAccountTokenFailed");
     }
   };
 
@@ -697,9 +701,9 @@ export const useAdminConsoleController = () => {
         };
       }
       await refetchServiceAccountTokens();
-      statusMessage.value = "Service account token rotated.";
+      statusMessage.value = t("admin.statusServiceAccountTokenRotated");
     } catch (error) {
-      setErrorMessage(error, "Could not rotate service account token.");
+      setErrorMessage(error, "admin.errorRotateServiceAccountTokenFailed");
     }
   };
 
@@ -708,16 +712,16 @@ export const useAdminConsoleController = () => {
     try {
       await adminRevokeServiceAccountToken({ id: tokenRecord._id });
       await refetchServiceAccountTokens();
-      statusMessage.value = "Service account token revoked.";
+      statusMessage.value = t("admin.statusServiceAccountTokenRevoked");
     } catch (error) {
-      setErrorMessage(error, "Could not revoke service account token.");
+      setErrorMessage(error, "admin.errorRevokeServiceAccountTokenFailed");
     }
   };
 
   const createInvite = async () => {
     clearMessages();
     if (!createInviteInput.value.email) {
-      actionError.value = "Invite email is required.";
+      actionError.value = t("admin.errorInviteEmailRequired");
       return;
     }
 
@@ -740,9 +744,9 @@ export const useAdminConsoleController = () => {
         expiresInHours: 72,
       };
       await refetchPendingInvites();
-      statusMessage.value = "Invite created.";
+      statusMessage.value = t("admin.statusInviteCreated");
     } catch (error) {
-      setErrorMessage(error, "Could not create invite.");
+      setErrorMessage(error, "admin.errorCreateInviteFailed");
     }
   };
 
@@ -751,9 +755,9 @@ export const useAdminConsoleController = () => {
     try {
       await adminRevokeInvite({ id: invite._id });
       await refetchPendingInvites();
-      statusMessage.value = "Invite revoked.";
+      statusMessage.value = t("admin.statusInviteRevoked");
     } catch (error) {
-      setErrorMessage(error, "Could not revoke invite.");
+      setErrorMessage(error, "admin.errorRevokeInviteFailed");
     }
   };
 
@@ -777,10 +781,10 @@ export const useAdminConsoleController = () => {
             resetUrl: `${appBaseUrl}login?reset=${encodeURIComponent(String(payload.token || ""))}`,
           },
         };
-        statusMessage.value = "Password reset token issued.";
+        statusMessage.value = t("admin.statusPasswordResetIssued");
       }
     } catch (error) {
-      setErrorMessage(error, "Could not issue password reset token.");
+      setErrorMessage(error, "admin.errorIssuePasswordResetFailed");
     }
   };
 
@@ -793,9 +797,9 @@ export const useAdminConsoleController = () => {
       });
       createCredentialProfileInput.value = toCredentialProfileDraft();
       await refetchCredentialProfiles();
-      statusMessage.value = "Credential profile created.";
+      statusMessage.value = t("admin.statusCredentialProfileCreated");
     } catch (error) {
-      setErrorMessage(error, "Could not create credential profile.");
+      setErrorMessage(error, "admin.errorCreateCredentialProfileFailed");
     }
   };
 
@@ -822,15 +826,17 @@ export const useAdminConsoleController = () => {
         input,
       });
       await refetchCredentialProfiles();
-      statusMessage.value = "Credential profile updated.";
+      statusMessage.value = t("admin.statusCredentialProfileUpdated");
     } catch (error) {
-      setErrorMessage(error, "Could not update credential profile.");
+      setErrorMessage(error, "admin.errorUpdateCredentialProfileFailed");
     }
   };
 
   const deleteCredentialProfile = async (profile: CredentialProfile) => {
     clearMessages();
-    const accepted = window.confirm(`Delete credential profile '${profile.name}'?`);
+    const accepted = window.confirm(
+      t("admin.confirmDeleteCredentialProfile", { name: profile.name }),
+    );
     if (!accepted) {
       return;
     }
@@ -840,9 +846,9 @@ export const useAdminConsoleController = () => {
         id: profile._id,
       });
       await refetchCredentialProfiles();
-      statusMessage.value = "Credential profile deleted.";
+      statusMessage.value = t("admin.statusCredentialProfileDeleted");
     } catch (error) {
-      setErrorMessage(error, "Could not delete credential profile.");
+      setErrorMessage(error, "admin.errorDeleteCredentialProfileFailed");
     }
   };
 
@@ -856,9 +862,9 @@ export const useAdminConsoleController = () => {
       createBrokerProfileInput.value = toBrokerProfileDraft();
       await refetchBrokerProfiles();
       profileCatalogStore.setBrokerProfiles(brokerProfiles.value);
-      statusMessage.value = "Broker profile created.";
+      statusMessage.value = t("admin.statusBrokerProfileCreated");
     } catch (error) {
-      setErrorMessage(error, "Could not create broker profile.");
+      setErrorMessage(error, "admin.errorCreateBrokerProfileFailed");
     }
   };
 
@@ -877,15 +883,15 @@ export const useAdminConsoleController = () => {
       });
       await refetchBrokerProfiles();
       profileCatalogStore.setBrokerProfiles(brokerProfiles.value);
-      statusMessage.value = "Broker profile updated.";
+      statusMessage.value = t("admin.statusBrokerProfileUpdated");
     } catch (error) {
-      setErrorMessage(error, "Could not update broker profile.");
+      setErrorMessage(error, "admin.errorUpdateBrokerProfileFailed");
     }
   };
 
   const deleteBrokerProfile = async (profile: BrokerProfile) => {
     clearMessages();
-    const accepted = window.confirm(`Delete broker profile '${profile.name}'?`);
+    const accepted = window.confirm(t("admin.confirmDeleteBrokerProfile", { name: profile.name }));
     if (!accepted) {
       return;
     }
@@ -896,9 +902,9 @@ export const useAdminConsoleController = () => {
       });
       await refetchBrokerProfiles();
       profileCatalogStore.setBrokerProfiles(brokerProfiles.value);
-      statusMessage.value = "Broker profile deleted.";
+      statusMessage.value = t("admin.statusBrokerProfileDeleted");
     } catch (error) {
-      setErrorMessage(error, "Could not delete broker profile.");
+      setErrorMessage(error, "admin.errorDeleteBrokerProfileFailed");
     }
   };
 

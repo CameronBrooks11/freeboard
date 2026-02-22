@@ -37,3 +37,4 @@ Use this manual in two tracks:
 - [Documentation Site Setup](/manual/docs-site-setup)
 - [Development Misc](/manual/dev-misc)
 - [TypeScript Standards](/manual/typescript-standards)
+- [Translation Contributions](/manual/translations)

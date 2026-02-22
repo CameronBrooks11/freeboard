@@ -267,9 +267,17 @@ Raspberry Pi MongoDB guidance:
 
 Continues the work of [artificialhoney/freeboard](https://github.com/artificialhoney/freeboard), an archived prototype branch derived from the once-popular but long-unmaintained [Freeboard/freeboard](https://github.com/Freeboard/freeboard).
 
+## Bug Reports, Support, and Security
+
+- Bug reports: use the GitHub **Bug Report** issue form.
+- Widget proposals: use the **Widget Proposal** issue form.
+- Support/questions: use GitHub Discussions.
+- Security vulnerabilities: report privately through the Security advisory flow described in `SECURITY.md`.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for PR expectations, widget proposal flow, and quality/security checklists.
+See [docs/manual/translations.md](docs/manual/translations.md) for UI/docs translation contribution rules.
 
 ## Copyright
 

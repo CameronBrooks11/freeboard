@@ -43,7 +43,7 @@ export const resolveShareDialogPermissions = ({
  * @param {Object} input
  * @param {boolean} input.isShareableDashboard
  * @param {boolean} input.canManageSharing
- * @returns {string|null}
+ * @returns {string|null} i18n key or null.
  */
 export const getShareMutationGuardError = ({
   isShareableDashboard,
@@ -53,10 +53,10 @@ export const getShareMutationGuardError = ({
   canManageSharing: boolean;
 }): string | null => {
   if (!isShareableDashboard) {
-    return "Save the dashboard before configuring sharing.";
+    return "share.unsavedHint";
   }
   if (!canManageSharing) {
-    return "You do not have permission to manage sharing.";
+    return "share.noPermission";
   }
   return null;
 };
@@ -66,7 +66,7 @@ export const getShareMutationGuardError = ({
  *
  * @param {Object} input
  * @param {string|undefined|null} input.collaboratorEmail
- * @returns {string|null}
+ * @returns {string|null} i18n key or null.
  */
 export const getCollaboratorInputError = ({
   collaboratorEmail,
@@ -74,7 +74,7 @@ export const getCollaboratorInputError = ({
   collaboratorEmail: string | null | undefined;
 }): string | null => {
   if (!String(collaboratorEmail || "").trim()) {
-    return "Collaborator email is required.";
+    return "share.errorCollaboratorEmailRequired";
   }
   return null;
 };
@@ -84,7 +84,7 @@ export const getCollaboratorInputError = ({
  *
  * @param {Object} input
  * @param {string|undefined|null} input.transferTargetUserId
- * @returns {string|null}
+ * @returns {string|null} i18n key or null.
  */
 export const getOwnershipTransferInputError = ({
   transferTargetUserId,
@@ -92,7 +92,7 @@ export const getOwnershipTransferInputError = ({
   transferTargetUserId: string | null | undefined;
 }): string | null => {
   if (!String(transferTargetUserId || "").trim()) {
-    return "Select a transfer target first.";
+    return "share.errorTransferTargetRequired";
   }
   return null;
 };

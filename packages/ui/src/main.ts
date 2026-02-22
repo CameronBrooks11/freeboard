@@ -46,8 +46,7 @@ import { useProfileCatalogStore } from "./stores/profileCatalog.js";
 import { bootstrapApp } from "./bootstrap/appBootstrap.js";
 import { SSELink } from "./sse.js";
 import { createHead } from "@unhead/vue";
-import { createI18n } from "vue-i18n";
-import { en } from "./i18n/en.js";
+import { i18n } from "./i18n/index.js";
 import { shouldForceLogoutOnGraphQLErrors } from "./apolloAuthError.js";
 import { subscribeToSystemThemeChanges } from "./ui/themeRuntime.js";
 
@@ -80,15 +79,6 @@ addIcons(
   HiPlay,
   HiPause,
 );
-
-// Initialize internationalization
-const i18n = createI18n({
-  locale: "en",
-  fallbackLocale: "en",
-  messages: {
-    en,
-  },
-});
 
 // Initialize head manager for meta tags
 const head = createHead();
