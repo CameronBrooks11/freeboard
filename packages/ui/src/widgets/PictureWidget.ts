@@ -5,6 +5,7 @@
 
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 import type { WidgetRuntimeInstance } from "../types/runtime.js";
+import { translateUiText } from "../i18n/index.js";
 type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 type PictureInputs = { header: string; src: unknown; alt: unknown };
 
@@ -129,7 +130,7 @@ export class PictureWidget extends ReactiveWidget {
     this.placeholderElement.style.justifyContent = "center";
     this.placeholderElement.style.fontSize = "12px";
     this.placeholderElement.style.opacity = "0.8";
-    this.placeholderElement.textContent = "No image";
+    this.placeholderElement.textContent = translateUiText("widget.emptyImage", {}, "No image");
 
     this.imageWrap.append(this.imageElement, this.placeholderElement);
     this.widgetElement.append(this.headerElement, this.imageWrap);

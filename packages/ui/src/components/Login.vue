@@ -27,6 +27,12 @@ import {
   USER_AUTH_MUTATION,
   USER_REGISTER_MUTATION,
 } from "../gql.js";
+import {
+  buildBugReportIssueUrl,
+  collectBugReportContext,
+  copyBugReportContext,
+} from "../ui/issueReport.js";
+import { useI18n } from "vue-i18n";
 
 const MODES = LOGIN_ACTION_MODES;
 type FormComponentRef = {
@@ -44,6 +50,7 @@ type LoginField = {
 const authStore = useAuthStore();
 const dashboardStore = useDashboardStore();
 const route = useRoute();
+const { t } = useI18n();
 
 const form = ref<FormComponentRef | null>(null);
 const loginError = ref("");
@@ -364,6 +371,25 @@ const helperTextKey = computed(() => {
 const showForgotPasswordFooterAction = computed(() =>
   shouldShowForgotPasswordFooterAction(actionMode.value),
 );
+
+const reportBug = async () => {
+  const context = collectBugReportContext();
+  const issueUrl = buildBugReportIssueUrl({ context });
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const popup = window.open(issueUrl, "_blank", "noopener,noreferrer");
+  if (popup) {
+    return;
+  }
+
+  const copied = await copyBugReportContext(context);
+  window.alert(
+    copied ? t("issueReport.popupBlockedCopied") : t("issueReport.popupBlockedCopyFailed"),
+  );
+};
 </script>
 
 <template>
@@ -423,6 +449,9 @@ const showForgotPasswordFooterAction = computed(() =>
           @click="switchMode(MODES.login)"
         >
           {{ $t("login.buttonBackToLogin") }}
+        </button>
+        <button class="login__switch-mode" type="button" @click="reportBug">
+          {{ $t("login.buttonReportBug") }}
         </button>
       </div>
     </DialogBox>

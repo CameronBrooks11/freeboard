@@ -7,6 +7,7 @@ import { toPathSegments } from "./runtime/bindings.js";
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 import type { WidgetRuntimeInstance } from "../types/runtime.js";
 import { setStylePropertyCompat } from "../utils/styleCompat.js";
+import { translateUiText } from "../i18n/index.js";
 type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 type TableColumn = {
   field: string;
@@ -27,7 +28,7 @@ type TableInputs = {
 };
 
 const DEFAULT_EMPTY_VALUE = "—";
-const DEFAULT_EMPTY_TABLE_TEXT = "No rows";
+const DEFAULT_EMPTY_TABLE_TEXT = translateUiText("widget.emptyTableRows", {}, "No rows");
 
 const hasIndexableShape = (value: unknown): value is Record<string, unknown> | Array<unknown> =>
   Boolean(value) && (Array.isArray(value) || typeof value === "object");

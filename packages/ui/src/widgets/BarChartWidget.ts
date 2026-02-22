@@ -6,6 +6,7 @@
 import { ReactiveWidget } from "./runtime/ReactiveWidget.js";
 import type { WidgetRuntimeInstance } from "../types/runtime.js";
 import { resolveThemeChartColor, resolveThemeColor } from "./runtime/themeColors.js";
+import { translateUiText } from "../i18n/index.js";
 type WidgetFieldSource = { settings?: Record<string, unknown>; title?: string } | null | undefined;
 type BarChartModel = {
   labels: string[];
@@ -439,7 +440,7 @@ export class BarChartWidget extends ReactiveWidget {
     if (!rowsCount || !seriesCount) {
       context.fillStyle = chartLabelColor;
       context.font = "12px sans-serif";
-      context.fillText("No chart data", 8, 20);
+      context.fillText(translateUiText("widget.emptyChartData", {}, "No chart data"), 8, 20);
       return;
     }
 

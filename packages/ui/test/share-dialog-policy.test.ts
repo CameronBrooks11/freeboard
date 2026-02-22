@@ -45,7 +45,7 @@ test("getShareMutationGuardError reports save-before-share and permission issues
       isShareableDashboard: false,
       canManageSharing: true,
     }),
-    "Save the dashboard before configuring sharing.",
+    "share.unsavedHint",
   );
 
   assert.equal(
@@ -53,7 +53,7 @@ test("getShareMutationGuardError reports save-before-share and permission issues
       isShareableDashboard: true,
       canManageSharing: false,
     }),
-    "You do not have permission to manage sharing.",
+    "share.noPermission",
   );
 
   assert.equal(
@@ -68,13 +68,13 @@ test("getShareMutationGuardError reports save-before-share and permission issues
 test("input validators enforce collaborator email and ownership transfer target", () => {
   assert.equal(
     getCollaboratorInputError({ collaboratorEmail: "   " }),
-    "Collaborator email is required.",
+    "share.errorCollaboratorEmailRequired",
   );
   assert.equal(getCollaboratorInputError({ collaboratorEmail: "user@example.com" }), null);
 
   assert.equal(
     getOwnershipTransferInputError({ transferTargetUserId: "" }),
-    "Select a transfer target first.",
+    "share.errorTransferTargetRequired",
   );
   assert.equal(getOwnershipTransferInputError({ transferTargetUserId: "user-2" }), null);
 });
