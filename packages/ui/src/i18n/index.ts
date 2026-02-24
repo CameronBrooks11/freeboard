@@ -7,6 +7,8 @@ import { createI18n } from "vue-i18n";
 import { DEFAULT_UI_LOCALE, UI_LOCALE_MESSAGES, type UiLocale } from "./catalog.js";
 
 const UI_LOCALE_STORAGE_KEY = "freeboard.ui.locale";
+export const UI_LOCALE_AUTO = "auto";
+export type UiLocaleSelection = UiLocale | typeof UI_LOCALE_AUTO;
 
 export const normalizeUiLocale = (value: unknown): UiLocale => {
   const normalized = String(value || "")
@@ -25,7 +27,18 @@ export const normalizeUiLocale = (value: unknown): UiLocale => {
   return DEFAULT_UI_LOCALE;
 };
 
-const readStoredLocale = (): UiLocale | null => {
+export const normalizeUiLocaleSelection = (value: unknown): UiLocaleSelection => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace("_", "-");
+  if (normalized === UI_LOCALE_AUTO) {
+    return UI_LOCALE_AUTO;
+  }
+  return normalizeUiLocale(normalized);
+};
+
+const readStoredLocaleOverride = (): UiLocale | null => {
   if (typeof window === "undefined" || !window.localStorage) {
     return null;
   }
@@ -50,7 +63,29 @@ const readNavigatorLocale = (): UiLocale => {
   return normalizeUiLocale(navigator.language || navigator.languages?.[0] || DEFAULT_UI_LOCALE);
 };
 
-export const resolveInitialUiLocale = (): UiLocale => readStoredLocale() || readNavigatorLocale();
+const applyResolvedUiLocale = (nextLocale: UiLocale): UiLocale => {
+  const localeTarget = i18n.global.locale as unknown;
+  if (localeTarget && typeof localeTarget === "object" && "value" in localeTarget) {
+    (localeTarget as { value: string }).value = nextLocale;
+  } else {
+    (i18n.global as { locale: string }).locale = nextLocale;
+  }
+  return nextLocale;
+};
+
+export const resolveInitialUiLocale = (): UiLocale =>
+  readStoredLocaleOverride() || readNavigatorLocale();
+
+export const getUiLocaleSelection = (): UiLocaleSelection =>
+  readStoredLocaleOverride() || UI_LOCALE_AUTO;
+
+export const resolveUiLocaleFromSelection = (selection: unknown): UiLocale => {
+  const normalizedSelection = normalizeUiLocaleSelection(selection);
+  if (normalizedSelection === UI_LOCALE_AUTO) {
+    return readNavigatorLocale();
+  }
+  return normalizedSelection;
+};
 
 export const i18n = createI18n({
   locale: resolveInitialUiLocale(),
@@ -58,25 +93,27 @@ export const i18n = createI18n({
   messages: UI_LOCALE_MESSAGES,
 });
 
-export const setUiLocale = (nextLocale: unknown): UiLocale => {
-  const normalized = normalizeUiLocale(nextLocale);
-  const localeTarget = i18n.global.locale as unknown;
-  if (localeTarget && typeof localeTarget === "object" && "value" in localeTarget) {
-    (localeTarget as { value: string }).value = normalized;
-  } else {
-    (i18n.global as { locale: string }).locale = normalized;
-  }
+export const setUiLocaleSelection = (nextSelection: unknown): UiLocale => {
+  const selection = normalizeUiLocaleSelection(nextSelection);
 
   if (typeof window !== "undefined" && window.localStorage) {
     try {
-      window.localStorage.setItem(UI_LOCALE_STORAGE_KEY, normalized);
+      if (selection === UI_LOCALE_AUTO) {
+        window.localStorage.removeItem(UI_LOCALE_STORAGE_KEY);
+      } else {
+        window.localStorage.setItem(UI_LOCALE_STORAGE_KEY, selection);
+      }
     } catch {
       // Ignore storage write failures (private mode, policy restrictions, quota issues).
     }
   }
 
-  return normalized;
+  return applyResolvedUiLocale(resolveUiLocaleFromSelection(selection));
 };
+
+export const setUiLocale = (nextLocale: unknown): UiLocale => setUiLocaleSelection(nextLocale);
+
+export const clearUiLocaleOverride = (): UiLocale => setUiLocaleSelection(UI_LOCALE_AUTO);
 
 export const translateUiText = (
   key: string,

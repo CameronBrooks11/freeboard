@@ -74,9 +74,11 @@ const openSettingsDialogBox = () => {
       settingsApplied = true;
       const currentSettings = dashboard.value.settings;
       const incoming = newSettings.settings;
+      const incomingDashboardSettings: Record<string, unknown> = { ...incoming };
+      delete incomingDashboardSettings.uiLocale;
       const mergedSettings: typeof dashboard.value.settings = {
         ...currentSettings,
-        ...incoming,
+        ...incomingDashboardSettings,
         theme: normalizeDashboardTheme(
           typeof incoming.theme === "string" ? incoming.theme : currentSettings.theme,
         ),

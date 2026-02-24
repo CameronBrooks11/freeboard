@@ -4,7 +4,16 @@
  */
 
 import { MAX_COLUMNS, MIN_COLUMNS, normalizeDashboardTheme } from "./models/Dashboard.js";
+import { UI_LOCALE_AUTO, getUiLocaleSelection } from "./i18n/index.js";
+import { UI_LOCALE_OPTIONS, type UiLocale } from "./i18n/catalog.js";
 import { DASHBOARD_THEME_CATALOG } from "./ui/themeCatalog.js";
+
+const UI_LOCALE_LABEL_KEYS: Record<UiLocale, string> = {
+  en: "form.labelLanguageEnglish",
+  fr: "form.labelLanguageFrench",
+  es: "form.labelLanguageSpanish",
+  de: "form.labelLanguageGerman",
+};
 
 /**
  * Build settings panels and fields for the dashboard editor.
@@ -80,6 +89,30 @@ export default (
             value: themeEntry.value,
             label: themeEntry.labelKey,
           })),
+        },
+      ],
+    },
+    {
+      label: "form.labelLanguage",
+      icon: "hi-variable",
+      name: "language",
+      settings: {
+        uiLocale: getUiLocaleSelection(),
+      },
+      fields: [
+        {
+          name: "uiLocale",
+          label: "form.labelLanguage",
+          type: "option",
+          default: UI_LOCALE_AUTO,
+          required: true,
+          options: [
+            { value: UI_LOCALE_AUTO, label: "form.labelLanguageAuto" },
+            ...UI_LOCALE_OPTIONS.map((locale) => ({
+              value: locale,
+              label: UI_LOCALE_LABEL_KEYS[locale],
+            })),
+          ],
         },
       ],
     },

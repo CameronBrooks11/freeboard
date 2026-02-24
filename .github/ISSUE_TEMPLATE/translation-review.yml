@@ -1,0 +1,52 @@
+name: Translation Review
+description: Request native-speaker review for UI/docs translations.
+title: "[Translation] <locale> review request"
+labels:
+  - translation
+  - help wanted
+  - i18n
+  - docs
+body:
+  - type: dropdown
+    id: locale
+    attributes:
+      label: Locale
+      description: Locale under review.
+      options:
+        - fr
+        - es
+        - de
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: UI locale catalog review
+        - label: Manual docs translation review
+        - label: Localized reference-entry pages review
+
+  - type: textarea
+    id: checklist
+    attributes:
+      label: Review checklist
+      description: Confirm quality checks and note anything that still needs revision.
+      value: |
+        - [ ] Terminology is consistent and natural for this locale.
+        - [ ] Grammar and phrasing are appropriate for native readers.
+        - [ ] Placeholders (for example `{theme}`, `{locale}`, `{email}`) are correct.
+        - [ ] Translated docs metadata is complete.
+        - [ ] Localized docs link correctly to canonical generated references (`/dev/api/`, `/dev/graphql/`, `/dev/components/`).
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Findings and recommended edits
+      description: List concrete wording fixes or style guidance.
+      placeholder: Explain what should change and why.
+    validations:
+      required: true

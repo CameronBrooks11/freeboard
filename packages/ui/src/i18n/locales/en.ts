@@ -140,6 +140,12 @@ export const en = {
     labelStatic: "Static",
     labelStaticValue: "Static Value",
     labelTheme: "Theme",
+    labelLanguage: "Language",
+    labelLanguageAuto: "Auto (Browser)",
+    labelLanguageEnglish: "English",
+    labelLanguageFrench: "French",
+    labelLanguageSpanish: "Spanish",
+    labelLanguageGerman: "German",
     labelMobile: "Mobile",
     labelAllowMobileEdit: "Allow Mobile Edit (Advanced)",
     descriptionAllowMobileEdit: "Enable only when mobile users must edit dashboards on-device.",
@@ -164,6 +170,10 @@ export const en = {
     themePreviewTitle: "Theme Preview",
     themePreviewAutoResolves: "Auto resolves to {theme}",
     themePreviewHint: "Preview updates immediately. Use Save/Update Dashboard to persist.",
+    localePreviewTitle: "Language Preference",
+    localePreviewAutoResolves: "Auto currently resolves to {locale}",
+    localePreviewHint:
+      "Language changes apply immediately and are stored as a user preference. Select Auto to follow browser language.",
   },
 
   // Controls for Freeboard actions
