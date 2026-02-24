@@ -19,6 +19,14 @@ import createSettings from "../settings";
 import { usePreferredColorScheme } from "@vueuse/core";
 import { normalizeDashboardTheme } from "../models/Dashboard.js";
 import { DASHBOARD_THEME_CATALOG, type DashboardThemeCatalogEntry } from "../ui/themeCatalog.js";
+import {
+  UI_LOCALE_AUTO,
+  getUiLocaleSelection,
+  normalizeUiLocaleSelection,
+  resolveUiLocaleFromSelection,
+  setUiLocaleSelection,
+  type UiLocaleSelection,
+} from "../i18n/index.js";
 
 type FormComponentRef = {
   hasErrors: () => boolean;
@@ -69,6 +77,14 @@ const fields = computed<SettingsSection[]>(
 const preferredColorScheme = usePreferredColorScheme();
 
 const selectedTheme = ref(normalizeDashboardTheme(dashboard.value?.settings?.theme));
+const selectedUiLocale = ref<UiLocaleSelection>(normalizeUiLocaleSelection(getUiLocaleSelection()));
+
+const uiLocaleLabelKeyMap: Record<string, string> = {
+  en: "form.labelLanguageEnglish",
+  fr: "form.labelLanguageFrench",
+  es: "form.labelLanguageSpanish",
+  de: "form.labelLanguageGerman",
+};
 
 watch(
   () => dashboard.value?.settings?.theme,
@@ -79,15 +95,24 @@ watch(
 );
 
 const onFormChange = (sectionName: string, formValue: unknown) => {
-  if (sectionName !== "theme") {
+  if (sectionName === "theme") {
+    const nextValue =
+      formValue && typeof formValue === "object"
+        ? (formValue as Record<string, unknown>).theme
+        : undefined;
+    selectedTheme.value = normalizeDashboardTheme(nextValue);
+    onThemePreviewChange?.(selectedTheme.value);
     return;
   }
-  const nextValue =
-    formValue && typeof formValue === "object"
-      ? (formValue as Record<string, unknown>).theme
-      : undefined;
-  selectedTheme.value = normalizeDashboardTheme(nextValue);
-  onThemePreviewChange?.(selectedTheme.value);
+
+  if (sectionName === "language") {
+    const nextValue =
+      formValue && typeof formValue === "object"
+        ? (formValue as Record<string, unknown>).uiLocale
+        : undefined;
+    selectedUiLocale.value = normalizeUiLocaleSelection(nextValue);
+    setUiLocaleSelection(selectedUiLocale.value);
+  }
 };
 
 const onThemePreviewSelect = (themeValue: string) => {
@@ -106,6 +131,11 @@ const themePreviewCards = computed(() =>
     selected: selectedTheme.value === preview.value,
   })),
 );
+
+const resolvedAutoUiLocaleLabel = computed(() => {
+  const resolvedLocale = resolveUiLocaleFromSelection(UI_LOCALE_AUTO);
+  return uiLocaleLabelKeyMap[resolvedLocale] || "form.labelLanguageEnglish";
+});
 
 // Reference to the DialogBox for closing the modal programmatically
 const dialog = ref<{ closeModal?: () => void } | null>(null);
@@ -193,6 +223,24 @@ const onDialogBoxOk = () => {
             </button>
           </div>
         </div>
+        <div v-if="field.name === 'language'" class="settings-dialog-locale-preview">
+          <div class="settings-dialog-locale-preview__heading">
+            {{ $t("settings.localePreviewTitle") }}
+            <span
+              v-if="selectedUiLocale === UI_LOCALE_AUTO"
+              class="settings-dialog-locale-preview__auto-caption"
+            >
+              ({{
+                $t("settings.localePreviewAutoResolves", {
+                  locale: $t(resolvedAutoUiLocaleLabel),
+                })
+              }})
+            </span>
+          </div>
+          <div class="settings-dialog-locale-preview__hint">
+            {{ $t("settings.localePreviewHint") }}
+          </div>
+        </div>
       </template>
     </TabNavigator>
   </DialogBox>
@@ -265,6 +313,34 @@ const onDialogBoxOk = () => {
 }
 
 .settings-dialog-theme-preview__label {
+  font-size: 12px;
+}
+
+.settings-dialog-locale-preview {
+  margin-top: 12px;
+  border: 1px solid var(--color-shade-3);
+  padding: 10px;
+  background: var(--color-shade-1);
+}
+
+.settings-dialog-locale-preview__heading {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-shade-8);
+  margin-bottom: 4px;
+  letter-spacing: 0.04em;
+}
+
+.settings-dialog-locale-preview__auto-caption {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  margin-left: 6px;
+}
+
+.settings-dialog-locale-preview__hint {
+  color: var(--color-shade-7);
   font-size: 12px;
 }
 </style>
