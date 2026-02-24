@@ -1,0 +1,143 @@
+/**
+ * @module i18n/de
+ * @description German localization seed for Freeboard UI.
+ */
+
+import { en } from "./en.js";
+
+export const de = {
+  ...en,
+  arrayFormElement: {
+    ...en.arrayFormElement,
+    buttonAdd: "Hinzufugen",
+  },
+  dashboardControl: {
+    ...en.dashboardControl,
+    labelSettings: "Einstellungen",
+    labelShare: "Teilen",
+    labelDatasources: "Datenquellen",
+    labelAddPane: "Panel hinzufugen",
+    labelReportBug: "Fehler melden",
+  },
+  dialogBox: {
+    ...en.dialogBox,
+    titleSettings: "Einstellungen",
+    titleConfirm: "Bestatigen",
+    buttonOk: "OK",
+    buttonApply: "Anwenden",
+    buttonCancel: "Abbrechen",
+  },
+  form: {
+    ...en.form,
+    labelTheme: "Design",
+    labelLanguage: "Sprache",
+    labelLanguageAuto: "Auto (Browser)",
+    labelLanguageEnglish: "Englisch",
+    labelLanguageFrench: "Franzosisch",
+    labelLanguageSpanish: "Spanisch",
+    labelLanguageGerman: "Deutsch",
+    labelMobile: "Mobil",
+    labelAllowMobileEdit: "Mobile Bearbeitung erlauben (Erweitert)",
+    descriptionAllowMobileEdit:
+      "Nur aktivieren, wenn mobile Benutzer Dashboards direkt auf dem Gerat bearbeiten mussen.",
+    labelThemeAuto: "Auto",
+    labelThemeDark: "Dunkel",
+    labelThemeLight: "Hell",
+    labelThemePaper: "Papier",
+    labelThemeSlate: "Schiefer",
+    labelThemeHighContrast: "Hoher Kontrast",
+    labelThemeColorblind: "Farbenblind-freundlich",
+    labelThemeAmberNight: "Bernstein Nacht",
+  },
+  settings: {
+    ...en.settings,
+    themePreviewTitle: "Designvorschau",
+    themePreviewAutoResolves: "Auto wird zu {theme} aufgelost",
+    themePreviewHint:
+      "Die Vorschau wird sofort aktualisiert. Mit Speichern/Aktualisieren dauerhaft ubernehmen.",
+    localePreviewTitle: "Spracheinstellung",
+    localePreviewAutoResolves: "Auto ist derzeit auf {locale} aufgelost",
+    localePreviewHint:
+      "Sprachanderungen werden sofort angewendet und als Benutzereinstellung gespeichert. Wahlen Sie Auto, um der Browsersprache zu folgen.",
+  },
+  freeboardControl: {
+    ...en.freeboardControl,
+    labelSave: "Speichern",
+    labelUpdate: "Aktualisieren",
+    labelImport: "Importieren",
+    labelExport: "Exportieren",
+    labelOpenSaved: "Gespeicherte offnen",
+  },
+  savedDashboards: {
+    ...en.savedDashboards,
+    title: "Gespeicherte Dashboards",
+    loading: "Dashboards werden geladen…",
+    error: "Dashboards konnten nicht geladen werden.",
+    empty: "Keine Dashboards gefunden.",
+    public: "Offentlich",
+    link: "Link",
+    private: "Privat",
+  },
+  share: {
+    ...en.share,
+    title: "Dashboard teilen",
+    unsavedHint: "Speichern Sie das Dashboard, bevor Sie das Teilen konfigurieren.",
+    noPermission: "Sie haben keine Berechtigung, das Teilen fur dieses Dashboard zu verwalten.",
+    saveVisibility: "Sichtbarkeit speichern",
+    copyLink: "Link kopieren",
+    revokeLink: "Link widerrufen",
+  },
+  login: {
+    ...en.login,
+    titleLogin: "Anmelden",
+    titleCreateAccount: "Konto erstellen",
+    titleAcceptInvite: "Einladung annehmen",
+    titleRequestReset: "Passwort zurucksetzen anfordern",
+    titleCompleteReset: "Passwort zurucksetzen",
+    buttonOk: "Anmelden",
+    buttonCreateAccount: "Konto erstellen",
+    buttonAcceptInvite: "Einladung annehmen",
+    buttonRequestReset: "Anfrage senden",
+    buttonCompleteReset: "Zurucksetzen",
+    buttonForgotPassword: "Passwort vergessen",
+    buttonUseResetToken: "Reset-Token verwenden",
+    buttonBackToLogin: "Zuruck zur Anmeldung",
+    buttonReportBug: "Fehler melden",
+  },
+  issueReport: {
+    ...en.issueReport,
+    popupBlockedCopied:
+      "Das Fenster fur das Fehlerformular wurde blockiert. Der Debug-Kontext wurde in die Zwischenablage kopiert.",
+    popupBlockedCopyFailed:
+      "Das Fenster fur das Fehlerformular wurde blockiert und der Debug-Kontext konnte nicht kopiert werden.",
+  },
+  pane: {
+    ...en.pane,
+    titleAdd: "Widget hinzufugen",
+    titleEdit: "Panel bearbeiten",
+    titleDelete: "Panel loschen",
+  },
+  switchFormElement: {
+    ...en.switchFormElement,
+    labelOn: "Ja",
+    labelOff: "Nein",
+  },
+  textareaFormElement: {
+    ...en.textareaFormElement,
+    labelCode: "Code",
+  },
+  widget: {
+    ...en.widget,
+    titleEdit: "Widget bearbeiten",
+    titleDelete: "Widget loschen",
+    emptyTableRows: "Keine Zeilen",
+    emptyStatusItems: "Keine Statuseintrage",
+    emptyImage: "Kein Bild",
+    emptyChartData: "Keine Diagrammdaten",
+  },
+  typeSelect: {
+    ...en.typeSelect,
+    labelType: "Typ",
+    placeholderType: "Auswahlen...",
+  },
+};
