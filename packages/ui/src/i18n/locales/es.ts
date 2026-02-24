@@ -1,0 +1,143 @@
+/**
+ * @module i18n/es
+ * @description Spanish localization seed for Freeboard UI.
+ */
+
+import { en } from "./en.js";
+
+export const es = {
+  ...en,
+  arrayFormElement: {
+    ...en.arrayFormElement,
+    buttonAdd: "Agregar",
+  },
+  dashboardControl: {
+    ...en.dashboardControl,
+    labelSettings: "Configuracion",
+    labelShare: "Compartir",
+    labelDatasources: "Fuentes de datos",
+    labelAddPane: "Agregar panel",
+    labelReportBug: "Reportar error",
+  },
+  dialogBox: {
+    ...en.dialogBox,
+    titleSettings: "Configuracion",
+    titleConfirm: "Confirmar",
+    buttonOk: "Aceptar",
+    buttonApply: "Aplicar",
+    buttonCancel: "Cancelar",
+  },
+  form: {
+    ...en.form,
+    labelTheme: "Tema",
+    labelLanguage: "Idioma",
+    labelLanguageAuto: "Auto (Navegador)",
+    labelLanguageEnglish: "Ingles",
+    labelLanguageFrench: "Frances",
+    labelLanguageSpanish: "Espanol",
+    labelLanguageGerman: "Aleman",
+    labelMobile: "Movil",
+    labelAllowMobileEdit: "Permitir edicion movil (avanzado)",
+    descriptionAllowMobileEdit:
+      "Habilitar solo cuando los usuarios moviles deban editar paneles en el dispositivo.",
+    labelThemeAuto: "Auto",
+    labelThemeDark: "Oscuro",
+    labelThemeLight: "Claro",
+    labelThemePaper: "Papel",
+    labelThemeSlate: "Pizarra",
+    labelThemeHighContrast: "Alto contraste",
+    labelThemeColorblind: "Apto para daltonismo",
+    labelThemeAmberNight: "Ambar nocturno",
+  },
+  settings: {
+    ...en.settings,
+    themePreviewTitle: "Vista previa del tema",
+    themePreviewAutoResolves: "Auto se resuelve a {theme}",
+    themePreviewHint:
+      "La vista previa se actualiza de inmediato. Usa Guardar/Actualizar para persistir.",
+    localePreviewTitle: "Preferencia de idioma",
+    localePreviewAutoResolves: "Auto actualmente se resuelve a {locale}",
+    localePreviewHint:
+      "Los cambios de idioma se aplican de inmediato y se guardan como preferencia de usuario. Selecciona Auto para seguir el idioma del navegador.",
+  },
+  freeboardControl: {
+    ...en.freeboardControl,
+    labelSave: "Guardar",
+    labelUpdate: "Actualizar",
+    labelImport: "Importar",
+    labelExport: "Exportar",
+    labelOpenSaved: "Abrir guardado",
+  },
+  savedDashboards: {
+    ...en.savedDashboards,
+    title: "Paneles guardados",
+    loading: "Cargando paneles…",
+    error: "No se pudieron cargar los paneles.",
+    empty: "No se encontraron paneles.",
+    public: "Publico",
+    link: "Enlace",
+    private: "Privado",
+  },
+  share: {
+    ...en.share,
+    title: "Compartir panel",
+    unsavedHint: "Guarda el panel antes de configurar el uso compartido.",
+    noPermission: "No tienes permiso para administrar el uso compartido de este panel.",
+    saveVisibility: "Guardar visibilidad",
+    copyLink: "Copiar enlace",
+    revokeLink: "Revocar enlace",
+  },
+  login: {
+    ...en.login,
+    titleLogin: "Iniciar sesion",
+    titleCreateAccount: "Crear cuenta",
+    titleAcceptInvite: "Aceptar invitacion",
+    titleRequestReset: "Solicitar restablecimiento",
+    titleCompleteReset: "Restablecer contrasena",
+    buttonOk: "Iniciar sesion",
+    buttonCreateAccount: "Crear cuenta",
+    buttonAcceptInvite: "Aceptar invitacion",
+    buttonRequestReset: "Enviar solicitud",
+    buttonCompleteReset: "Restablecer",
+    buttonForgotPassword: "Olvide mi contrasena",
+    buttonUseResetToken: "Usar token de restablecimiento",
+    buttonBackToLogin: "Volver al inicio de sesion",
+    buttonReportBug: "Reportar error",
+  },
+  issueReport: {
+    ...en.issueReport,
+    popupBlockedCopied:
+      "La ventana del formulario de errores fue bloqueada. El contexto de depuracion se copio al portapapeles.",
+    popupBlockedCopyFailed:
+      "La ventana del formulario de errores fue bloqueada y no se pudo copiar el contexto de depuracion.",
+  },
+  pane: {
+    ...en.pane,
+    titleAdd: "Agregar widget",
+    titleEdit: "Editar panel",
+    titleDelete: "Eliminar panel",
+  },
+  switchFormElement: {
+    ...en.switchFormElement,
+    labelOn: "Si",
+    labelOff: "No",
+  },
+  textareaFormElement: {
+    ...en.textareaFormElement,
+    labelCode: "Codigo",
+  },
+  widget: {
+    ...en.widget,
+    titleEdit: "Editar widget",
+    titleDelete: "Eliminar widget",
+    emptyTableRows: "Sin filas",
+    emptyStatusItems: "Sin elementos de estado",
+    emptyImage: "Sin imagen",
+    emptyChartData: "Sin datos de grafico",
+  },
+  typeSelect: {
+    ...en.typeSelect,
+    labelType: "Tipo",
+    placeholderType: "Seleccionar...",
+  },
+};

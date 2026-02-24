@@ -278,6 +278,7 @@ Continues the work of [artificialhoney/freeboard](https://github.com/artificialh
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for PR expectations, widget proposal flow, and quality/security checklists.
 See [docs/manual/translations.md](docs/manual/translations.md) for UI/docs translation contribution rules.
+See [CONTRIBUTING_OPPORTUNITIES.md](CONTRIBUTING_OPPORTUNITIES.md) for active community contribution work (including translation review requests).
 
 ## Copyright
 

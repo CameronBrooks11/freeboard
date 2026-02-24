@@ -1,0 +1,147 @@
+/**
+ * @module i18n/fr
+ * @description French localization seed for Freeboard UI.
+ */
+
+import { en } from "./en.js";
+
+export const fr = {
+  ...en,
+  arrayFormElement: {
+    ...en.arrayFormElement,
+    buttonAdd: "Ajouter",
+  },
+  dashboardControl: {
+    ...en.dashboardControl,
+    labelSettings: "Parametres",
+    labelShare: "Partager",
+    labelDatasources: "Sources de donnees",
+    labelAddPane: "Ajouter un panneau",
+    labelReportBug: "Signaler un bug",
+  },
+  dialogBox: {
+    ...en.dialogBox,
+    titleSettings: "Parametres",
+    titleConfirm: "Confirmation",
+    buttonOk: "OK",
+    buttonApply: "Appliquer",
+    buttonCancel: "Annuler",
+  },
+  form: {
+    ...en.form,
+    labelTheme: "Theme",
+    labelLanguage: "Langue",
+    labelLanguageAuto: "Auto (Navigateur)",
+    labelLanguageEnglish: "Anglais",
+    labelLanguageFrench: "Francais",
+    labelLanguageSpanish: "Espagnol",
+    labelLanguageGerman: "Allemand",
+    labelMobile: "Mobile",
+    labelAllowMobileEdit: "Autoriser l'edition mobile (avance)",
+    descriptionAllowMobileEdit:
+      "Activer uniquement si des utilisateurs mobiles doivent modifier les tableaux de bord.",
+    labelThemeAuto: "Auto",
+    labelThemeDark: "Sombre",
+    labelThemeLight: "Clair",
+    labelThemePaper: "Papier",
+    labelThemeSlate: "Ardoise",
+    labelThemeHighContrast: "Haut contraste",
+    labelThemeColorblind: "Daltonisme",
+    labelThemeAmberNight: "Ambre nuit",
+  },
+  settings: {
+    ...en.settings,
+    themePreviewTitle: "Apercu du theme",
+    themePreviewAutoResolves: "Auto se resout vers {theme}",
+    themePreviewHint:
+      "L'apercu se met a jour immediatement. Utilisez Enregistrer/Mettre a jour pour persister.",
+    localePreviewTitle: "Preference de langue",
+    localePreviewAutoResolves: "Auto se resout actuellement vers {locale}",
+    localePreviewHint:
+      "Les changements de langue sont appliques immediatement et enregistres comme preference utilisateur. Selectionnez Auto pour suivre la langue du navigateur.",
+  },
+  freeboardControl: {
+    ...en.freeboardControl,
+    labelSave: "Enregistrer",
+    labelUpdate: "Mettre a jour",
+    labelImport: "Importer",
+    labelExport: "Exporter",
+    labelOpenSaved: "Ouvrir enregistre",
+  },
+  savedDashboards: {
+    ...en.savedDashboards,
+    title: "Tableaux de bord enregistres",
+    loading: "Chargement des tableaux de bord…",
+    error: "Impossible de charger les tableaux de bord.",
+    empty: "Aucun tableau de bord trouve.",
+    public: "Public",
+    link: "Lien",
+    private: "Prive",
+  },
+  header: {
+    ...en.header,
+    title: "Freeboard",
+  },
+  share: {
+    ...en.share,
+    title: "Partager le tableau de bord",
+    unsavedHint: "Enregistrez le tableau de bord avant de configurer le partage.",
+    noPermission: "Vous n'avez pas l'autorisation de gerer le partage pour ce tableau de bord.",
+    saveVisibility: "Enregistrer la visibilite",
+    copyLink: "Copier le lien",
+    revokeLink: "Revoquer le lien",
+  },
+  login: {
+    ...en.login,
+    titleLogin: "Connexion",
+    titleCreateAccount: "Creer un compte",
+    titleAcceptInvite: "Accepter l'invitation",
+    titleRequestReset: "Demander la reinitialisation",
+    titleCompleteReset: "Reinitialiser le mot de passe",
+    buttonOk: "Connexion",
+    buttonCreateAccount: "Creer un compte",
+    buttonAcceptInvite: "Accepter l'invitation",
+    buttonRequestReset: "Envoyer la demande",
+    buttonCompleteReset: "Reinitialiser",
+    buttonForgotPassword: "Mot de passe oublie",
+    buttonUseResetToken: "Utiliser un jeton de reinitialisation",
+    buttonBackToLogin: "Retour a la connexion",
+    buttonReportBug: "Signaler un bug",
+  },
+  issueReport: {
+    ...en.issueReport,
+    popupBlockedCopied:
+      "La fenetre du formulaire de bug a ete bloquee. Le contexte de debug a ete copie dans le presse-papiers.",
+    popupBlockedCopyFailed:
+      "La fenetre du formulaire de bug a ete bloquee et le contexte de debug n'a pas pu etre copie.",
+  },
+  pane: {
+    ...en.pane,
+    titleAdd: "Ajouter un widget",
+    titleEdit: "Modifier le panneau",
+    titleDelete: "Supprimer le panneau",
+  },
+  switchFormElement: {
+    ...en.switchFormElement,
+    labelOn: "Oui",
+    labelOff: "Non",
+  },
+  textareaFormElement: {
+    ...en.textareaFormElement,
+    labelCode: "Code",
+  },
+  widget: {
+    ...en.widget,
+    titleEdit: "Modifier le widget",
+    titleDelete: "Supprimer le widget",
+    emptyTableRows: "Aucune ligne",
+    emptyStatusItems: "Aucun element d'etat",
+    emptyImage: "Aucune image",
+    emptyChartData: "Aucune donnee de graphique",
+  },
+  typeSelect: {
+    ...en.typeSelect,
+    labelType: "Type",
+    placeholderType: "Selectionner...",
+  },
+};

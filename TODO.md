@@ -5,7 +5,7 @@
 - [ ] **Accessibility**: Conduct a thorough accessibility audit and implement necessary improvements to meet WCAG 2.1 AA standards. Defer until we have a stable UI surface and can allocate dedicated resources for accessibility work.
 - [ ] **A11y**: Add automated accessibility testing to CI pipeline (e.g., axe-core integration) to catch regressions early. Defer until we have a stable UI surface and can allocate dedicated resources for accessibility work.
 - [ ] **i18n/l10n expansion**: Baseline translation workflow is in place; add and maintain non-English locales only when there is sustained contributor demand.
-- [ ] **Versioning strategy**: Evaluate and adopt a formal versioning strategy (e.g. SemVer) for consistent release management and communication. Defer until we have a stable release cadence and process in place to ensure versioning discipline is sustainable.
+- [ ] **Versioning strategy**: Evaluate, adopt, and enforce a formal versioning strategy (e.g. SemVer) for consistent release management and communication. Defer until we have a stable release cadence and process in place to ensure versioning discipline is sustainable.
 
 ## Backlog / Medium Priority
 
