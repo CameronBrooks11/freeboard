@@ -39,10 +39,10 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      # Checkout the repo (shallow for speed)
+      # Checkout full history so VitePress lastUpdated metadata is accurate.
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       # Node.js with npm caching (root + workspaces)
       - uses: actions/setup-node@v6

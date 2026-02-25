@@ -1,17 +1,46 @@
 import { defineConfig } from "vitepress";
 
 const base = process.env.SITE_BASE || "/";
+const generatedDocsPathPrefixes = ["dev/", "auto/", "_templates/"];
+
+const isGeneratedDocsPage = (relativePath = "") =>
+  generatedDocsPathPrefixes.some((prefix) => relativePath.startsWith(prefix));
 
 export default defineConfig({
   title: "Freeboard",
   description: "Demo + Docs",
   base,
+  lastUpdated: true,
   cleanUrls: true,
   ignoreDeadLinks: [
     /^\/demo\//, // copied post-build
     /^\/dev\/graphql\/schema\.graphql$/, // served from /public
   ],
+  transformPageData(pageData) {
+    if (!isGeneratedDocsPage(pageData.relativePath)) {
+      return;
+    }
+    return {
+      frontmatter: {
+        ...pageData.frontmatter,
+        editLink: false,
+      },
+    };
+  },
   themeConfig: {
+    editLink: {
+      pattern: "https://github.com/CameronBrooks11/freeboard/edit/main/docs/:path",
+      text: "Suggest a change to this page",
+    },
+    lastUpdated: {
+      text: "Last updated",
+    },
+    search: {
+      provider: "local",
+      options: {
+        detailedView: "auto",
+      },
+    },
     nav: [
       { text: "Home", link: "/" },
       { text: "Demo", link: "/demo/", rel: "external", target: "_blank" },
@@ -46,6 +75,8 @@ export default defineConfig({
           items: [
             { text: "Architecture", link: "/manual/architecture" },
             { text: "Secrets Operations", link: "/manual/secrets-operations" },
+            { text: "Service Accounts", link: "/manual/service-accounts" },
+            { text: "Runtime Metrics", link: "/manual/runtime-metrics" },
             { text: "Widget Runtime", link: "/manual/widget-runtime" },
             { text: "API", link: "/manual/api" },
             { text: "UI", link: "/manual/ui" },
@@ -57,6 +88,7 @@ export default defineConfig({
             { text: "Raspberry Pi MongoDB", link: "/manual/raspberry-pi-mongodb" },
             { text: "Docs Site Setup", link: "/manual/docs-site-setup" },
             { text: "Development Misc", link: "/manual/dev-misc" },
+            { text: "TypeScript Standards", link: "/manual/typescript-standards" },
             { text: "Translation Contributions", link: "/manual/translations" },
           ],
         },
