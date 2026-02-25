@@ -154,26 +154,13 @@ UserSchema.pre("updateMany", ensureNoDirectPasswordUpdate);
 /**
  * Pre-save hook to hash the password if it has been modified.
  */
-UserSchema.pre(
-  "save",
-  function (this: UserHydratedDocument, next: CallbackWithoutResultAndOptionalError) {
-    if (!this.isModified("password")) {
-      return next();
-    }
-    bcrypt.genSalt((err: Error | undefined, salt: string) => {
-      if (err) {
-        return next(err);
-      }
-      bcrypt.hash(this.password, salt, (err: Error | undefined, hash: string) => {
-        if (err) {
-          return next(err);
-        }
-        this.password = hash;
-        next();
-      });
-    });
-  },
-);
+UserSchema.pre("save", async function (this: UserHydratedDocument) {
+  if (!this.isModified("password")) {
+    return;
+  }
+  const salt = await bcrypt.genSalt();
+  this.password = await bcrypt.hash(this.password, salt);
+});
 
 /**
  * Mongoose model for users.
