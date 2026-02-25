@@ -7,6 +7,7 @@ This project keeps translation scope intentionally lean.
 1. English is the canonical source for both UI and docs.
 2. Translation PRs must stay scoped, reviewable, and synchronized with source changes.
 3. If translation maintenance stalls, maintainers may archive stale translation content.
+4. UI i18n runtime is composition-mode only (`legacy: false`) while keeping template `$t(...)` support via global injection.
 
 ## UI Translation Workflow
 

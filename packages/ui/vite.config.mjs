@@ -50,6 +50,7 @@ export default defineConfig(({ mode }) => {
       __FREEBOARD_VERSION__: JSON.stringify(process.env.npm_package_version),
       __FREEBOARD_STATIC__: JSON.stringify(isStatic),
       __FREEBOARD_BASE_PATH__: JSON.stringify(STATIC_BASE),
+      __VUE_I18N_LEGACY_API__: false,
     },
     server: {
       host: true,

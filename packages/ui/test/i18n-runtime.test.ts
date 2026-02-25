@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createSSRApp } from "vue";
 
 import {
   UI_LOCALE_AUTO,
@@ -66,12 +67,21 @@ const installRuntimeStubs = ({
 };
 
 const readCurrentLocale = (): string => {
-  const localeTarget = i18n.global.locale as unknown;
-  if (localeTarget && typeof localeTarget === "object" && "value" in localeTarget) {
-    return String((localeTarget as { value: string }).value);
-  }
-  return String(localeTarget || "");
+  return String(i18n.global.locale.value || "");
 };
+
+test("i18n runtime is composition mode and keeps global $t injection", () => {
+  setUiLocaleSelection("en");
+
+  assert.equal(i18n.mode, "composition");
+
+  const app = createSSRApp({ render: () => null });
+  app.use(i18n);
+
+  const translator = app.config.globalProperties.$t as ((key: string) => unknown) | undefined;
+  assert.equal(typeof translator, "function");
+  assert.equal(String(translator?.("login.titleLogin")), "Login");
+});
 
 test("locale normalization accepts supported locale variants and falls back to default", () => {
   assert.equal(normalizeUiLocale("fr"), "fr");
