@@ -13,6 +13,7 @@ This project ships a VitePress site that combines:
 - Write user/dev guides in `docs/manual/`.
 - Keep manual docs concise; link to generated references for deep detail.
 - Do not commit generated outputs from `docs/auto/` or `docs/public/`.
+- When adding a new first-class manual page (`docs/manual/*.md`), also update manual sidebar navigation in `docs/.vitepress/config.mjs`.
 
 ## Core Scripts
 
@@ -23,6 +24,9 @@ This project ships a VitePress site that combines:
   - stages generated outputs into VitePress-consumable paths
 - `npm run docs:verify`
   - runs `docs:generate` + `site:stage` as a fast docs pipeline sanity check
+- `npm run check:docs:manual-sidebar`
+  - verifies manual sidebar links resolve to real docs pages
+  - verifies first-class manual pages are represented in the sidebar
 - `npm run site:local`
   - full local docs+demo build pipeline
 - `npm run site:pages`
@@ -50,6 +54,19 @@ Quick verification without full site build:
 ```bash
 npm run docs:verify
 ```
+
+Manual docs navigation check:
+
+```bash
+npm run check:docs:manual-sidebar
+```
+
+## Maintainability Baseline
+
+- `lastUpdated` is enabled in VitePress config and should remain on.
+- Edit links are enabled for authored docs and intentionally disabled for generated reference pages.
+- Search is explicitly configured with the local provider.
+- Manual sidebar drift is guarded by `npm run check:docs:manual-sidebar`.
 
 ## CI Notes
 

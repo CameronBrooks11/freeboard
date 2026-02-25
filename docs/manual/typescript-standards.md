@@ -77,9 +77,6 @@ Ambient declarations and generated-type ownership:
 3. `packages/ui/src/vite-env.d.ts`
    - Scope: Vite environment typing.
    - Owner: UI maintainers.
-4. `packages/api/src/types/bcryptjs.d.ts`
-   - Scope: API third-party module typing coverage.
-   - Owner: API maintainers.
 
 Generated typing/model artifacts:
 

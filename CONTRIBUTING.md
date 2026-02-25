@@ -98,6 +98,12 @@ Required docs for new/updated widgets:
 If implementation changes invalidate existing docs, update docs in the same PR.  
 Do not defer documentation alignment for “later cleanup”.
 
+Docs maintenance checklist:
+
+- If you add a first-class manual page under `docs/manual/*.md`, update the manual sidebar in `docs/.vitepress/config.mjs`.
+- Run `npm run check:docs:manual-sidebar` for docs-nav integrity.
+- For docs pipeline changes, also run `npm run docs:verify`.
+
 ## Translation Contributions (UI + Docs)
 
 UI translation baseline:

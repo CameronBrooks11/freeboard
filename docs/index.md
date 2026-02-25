@@ -8,15 +8,15 @@ hero:
   tagline: Build dashboard mashups quickly with secure-by-default runtime guidance.
   actions:
     - theme: brand
+      text: Install
+      link: /manual/installation
+    - theme: alt
       text: Open Demo
       link: /demo/
       target: _blank
     - theme: alt
       text: Read the Manual
       link: /manual/
-    - theme: alt
-      text: Install
-      link: /manual/installation
 features:
   - icon: 🧩
     title: Build Dashboards
