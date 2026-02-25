@@ -30,8 +30,5 @@
     "mongoose": "^8.8.3",
     "nanoid": "^5.1.6",
     "uuid": "^13.0.0"
-  },
-  "devDependencies": {
-    "@types/bcryptjs": "^3.0.0"
   }
 }
