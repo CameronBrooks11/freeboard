@@ -240,6 +240,8 @@ jobs:
         run: npm run check:ui:theme-contrast
       - name: Validate UI i18n parity
         run: npm run check:ui:i18n-parity
+      - name: Validate UI i18n composition-mode lock
+        run: npm run check:ui:i18n-composition-mode
       - name: Validate TS source debt
         run: npm run check:ts:debt
       - name: Validate TS source artifacts

@@ -64,12 +64,7 @@ const readNavigatorLocale = (): UiLocale => {
 };
 
 const applyResolvedUiLocale = (nextLocale: UiLocale): UiLocale => {
-  const localeTarget = i18n.global.locale as unknown;
-  if (localeTarget && typeof localeTarget === "object" && "value" in localeTarget) {
-    (localeTarget as { value: string }).value = nextLocale;
-  } else {
-    (i18n.global as { locale: string }).locale = nextLocale;
-  }
+  i18n.global.locale.value = nextLocale;
   return nextLocale;
 };
 
@@ -88,6 +83,8 @@ export const resolveUiLocaleFromSelection = (selection: unknown): UiLocale => {
 };
 
 export const i18n = createI18n({
+  legacy: false,
+  globalInjection: true,
   locale: resolveInitialUiLocale(),
   fallbackLocale: DEFAULT_UI_LOCALE,
   messages: UI_LOCALE_MESSAGES,

@@ -8,6 +8,7 @@
 - UI store boundary guardrail: `npm run check:ui:store-boundaries`
 - UI theme contrast guardrail: `npm run check:ui:theme-contrast`
 - UI i18n parity guardrail: `npm run check:ui:i18n-parity`
+- UI i18n composition-mode guardrail: `npm run check:ui:i18n-composition-mode`
 - TS source debt guardrail: `npm run check:ts:debt`
 - TS source artifact guardrail: `npm run check:ts:source-artifacts`
 - UI bundle budget guardrail (warn-first): `npm run check:ui:bundle-budget`
@@ -42,6 +43,7 @@ npm run lint
 npm run check:ui:store-boundaries
 npm run check:ui:theme-contrast
 npm run check:ui:i18n-parity
+npm run check:ui:i18n-composition-mode
 npm run check:ts:debt
 npm run check:ts:source-artifacts
 npm run check:runtime-deps
@@ -65,6 +67,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 - If `Validate TS source debt` fails, remove unsafe TS patterns (`as any`, `as unknown as`, `: any`, `Record<string, any>`, `[key: string]: any`, `@ts-ignore`, `@ts-nocheck`) from `packages/*/src`.
 - If `Validate UI theme contrast` fails, update theme token values in `packages/ui/src/assets/css/themes/*.css` so critical foreground/background token pairs meet the script threshold.
 - If `Validate UI i18n parity` fails, align locale keys/placeholders to `packages/ui/src/i18n/locales/en.ts`.
+- If `Validate UI i18n composition-mode lock` fails, restore `legacy: false` and `globalInjection: true` in `packages/ui/src/i18n/index.ts`.
 - If `Validate TS source artifacts` fails, remove legacy JS source files from `packages/*/src`.
 - If a job was expected but appears skipped, check `Classify changes` output in the `changes` job.
 - If Docker publish unexpectedly rebuilds all images, verify event type:
@@ -209,6 +212,12 @@ Run it before and after bundle/loading architecture changes to compare impact wi
   - persistence only after dashboard `Save`/`Update`
 - Keep theme metadata single-sourced in `packages/ui/src/ui/themeCatalog.ts`; do not duplicate theme swatches/labels in component-local constants.
 - Use semantic tokens for themed surfaces/states (`--bg-*`, `--text-*`, `--status-*`, `--chart-*`); avoid hardcoded color literals in themeable UI paths.
+
+## UI I18n Runtime Rules
+
+- UI i18n runtime is composition-mode only (`legacy: false`).
+- Keep `globalInjection: true` so template `$t(...)` usage remains supported.
+- Do not reintroduce legacy-mode compatibility branches in locale runtime helpers.
 
 ## Theme Change Checklist
 
