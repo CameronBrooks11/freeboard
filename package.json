@@ -111,7 +111,7 @@
     "@types/express": "^4.17.23",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/ws": "^8.18.1",
-    "@types/bcryptjs": "^2.4.6",
+    "@types/bcryptjs": "^3.0.0",
     "vitepress": "^1.6.4",
     "vue-tsc": "^2.2.12",
     "vue-docgen-cli": "^4.79.0"
