@@ -70,6 +70,8 @@ const PATH = {
   DEV_GRAPHQL: join(DEV, "graphql"),
   DEV_COMPONENTS: join(DEV, "components"),
   PUBLIC_DEV_API: join(PUBLIC_DEV, "api"),
+  PUBLIC_DEV_API_INDEX_HTML: join(PUBLIC_DEV, "api", "index.html"),
+  PUBLIC_DEV_API_ALL_HTML: join(PUBLIC_DEV, "api", "all.html"),
   PUBLIC_DEV_GRAPHQL: join(PUBLIC_DEV, "graphql"),
   PUBLIC_DEMO: join(PUBLIC, "demo"),
   TPL_GRAPHQL_INDEX: join(TEMPLATES, "graphql-index.md"),
@@ -89,6 +91,10 @@ const stageDocs = () => {
 
   if (existsSync(PATH.AUTO_API_HTML)) {
     cpSync(PATH.AUTO_API_HTML, PATH.PUBLIC_DEV_API, { recursive: true });
+    if (existsSync(PATH.PUBLIC_DEV_API_INDEX_HTML)) {
+      // Expose a stable "full reference" target that won't collide with /dev/api/ wrapper pages.
+      cpSync(PATH.PUBLIC_DEV_API_INDEX_HTML, PATH.PUBLIC_DEV_API_ALL_HTML);
+    }
   }
 
   if (existsSync(PATH.AUTO_GRAPHQL)) {
