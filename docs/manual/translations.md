@@ -2,6 +2,12 @@
 
 This project keeps translation scope intentionally lean.
 
+## Read Translations
+
+1. French seed pages: [/manual/translations/fr/](/manual/translations/fr/)
+2. Spanish seed pages: [/manual/translations/es/](/manual/translations/es/)
+3. German seed pages: [/manual/translations/de/](/manual/translations/de/)
+
 ## Policy
 
 1. English is the canonical source for both UI and docs.

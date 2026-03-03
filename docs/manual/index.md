@@ -20,6 +20,13 @@ Use this manual in two tracks:
 - [Widget Developer Guide](/manual/widget-developer-guide)
 - [Widget Runtime](/manual/widget-runtime)
 
+## Manual Translations
+
+- [French (Brouillon)](/manual/translations/fr/)
+- [Spanish (Borrador)](/manual/translations/es/)
+- [German (Entwurf)](/manual/translations/de/)
+- [Translation Workflow & Contribution Rules](/manual/translations)
+
 ## Developer/Operator Path
 
 - [Architecture](/manual/architecture)
@@ -37,4 +44,3 @@ Use this manual in two tracks:
 - [Documentation Site Setup](/manual/docs-site-setup)
 - [Development Misc](/manual/dev-misc)
 - [TypeScript Standards](/manual/typescript-standards)
-- [Translation Contributions](/manual/translations)

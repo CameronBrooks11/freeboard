@@ -45,6 +45,14 @@ export default defineConfig({
       { text: "Home", link: "/" },
       { text: "Demo", link: "/demo/", rel: "external", target: "_blank" },
       { text: "Manual", link: "/manual/" },
+      {
+        text: "Languages",
+        items: [
+          { text: "French", link: "/manual/translations/fr/" },
+          { text: "Spanish", link: "/manual/translations/es/" },
+          { text: "German", link: "/manual/translations/de/" },
+        ],
+      },
       { text: "Components", link: "/dev/components/" },
       { text: "API (TypeDoc)", link: "/dev/api/" },
       { text: "GraphQL", link: "/dev/graphql/" },
@@ -71,6 +79,15 @@ export default defineConfig({
           ],
         },
         {
+          text: "Translations",
+          items: [
+            { text: "Translation Overview", link: "/manual/translations" },
+            { text: "French (Brouillon)", link: "/manual/translations/fr/" },
+            { text: "Spanish (Borrador)", link: "/manual/translations/es/" },
+            { text: "German (Entwurf)", link: "/manual/translations/de/" },
+          ],
+        },
+        {
           text: "Developer Reference",
           items: [
             { text: "Architecture", link: "/manual/architecture" },
@@ -89,7 +106,6 @@ export default defineConfig({
             { text: "Docs Site Setup", link: "/manual/docs-site-setup" },
             { text: "Development Misc", link: "/manual/dev-misc" },
             { text: "TypeScript Standards", link: "/manual/typescript-standards" },
-            { text: "Translation Contributions", link: "/manual/translations" },
           ],
         },
       ],
