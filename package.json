@@ -93,7 +93,7 @@
     "site:preview": "vitepress preview docs --port 8000"
   },
   "devDependencies": {
-    "@eslint/js": "^9.15.0",
+    "@eslint/js": "^10.0.1",
     "concurrently": "^9.1.0",
     "cross-env": "^10.0.0",
     "eslint": "^9.15.0",
