@@ -27,7 +27,7 @@
     "graphql-yoga": "^5.10.3",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.1.0",
-    "mongoose": "^8.8.3",
+    "mongoose": "^9.2.3",
     "nanoid": "^5.1.6",
     "uuid": "^13.0.0"
   }
