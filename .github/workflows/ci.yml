@@ -61,7 +61,6 @@ jobs:
               - 'packages/ui/package.json'
               - 'packages/ui/vite.config.mjs'
               - 'packages/ui/index.html'
-              - 'packages/ui/eslint.config.js'
               - 'packages/ui/nginx.conf'
               - 'packages/ui/Dockerfile'
             gateway:

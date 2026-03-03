@@ -53,7 +53,7 @@ const isMobileViewport = () => {
 };
 
 const createAsset = (type: string, value: string, inline?: boolean) => {
-  let node: HTMLElement | null = null;
+  let node: HTMLElement;
   if (inline) {
     if (type === "style") {
       const style = document.createElement("style");

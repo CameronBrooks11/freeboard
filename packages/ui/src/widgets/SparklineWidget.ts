@@ -169,24 +169,19 @@ export class SparklineWidget extends ReactiveWidget {
 
   resolveInputs(): SparklineInputs {
     const configuredSeriesPaths = parseSeriesPaths(this.currentSettings?.seriesPaths);
-    let series = null;
-
-    if (configuredSeriesPaths.length > 0) {
-      series = configuredSeriesPaths.map((path) => this.getBinding(path));
-    } else {
-      const value = this.getBinding(this.currentSettings?.valuePath);
-      if (Array.isArray(value)) {
-        series = value;
-      } else {
-        series = [value];
-      }
-    }
+    const series =
+      configuredSeriesPaths.length > 0
+        ? configuredSeriesPaths.map((path) => this.getBinding(path))
+        : (() => {
+            const value = this.getBinding(this.currentSettings?.valuePath);
+            return Array.isArray(value) ? value : [value];
+          })();
 
     return {
       header: String(
         this.getBinding(this.currentSettings?.headerPath) ?? this.currentSettings?.headerText ?? "",
       ),
-      series: Array.isArray(series) ? series : [series],
+      series,
     };
   }
 

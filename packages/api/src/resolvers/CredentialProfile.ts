@@ -92,14 +92,13 @@ const validateProfilePayload = ({
 };
 
 const toCredentialProfileResponse = (profile: Record<string, unknown>) => {
-  let decryptedSecret: Record<string, unknown> = {};
-  try {
-    decryptedSecret = decryptCredentialSecret(
-      (profile.secret || null) as EncryptedSecretPayload | null,
-    );
-  } catch {
-    decryptedSecret = {};
-  }
+  const decryptedSecret = (() => {
+    try {
+      return decryptCredentialSecret((profile.secret || null) as EncryptedSecretPayload | null);
+    } catch {
+      return {};
+    }
+  })();
 
   return {
     _id: profile._id,
