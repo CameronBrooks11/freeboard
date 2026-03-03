@@ -1,19 +1,19 @@
 # Translation Contributions
 
-This project keeps translation scope intentionally lean.
+This project keeps translation scope intentionally lean and maintainable.
 
-## Read Translations
+## Read Localized Manuals
 
-1. French seed pages: [/manual/translations/fr/](/manual/translations/fr/)
-2. Spanish seed pages: [/manual/translations/es/](/manual/translations/es/)
-3. German seed pages: [/manual/translations/de/](/manual/translations/de/)
+1. French: [/fr/manual/](/fr/manual/)
+2. Spanish: [/es/manual/](/es/manual/)
+3. German: [/de/manual/](/de/manual/)
 
 ## Policy
 
-1. English is the canonical source for both UI and docs.
+1. English docs are canonical source.
 2. Translation PRs must stay scoped, reviewable, and synchronized with source changes.
-3. If translation maintenance stalls, maintainers may archive stale translation content.
-4. UI i18n runtime is composition-mode only (`legacy: false`) while keeping template `$t(...)` support via global injection.
+3. If translation maintenance stalls, maintainers may archive stale localized pages.
+4. Generated references stay canonical in English (`/dev/api/`, `/dev/graphql/`, `/dev/components/`).
 
 ## UI Translation Workflow
 
@@ -30,23 +30,33 @@ npm run check:ui:i18n-parity
 
 ## Docs Translation Workflow
 
-Use this folder convention for translated manual pages:
+Use this folder convention for translated docs pages:
 
-1. `docs/manual/translations/<locale>/`
-2. Mirror the English page naming where possible.
-3. At the top of each translated page, include:
-   - source page path
-   - source revision/commit reference
-   - translation last-updated date
-   - review status (`draft`, `needs-native-review`, `verified`)
+1. `docs/<locale>/...` (for this project: `docs/fr/`, `docs/es/`, `docs/de/`)
+2. Mirror English page naming when practical.
+3. Keep translation metadata in YAML frontmatter.
+
+Required frontmatter keys for translated pages:
+
+1. `translationOf`: canonical English source file path.
+2. `sourceSha`: non-placeholder commit SHA used for translation baseline.
+3. `translationUpdated`: `YYYY-MM-DD`.
+4. `translationStatus`: `draft`, `needs-native-review`, or `verified`.
+5. `alternateLocales`: locale-to-route map used for alternate-language metadata.
 
 Example:
 
 ```text
-docs/manual/translations/es/usage.md
+docs/es/manual/installation-quickstart.md
 ```
 
-Generated reference documentation policy:
+Validation:
+
+```bash
+npm run check:docs:i18n
+```
+
+## Generated Reference Documentation Policy
 
 1. Keep generated references canonical in English:
    - `/dev/api/`
@@ -55,30 +65,14 @@ Generated reference documentation policy:
 2. Do not duplicate generated reference outputs per locale.
 3. Translate guide pages and localized reference-entry pages that link to canonical generated references.
 
-Current native-speaker review request:
+## Current Native-Speaker Review Request
 
-1. Please prioritize language-quality review for `fr`, `es`, and `de` translation seeds.
+1. Prioritize language-quality review for `fr`, `es`, and `de`.
 2. See `CONTRIBUTING_OPPORTUNITIES.md` for active review tasks.
-
-Current seed pages:
-
-1. French:
-   - `/manual/translations/fr/`
-   - `/manual/translations/fr/installation-quickstart`
-   - `/manual/translations/fr/references`
-2. Spanish:
-   - `/manual/translations/es/`
-   - `/manual/translations/es/installation-quickstart`
-   - `/manual/translations/es/references`
-3. German:
-   - `/manual/translations/de/`
-   - `/manual/translations/de/installation-quickstart`
-   - `/manual/translations/de/references`
 
 ## Quality Rules
 
 1. Do not mix unrelated feature work into translation PRs.
 2. Do not rewrite technical behavior while translating.
-3. If source and translation conflict, source English behavior/docs win until translation is updated.
-4. New user-facing UI strings should be introduced via i18n keys, not hardcoded literals.
-5. Keep translation PRs scoped to one locale whenever practical.
+3. If source and translation conflict, English canonical docs win until translation is updated.
+4. Keep translation PRs scoped to one locale whenever practical.

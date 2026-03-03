@@ -1,13 +1,20 @@
-# Referencias Tecnicas (ES)
+---
+translationOf: docs/manual/ui.md
+sourceSha: 47e5f8028680
+translationUpdated: 2026-03-02
+translationStatus: needs-native-review
+alternateLocales:
+  en: /manual/ui
+  fr: /fr/manual/references
+  es: /es/manual/references
+  de: /de/manual/references
+---
 
-- Source page: `docs/manual/ui.md`
-- Source revision: `main` (reemplazar con SHA de commit en PRs)
-- Translation last-updated: `2026-02-24`
-- Review status: `needs-native-review`
+# Referencias Tecnicas (ES)
 
 ## Politica de referencias
 
-Las referencias tecnicas generadas permanecen canonicas en ingles. Las paginas localizadas deben enlazar estas referencias sin duplicar artefactos generados.
+Las referencias tecnicas generadas permanecen canonicas en ingles. Las paginas localizadas enlazan estas referencias sin duplicar artefactos generados.
 
 ## Referencias canonicas
 

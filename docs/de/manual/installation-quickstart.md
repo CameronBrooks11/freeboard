@@ -1,9 +1,16 @@
-# Installation Schnellstart (DE)
+---
+translationOf: docs/manual/installation.md
+sourceSha: 47e5f8028680
+translationUpdated: 2026-03-02
+translationStatus: needs-native-review
+alternateLocales:
+  en: /manual/installation
+  fr: /fr/manual/installation-quickstart
+  es: /es/manual/installation-quickstart
+  de: /de/manual/installation-quickstart
+---
 
-- Source page: `docs/manual/installation.md`
-- Source revision: `main` (in PRs durch Commit-SHA ersetzen)
-- Translation last-updated: `2026-02-24`
-- Review status: `needs-native-review`
+# Installation Schnellstart (DE)
 
 ## Voraussetzungen
 
@@ -31,6 +38,4 @@ npm run dev
 
 ## Kanonische Referenz
 
-Fuer vollstaendige und aktuelle Details siehe Quellseite:
-
-1. [Installation (English canonical)](/manual/installation)
+1. [Installation (Englisch)](/manual/installation)

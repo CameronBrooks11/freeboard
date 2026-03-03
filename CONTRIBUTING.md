@@ -117,5 +117,6 @@ Docs translation baseline:
 
 - Translation workflow and file conventions are defined in `docs/manual/translations.md`.
 - Keep translated docs scoped and track source/translation drift explicitly.
-- Do not convert docs-site navigation to full multi-locale mode without maintainers explicitly approving that scope.
+- Docs locale routing is first-class under `docs/{fr,es,de}/` and must stay aligned with `docs/.vitepress/config.mjs`.
+- Translated docs metadata is CI-enforced via `npm run check:docs:i18n`.
 - Active translation tasks and native-speaker review requests are listed in `CONTRIBUTING_OPPORTUNITIES.md`.
