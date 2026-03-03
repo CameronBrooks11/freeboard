@@ -57,13 +57,13 @@ Review for:
 
 1. Language quality of translated manual pages.
 2. Technical accuracy relative to the English source page.
-3. Metadata completeness (source path, source revision, last-updated, review status).
+3. Metadata completeness (translationOf, sourceSha, translationUpdated, translationStatus, alternateLocales).
 
 Primary folders:
 
-1. `docs/manual/translations/fr/`
-2. `docs/manual/translations/es/`
-3. `docs/manual/translations/de/`
+1. `docs/fr/manual/`
+2. `docs/es/manual/`
+3. `docs/de/manual/`
 
 Manual QA checklist per locale:
 
@@ -71,7 +71,13 @@ Manual QA checklist per locale:
 2. Dashboard toolbar actions are clear and consistent.
 3. Share dialog terminology is technically accurate.
 4. Localized `references.md` page links to `/dev/api/`, `/dev/graphql/`, and `/dev/components/`.
-5. Metadata headers are present and current (`source page`, `source revision`, `translation last-updated`, `review status`).
+5. Frontmatter metadata is present and current (`translationOf`, `sourceSha`, `translationUpdated`, `translationStatus`, `alternateLocales`).
+
+Validation:
+
+```bash
+npm run check:docs:i18n
+```
 
 ## Generated Reference Docs Policy
 

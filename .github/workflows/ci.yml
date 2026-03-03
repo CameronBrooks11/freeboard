@@ -24,6 +24,7 @@ jobs:
       docs_only: ${{ steps.classify.outputs.docs_only }}
       non_docs: ${{ steps.classify.outputs.non_docs }}
       run_format_check: ${{ steps.classify.outputs.run_format_check }}
+      run_docs_integrity: ${{ steps.classify.outputs.run_docs_integrity }}
       run_api_tests: ${{ steps.classify.outputs.run_api_tests }}
       run_shared_tests: ${{ steps.classify.outputs.run_shared_tests }}
       run_ui_tests: ${{ steps.classify.outputs.run_ui_tests }}
@@ -48,6 +49,10 @@ jobs:
               - 'planning/**'
               - '**/*.md'
               - 'LICENSE'
+            docs_site:
+              - 'docs/**'
+              - 'scripts/check-docs-manual-sidebar.mjs'
+              - 'scripts/check-docs-i18n.mjs'
             api:
               - 'packages/api/src/**'
               - 'packages/api/test/**'
@@ -110,6 +115,7 @@ jobs:
         shell: bash
         run: |
           docs="${{ steps.filter.outputs.docs }}"
+          docs_site="${{ steps.filter.outputs.docs_site }}"
           api="${{ steps.filter.outputs.api }}"
           ui="${{ steps.filter.outputs.ui }}"
           gateway="${{ steps.filter.outputs.gateway }}"
@@ -169,10 +175,15 @@ jobs:
           fi
 
           run_format_check=true
+          run_docs_integrity=false
+          if [[ "$docs_site" == "true" ]]; then
+            run_docs_integrity=true
+          fi
 
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
           echo "non_docs=$non_docs" >> "$GITHUB_OUTPUT"
           echo "run_format_check=$run_format_check" >> "$GITHUB_OUTPUT"
+          echo "run_docs_integrity=$run_docs_integrity" >> "$GITHUB_OUTPUT"
           echo "run_api_tests=$run_api_tests" >> "$GITHUB_OUTPUT"
           echo "run_shared_tests=$run_shared_tests" >> "$GITHUB_OUTPUT"
           echo "run_ui_tests=$run_ui_tests" >> "$GITHUB_OUTPUT"
@@ -184,8 +195,10 @@ jobs:
 
           echo "CI classification:"
           echo "  docs_only=$docs_only"
+          echo "  docs_site=$docs_site"
           echo "  non_docs=$non_docs"
           echo "  run_format_check=$run_format_check"
+          echo "  run_docs_integrity=$run_docs_integrity"
           echo "  run_api_tests=$run_api_tests"
           echo "  run_shared_tests=$run_shared_tests"
           echo "  run_ui_tests=$run_ui_tests"
@@ -214,6 +227,27 @@ jobs:
         run: npm ci
       - name: Format check
         run: npm run format:check
+
+  docs-integrity:
+    name: Docs integrity
+    needs: changes
+    if: needs.changes.outputs.run_docs_integrity == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Validate manual sidebar coverage
+        run: npm run check:docs:manual-sidebar
+      - name: Validate docs i18n integrity
+        run: npm run check:docs:i18n
 
   lint:
     name: Lint
@@ -421,6 +455,7 @@ jobs:
     needs:
       - changes
       - format
+      - docs-integrity
       - lint
       - test-api
       - test-shared
@@ -456,6 +491,7 @@ jobs:
           }
 
           check_required "${{ needs.changes.outputs.run_format_check }}" "${{ needs.format.result }}" "format"
+          check_required "${{ needs.changes.outputs.run_docs_integrity }}" "${{ needs.docs-integrity.result }}" "docs-integrity"
           check_required "${{ needs.changes.outputs.non_docs }}" "${{ needs.lint.result }}" "lint"
           check_required "${{ needs.changes.outputs.run_api_tests }}" "${{ needs.test-api.result }}" "test-api"
           check_required "${{ needs.changes.outputs.run_shared_tests }}" "${{ needs.test-shared.result }}" "test-shared"

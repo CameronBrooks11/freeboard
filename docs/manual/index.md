@@ -22,9 +22,9 @@ Use this manual in two tracks:
 
 ## Manual Translations
 
-- [French (Brouillon)](/manual/translations/fr/)
-- [Spanish (Borrador)](/manual/translations/es/)
-- [German (Entwurf)](/manual/translations/de/)
+- [French Manual](/fr/manual/)
+- [Spanish Manual](/es/manual/)
+- [German Manual](/de/manual/)
 - [Translation Workflow & Contribution Rules](/manual/translations)
 
 ## Developer/Operator Path
