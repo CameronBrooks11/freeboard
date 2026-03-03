@@ -69,7 +69,7 @@ const assertSseEvent = async (url) => {
     }
   } catch (error) {
     if (timedOut && error?.name === "AbortError") {
-      throw new Error("SSE smoke check timed out");
+      throw new Error("SSE smoke check timed out", { cause: error });
     }
     throw error;
   } finally {
