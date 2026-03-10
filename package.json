@@ -1,7 +1,7 @@
 {
   "name": "freeboard",
   "title": "freeboard",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "engines": {
     "node": ">=24.13.1 <25",
     "npm": ">=11.10.0 <12"
@@ -84,6 +84,7 @@
     "clean": "rimraf packages/ui/dist docs/.vitepress/dist docs/auto",
     "clean:deps": "rimraf node_modules packages/ui/node_modules packages/api/node_modules packages/gateway/node_modules packages/shared/node_modules",
     "clean:all": "npm run clean && npm run clean:deps",
+    "clean:nuke": "npm run clean:all && rimraf package-lock.json",
     "reinstall": "npm run clean:deps && npm install",
     "docs:generate:api": "rimraf docs/auto/api && typedoc --options typedoc.json",
     "docs:generate:graphql": "npm run build:shared && tsx scripts/build-schema.mjs",
