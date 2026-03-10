@@ -1,7 +1,7 @@
 /**
  * @module index
  * Entry point for the Freeboard API server.
- *  - Establishes MongoDB connection
+ *  - Establishes configured data backend connection
  *  - Ensures default admin user creation
  *  - Sets DNS result order to IPv4 first to avoid IPv6 localhost issues
  *  - Sets up GraphQL Yoga server with SSE support
@@ -32,6 +32,10 @@ import { recordApiHttpRequest } from "./runtimeMetrics.js";
 import { deriveClientIp } from "./clientIp.js";
 import { hashLimiterKeyPart } from "./securityLimiter.js";
 import { dataStore } from "./data/index.js";
+import {
+  describePostgresConnectionTarget,
+  verifyPostgresConnectivity,
+} from "./db/postgres/client.js";
 
 import dns from "dns";
 
@@ -61,6 +65,40 @@ const connectToMongo = async () => {
       await new Promise<void>((resolve) => setTimeout(resolve, 2000));
     }
   }
+};
+
+const connectToPostgres = async () => {
+  let attempts = 0;
+  let connected = false;
+  while (!connected) {
+    attempts += 1;
+    try {
+      const health = await verifyPostgresConnectivity();
+      const target = describePostgresConnectionTarget() || "unknown target";
+      console.info(`PostgreSQL connected on ${target} (${health.durationMs}ms)`);
+      connected = true;
+    } catch (error) {
+      const errorMessage =
+        error && typeof error === "object" && "message" in error
+          ? (error as { message?: string }).message
+          : undefined;
+      console.error(`PostgreSQL connection attempt ${attempts} failed. Retrying in 2s...`);
+      console.error(errorMessage || error);
+      await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+    }
+  }
+};
+
+const connectToConfiguredDataBackend = async () => {
+  if (dataStore.backend === "mongo") {
+    await connectToMongo();
+    return;
+  }
+  if (dataStore.backend === "postgres") {
+    await connectToPostgres();
+    return;
+  }
+  throw new Error(`Unsupported DB backend '${String(dataStore.backend)}'`);
 };
 
 /**
@@ -444,7 +482,7 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
 
 const startServer = async () => {
   try {
-    await connectToMongo();
+    await connectToConfiguredDataBackend();
     await ensureAdminUser();
 
     // Start HTTP server on configured host and port

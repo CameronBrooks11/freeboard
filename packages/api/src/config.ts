@@ -124,6 +124,52 @@ const boundedInteger = (
   return normalized;
 };
 
+type DataBackend = "mongo" | "postgres";
+
+const normalizeDataBackend = (value: unknown): DataBackend | null => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (normalized === "mongo" || normalized === "postgres") {
+    return normalized;
+  }
+  return null;
+};
+
+const resolvePostgresUrl = (): string | null => {
+  const directUrl = String(process.env.DATABASE_URL || "").trim();
+  if (directUrl) {
+    return directUrl;
+  }
+  const freeboardUrl = String(process.env.FREEBOARD_POSTGRES_URL || "").trim();
+  if (freeboardUrl) {
+    return freeboardUrl;
+  }
+  return null;
+};
+
+const resolveConfiguredDataBackend = ({
+  explicitBackend,
+  hasMongoUrl,
+  hasPostgresUrl,
+}: {
+  explicitBackend: DataBackend | null;
+  hasMongoUrl: boolean;
+  hasPostgresUrl: boolean;
+}): DataBackend => {
+  if (explicitBackend) {
+    return explicitBackend;
+  }
+  if (hasMongoUrl && !hasPostgresUrl) {
+    return "mongo";
+  }
+  if (hasPostgresUrl && !hasMongoUrl) {
+    return "postgres";
+  }
+  // Preserve current default behavior until final backend cutover.
+  return "mongo";
+};
+
 const normalizeSecurityLimiterBackend = (
   value: unknown,
   fallback: "memory" | "mongo",
@@ -161,8 +207,22 @@ const normalizeLimiterNamespace = (value: unknown, fallback: string): string => 
 
 const environment = String(process.env.NODE_ENV || "development").toLowerCase();
 const isNonDevRuntime = isNonDevRuntimeEnv(environment);
+const explicitBackendRaw = String(process.env.DB_BACKEND || "")
+  .trim()
+  .toLowerCase();
+const explicitBackend = explicitBackendRaw ? normalizeDataBackend(explicitBackendRaw) : null;
+if (explicitBackendRaw && !explicitBackend) {
+  throw new Error("DB_BACKEND must be one of: mongo, postgres.");
+}
 const hasExplicitMongoUrl =
   typeof process.env.MONGO_URL === "string" && process.env.MONGO_URL.trim() !== "";
+const postgresUrl = resolvePostgresUrl();
+const hasExplicitPostgresUrl = Boolean(postgresUrl);
+const dbBackend = resolveConfiguredDataBackend({
+  explicitBackend,
+  hasMongoUrl: hasExplicitMongoUrl,
+  hasPostgresUrl: hasExplicitPostgresUrl,
+});
 
 const credentialPolicy = getCredentialPolicyHints();
 
@@ -195,7 +255,10 @@ const credentialEncryptionKey =
  * @typedef {Object} Config
  * @property {string} host              - Hostname for the API server.
  * @property {number} port              - Port the API server listens on.
+ * @property {"mongo"|"postgres"} dbBackend - Selected data backend.
  * @property {string} mongoUrl          - MongoDB connection URL.
+ * @property {string|null} postgresUrl  - PostgreSQL connection URL when configured.
+ * @property {number} postgresConnectTimeoutMs - PostgreSQL connection timeout.
  * @property {string} jwtSecret         - Secret key for signing JWTs.
  * @property {string} jwtTimeExpiration - Expiration duration for JWT tokens.
  * @property {number} userLimit         - Maximum number of users allowed (0 = unlimited).
@@ -229,7 +292,10 @@ const credentialEncryptionKey =
 export const config = Object.freeze({
   host: process.env.API_HOST || "0.0.0.0", // Bind on all interfaces by default
   port: num(process.env.PORT, 4001), // Port with sensible fallback
+  dbBackend,
   mongoUrl: process.env.MONGO_URL || "mongodb://127.0.0.1:27017/freeboard", // Local-only default for development/test
+  postgresUrl,
+  postgresConnectTimeoutMs: positiveInteger(process.env.POSTGRES_CONNECT_TIMEOUT_MS, 30000),
   jwtSecret: process.env.JWT_SECRET || "freeboard-dev-insecure-local-only",
   jwtTimeExpiration: process.env.JWT_TIME_EXPIRATION || "2h",
   userLimit: num(process.env.USER_LIMIT, 0),
@@ -322,8 +388,18 @@ if (isNonDevRuntime && isWeakSharedSecret(config.jwtSecret)) {
   );
 }
 
-if (isNonDevRuntime && !hasExplicitMongoUrl) {
+if (config.dbBackend === "postgres" && !config.postgresUrl) {
+  throw new Error("DB_BACKEND=postgres requires DATABASE_URL or FREEBOARD_POSTGRES_URL.");
+}
+
+if (isNonDevRuntime && config.dbBackend === "mongo" && !hasExplicitMongoUrl) {
   throw new Error("MONGO_URL must be explicitly configured for non-development runtime.");
+}
+
+if (isNonDevRuntime && config.dbBackend === "postgres" && !hasExplicitPostgresUrl) {
+  throw new Error(
+    "DATABASE_URL or FREEBOARD_POSTGRES_URL must be explicitly configured for non-development runtime.",
+  );
 }
 
 if (isNonDevRuntime && isWeakSharedSecret(config.jwtGatewaySecret)) {
@@ -344,8 +420,8 @@ if (isNonDevRuntime && isWeakCredentialEncryptionKey(process.env.CREDENTIAL_ENCR
   );
 }
 
-if (isNonDevRuntime && config.securityLimiterBackend !== "mongo") {
-  throw new Error("SECURITY_LIMITER_BACKEND must be set to 'mongo' in non-development runtime.");
+if (isNonDevRuntime && config.securityLimiterBackend === "memory") {
+  throw new Error("SECURITY_LIMITER_BACKEND must not be set to 'memory' in non-development runtime.");
 }
 
 if (config.createAdmin) {
