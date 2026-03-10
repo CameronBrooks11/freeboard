@@ -6,8 +6,8 @@
 import { spawn } from "node:child_process";
 
 const isWindows = process.platform === "win32";
-const npmCmd = "npm";
-const dockerCmd = "docker";
+const npmCmd = isWindows ? "npm.cmd" : "npm";
+const dockerCmd = isWindows ? "docker.exe" : "docker";
 
 const E2E_BASE_URL = process.env.E2E_BASE_URL || "http://127.0.0.1:5173";
 const E2E_API_URL = process.env.E2E_API_URL || "http://127.0.0.1:4001/graphql";
@@ -52,7 +52,6 @@ const run = (command, args, { env = process.env, inheritStdio = true } = {}) =>
       child = spawn(command, args, {
         stdio: inheritStdio ? "inherit" : "pipe",
         env,
-        shell: isWindows,
       });
     } catch (error) {
       reject(error);
@@ -73,7 +72,6 @@ const startProcess = (command, args, { env = process.env } = {}) => {
   const child = spawn(command, args, {
     stdio: "inherit",
     env,
-    shell: isWindows,
   });
   child.on("error", (error) => {
     console.error(`Failed to start process: ${command} ${args.join(" ")}`);

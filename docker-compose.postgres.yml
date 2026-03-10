@@ -1,13 +1,4 @@
 services:
-  freeboard-api:
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      - DB_BACKEND=postgres
-      - DATABASE_URL=${FREEBOARD_POSTGRES_URL:?Set FREEBOARD_POSTGRES_URL in .env for Postgres deployments}
-      - SECURITY_LIMITER_BACKEND=${SECURITY_LIMITER_BACKEND:-postgres}
-
   postgres:
     image: ${FREEBOARD_POSTGRES_IMAGE:-postgres:16}
     restart: unless-stopped
@@ -23,7 +14,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-freeboard}
     healthcheck:
-      test: ["CMD-SHELL", 'pg_isready -h 127.0.0.1 -p 5432 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      test:
+        ["CMD-SHELL", 'pg_isready -h 127.0.0.1 -p 5432 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
       interval: 5s
       timeout: 5s
       retries: 60

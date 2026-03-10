@@ -14,16 +14,16 @@ This runbook covers:
 
 ## Secret Inventory
 
-| Variable                                                    | Used by              | Purpose                                                  | Production requirement                     |
-| ----------------------------------------------------------- | -------------------- | -------------------------------------------------------- | ------------------------------------------ |
-| `JWT_SECRET`                                                | API                  | Signs user auth JWTs                                     | Required, strong value (>=32 chars)        |
-| `JWT_GATEWAY_SECRET`                                        | API + Gateway        | Signs/verifies datasource session tokens                 | Required, strong value (>=32 chars)        |
-| `GATEWAY_SERVICE_TOKEN`                                     | API + Gateway        | Auth for gateway internal introspection/revocation calls | Required, strong value (>=32 chars)        |
-| `CREDENTIAL_ENCRYPTION_KEY`                                 | API                  | Encrypts datasource credential profile secrets at rest   | Required, valid base64-encoded 32-byte key |
-| `ADMIN_PASSWORD`                                            | API bootstrap only   | One-time initial admin creation when `CREATE_ADMIN=true` | Bootstrap-only; disable after first login  |
-| `FREEBOARD_POSTGRES_URL`                                    | API (containerized)  | App DB connection string                                  | Required for containerized runtime         |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD`                       | Postgres container   | DB bootstrap account used for compose init                | Required for compose postgres init         |
-| `POSTGRES_DB`                                                | Postgres container   | Default database name                                     | Required for compose postgres init         |
+| Variable                              | Used by             | Purpose                                                  | Production requirement                     |
+| ------------------------------------- | ------------------- | -------------------------------------------------------- | ------------------------------------------ |
+| `JWT_SECRET`                          | API                 | Signs user auth JWTs                                     | Required, strong value (>=32 chars)        |
+| `JWT_GATEWAY_SECRET`                  | API + Gateway       | Signs/verifies datasource session tokens                 | Required, strong value (>=32 chars)        |
+| `GATEWAY_SERVICE_TOKEN`               | API + Gateway       | Auth for gateway internal introspection/revocation calls | Required, strong value (>=32 chars)        |
+| `CREDENTIAL_ENCRYPTION_KEY`           | API                 | Encrypts datasource credential profile secrets at rest   | Required, valid base64-encoded 32-byte key |
+| `ADMIN_PASSWORD`                      | API bootstrap only  | One-time initial admin creation when `CREATE_ADMIN=true` | Bootstrap-only; disable after first login  |
+| `FREEBOARD_POSTGRES_URL`              | API (containerized) | App DB connection string                                 | Required for containerized runtime         |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` | Postgres container  | DB bootstrap account used for compose init               | Required for compose postgres init         |
+| `POSTGRES_DB`                         | Postgres container  | Default database name                                    | Required for compose postgres init         |
 
 ## Env Precedence and Runtime Expectations
 

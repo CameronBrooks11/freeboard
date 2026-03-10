@@ -60,12 +60,11 @@ const resolveBackend = () => {
 };
 
 const resolvePostgresUrl = () => {
-  const databaseUrl = String(process.env.DATABASE_URL || process.env.FREEBOARD_POSTGRES_URL || "")
-    .trim();
+  const databaseUrl = String(
+    process.env.DATABASE_URL || process.env.FREEBOARD_POSTGRES_URL || "",
+  ).trim();
   if (!databaseUrl) {
-    throw new Error(
-      "DATABASE_URL or FREEBOARD_POSTGRES_URL is required when DB_BACKEND=postgres.",
-    );
+    throw new Error("DATABASE_URL or FREEBOARD_POSTGRES_URL is required when DB_BACKEND=postgres.");
   }
   return databaseUrl;
 };
@@ -123,7 +122,8 @@ const runPostgresReencryption = async ({ oldKey, newKey }) => {
 
 const runMongoReencryption = async ({ oldKey, newKey }) => {
   const { default: mongoose } = await import("mongoose");
-  const { default: CredentialProfile } = await import("../packages/api/src/models/CredentialProfile.ts");
+  const { default: CredentialProfile } =
+    await import("../packages/api/src/models/CredentialProfile.ts");
 
   const mongoUrl = String(process.env.MONGO_URL || "").trim();
   if (!mongoUrl) {

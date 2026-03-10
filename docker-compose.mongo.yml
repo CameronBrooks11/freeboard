@@ -1,15 +1,6 @@
 # Legacy compose override retained for archival/diagnostic use.
 # Active development and deployment paths are Postgres-first.
 services:
-  freeboard-api:
-    depends_on:
-      mongo:
-        condition: service_healthy
-    environment:
-      - DB_BACKEND=mongo
-      - MONGO_URL=${FREEBOARD_MONGO_URL:?Set FREEBOARD_MONGO_URL in .env for Mongo deployments}
-      - SECURITY_LIMITER_BACKEND=${SECURITY_LIMITER_BACKEND:-mongo}
-
   mongo:
     image: ${FREEBOARD_MONGO_IMAGE:-mongo:7.0}
     restart: unless-stopped

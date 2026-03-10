@@ -78,7 +78,9 @@ const main = () => {
   const resolvedEnv = mergeResolvedEnv();
   const strictMode = resolveStrictMode(process.argv.slice(2), resolvedEnv);
 
-  const explicitBackendRaw = String(resolvedEnv.DB_BACKEND || "").trim().toLowerCase();
+  const explicitBackendRaw = String(resolvedEnv.DB_BACKEND || "")
+    .trim()
+    .toLowerCase();
   const explicitBackend = explicitBackendRaw || null;
 
   const hasMongoUrl = hasConfiguredValue(resolvedEnv, mongoUrlKeys);
@@ -116,9 +118,7 @@ const main = () => {
   }
 
   if (!explicitBackend && !hasPostgresUrl) {
-    warnings.push(
-      "No DB_BACKEND is configured; defaulting to postgres for readiness checks.",
-    );
+    warnings.push("No DB_BACKEND is configured; defaulting to postgres for readiness checks.");
   }
 
   console.log(
