@@ -59,8 +59,9 @@ In private -> external (`link/public`) transitions, share tokens are rotated.
 
 - Full dev stack: `npm run dev`
 - Services only: `npm run dev:services`
-- Mongo only: `npm run dev:mongo:up`
-- Docker deploy: `docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d`
+- Postgres only: `npm run dev:postgres:up`
+- Mongo fallback: `npm run dev -- --backend=mongo`
+- Docker deploy (default): `docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d`
 - Quality gate: `npm run ci`
 
 ## Container image pinning

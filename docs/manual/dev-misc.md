@@ -144,7 +144,17 @@ Optional non-required deploy checks:
   - dependency PR merged or explicitly deferred with rationale in PR notes
   - failed audit workflow resolved or acknowledged with a bounded remediation plan
 
-## Mongo Dev Helpers
+## Database Dev Helpers
+
+Postgres-first helpers:
+
+- Start Postgres only: `npm run dev:postgres:up`
+- View Postgres status: `npm run dev:postgres:status`
+- Tail Postgres logs: `npm run dev:postgres:logs`
+- Stop Postgres: `npm run dev:postgres:down`
+- Reset Postgres data volume: `npm run dev:postgres:reset`
+
+Mongo fallback helpers:
 
 - Start Mongo only: `npm run dev:mongo:up`
 - View Mongo status: `npm run dev:mongo:status`

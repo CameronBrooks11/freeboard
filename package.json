@@ -10,6 +10,12 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:services": "npm run build:shared && concurrently --kill-others --names \"ui,api,gateway\" --prefix \"[{name}]\" \"npm run dev:ui\" \"npm run dev:raw --workspace=packages/api\" \"npm run dev:raw --workspace=packages/gateway\"",
+    "dev:postgres": "docker compose -f docker-compose.postgres.yml up --build",
+    "dev:postgres:up": "docker compose -f docker-compose.postgres.yml up -d --build --wait --wait-timeout 180",
+    "dev:postgres:status": "docker compose -f docker-compose.postgres.yml ps",
+    "dev:postgres:logs": "docker compose -f docker-compose.postgres.yml logs --tail 200 -f postgres",
+    "dev:postgres:down": "docker compose -f docker-compose.postgres.yml down --timeout 10",
+    "dev:postgres:reset": "docker compose -f docker-compose.postgres.yml down -v --remove-orphans --timeout 10",
     "dev:mongo": "docker compose -f docker-compose.mongo.yml up --build",
     "dev:mongo:up": "docker compose -f docker-compose.mongo.yml up -d --build --wait --wait-timeout 180",
     "dev:mongo:status": "docker compose -f docker-compose.mongo.yml ps",

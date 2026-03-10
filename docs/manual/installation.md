@@ -41,14 +41,20 @@ FREEBOARD_UI_IMAGE_TAG=latest
 FREEBOARD_API_IMAGE_TAG=latest
 FREEBOARD_GATEWAY_IMAGE_TAG=latest
 
-# Mongo for API
-FREEBOARD_MONGO_URL=mongodb://freeboard_app:replace-with-strong-app-password@freeboard-mongo:27017/freeboard
+# Postgres for API (default runtime)
+FREEBOARD_POSTGRES_URL=postgresql://postgres:replace-with-strong-password@postgres:5432/freeboard
 
-# Mongo init credentials (docker-compose.mongo.yml)
-MONGO_INITDB_ROOT_USERNAME=replace-root-user
-MONGO_INITDB_ROOT_PASSWORD=replace-with-strong-root-password
-MONGO_APP_USERNAME=freeboard_app
-MONGO_APP_PASSWORD=replace-with-strong-app-password
+# Postgres init credentials (docker-compose.postgres.yml)
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=replace-with-strong-postgres-password
+POSTGRES_DB=freeboard
+
+# Optional Mongo fallback profile
+# FREEBOARD_MONGO_URL=mongodb://freeboard_app:replace-with-strong-app-password@mongo:27017/freeboard
+# MONGO_INITDB_ROOT_USERNAME=replace-root-user
+# MONGO_INITDB_ROOT_PASSWORD=replace-with-strong-root-password
+# MONGO_APP_USERNAME=freeboard_app
+# MONGO_APP_PASSWORD=replace-with-strong-app-password
 
 # Gateway egress allowlist (required in non-development runtime)
 EGRESS_ALLOWED_HOSTS=api.open-meteo.com,api.coingecko.com
@@ -85,7 +91,7 @@ API env precedence:
 ## Run with Docker Compose
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
 ```
 
 Pinning examples:
@@ -123,7 +129,7 @@ Services:
 - Keep `SECURITY_LIMITER_BACKEND` aligned with `DB_BACKEND` and `SECURITY_LIMITER_FAILURE_MODE=fail-closed` in non-dev runtime
 - Keep `REALTIME_LIMITER_FAILURE_MODE=fail-closed` unless degraded-mode fail-open is intentionally approved
 - Keep `CREATE_ADMIN=false` after bootstrap
-- Use non-default Mongo credentials
+- Use non-default Postgres credentials
 - Follow [Secrets Operations Runbook](/manual/secrets-operations) for setup/rotation/incident workflow
 
 ## Security Rollout Runbook

@@ -43,6 +43,7 @@ jobs:
           E2E_BASE_URL: http://127.0.0.1:5173
           E2E_API_URL: http://127.0.0.1:4001/graphql
           E2E_GATEWAY_URL: http://127.0.0.1:8001
+          E2E_DB_BACKEND: postgres
         run: npm run test:e2e:smoke
 
       - name: Upload Playwright artifacts
