@@ -5,15 +5,15 @@ Freeboard is a monorepo with three runtime services and one shared data store.
 ## Services
 
 - UI (`packages/ui`): Vue 3 + Vite SPA
-- API (`packages/api`): GraphQL Yoga + Mongoose
+- API (`packages/api`): GraphQL Yoga + datastore repositories
 - Gateway (`packages/gateway`): datasource execution boundary for HTTP + realtime protocols
-- MongoDB: persistence for users and dashboards
+- PostgreSQL: persistence for users and dashboards
 
 ## Runtime Data Flow
 
 1. UI authenticates with API (`/graphql`) and stores JWT token in local storage.
 2. UI queries/mutates dashboards through GraphQL.
-3. API persists dashboards/users in MongoDB.
+3. API persists dashboards/users in PostgreSQL.
 4. UI mints short-lived datasource session tokens from API.
 5. Datasource runtimes execute through gateway:
    - HTTP polling via `POST /gateway/http/fetch`
@@ -88,17 +88,17 @@ See: [Widget Runtime](/manual/widget-runtime)
 - UI: `5173`
 - API: `4001`
 - Gateway: `8001`
-- MongoDB: `27017`
+- PostgreSQL: `5432`
 
 ## Configuration
 
 Core env values:
 
-- `MONGO_URL` (API local development)
-- `FREEBOARD_MONGO_URL` (containerized API)
+- `DB_BACKEND` (`postgres` for release path)
+- `DATABASE_URL` (API local development)
+- `FREEBOARD_POSTGRES_URL` (containerized API)
 - `PORT` (API/gateway workspace process port)
-- `FREEBOARD_MONGO_IMAGE` (Mongo image tag for dev compose)
-- Raspberry Pi note for `FREEBOARD_MONGO_IMAGE`: [Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)
+- `FREEBOARD_POSTGRES_IMAGE` (Postgres image tag for dev compose)
 - `FREEBOARD_UI_IMAGE_TAG` / `FREEBOARD_API_IMAGE_TAG` / `FREEBOARD_GATEWAY_IMAGE_TAG` (runtime service image tag pinning)
 - `FREEBOARD_STATIC` (static UI build mode; only enable for static deploy builds)
 - `FREEBOARD_RUNTIME_ENV` (`production` for containerized runtime defaults)
@@ -120,10 +120,10 @@ Security control deployment/rollback workflow is centralized in [Security Contro
 - API and gateway are hardened for non-development behavior when `NODE_ENV` is not `development`/`test`.
 - Container artifacts default to production mode.
 - Docker Compose startup is fail-fast for missing critical env:
-  - API requires `FREEBOARD_MONGO_URL`
+  - API requires `FREEBOARD_POSTGRES_URL`
   - API requires `JWT_SECRET`
   - API requires `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`, `CREDENTIAL_ENCRYPTION_KEY`
-  - API security limiter defaults to Mongo-backed shared state in non-dev runtime
+  - API security limiter defaults to Postgres-backed shared state in non-dev runtime
   - Gateway requires `EGRESS_ALLOWED_HOSTS`, `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`
   - Gateway realtime policy defaults to enabled, with protocol toggles and per-IP/per-dashboard limits
 

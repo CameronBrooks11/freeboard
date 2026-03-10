@@ -8,34 +8,21 @@ import { spawn } from "node:child_process";
 const isWindows = process.platform === "win32";
 const npmCmd = "npm";
 const dockerCmd = "docker";
-const SUPPORTED_BACKENDS = new Set(["mongo", "postgres"]);
 
 const E2E_BASE_URL = process.env.E2E_BASE_URL || "http://127.0.0.1:5173";
 const E2E_API_URL = process.env.E2E_API_URL || "http://127.0.0.1:4001/graphql";
 const E2E_GATEWAY_URL = process.env.E2E_GATEWAY_URL || "http://127.0.0.1:8001";
 const E2E_STARTUP_TIMEOUT_MS = Number(process.env.E2E_STARTUP_TIMEOUT_MS || 180000);
-const KEEP_DB_UP =
-  String(process.env.E2E_KEEP_DB_UP || process.env.E2E_KEEP_MONGO_UP || "").toLowerCase() ===
-  "true";
-
-const normalizeBackend = (value) => {
-  const normalized = String(value || "")
-    .trim()
-    .toLowerCase();
-  if (SUPPORTED_BACKENDS.has(normalized)) {
-    return normalized;
-  }
-  return null;
-};
-
-const requestedBackendRaw = String(process.env.E2E_DB_BACKEND || process.env.DB_BACKEND || "").trim();
-const normalizedRequestedBackend = normalizeBackend(requestedBackendRaw);
-if (requestedBackendRaw && !normalizedRequestedBackend) {
-  throw new Error("E2E_DB_BACKEND/DB_BACKEND must be one of: postgres, mongo.");
+const KEEP_DB_UP = String(process.env.E2E_KEEP_DB_UP || "").toLowerCase() === "true";
+const composeFile = "docker-compose.postgres.yml";
+const requestedBackend = String(process.env.E2E_DB_BACKEND || process.env.DB_BACKEND || "")
+  .trim()
+  .toLowerCase();
+if (requestedBackend && requestedBackend !== "postgres") {
+  throw new Error(
+    `E2E_DB_BACKEND/DB_BACKEND='${requestedBackend}' is unsupported for scripts/e2e-smoke.mjs. Use postgres.`,
+  );
 }
-const E2E_DB_BACKEND = normalizedRequestedBackend || "postgres";
-const composeFile =
-  E2E_DB_BACKEND === "postgres" ? "docker-compose.postgres.yml" : "docker-compose.mongo.yml";
 
 const resolveSecurityLimiterBackend = () => {
   const configured = String(process.env.SECURITY_LIMITER_BACKEND || "")
@@ -44,15 +31,15 @@ const resolveSecurityLimiterBackend = () => {
   if (configured === "memory") {
     return "memory";
   }
-  if (configured === "mongo" || configured === "postgres") {
-    return configured === E2E_DB_BACKEND ? configured : E2E_DB_BACKEND;
+  if (configured === "postgres") {
+    return "postgres";
   }
-  return E2E_DB_BACKEND;
+  return "postgres";
 };
 
 const e2eRuntimeEnv = Object.freeze({
   ...process.env,
-  DB_BACKEND: E2E_DB_BACKEND,
+  DB_BACKEND: "postgres",
   SECURITY_LIMITER_BACKEND: resolveSecurityLimiterBackend(),
 });
 
@@ -184,9 +171,7 @@ const main = async () => {
     "180",
   ]);
 
-  if (E2E_DB_BACKEND === "postgres") {
-    await run(npmCmd, ["run", "db:migrate"], { env: e2eRuntimeEnv });
-  }
+  await run(npmCmd, ["run", "db:migrate"], { env: e2eRuntimeEnv });
 
   startProcess(npmCmd, ["run", "dev:api"], { env: e2eRuntimeEnv });
   startProcess(npmCmd, ["run", "dev:gateway"], { env: e2eRuntimeEnv });

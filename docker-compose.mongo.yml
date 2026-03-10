@@ -1,3 +1,5 @@
+# Legacy compose override retained for archival/diagnostic use.
+# Active development and deployment paths are Postgres-first.
 services:
   freeboard-api:
     depends_on:

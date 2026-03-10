@@ -16,8 +16,7 @@ services:
     container_name: freeboard-api
     image: ghcr.io/cameronbrooks11/freeboard-api:${FREEBOARD_API_IMAGE_TAG:-latest}
     environment:
-      - DB_BACKEND=${DB_BACKEND:-postgres}
-      - MONGO_URL=${FREEBOARD_MONGO_URL:-}
+      - DB_BACKEND=postgres
       - DATABASE_URL=${FREEBOARD_POSTGRES_URL:-}
       - NODE_ENV=${FREEBOARD_RUNTIME_ENV:-production}
       - API_TRUST_PROXY_HOPS=${API_TRUST_PROXY_HOPS:-0}

@@ -266,7 +266,7 @@ const rootManualSidebar = [
       { text: "Security Controls Rollout", link: "/manual/security-controls-rollout" },
       { text: "Credential Key Rotation", link: "/manual/credential-key-rotation" },
       { text: "Ansible", link: "/manual/ansible" },
-      { text: "Raspberry Pi MongoDB", link: "/manual/raspberry-pi-mongodb" },
+      { text: "Legacy: Raspberry Pi MongoDB", link: "/manual/raspberry-pi-mongodb" },
       { text: "Docs Site Setup", link: "/manual/docs-site-setup" },
       { text: "Development Misc", link: "/manual/dev-misc" },
       { text: "TypeScript Standards", link: "/manual/typescript-standards" },

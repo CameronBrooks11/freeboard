@@ -49,13 +49,6 @@ POSTGRES_USER=postgres
 POSTGRES_PASSWORD=replace-with-strong-postgres-password
 POSTGRES_DB=freeboard
 
-# Optional Mongo fallback profile
-# FREEBOARD_MONGO_URL=mongodb://freeboard_app:replace-with-strong-app-password@mongo:27017/freeboard
-# MONGO_INITDB_ROOT_USERNAME=replace-root-user
-# MONGO_INITDB_ROOT_PASSWORD=replace-with-strong-root-password
-# MONGO_APP_USERNAME=freeboard_app
-# MONGO_APP_PASSWORD=replace-with-strong-app-password
-
 # Gateway egress allowlist (required in non-development runtime)
 EGRESS_ALLOWED_HOSTS=api.open-meteo.com,api.coingecko.com
 ```

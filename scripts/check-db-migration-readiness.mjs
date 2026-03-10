@@ -7,7 +7,7 @@ const LOG_PREFIX = "[check-db-migration-readiness]";
 const projectRoot = process.cwd();
 const envFiles = [".env.dev", ".env"];
 
-const allowedBackends = new Set(["mongo", "postgres"]);
+const allowedBackends = new Set(["postgres"]);
 const mongoUrlKeys = ["MONGO_URL", "FREEBOARD_MONGO_URL"];
 const postgresUrlKeys = ["DATABASE_URL", "FREEBOARD_POSTGRES_URL"];
 
@@ -72,30 +72,13 @@ const mergeResolvedEnv = () => {
 const hasConfiguredValue = (env, keys) =>
   keys.some((key) => typeof env[key] === "string" && String(env[key]).trim() !== "");
 
-const resolveBackend = ({ explicitBackend, hasMongoUrl, hasPostgresUrl }) => {
-  if (explicitBackend) {
-    return explicitBackend;
-  }
-  if (hasMongoUrl && !hasPostgresUrl) {
-    return "mongo";
-  }
-  if (hasPostgresUrl && !hasMongoUrl) {
-    return "postgres";
-  }
-  if (hasMongoUrl && hasPostgresUrl) {
-    return "ambiguous";
-  }
-  // Keep current repository default until backend cutover.
-  return "mongo";
-};
+const resolveBackend = (explicitBackend) => explicitBackend || "postgres";
 
 const main = () => {
   const resolvedEnv = mergeResolvedEnv();
   const strictMode = resolveStrictMode(process.argv.slice(2), resolvedEnv);
 
-  const explicitBackendRaw = String(resolvedEnv.DB_BACKEND || "")
-    .trim()
-    .toLowerCase();
+  const explicitBackendRaw = String(resolvedEnv.DB_BACKEND || "").trim().toLowerCase();
   const explicitBackend = explicitBackendRaw || null;
 
   const hasMongoUrl = hasConfiguredValue(resolvedEnv, mongoUrlKeys);
@@ -105,55 +88,36 @@ const main = () => {
   const warnings = [];
 
   if (explicitBackend && !allowedBackends.has(explicitBackend)) {
-    errors.push(`DB_BACKEND='${explicitBackendRaw}' is invalid. Expected one of: mongo, postgres.`);
+    errors.push(`DB_BACKEND='${explicitBackendRaw}' is invalid. Expected: postgres.`);
   }
 
-  const backend = resolveBackend({
-    explicitBackend,
-    hasMongoUrl,
-    hasPostgresUrl,
-  });
-
-  if (backend === "ambiguous") {
-    errors.push(
-      "Both Mongo and Postgres connection URLs are configured without DB_BACKEND. Set DB_BACKEND explicitly.",
-    );
-  }
+  const backend = resolveBackend(explicitBackend);
 
   if (strictMode && !explicitBackend) {
     errors.push("Strict mode requires explicit DB_BACKEND to avoid implicit defaults.");
   }
 
-  if (backend === "mongo") {
-    if (strictMode && !hasMongoUrl) {
-      errors.push(
-        `Backend is 'mongo' but no connection URL is configured. Set one of: ${mongoUrlKeys.join(", ")}.`,
-      );
-    }
-    if (!strictMode && hasPostgresUrl && !hasMongoUrl) {
-      errors.push(
-        `Detected Postgres URL(s) but resolved backend is 'mongo'. Set DB_BACKEND=postgres or configure ${mongoUrlKeys[0]}.`,
-      );
-    }
-  }
-
-  if (backend === "postgres") {
-    if (!hasPostgresUrl) {
-      errors.push(
-        `Backend is 'postgres' but no connection URL is configured. Set one of: ${postgresUrlKeys.join(", ")}.`,
-      );
-    }
-  }
-
-  if (explicitBackend && hasMongoUrl && hasPostgresUrl) {
-    warnings.push(
-      "Both Mongo and Postgres URLs are configured. This is acceptable during migration, but keep DB_BACKEND explicit.",
+  if (!hasPostgresUrl) {
+    errors.push(
+      `Postgres runtime requires a connection URL. Set one of: ${postgresUrlKeys.join(", ")}.`,
     );
   }
 
-  if (!explicitBackend && !hasMongoUrl && !hasPostgresUrl) {
+  if (hasMongoUrl && hasPostgresUrl) {
     warnings.push(
-      "No DB connection URL is configured in local env files or process env. Using legacy default backend inference ('mongo').",
+      "Both Mongo and Postgres URLs are configured. Mongo URLs are ignored in active runtime paths.",
+    );
+  }
+
+  if (hasMongoUrl && !hasPostgresUrl) {
+    warnings.push(
+      "Mongo URLs are configured without Postgres URL. Active runtime paths are Postgres-only and will fail until Postgres URL is set.",
+    );
+  }
+
+  if (!explicitBackend && !hasPostgresUrl) {
+    warnings.push(
+      "No DB_BACKEND is configured; defaulting to postgres for readiness checks.",
     );
   }
 

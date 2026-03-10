@@ -89,7 +89,7 @@ Open:
 
 - `.env.dev`: minimal local development configuration (copy to `.env` to start quickly)
 - `.env.example`: full variable reference and defaults
-- `.env.pi`: Raspberry Pi-focused overrides (including legacy Mongo fallback image pin guidance)
+- `.env.pi`: legacy Raspberry Pi Mongo fallback overrides (archival only)
 
 API env precedence:
 
@@ -119,13 +119,6 @@ npm run dev:postgres:down
 npm run dev:postgres:reset
 ```
 
-Mongo fallback commands:
-
-```bash
-npm run dev -- --backend=mongo
-npm run dev:mongo:up
-```
-
 ### Containerized runtime (Compose)
 
 ```bash
@@ -143,14 +136,6 @@ Minimum required `.env` values before shared/staging/production use:
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
 - `POSTGRES_DB`
-
-Mongo fallback profile additionally requires:
-
-- `FREEBOARD_MONGO_URL`
-- `MONGO_INITDB_ROOT_USERNAME`
-- `MONGO_INITDB_ROOT_PASSWORD`
-- `MONGO_APP_USERNAME`
-- `MONGO_APP_PASSWORD`
 
 Optional image pinning:
 
@@ -273,10 +258,9 @@ Rollback:
 ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/rollback.yml
 ```
 
-Raspberry Pi MongoDB guidance:
+Legacy Mongo notes (archival only):
 
 - `docs/manual/raspberry-pi-mongodb.md`
-- `docs/manual/ansible.md` (Pattern A vs Pattern B details)
 
 ## Acknowledgement
 

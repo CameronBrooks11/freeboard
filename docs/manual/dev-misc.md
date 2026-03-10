@@ -29,7 +29,7 @@
 - Stop realtime fixture stack: `npm run demo:realtime:down`
 - Realtime fixture smoke test: `npm run demo:realtime:smoke`
 - Realtime integration loop (up + smoke + down): `npm run test:realtime:integration`
-- Browser E2E smoke flow (bootstraps mongo + ui/api/gateway + Playwright): `npm run test:e2e:smoke`
+- Browser E2E smoke flow (bootstraps postgres + ui/api/gateway + Playwright): `npm run test:e2e:smoke`
 - Production dependency audit: `npm run security:audit:prod`
 - Full dependency audit (including dev/build tooling): `npm run security:audit:all`
 
@@ -154,18 +154,9 @@ Postgres-first helpers:
 - Stop Postgres: `npm run dev:postgres:down`
 - Reset Postgres data volume: `npm run dev:postgres:reset`
 
-Mongo fallback helpers:
-
-- Start Mongo only: `npm run dev:mongo:up`
-- View Mongo status: `npm run dev:mongo:status`
-- Tail Mongo logs: `npm run dev:mongo:logs`
-- Stop Mongo: `npm run dev:mongo:down`
-- Reset Mongo data volume: `npm run dev:mongo:reset`
-
 Raspberry Pi note:
 
-- Use `.env.pi` as your compose override baseline when needed.
-- Reference support/risk details in [Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb).
+- Use `.env.pi` as your player/kiosk override baseline when needed.
 
 ## Quick Size Snapshot (`cloc`)
 

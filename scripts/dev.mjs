@@ -11,44 +11,10 @@ const npmExecPath = process.env.npm_execpath;
 const npmNodeExecPath = process.env.npm_node_execpath || process.execPath;
 const HELP_FLAGS = new Set(["--help", "-h"]);
 const LOG_PREFIX = "[dev]";
-const SUPPORTED_BACKENDS = new Set(["mongo", "postgres"]);
-
-const normalizeBackend = (value) => {
-  const normalized = String(value || "")
-    .trim()
-    .toLowerCase();
-  if (SUPPORTED_BACKENDS.has(normalized)) {
-    return normalized;
-  }
-  return null;
-};
-
-const resolveBackend = () => {
-  const backendArg = process.argv.find((arg) => arg.startsWith("--backend="));
-  if (backendArg) {
-    const requested = backendArg.slice("--backend=".length);
-    const normalized = normalizeBackend(requested);
-    if (!normalized) {
-      console.error(`Unsupported backend '${requested}'. Use --backend=postgres or --backend=mongo.`);
-      process.exit(1);
-    }
-    return normalized;
-  }
-
-  const envBackend = normalizeBackend(process.env.DEV_DB_BACKEND || process.env.DB_BACKEND);
-  if (envBackend) {
-    return envBackend;
-  }
-
-  return "postgres";
-};
-
-const selectedBackend = resolveBackend();
-const composeFile =
-  selectedBackend === "postgres" ? "docker-compose.postgres.yml" : "docker-compose.mongo.yml";
+const composeFile = "docker-compose.postgres.yml";
 const composeArgs = ["compose", "-f", composeFile];
-const dbServiceName = selectedBackend === "postgres" ? "postgres" : "mongo";
-const dbLabel = selectedBackend === "postgres" ? "Postgres" : "Mongo";
+const dbServiceName = "postgres";
+const dbLabel = "Postgres";
 
 const resolveSecurityLimiterBackend = () => {
   const configured = String(process.env.SECURITY_LIMITER_BACKEND || "")
@@ -58,15 +24,15 @@ const resolveSecurityLimiterBackend = () => {
   if (configured === "memory") {
     return "memory";
   }
-  if (configured === "mongo" || configured === "postgres") {
-    return configured === selectedBackend ? configured : selectedBackend;
+  if (configured === "postgres") {
+    return "postgres";
   }
-  return selectedBackend;
+  return "postgres";
 };
 
 const devRuntimeEnv = Object.freeze({
   ...process.env,
-  DB_BACKEND: selectedBackend,
+  DB_BACKEND: "postgres",
   SECURITY_LIMITER_BACKEND: resolveSecurityLimiterBackend(),
 });
 
@@ -75,18 +41,35 @@ let isShuttingDown = false;
 
 const printUsage = () => {
   console.log("Usage: npm run dev");
-  console.log("       npm run dev -- --backend=postgres");
-  console.log("       npm run dev -- --backend=mongo");
   console.log("");
-  console.log(
-    "Starts Postgres (default) or Mongo via docker compose, then starts UI/API/Gateway dev services.",
-  );
-  console.log("On shutdown, dev services stop and the selected database container remains running.");
+  console.log("Starts Postgres via docker compose, runs migrations, then starts UI/API/Gateway.");
+  console.log("On shutdown, dev services stop and the database container remains running.");
 };
 
 if (process.argv.some((arg) => HELP_FLAGS.has(arg))) {
   printUsage();
   process.exit(0);
+}
+
+const backendArg = process.argv.find((arg) => arg.startsWith("--backend="));
+if (backendArg) {
+  const requestedBackend = backendArg.slice("--backend=".length).trim().toLowerCase();
+  if (requestedBackend !== "postgres") {
+    console.error(
+      "Mongo runtime bootstrap is deprecated. Use Postgres-only `npm run dev` flow for active development.",
+    );
+    process.exit(1);
+  }
+}
+
+const envBackend = String(process.env.DEV_DB_BACKEND || process.env.DB_BACKEND || "")
+  .trim()
+  .toLowerCase();
+if (envBackend && envBackend !== "postgres") {
+  console.error(
+    `DEV_DB_BACKEND/DB_BACKEND='${envBackend}' is unsupported for scripts/dev.mjs. Use postgres.`,
+  );
+  process.exit(1);
 }
 
 const getNpmRunCommand = (scriptName) => {
@@ -194,8 +177,8 @@ const shutdown = async (exitCode) => {
 
   console.log("");
   console.log(`${dbLabel} container is left running for faster iteration.`);
-  console.log(`Use \`npm run dev:${selectedBackend}:logs\` to inspect ${dbLabel} logs.`);
-  console.log(`Use \`npm run dev:${selectedBackend}:down\` when done.`);
+  console.log(`Use \`npm run dev:postgres:logs\` to inspect ${dbLabel} logs.`);
+  console.log("Use `npm run dev:postgres:down` when done.");
   process.exit(exitCode);
 };
 
@@ -226,18 +209,16 @@ const main = async () => {
     process.exit(dbUpCode);
   }
 
-  if (selectedBackend === "postgres") {
-    console.log("Running PostgreSQL migrations...");
-    const npmRunMigrate = getNpmRunCommand("db:migrate");
-    const migrateCode = await run(npmRunMigrate.command, npmRunMigrate.args, {
-      env: devRuntimeEnv,
-    });
-    if (migrateCode !== 0) {
-      console.error("");
-      console.error("PostgreSQL migrations failed. Recent Postgres logs:");
-      await run(dockerCommand, [...composeArgs, "logs", "--tail", "200", dbServiceName]);
-      process.exit(migrateCode);
-    }
+  console.log("Running PostgreSQL migrations...");
+  const npmRunMigrate = getNpmRunCommand("db:migrate");
+  const migrateCode = await run(npmRunMigrate.command, npmRunMigrate.args, {
+    env: devRuntimeEnv,
+  });
+  if (migrateCode !== 0) {
+    console.error("");
+    console.error("PostgreSQL migrations failed. Recent Postgres logs:");
+    await run(dockerCommand, [...composeArgs, "logs", "--tail", "200", dbServiceName]);
+    process.exit(migrateCode);
   }
 
   console.log("");
@@ -245,11 +226,7 @@ const main = async () => {
   console.log("- UI:    http://localhost:5173/");
   console.log("- API:   http://127.0.0.1:4001/graphql");
   console.log("- Gateway: http://127.0.0.1:8001/");
-  if (selectedBackend === "postgres") {
-    console.log("- Postgres: postgresql://127.0.0.1:5432/freeboard (credentials from .env)");
-  } else {
-    console.log("- Mongo: mongodb://127.0.0.1:27017/freeboard (credentials from .env)");
-  }
+  console.log("- Postgres: postgresql://127.0.0.1:5432/freeboard (credentials from .env)");
   console.log("");
 
   const npmRunDevServices = getNpmRunCommand("dev:services");

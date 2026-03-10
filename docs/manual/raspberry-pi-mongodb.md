@@ -1,6 +1,8 @@
-# Raspberry Pi MongoDB Guidance
+# Legacy: Raspberry Pi MongoDB Guidance
 
 Last reviewed: February 16, 2026
+
+This page is retained as archival guidance only. MongoDB is not part of the active Freeboard release runtime path.
 
 ## Why This Exists
 

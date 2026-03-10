@@ -8,7 +8,7 @@ This automation is designed for production-safe operation:
 
 - explicit profile selection
 - fail-fast preflight checks
-- optional high-risk roles (boot tuning, runtime, Mongo preload)
+- optional high-risk roles (boot tuning, runtime, legacy Mongo preload)
 - backup/rollback path for managed system files
 
 ## Supported targets
@@ -27,7 +27,7 @@ Roles:
 - `kiosk_display`: X11 + Chromium dependencies/config
 - `kiosk_player`: `player.sh` deployment + `/etc/freeboard/kiosk.env` + `freeboard-kiosk.service`
 - `container_runtime` (optional): Docker install
-- `mongo_preload` (optional): ARM Mongo image preload
+- `mongo_preload` (legacy optional): ARM Mongo image preload (not part of release runtime path)
 - `kiosk_boot_tuning` (optional): splash and boot tuning
 
 Rollback playbook: `ansible/rollback.yml`
@@ -63,7 +63,7 @@ Commonly overridden:
 
 If the same appliance host also runs the API/gateway compose stack, keep runtime limiter defaults aligned with production hardening:
 
-- `SECURITY_LIMITER_BACKEND` must match `DB_BACKEND` (for example `mongo` or `postgres`)
+- `SECURITY_LIMITER_BACKEND` must match `DB_BACKEND` (`postgres` in release runtime)
 - `SECURITY_LIMITER_FAILURE_MODE=fail-closed`
 - `REALTIME_LIMITER_FAILURE_MODE=fail-closed`
 
@@ -181,13 +181,13 @@ The role installs:
 - `FREEBOARD_URL_CHECK_INTERVAL_SECONDS`
 - `FREEBOARD_URL_CHECK_MAX_ATTEMPTS`
 
-## Raspberry Pi Mongo preload note
+## Legacy Raspberry Pi Mongo preload note
 
 If you enable `mongo_preload`, this playbook uses the pinned community `themattman` Raspberry Pi Mongo release configured in `ansible/vars.yml`.
 
 For support tradeoffs, upgrade workflow, and links to upstream references, see:
 
-- [Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)
+- [Legacy: Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)
 
 ## Rollback
 

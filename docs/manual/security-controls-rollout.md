@@ -19,7 +19,6 @@ Use this runbook for security-control deployments and incident rollback. It keep
   - `API_TRUST_PROXY_HOPS=<n>`
   - `REALTIME_TRUST_PROXY_HOPS=<n>`
 - In non-dev runtime, API security limiter backend must match the configured datastore backend:
-  - `DB_BACKEND=mongo` -> `SECURITY_LIMITER_BACKEND=mongo`
   - `DB_BACKEND=postgres` -> `SECURITY_LIMITER_BACKEND=postgres`
 - Failure-mode defaults for non-dev runtime:
   - `SECURITY_LIMITER_FAILURE_MODE=fail-closed`
