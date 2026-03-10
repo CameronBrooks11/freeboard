@@ -3,20 +3,12 @@
  * Helper functions for recording and querying share-token revocation feed events.
  */
 
-import mongoose from "mongoose";
 import { dataStore } from "./data/index.js";
+import type { ShareTokenRevocationEventRecord } from "./data/contracts.js";
 
 type CursorPayload = {
   createdAtMs: number;
   eventId: string;
-};
-
-type FeedEventLike = {
-  _id: unknown;
-  dashboardId?: unknown;
-  shareTokenVersion?: unknown;
-  revokedAt?: Date | string | number;
-  createdAt?: Date | string | number;
 };
 
 const encodeCursor = (payload: CursorPayload): string =>
@@ -40,19 +32,16 @@ const decodeCursor = (cursor: unknown): CursorPayload | null => {
   }
 };
 
-const toEventPayload = (eventDoc: FeedEventLike) => ({
-  eventId: String(eventDoc._id),
+const toEventPayload = (eventDoc: ShareTokenRevocationEventRecord) => ({
+  eventId: String(eventDoc.eventId || ""),
   dashboardId: String(eventDoc.dashboardId || ""),
   shareTokenVersion: Math.max(0, Math.floor(Number(eventDoc.shareTokenVersion) || 0)),
-  revokedAt:
-    eventDoc.revokedAt instanceof Date
-      ? eventDoc.revokedAt.toISOString()
-      : new Date(eventDoc.revokedAt || Date.now()).toISOString(),
+  revokedAt: new Date(eventDoc.revokedAt || Date.now()).toISOString(),
 });
 
-const toCursorPayload = (eventDoc: FeedEventLike): CursorPayload => ({
+const toCursorPayload = (eventDoc: ShareTokenRevocationEventRecord): CursorPayload => ({
   createdAtMs: new Date(eventDoc.createdAt || eventDoc.revokedAt || Date.now()).getTime(),
-  eventId: String(eventDoc._id),
+  eventId: String(eventDoc.eventId || ""),
 });
 
 /**
@@ -76,18 +65,17 @@ export const recordShareTokenRevocationEvent = async ({
   }
 
   const normalizedVersion = Math.max(0, Math.floor(Number(shareTokenVersion) || 0));
-  const readyState =
-    dataStore.models.ShareTokenRevocationEvent?.db?.readyState ?? mongoose.connection?.readyState;
-  if (readyState !== 1) {
+  const repositoryReady = await Promise.resolve(dataStore.repositories.shareTokenRevocationFeed.isReady());
+  if (!repositoryReady) {
     return;
   }
 
   try {
-    await new dataStore.models.ShareTokenRevocationEvent({
+    await dataStore.repositories.shareTokenRevocationFeed.insertEvent({
       dashboardId: normalizedDashboardId,
       shareTokenVersion: normalizedVersion,
       revokedAt: new Date(revokedAt),
-    }).save();
+    });
   } catch (error) {
     const errorMessage =
       error && typeof error === "object" && "message" in error
@@ -118,38 +106,27 @@ export const queryShareTokenRevocationFeed = async ({
   const decodedCursor = decodeCursor(sinceCursor);
 
   let cursorExpired = false;
-  let cursorFilter = {};
+  let cursorFilter: { createdAt: Date; eventId: string } | null = null;
   if (decodedCursor) {
     const cursorDate = new Date(decodedCursor.createdAtMs);
     if (cursorDate < retentionCutoff) {
       cursorExpired = true;
     } else {
-      const cursorObjectId = mongoose.Types.ObjectId.isValid(decodedCursor.eventId)
-        ? new mongoose.Types.ObjectId(decodedCursor.eventId)
-        : null;
-      cursorFilter = cursorObjectId
-        ? {
-            $or: [
-              { createdAt: { $gt: cursorDate } },
-              { createdAt: cursorDate, _id: { $gt: cursorObjectId } },
-            ],
-          }
-        : {
-            createdAt: { $gt: cursorDate },
-          };
+      cursorFilter = {
+        createdAt: cursorDate,
+        eventId: decodedCursor.eventId,
+      };
     }
   } else if (sinceCursor) {
     // Invalid cursor payload is treated as expired and forces consumer fallback path.
     cursorExpired = true;
   }
 
-  const events = await dataStore.models.ShareTokenRevocationEvent.find({
-    revokedAt: { $gte: retentionCutoff },
-    ...(cursorExpired ? {} : cursorFilter),
-  })
-    .sort({ createdAt: 1, _id: 1 })
-    .limit(safeLimit)
-    .lean();
+  const events = await dataStore.repositories.shareTokenRevocationFeed.queryEvents({
+    retentionCutoff,
+    cursor: cursorExpired ? null : cursorFilter,
+    limit: safeLimit,
+  });
 
   let nextCursor = null;
   if (events.length > 0) {

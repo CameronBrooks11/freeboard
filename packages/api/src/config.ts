@@ -172,12 +172,12 @@ const resolveConfiguredDataBackend = ({
 
 const normalizeSecurityLimiterBackend = (
   value: unknown,
-  fallback: "memory" | "mongo",
-): "memory" | "mongo" => {
+  fallback: "memory" | "mongo" | "postgres",
+): "memory" | "mongo" | "postgres" => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
-  if (normalized === "memory" || normalized === "mongo") {
+  if (normalized === "memory" || normalized === "mongo" || normalized === "postgres") {
     return normalized;
   }
   return fallback;
@@ -276,7 +276,7 @@ const credentialEncryptionKey =
  * @property {number} authLoginWindowSeconds - Rolling window for failed login attempts.
  * @property {number} authLoginLockSeconds - Temporary lockout duration after threshold is reached.
  * @property {number} apiTrustProxyHops - Trusted proxy hops for deriving client IP from X-Forwarded-For.
- * @property {"memory"|"mongo"} securityLimiterBackend - Backing store for security limiter state.
+ * @property {"memory"|"mongo"|"postgres"} securityLimiterBackend - Backing store for security limiter state.
  * @property {"fail-open"|"fail-closed"} securityLimiterFailureMode - Behavior when limiter backend is unavailable.
  * @property {string} securityLimiterNamespace - Prefix namespace for limiter keys.
  * @property {string} securityLimiterHashSalt - HMAC salt for hashing untrusted key material.
@@ -326,7 +326,7 @@ export const config = Object.freeze({
   ),
   securityLimiterBackend: normalizeSecurityLimiterBackend(
     process.env.SECURITY_LIMITER_BACKEND,
-    isNonDevRuntime ? "mongo" : "memory",
+    isNonDevRuntime ? dbBackend : "memory",
   ),
   securityLimiterFailureMode: normalizeLimiterFailureMode(
     process.env.SECURITY_LIMITER_FAILURE_MODE,
@@ -422,6 +422,12 @@ if (isNonDevRuntime && isWeakCredentialEncryptionKey(process.env.CREDENTIAL_ENCR
 
 if (isNonDevRuntime && config.securityLimiterBackend === "memory") {
   throw new Error("SECURITY_LIMITER_BACKEND must not be set to 'memory' in non-development runtime.");
+}
+
+if (config.securityLimiterBackend !== "memory" && config.securityLimiterBackend !== config.dbBackend) {
+  throw new Error(
+    `SECURITY_LIMITER_BACKEND='${config.securityLimiterBackend}' is incompatible with DB_BACKEND='${config.dbBackend}'.`,
+  );
 }
 
 if (config.createAdmin) {

@@ -3,11 +3,19 @@ import { test } from "node:test";
 
 const CONFIG_ENV_KEYS = [
   "NODE_ENV",
+  "DB_BACKEND",
   "JWT_SECRET",
   "CREATE_ADMIN",
   "ADMIN_EMAIL",
   "ADMIN_PASSWORD",
   "MONGO_URL",
+  "DATABASE_URL",
+  "FREEBOARD_POSTGRES_URL",
+  "POSTGRES_CONNECT_TIMEOUT_MS",
+  "POSTGRES_POOL_MAX_CONNECTIONS",
+  "POSTGRES_POOL_MAX",
+  "POSTGRES_POOL_IDLE_TIMEOUT_MS",
+  "POSTGRES_SSL_MODE",
   "PORT",
   "AUTH_REGISTRATION_MODE",
   "AUTH_REGISTRATION_DEFAULT_ROLE",
@@ -133,7 +141,7 @@ test("config rejects deterministic local-dev credential encryption key in non-de
   );
 });
 
-test("config enforces mongo security limiter backend in non-development runtime", async () => {
+test("config rejects memory security limiter backend in non-development runtime", async () => {
   await withEnv(
     {
       NODE_ENV: "production",
@@ -148,7 +156,7 @@ test("config enforces mongo security limiter backend in non-development runtime"
     async () => {
       await assert.rejects(
         () => importConfigFresh(),
-        /SECURITY_LIMITER_BACKEND must be set to 'mongo'/,
+        /SECURITY_LIMITER_BACKEND must not be set to 'memory'/,
       );
     },
   );
@@ -221,6 +229,50 @@ test("config requires explicit MONGO_URL in non-development runtime", async () =
     },
     async () => {
       await assert.rejects(() => importConfigFresh(), /MONGO_URL must be explicitly configured/);
+    },
+  );
+});
+
+test("config requires Postgres URL when DB_BACKEND=postgres", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "production",
+      DB_BACKEND: "postgres",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      CREATE_ADMIN: "false",
+      DATABASE_URL: "",
+      FREEBOARD_POSTGRES_URL: "",
+      JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
+      GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
+      CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
+    },
+    async () => {
+      await assert.rejects(
+        () => importConfigFresh(),
+        /DB_BACKEND=postgres requires DATABASE_URL or FREEBOARD_POSTGRES_URL/,
+      );
+    },
+  );
+});
+
+test("config rejects incompatible security limiter backend with DB_BACKEND", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "production",
+      DB_BACKEND: "postgres",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      CREATE_ADMIN: "false",
+      DATABASE_URL: "postgresql://postgres:postgres@127.0.0.1:5432/freeboard",
+      SECURITY_LIMITER_BACKEND: "mongo",
+      JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
+      GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
+      CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
+    },
+    async () => {
+      await assert.rejects(
+        () => importConfigFresh(),
+        /SECURITY_LIMITER_BACKEND='mongo' is incompatible with DB_BACKEND='postgres'/,
+      );
     },
   );
 });

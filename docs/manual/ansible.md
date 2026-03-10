@@ -63,7 +63,7 @@ Commonly overridden:
 
 If the same appliance host also runs the API/gateway compose stack, keep runtime limiter defaults aligned with production hardening:
 
-- `SECURITY_LIMITER_BACKEND=mongo`
+- `SECURITY_LIMITER_BACKEND` must match `DB_BACKEND` (for example `mongo` or `postgres`)
 - `SECURITY_LIMITER_FAILURE_MODE=fail-closed`
 - `REALTIME_LIMITER_FAILURE_MODE=fail-closed`
 

@@ -120,7 +120,7 @@ Services:
 - Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false`
 - Set strict `EGRESS_ALLOWED_HOSTS`
 - Set `API_TRUST_PROXY_HOPS` and `REALTIME_TRUST_PROXY_HOPS` correctly for your reverse-proxy topology
-- Keep `SECURITY_LIMITER_BACKEND=mongo` and `SECURITY_LIMITER_FAILURE_MODE=fail-closed` in non-dev runtime
+- Keep `SECURITY_LIMITER_BACKEND` aligned with `DB_BACKEND` and `SECURITY_LIMITER_FAILURE_MODE=fail-closed` in non-dev runtime
 - Keep `REALTIME_LIMITER_FAILURE_MODE=fail-closed` unless degraded-mode fail-open is intentionally approved
 - Keep `CREATE_ADMIN=false` after bootstrap
 - Use non-default Mongo credentials
