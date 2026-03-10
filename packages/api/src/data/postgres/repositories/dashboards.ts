@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { getPostgresPool } from "../../../db/postgres/client.js";
 import type {
   DashboardAclEntryRecord,
+  DashboardDatasourceRecord,
   DashboardRecord,
   DashboardRepository,
 } from "../../contracts.js";
@@ -27,11 +28,25 @@ const toDate = (value: unknown, fallback = new Date()): Date => {
   return normalized;
 };
 
-const toArray = (value: unknown): unknown[] => {
+const toUnknownArray = (value: unknown): unknown[] => {
   if (!Array.isArray(value)) {
     return [];
   }
   return value;
+};
+
+const toDatasourceArray = (value: unknown): DashboardDatasourceRecord[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+        return null;
+      }
+      return entry as DashboardDatasourceRecord;
+    })
+    .filter((entry): entry is DashboardDatasourceRecord => Boolean(entry));
 };
 
 const toObjectRecord = (value: unknown): Record<string, unknown> => {
@@ -47,7 +62,7 @@ const toAclEntries = (value: unknown): DashboardAclEntryRecord[] => {
   }
 
   return value
-    .map((entry) => {
+    .map((entry): DashboardAclEntryRecord | null => {
       if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
         return null;
       }
@@ -115,10 +130,10 @@ const toRecord = (row: {
   shareTokenVersion: Math.max(0, Math.floor(Number(row.share_token_version) || 0)),
   acl: toAclEntries(row.acl),
   image: row.image ? String(row.image) : null,
-  datasources: toArray(row.datasources),
+  datasources: toDatasourceArray(row.datasources),
   columns: Number.isFinite(Number(row.columns)) ? Math.floor(Number(row.columns)) : null,
   width: row.width ? String(row.width) : null,
-  panes: toArray(row.panes),
+  panes: toUnknownArray(row.panes),
   settings: toObjectRecord(row.settings),
   createdAt: toDate(row.created_at),
   updatedAt: toDate(row.updated_at, toDate(row.created_at)),
@@ -267,7 +282,7 @@ export const createPostgresDashboardRepository = (): DashboardRepository => ({
     return result.rows.map((row) => ({
       _id: String(row.id || ""),
       visibility: String(row.visibility || "private"),
-      datasources: toArray(row.datasources),
+      datasources: toDatasourceArray(row.datasources),
     }));
   },
 

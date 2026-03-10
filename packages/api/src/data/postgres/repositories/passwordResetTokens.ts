@@ -106,7 +106,11 @@ export const createPostgresPasswordResetTokenRepository = (): PasswordResetToken
       [nanoid(), userId, tokenHash, createdBy, requestedByEmail, expiresAt],
     );
 
-    return toRecord(result.rows[0]);
+    const createdRow = result.rows[0];
+    if (!createdRow) {
+      throw new Error("Failed to create password reset token");
+    }
+    return toRecord(createdRow);
   },
 
   markUsedById: async ({ tokenId, usedAt }) => {

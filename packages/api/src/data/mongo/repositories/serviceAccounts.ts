@@ -1,6 +1,17 @@
 import type ServiceAccount from "../../../models/ServiceAccount.js";
 import type { ServiceAccountRecord, ServiceAccountRepository } from "../../contracts.js";
 
+const toDate = (value: unknown, fallback = new Date()): Date => {
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return value;
+  }
+  const normalized = new Date(value as Date | string | number);
+  if (!Number.isFinite(normalized.getTime())) {
+    return fallback;
+  }
+  return normalized;
+};
+
 const toRecord = (value: {
   _id?: unknown;
   name?: unknown;
@@ -20,9 +31,9 @@ const toRecord = (value: {
     ? value.scopes.map((scope) => String(scope || "").trim()).filter(Boolean)
     : [],
   createdByUserId: value.createdByUserId ? String(value.createdByUserId) : null,
-  lastUsedAt: value.lastUsedAt ? new Date(value.lastUsedAt as Date | string | number) : null,
-  createdAt: new Date(value.createdAt || Date.now()),
-  updatedAt: new Date(value.updatedAt || Date.now()),
+  lastUsedAt: value.lastUsedAt ? toDate(value.lastUsedAt) : null,
+  createdAt: toDate(value.createdAt),
+  updatedAt: toDate(value.updatedAt, toDate(value.createdAt)),
 });
 
 export const createMongoServiceAccountRepository = (

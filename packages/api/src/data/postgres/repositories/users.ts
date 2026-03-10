@@ -224,7 +224,11 @@ export const createPostgresUserRepository = (): UserRepository => ({
       [nanoid(), email, passwordHash, role, active === true],
     );
 
-    return toRecord(result.rows[0]);
+    const createdRow = result.rows[0];
+    if (!createdRow) {
+      throw new Error("Failed to create user");
+    }
+    return toRecord(createdRow);
   },
 
   updateById: async ({ userId, patch, incrementSessionVersion = false }) => {

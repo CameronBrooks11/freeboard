@@ -6,6 +6,7 @@
 import crypto from "node:crypto";
 import { createGraphQLError } from "graphql-yoga";
 import { dataStore } from "../data/index.js";
+import type { DashboardAclEntryRecord, DashboardRecord } from "../data/contracts.js";
 import { getAuthPolicyState } from "../policyStore.js";
 import { normalizeDashboardAccessLevel, normalizeDashboardVisibility } from "../policy.js";
 import { transformDashboard } from "./merge.js";
@@ -21,12 +22,7 @@ type DashboardLike = UnknownRecord & {
   shareTokenVersion?: unknown;
   settings?: UnknownRecord;
   panes?: unknown;
-  acl?: Array<{
-    userId?: unknown;
-    accessLevel?: unknown;
-    grantedBy?: unknown;
-    grantedAt?: unknown;
-  }>;
+  acl?: DashboardAclEntryRecord[];
 };
 type DashboardPermissions = {
   canRead: boolean;
@@ -81,6 +77,17 @@ export const toComparableId = (value: unknown): string | null => {
     return value.toString();
   }
   return String(value);
+};
+
+const toDate = (value: unknown, fallback = new Date()): Date => {
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return value;
+  }
+  const normalized = new Date(value as Date | string | number);
+  if (!Number.isFinite(normalized.getTime())) {
+    return fallback;
+  }
+  return normalized;
 };
 
 export const getDashboardVisibility = (dashboard: DashboardLike): string => {
@@ -491,7 +498,7 @@ export const transformDashboardForContext = (
     canManageSharing: permissions.canManageSharing,
   });
 
-export const getDashboardOrNotFound = async (_id: unknown): Promise<DashboardLike> => {
+export const getDashboardOrNotFound = async (_id: unknown): Promise<DashboardRecord> => {
   const dashboard = await dashboardRepository.findById({
     dashboardId: String(_id || "").trim(),
   });
@@ -620,18 +627,19 @@ export const uniqueAclEntries = (
     grantedBy?: unknown;
     grantedAt?: unknown;
   }> = [],
-) => {
-  const byUserId = new Map();
+): DashboardAclEntryRecord[] => {
+  const byUserId = new Map<string, DashboardAclEntryRecord>();
   entries.forEach((entry) => {
     const userId = toComparableId(entry?.userId);
     if (!userId) {
       return;
     }
+    const grantedAt = toDate(entry.grantedAt);
     byUserId.set(userId, {
       userId,
       accessLevel: normalizeDashboardAccessLevel(entry.accessLevel),
       grantedBy: toComparableId(entry.grantedBy) || null,
-      grantedAt: entry.grantedAt || new Date(),
+      grantedAt,
     });
   });
   return [...byUserId.values()];

@@ -126,7 +126,11 @@ export const createPostgresInviteTokenRepository = (): InviteTokenRepository => 
       [nanoid(), email, role, tokenHash, createdBy, expiresAt],
     );
 
-    return toRecord(result.rows[0]);
+    const createdRow = result.rows[0];
+    if (!createdRow) {
+      throw new Error("Failed to create invite token");
+    }
+    return toRecord(createdRow);
   },
 
   markAcceptedById: async ({ inviteId, acceptedAt, acceptedUserId }) => {

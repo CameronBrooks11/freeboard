@@ -1,6 +1,17 @@
 import type CredentialProfile from "../../../models/CredentialProfile.js";
 import type { CredentialProfileRecord, CredentialProfileRepository } from "../../contracts.js";
 
+const toDate = (value: unknown, fallback = new Date()): Date => {
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return value;
+  }
+  const normalized = new Date(value as Date | string | number);
+  if (!Number.isFinite(normalized.getTime())) {
+    return fallback;
+  }
+  return normalized;
+};
+
 const toRecord = (value: {
   _id?: unknown;
   name?: unknown;
@@ -29,8 +40,8 @@ const toRecord = (value: {
       : {},
   createdBy: value.createdBy ? String(value.createdBy) : null,
   updatedBy: value.updatedBy ? String(value.updatedBy) : null,
-  createdAt: new Date(value.createdAt || Date.now()),
-  updatedAt: new Date(value.updatedAt || Date.now()),
+  createdAt: toDate(value.createdAt),
+  updatedAt: toDate(value.updatedAt, toDate(value.createdAt)),
 });
 
 export const createMongoCredentialProfileRepository = (

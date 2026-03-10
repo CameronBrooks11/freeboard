@@ -1,6 +1,17 @@
 import type ServiceAccountToken from "../../../models/ServiceAccountToken.js";
 import type { ServiceAccountTokenRecord, ServiceAccountTokenRepository } from "../../contracts.js";
 
+const toDate = (value: unknown, fallback = new Date()): Date => {
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return value;
+  }
+  const normalized = new Date(value as Date | string | number);
+  if (!Number.isFinite(normalized.getTime())) {
+    return fallback;
+  }
+  return normalized;
+};
+
 const toRecord = (value: {
   _id?: unknown;
   serviceAccountId?: unknown;
@@ -23,12 +34,12 @@ const toRecord = (value: {
     : [],
   tokenHash: String(value.tokenHash || ""),
   tokenPrefix: String(value.tokenPrefix || ""),
-  expiresAt: value.expiresAt ? new Date(value.expiresAt as Date | string | number) : null,
-  revokedAt: value.revokedAt ? new Date(value.revokedAt as Date | string | number) : null,
+  expiresAt: value.expiresAt ? toDate(value.expiresAt) : null,
+  revokedAt: value.revokedAt ? toDate(value.revokedAt) : null,
   createdByUserId: value.createdByUserId ? String(value.createdByUserId) : null,
-  lastUsedAt: value.lastUsedAt ? new Date(value.lastUsedAt as Date | string | number) : null,
-  createdAt: new Date(value.createdAt || Date.now()),
-  updatedAt: new Date(value.updatedAt || Date.now()),
+  lastUsedAt: value.lastUsedAt ? toDate(value.lastUsedAt) : null,
+  createdAt: toDate(value.createdAt),
+  updatedAt: toDate(value.updatedAt, toDate(value.createdAt)),
 });
 
 export const createMongoServiceAccountTokenRepository = (

@@ -193,7 +193,11 @@ export const createPostgresCredentialProfileRepository = (): CredentialProfileRe
       ],
     );
 
-    return toRecord(result.rows[0]);
+    const createdRow = result.rows[0];
+    if (!createdRow) {
+      throw new Error("Failed to create credential profile");
+    }
+    return toRecord(createdRow);
   },
 
   updateById: async ({ profileId, patch }) => {

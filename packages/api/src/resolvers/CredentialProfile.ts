@@ -222,7 +222,9 @@ const resolvers: IResolvers = {
 
       let nextSecret;
       if (input?.secret === undefined) {
-        nextSecret = decryptCredentialSecret(existing.secret);
+        nextSecret = decryptCredentialSecret(
+          (existing.secret || null) as EncryptedSecretPayload | null,
+        );
       } else {
         nextSecret = normalizeSecret(input.secret);
       }

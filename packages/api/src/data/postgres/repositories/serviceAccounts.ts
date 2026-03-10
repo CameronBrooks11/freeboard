@@ -175,7 +175,11 @@ export const createPostgresServiceAccountRepository = (): ServiceAccountReposito
       [nanoid(), name, description, active === true, scopes, createdByUserId],
     );
 
-    return toRecord(result.rows[0]);
+    const createdRow = result.rows[0];
+    if (!createdRow) {
+      throw new Error("Failed to create service account");
+    }
+    return toRecord(createdRow);
   },
 
   updateById: async ({ accountId, patch }) => {

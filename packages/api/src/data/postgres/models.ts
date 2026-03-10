@@ -1,4 +1,4 @@
-import type { ApiModelConstants, ApiModelStore } from "../types.js";
+import type { ApiModelConstants, PostgresModelStore } from "../types.js";
 
 type PlaceholderCallable = {
   (...args: unknown[]): never;
@@ -36,23 +36,22 @@ const createPostgresModelPlaceholder = (modelName: string): PlaceholderCallable 
   }) as PlaceholderCallable;
 };
 
-const createPostgresModelStore = (): ApiModelStore =>
-  ({
-    AuditEvent: createPostgresModelPlaceholder("AuditEvent"),
-    BrokerProfile: createPostgresModelPlaceholder("BrokerProfile"),
-    CredentialProfile: createPostgresModelPlaceholder("CredentialProfile"),
-    Dashboard: createPostgresModelPlaceholder("Dashboard"),
-    InviteToken: createPostgresModelPlaceholder("InviteToken"),
-    PasswordResetToken: createPostgresModelPlaceholder("PasswordResetToken"),
-    Policy: createPostgresModelPlaceholder("Policy"),
-    SecurityLimiterState: createPostgresModelPlaceholder("SecurityLimiterState"),
-    ServiceAccount: createPostgresModelPlaceholder("ServiceAccount"),
-    ServiceAccountToken: createPostgresModelPlaceholder("ServiceAccountToken"),
-    ShareTokenRevocationEvent: createPostgresModelPlaceholder("ShareTokenRevocationEvent"),
-    User: createPostgresModelPlaceholder("User"),
-  }) as unknown as ApiModelStore;
+const createPostgresModelStore = (): PostgresModelStore => ({
+  AuditEvent: createPostgresModelPlaceholder("AuditEvent"),
+  BrokerProfile: createPostgresModelPlaceholder("BrokerProfile"),
+  CredentialProfile: createPostgresModelPlaceholder("CredentialProfile"),
+  Dashboard: createPostgresModelPlaceholder("Dashboard"),
+  InviteToken: createPostgresModelPlaceholder("InviteToken"),
+  PasswordResetToken: createPostgresModelPlaceholder("PasswordResetToken"),
+  Policy: createPostgresModelPlaceholder("Policy"),
+  SecurityLimiterState: createPostgresModelPlaceholder("SecurityLimiterState"),
+  ServiceAccount: createPostgresModelPlaceholder("ServiceAccount"),
+  ServiceAccountToken: createPostgresModelPlaceholder("ServiceAccountToken"),
+  ShareTokenRevocationEvent: createPostgresModelPlaceholder("ShareTokenRevocationEvent"),
+  User: createPostgresModelPlaceholder("User"),
+});
 
-export const postgresModels: ApiModelStore = Object.freeze(createPostgresModelStore());
+export const postgresModels: PostgresModelStore = Object.freeze(createPostgresModelStore());
 
 export const postgresModelConstants: ApiModelConstants = Object.freeze({
   BROKER_PROFILE_PROTOCOLS: Object.freeze(["mqtt"]),

@@ -20,6 +20,13 @@ const toTopicAllowlist = (value: unknown): string[] => {
   return value.map((entry) => String(entry || "").trim()).filter(Boolean);
 };
 
+const toObjectRecord = (value: unknown): Record<string, unknown> => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, unknown>;
+};
+
 const toRecord = (row: {
   id?: unknown;
   name?: unknown;
@@ -40,7 +47,7 @@ const toRecord = (row: {
   description: String(row.description || ""),
   protocol: String(row.protocol || "mqtt"),
   brokerUrl: String(row.broker_url || ""),
-  tls: row.tls && typeof row.tls === "object" && !Array.isArray(row.tls) ? row.tls : {},
+  tls: toObjectRecord(row.tls),
   credentialProfileId: row.credential_profile_id ? String(row.credential_profile_id) : null,
   allowPublicUse: row.allow_public_use === true,
   topicAllowlist: toTopicAllowlist(row.topic_allowlist),
@@ -282,7 +289,11 @@ export const createPostgresBrokerProfileRepository = (): BrokerProfileRepository
       ],
     );
 
-    return toRecord(result.rows[0]);
+    const createdRow = result.rows[0];
+    if (!createdRow) {
+      throw new Error("Failed to create broker profile");
+    }
+    return toRecord(createdRow);
   },
 
   updateById: async ({ profileId, patch }) => {

@@ -180,7 +180,11 @@ export const createPostgresServiceAccountTokenRepository = (): ServiceAccountTok
       ],
     );
 
-    return toRecord(result.rows[0]);
+    const createdRow = result.rows[0];
+    if (!createdRow) {
+      throw new Error("Failed to create service account token");
+    }
+    return toRecord(createdRow);
   },
 
   touchLastUsed: async ({ tokenId, lastUsedAt }) => {

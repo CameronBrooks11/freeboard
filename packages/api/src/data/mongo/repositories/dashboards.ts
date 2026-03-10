@@ -1,6 +1,7 @@
 import type Dashboard from "../../../models/Dashboard.js";
 import type {
   DashboardAclEntryRecord,
+  DashboardDatasourceRecord,
   DashboardRecord,
   DashboardRepository,
 } from "../../contracts.js";
@@ -63,11 +64,25 @@ const toObjectRecord = (value: unknown): Record<string, unknown> => {
   return value as Record<string, unknown>;
 };
 
-const toArray = (value: unknown): unknown[] => {
+const toUnknownArray = (value: unknown): unknown[] => {
   if (!Array.isArray(value)) {
     return [];
   }
   return value;
+};
+
+const toDatasourceArray = (value: unknown): DashboardDatasourceRecord[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+        return null;
+      }
+      return entry as DashboardDatasourceRecord;
+    })
+    .filter((entry): entry is DashboardDatasourceRecord => Boolean(entry));
 };
 
 const toRecord = (value: {
@@ -97,10 +112,10 @@ const toRecord = (value: {
   shareTokenVersion: Math.max(0, Math.floor(Number(value.shareTokenVersion) || 0)),
   acl: toAclEntries(value.acl),
   image: value.image ? String(value.image) : null,
-  datasources: toArray(value.datasources),
+  datasources: toDatasourceArray(value.datasources),
   columns: Number.isFinite(Number(value.columns)) ? Math.floor(Number(value.columns)) : null,
   width: value.width ? String(value.width) : null,
-  panes: toArray(value.panes),
+  panes: toUnknownArray(value.panes),
   settings: toObjectRecord(value.settings),
   createdAt: toDate(value.createdAt),
   updatedAt: toDate(value.updatedAt, toDate(value.createdAt)),
@@ -146,7 +161,7 @@ export const createMongoDashboardRepository = (
     return dashboards.map((dashboard) => ({
       _id: String(dashboard?._id || ""),
       visibility: String(dashboard?.visibility || "private"),
-      datasources: toArray(dashboard?.datasources),
+      datasources: toDatasourceArray(dashboard?.datasources),
     }));
   },
 

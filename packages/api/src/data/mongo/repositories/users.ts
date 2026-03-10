@@ -1,6 +1,17 @@
 import type User from "../../../models/User.js";
 import type { UserRecord, UserRepository } from "../../contracts.js";
 
+const toDate = (value: unknown, fallback = new Date()): Date => {
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return value;
+  }
+  const normalized = new Date(value as Date | string | number);
+  if (!Number.isFinite(normalized.getTime())) {
+    return fallback;
+  }
+  return normalized;
+};
+
 const toRecord = (value: {
   _id?: unknown;
   email?: unknown;
@@ -19,10 +30,10 @@ const toRecord = (value: {
   role: String(value.role || "viewer"),
   active: value.active !== false,
   sessionVersion: Math.max(0, Math.floor(Number(value.sessionVersion) || 0)),
-  registrationDate: new Date(value.registrationDate || Date.now()),
-  lastLogin: new Date(value.lastLogin || Date.now()),
-  createdAt: new Date(value.createdAt || Date.now()),
-  updatedAt: new Date(value.updatedAt || Date.now()),
+  registrationDate: toDate(value.registrationDate),
+  lastLogin: toDate(value.lastLogin),
+  createdAt: toDate(value.createdAt),
+  updatedAt: toDate(value.updatedAt, toDate(value.createdAt)),
 });
 
 const toCount = (value: unknown): number => {

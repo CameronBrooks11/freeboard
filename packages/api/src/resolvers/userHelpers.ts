@@ -6,6 +6,7 @@
 import { createGraphQLError } from "graphql-yoga";
 import crypto from "node:crypto";
 import { dataStore } from "../data/index.js";
+import type { DashboardAclEntryRecord } from "../data/contracts.js";
 import { createAuthToken } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
 import { normalizeNonAdminRole } from "../policy.js";
@@ -157,9 +158,7 @@ export const reconcileDashboardAccessForRemovedUser = async ({
   for (const dashboard of impactedDashboards) {
     const dashboardId = toComparableId(dashboard._id);
     const ownerWasTarget = toComparableId(dashboard.user) === normalizedTargetUserId;
-    const currentAcl: Array<{ userId?: unknown }> = Array.isArray(dashboard.acl)
-      ? (dashboard.acl as Array<{ userId?: unknown }>)
-      : [];
+    const currentAcl: DashboardAclEntryRecord[] = Array.isArray(dashboard.acl) ? dashboard.acl : [];
     const aclWithoutTarget = currentAcl.filter(
       (entry) => toComparableId(entry?.userId) !== normalizedTargetUserId,
     );

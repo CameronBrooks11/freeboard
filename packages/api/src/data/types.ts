@@ -28,6 +28,29 @@ export type ApiModelStore = {
   User: typeof User;
 };
 
+type PostgresModelPlaceholder = {
+  (...args: unknown[]): never;
+  new (...args: unknown[]): never;
+  db?: unknown;
+};
+
+export type PostgresModelStore = {
+  AuditEvent: PostgresModelPlaceholder;
+  BrokerProfile: PostgresModelPlaceholder;
+  CredentialProfile: PostgresModelPlaceholder;
+  Dashboard: PostgresModelPlaceholder;
+  InviteToken: PostgresModelPlaceholder;
+  PasswordResetToken: PostgresModelPlaceholder;
+  Policy: PostgresModelPlaceholder;
+  SecurityLimiterState: PostgresModelPlaceholder;
+  ServiceAccount: PostgresModelPlaceholder;
+  ServiceAccountToken: PostgresModelPlaceholder;
+  ShareTokenRevocationEvent: PostgresModelPlaceholder;
+  User: PostgresModelPlaceholder;
+};
+
+export type RuntimeModelStore = ApiModelStore | PostgresModelStore;
+
 export type ApiModelConstants = {
   BROKER_PROFILE_PROTOCOLS: readonly string[];
   CREDENTIAL_PROFILE_TYPES: readonly string[];

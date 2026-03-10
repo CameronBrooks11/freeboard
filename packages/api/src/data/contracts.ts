@@ -1,4 +1,4 @@
-import type { ApiModelConstants, ApiModelStore, DataBackend } from "./types.js";
+import type { ApiModelConstants, DataBackend, RuntimeModelStore } from "./types.js";
 
 export type SecurityLimiterRepository = {
   incrementCounter(params: { documentId: string; expiresAt: Date }): Promise<number>;
@@ -156,6 +156,12 @@ export type DashboardAclEntryRecord = {
   grantedAt?: Date;
 };
 
+export type DashboardDatasourceRecord = Record<string, unknown> & {
+  id?: unknown;
+  type?: string | null;
+  settings?: Record<string, unknown> | null;
+};
+
 export type DashboardRecord = {
   _id: string;
   user: string;
@@ -166,7 +172,7 @@ export type DashboardRecord = {
   shareTokenVersion: number;
   acl: DashboardAclEntryRecord[];
   image: string | null;
-  datasources: unknown[];
+  datasources: DashboardDatasourceRecord[];
   columns: number | null;
   width: string | null;
   panes: unknown[];
@@ -426,7 +432,7 @@ export type DataStoreRepositories = {
 
 export type DataStore = {
   backend: DataBackend;
-  models: ApiModelStore;
+  models: RuntimeModelStore;
   constants: ApiModelConstants;
   repositories: DataStoreRepositories;
 };
