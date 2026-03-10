@@ -42,10 +42,11 @@ import {
   reconcileDashboardAccessForRemovedUser,
   sortUsersForAdmin,
   toInviteView,
-  toSessionVersion,
 } from "./userHelpers.js";
 
-const { InviteToken, PasswordResetToken, User } = dataStore.models;
+const userRepository = dataStore.repositories.users;
+const inviteTokenRepository = dataStore.repositories.inviteTokens;
+const passwordResetTokenRepository = dataStore.repositories.passwordResetTokens;
 
 const resolvers: IResolvers = {
   Query: {
@@ -62,7 +63,7 @@ const resolvers: IResolvers = {
       ensureThatUserIsLogged(context);
       ensureThatUserIsAdministrator(context);
 
-      const users = await User.find().lean();
+      const users = await userRepository.listAll();
       return sortUsersForAdmin(users);
     },
 
@@ -92,13 +93,7 @@ const resolvers: IResolvers = {
       ensureThatUserIsAdministrator(context);
 
       const now = new Date();
-      const invites = await InviteToken.find({
-        revokedAt: null,
-        acceptedAt: null,
-        expiresAt: { $gt: now },
-      })
-        .sort({ createdAt: "desc" })
-        .lean();
+      const invites = await inviteTokenRepository.listPending({ now });
       return invites.map(toInviteView);
     },
   },
@@ -123,23 +118,22 @@ const resolvers: IResolvers = {
       ensureEmailIsValid(normalizedEmail);
       ensurePasswordIsStrong(password);
 
-      const registeredUsersCount = await User.estimatedDocumentCount();
+      const registeredUsersCount = await userRepository.countAll();
       ensureLimitOfUsersIsNotReached(registeredUsersCount);
 
-      const isAnEmailAlreadyRegistered = await User.findOne({
+      const isAnEmailAlreadyRegistered = await userRepository.findByEmail({
         email: normalizedEmail,
-      }).lean();
+      });
       if (isAnEmailAlreadyRegistered) {
         throw createGraphQLError("Data provided is not valid");
       }
 
-      const createdUser = await new User({
+      const user = await userRepository.create({
         email: normalizedEmail,
         password,
         role: authPolicy.registrationDefaultRole,
         active: true,
-      }).save();
-      const user = await User.findOne({ _id: createdUser._id }).lean();
+      });
       if (!user) {
         throw createGraphQLError("User not found or login not allowed");
       }
@@ -180,32 +174,31 @@ const resolvers: IResolvers = {
         });
       }
 
-      const existingUser = await User.findOne({ email: invite.email }).lean();
+      const existingUser = await userRepository.findByEmail({ email: String(invite.email || "") });
       if (existingUser) {
         throw createGraphQLError("Invite token is invalid or expired", {
           extensions: { code: "FORBIDDEN" },
         });
       }
 
-      const registeredUsersCount = await User.estimatedDocumentCount();
+      const registeredUsersCount = await userRepository.countAll();
       ensureLimitOfUsersIsNotReached(registeredUsersCount);
 
-      const createdUser = await new User({
+      const user = await userRepository.create({
         email: invite.email,
         password,
         role: invite.role,
         active: true,
-      }).save();
-      const user = await User.findOne({ _id: createdUser._id }).lean();
+      });
       if (!user) {
         throw createGraphQLError("User not found or login not allowed");
       }
 
-      await InviteToken.findOneAndUpdate(
-        { _id: invite._id },
-        { $set: { acceptedAt: new Date(), acceptedUserId: user._id } },
-        { new: false },
-      ).lean();
+      await inviteTokenRepository.markAcceptedById({
+        inviteId: String(invite._id || ""),
+        acceptedAt: new Date(),
+        acceptedUserId: String(user._id || ""),
+      });
 
       await recordAuditEvent({
         actorUserId: user._id,
@@ -299,9 +292,9 @@ const resolvers: IResolvers = {
         };
       };
 
-      const user = await User.findOne({
+      const user = await userRepository.findByEmail({
         email: normalizedEmail,
-      }).lean();
+      });
 
       if (!user) {
         const failureState = await registerFailure();
@@ -337,11 +330,10 @@ const resolvers: IResolvers = {
 
       await clearLoginThrottle(throttleKey);
 
-      await User.findOneAndUpdate(
-        { _id: user._id },
-        { $set: { lastLogin: new Date() } },
-        { new: false },
-      ).lean();
+      await userRepository.touchLastLogin({
+        userId: String(user._id || ""),
+        lastLogin: new Date(),
+      });
 
       return {
         token: issueUserAuthToken(user),
@@ -361,10 +353,9 @@ const resolvers: IResolvers = {
         return true;
       }
 
-      const user = await User.findOne({
+      const user = await userRepository.findActiveByEmail({
         email: normalizedEmail,
-        active: true,
-      }).lean();
+      });
       if (!user) {
         return true;
       }
@@ -402,12 +393,10 @@ const resolvers: IResolvers = {
 
       const tokenHash = hashOneTimeToken(token);
       const now = new Date();
-      const reset = await PasswordResetToken.findOne({
+      const reset = await passwordResetTokenRepository.findActiveByTokenHash({
         tokenHash,
-        revokedAt: null,
-        usedAt: null,
-        expiresAt: { $gt: now },
-      }).lean();
+        now,
+      });
 
       if (!reset) {
         throw createGraphQLError("Password reset token is invalid or expired", {
@@ -415,9 +404,8 @@ const resolvers: IResolvers = {
         });
       }
 
-      const user = await User.findOne({
-        _id: reset.userId,
-        active: true,
+      const user = await userRepository.findActiveById({
+        userId: String(reset.userId || ""),
       });
       if (!user) {
         throw createGraphQLError("Password reset token is invalid or expired", {
@@ -425,21 +413,26 @@ const resolvers: IResolvers = {
         });
       }
 
-      user.password = password;
-      user.sessionVersion = toSessionVersion(user.sessionVersion) + 1;
-      await user.save();
+      const updatedUser = await userRepository.setPasswordAndIncrementSessionVersion({
+        userId: String(user._id || ""),
+        password,
+      });
+      if (!updatedUser) {
+        throw createGraphQLError("Password reset token is invalid or expired", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
 
-      await PasswordResetToken.findOneAndUpdate(
-        { _id: reset._id },
-        { $set: { usedAt: new Date() } },
-        { new: false },
-      ).lean();
+      await passwordResetTokenRepository.markUsedById({
+        tokenId: String(reset._id || ""),
+        usedAt: new Date(),
+      });
 
       await recordAuditEvent({
-        actorUserId: user._id,
+        actorUserId: updatedUser._id,
         action: "password_reset.completed",
         targetType: "user",
-        targetId: user._id,
+        targetId: updatedUser._id,
         metadata: { tokenId: reset._id },
       });
 
@@ -475,7 +468,9 @@ const resolvers: IResolvers = {
         reason: "self_delete",
       });
 
-      const deletedUser = await User.findOneAndDelete({ _id: user._id }).lean();
+      const deletedUser = await userRepository.deleteById({
+        userId: String(user._id || ""),
+      });
       if (!deletedUser) {
         throw createGraphQLError("User not found or login not allowed");
       }
@@ -513,21 +508,20 @@ const resolvers: IResolvers = {
       ensurePasswordIsStrong(password);
       const normalizedRole = normalizeRole(role);
 
-      const existingUser = await User.findOne({ email: normalizedEmail }).lean();
+      const existingUser = await userRepository.findByEmail({ email: normalizedEmail });
       if (existingUser) {
         throw createGraphQLError("Data provided is not valid");
       }
 
-      const registeredUsersCount = await User.estimatedDocumentCount();
+      const registeredUsersCount = await userRepository.countAll();
       ensureLimitOfUsersIsNotReached(registeredUsersCount);
 
-      const createdUser = await new User({
+      const created = await userRepository.create({
         email: normalizedEmail,
         password,
         role: normalizedRole,
         active: Boolean(active),
-      }).save();
-      const created = await User.findOne({ _id: createdUser._id }).lean();
+      });
       if (!created) {
         throw createGraphQLError("User not found or login not allowed");
       }
@@ -590,16 +584,10 @@ const resolvers: IResolvers = {
       ensureThatUserIsAdministrator(context);
 
       const now = new Date();
-      const updated = await InviteToken.findOneAndUpdate(
-        {
-          _id,
-          revokedAt: null,
-          acceptedAt: null,
-          expiresAt: { $gt: now },
-        },
-        { $set: { revokedAt: now } },
-        { new: true },
-      ).lean();
+      const updated = await inviteTokenRepository.revokePendingById({
+        inviteId: String(_id || ""),
+        now,
+      });
 
       if (updated) {
         await recordAuditEvent({
@@ -626,12 +614,12 @@ const resolvers: IResolvers = {
       ensureThatUserIsLogged(context);
       ensureThatUserIsAdministrator(context);
 
-      const user = await User.findOne({ _id }).lean();
+      const user = await userRepository.findById({ userId: String(_id || "") });
       if (!user) {
         throw createGraphQLError("User not found or login not allowed");
       }
 
-      const update: Record<string, unknown> = {};
+      const update: { role?: string; active?: boolean } = {};
       if (role !== undefined) {
         update.role = normalizeRole(role);
       }
@@ -659,15 +647,11 @@ const resolvers: IResolvers = {
         await ensureAtLeastOneActiveAdminWillRemain(user._id);
       }
 
-      const updateDocument = {
-        $set: update,
-        ...(shouldRevokeSessions ? { $inc: { sessionVersion: 1 } } : {}),
-      };
-
-      const updatedUser = await User.findOneAndUpdate({ _id }, updateDocument, {
-        new: true,
-        runValidators: true,
-      }).lean();
+      const updatedUser = await userRepository.updateById({
+        userId: String(_id || ""),
+        patch: update,
+        incrementSessionVersion: shouldRevokeSessions,
+      });
       if (!updatedUser) {
         throw createGraphQLError("User not found or login not allowed");
       }
@@ -704,7 +688,7 @@ const resolvers: IResolvers = {
         });
       }
 
-      const user = await User.findOne({ _id }).lean();
+      const user = await userRepository.findById({ userId: String(_id || "") });
       if (!user) {
         throw createGraphQLError("User not found or login not allowed");
       }
@@ -724,7 +708,7 @@ const resolvers: IResolvers = {
         reason: "admin_delete",
       });
 
-      const deletedUser = await User.findOneAndDelete({ _id }).lean();
+      const deletedUser = await userRepository.deleteById({ userId: String(_id || "") });
       if (!deletedUser) {
         throw createGraphQLError("User not found or login not allowed");
       }
@@ -757,7 +741,7 @@ const resolvers: IResolvers = {
       ensureThatUserIsLogged(context);
       ensureThatUserIsAdministrator(context);
 
-      const user = await User.findOne({ _id, active: true }).lean();
+      const user = await userRepository.findActiveById({ userId: String(_id || "") });
       if (!user) {
         throw createGraphQLError("User not found or login not allowed");
       }

@@ -421,10 +421,15 @@ if (isNonDevRuntime && isWeakCredentialEncryptionKey(process.env.CREDENTIAL_ENCR
 }
 
 if (isNonDevRuntime && config.securityLimiterBackend === "memory") {
-  throw new Error("SECURITY_LIMITER_BACKEND must not be set to 'memory' in non-development runtime.");
+  throw new Error(
+    "SECURITY_LIMITER_BACKEND must not be set to 'memory' in non-development runtime.",
+  );
 }
 
-if (config.securityLimiterBackend !== "memory" && config.securityLimiterBackend !== config.dbBackend) {
+if (
+  config.securityLimiterBackend !== "memory" &&
+  config.securityLimiterBackend !== config.dbBackend
+) {
   throw new Error(
     `SECURITY_LIMITER_BACKEND='${config.securityLimiterBackend}' is incompatible with DB_BACKEND='${config.dbBackend}'.`,
   );

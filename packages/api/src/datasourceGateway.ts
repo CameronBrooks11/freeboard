@@ -31,6 +31,8 @@ const SUPPORTED_GATEWAY_DATASOURCE_TYPES = new Set([
   ...HTTP_DATASOURCE_TYPES,
   ...STREAM_DATASOURCE_TYPES,
 ]);
+const credentialProfileRepository = dataStore.repositories.credentialProfiles;
+const brokerProfileRepository = dataStore.repositories.brokerProfiles;
 
 type UnknownRecord = Record<string, unknown>;
 type DashboardLike = {
@@ -207,9 +209,9 @@ export const buildCanonicalDatasourceIntent = async ({
   const credentialProfileId = String(settings.credentialProfileId || "").trim() || null;
   let credentialProfile = null;
   if (credentialProfileId) {
-    credentialProfile = await dataStore.models.CredentialProfile.findOne({
-      _id: credentialProfileId,
-    }).lean();
+    credentialProfile = await credentialProfileRepository.findById({
+      profileId: credentialProfileId,
+    });
     if (!credentialProfile) {
       throw createClientError(403, "Credential profile not found", "CREDENTIAL_PROFILE_NOT_FOUND");
     }
@@ -258,9 +260,9 @@ export const buildCanonicalStreamingIntent = async ({
     const credentialProfileId = String(settings.credentialProfileId || "").trim() || null;
     let credentialProfile = null;
     if (credentialProfileId) {
-      credentialProfile = await dataStore.models.CredentialProfile.findOne({
-        _id: credentialProfileId,
-      }).lean();
+      credentialProfile = await credentialProfileRepository.findById({
+        profileId: credentialProfileId,
+      });
       if (!credentialProfile) {
         throw createClientError(
           403,
@@ -307,9 +309,9 @@ export const buildCanonicalStreamingIntent = async ({
       );
     }
 
-    const brokerProfile = await dataStore.models.BrokerProfile.findOne({
-      _id: brokerProfileId,
-    }).lean();
+    const brokerProfile = await brokerProfileRepository.findById({
+      profileId: brokerProfileId,
+    });
     if (!brokerProfile) {
       throw createClientError(403, "Broker profile not found", "BROKER_PROFILE_NOT_FOUND");
     }
@@ -325,9 +327,9 @@ export const buildCanonicalStreamingIntent = async ({
     let credentialProfile = null;
     const credentialProfileId = String(brokerProfile.credentialProfileId || "").trim() || null;
     if (credentialProfileId) {
-      credentialProfile = await dataStore.models.CredentialProfile.findOne({
-        _id: credentialProfileId,
-      }).lean();
+      credentialProfile = await credentialProfileRepository.findById({
+        profileId: credentialProfileId,
+      });
       if (!credentialProfile) {
         throw createClientError(
           403,
@@ -796,10 +798,9 @@ export const resolveGatewayIntrospection = async ({
       throw createClientError(403, "Share token is stale", "SHARE_TOKEN_STALE");
     }
   } else {
-    const user = await dataStore.models.User.findOne({
-      _id: tokenClaims.sub,
-      active: true,
-    }).lean();
+    const user = await dataStore.repositories.users.findActiveById({
+      userId: String(tokenClaims.sub || "").trim(),
+    });
     if (!user || !canUserReadDashboard({ dashboard, user })) {
       throw createClientError(403, "Dashboard access denied", "FORBIDDEN");
     }

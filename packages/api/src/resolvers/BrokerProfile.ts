@@ -12,6 +12,8 @@ import { dataStore } from "../data/index.js";
 
 const MQTT_ALLOWED_URL_PROTOCOLS = new Set(["mqtt:", "mqtts:"]);
 const { BROKER_PROFILE_PROTOCOLS } = dataStore.constants;
+const brokerProfileRepository = dataStore.repositories.brokerProfiles;
+const credentialProfileRepository = dataStore.repositories.credentialProfiles;
 
 const normalizeProtocol = (value: unknown): string => {
   const normalized = String(value || "mqtt")
@@ -98,11 +100,9 @@ const ensureMqttCredentialProfile = async (
     return null;
   }
 
-  const credentialProfile = await dataStore.models.CredentialProfile.findOne({
-    _id: credentialProfileId,
-  })
-    .select("_id type")
-    .lean();
+  const credentialProfile = await credentialProfileRepository.findById({
+    profileId: credentialProfileId,
+  });
   if (!credentialProfile) {
     throw createGraphQLError("Credential profile not found", {
       extensions: { code: "BAD_USER_INPUT" },
@@ -134,9 +134,23 @@ const toBrokerProfileResponse = (profile: Record<string, unknown>) => ({
 const toDuplicateNameGraphQLError = (error: unknown) => {
   const typedError =
     error && typeof error === "object"
-      ? (error as { code?: unknown; keyPattern?: Record<string, unknown> })
+      ? (error as {
+          code?: unknown;
+          keyPattern?: Record<string, unknown>;
+          constraint?: unknown;
+          detail?: unknown;
+        })
       : null;
   if (Number(typedError?.code) === 11000 && typedError?.keyPattern?.name) {
+    return createGraphQLError("Broker profile name must be unique", {
+      extensions: { code: "BAD_USER_INPUT" },
+    });
+  }
+  if (
+    String(typedError?.code || "") === "23505" &&
+    (String(typedError?.constraint || "").includes("broker_profiles_name") ||
+      String(typedError?.detail || "").includes("(name)="))
+  ) {
     return createGraphQLError("Broker profile name must be unique", {
       extensions: { code: "BAD_USER_INPUT" },
     });
@@ -154,8 +168,9 @@ const resolvers: IResolvers = {
       ensureThatUserHasRole(context, ["editor", "admin"]);
 
       const normalizedProtocol = protocol ? normalizeProtocol(protocol) : null;
-      const filter = normalizedProtocol ? { protocol: normalizedProtocol } : {};
-      const profiles = await dataStore.models.BrokerProfile.find(filter).sort({ name: 1 }).lean();
+      const profiles = await brokerProfileRepository.listSortedByName({
+        protocol: normalizedProtocol,
+      });
       return profiles.map(toBrokerProfileResponse);
     },
   },
@@ -178,7 +193,7 @@ const resolvers: IResolvers = {
 
       let created;
       try {
-        created = await new dataStore.models.BrokerProfile({
+        created = await brokerProfileRepository.create({
           name,
           description: normalizeDescription(input?.description),
           protocol,
@@ -189,7 +204,7 @@ const resolvers: IResolvers = {
           topicAllowlist: normalizeTopicAllowlist(input?.topicAllowlist),
           createdBy: context.user._id,
           updatedBy: context.user._id,
-        }).save();
+        });
       } catch (error) {
         const duplicateError = toDuplicateNameGraphQLError(error);
         if (duplicateError) {
@@ -209,13 +224,13 @@ const resolvers: IResolvers = {
         },
       });
 
-      return toBrokerProfileResponse(created.toObject());
+      return toBrokerProfileResponse(created);
     },
 
     adminUpdateBrokerProfile: async (_parent, { _id, input }, context) => {
       ensureThatUserIsAdministrator(context);
 
-      const existing = await dataStore.models.BrokerProfile.findOne({ _id }).lean();
+      const existing = await brokerProfileRepository.findById({ profileId: _id });
       if (!existing) {
         throw createGraphQLError("Broker profile not found");
       }
@@ -261,11 +276,10 @@ const resolvers: IResolvers = {
 
       let updated;
       try {
-        updated = await dataStore.models.BrokerProfile.findOneAndUpdate(
-          { _id },
-          { $set: updatePayload },
-          { new: true, runValidators: true },
-        ).lean();
+        updated = await brokerProfileRepository.updateById({
+          profileId: _id,
+          patch: updatePayload,
+        });
       } catch (error) {
         const duplicateError = toDuplicateNameGraphQLError(error);
         if (duplicateError) {
@@ -295,7 +309,7 @@ const resolvers: IResolvers = {
     adminDeleteBrokerProfile: async (_parent, { _id }, context) => {
       ensureThatUserIsAdministrator(context);
 
-      const deleted = await dataStore.models.BrokerProfile.findOneAndDelete({ _id }).lean();
+      const deleted = await brokerProfileRepository.deleteById({ profileId: _id });
       if (!deleted) {
         throw createGraphQLError("Broker profile not found");
       }

@@ -15,6 +15,8 @@ import { ensureThatPrincipalHasServiceScope } from "../auth.js";
 import { recordDatasourceMintMetric } from "../runtimeMetrics.js";
 import { dataStore } from "../data/index.js";
 
+const dashboardRepository = dataStore.repositories.dashboards;
+
 const toComparableId = (value: unknown): string | null => {
   if (!value) {
     return null;
@@ -186,7 +188,9 @@ const resolvers: IResolvers = {
       if (context.serviceAccount) {
         ensureThatPrincipalHasServiceScope(context, ["datasource:mint"]);
       }
-      const dashboard = await dataStore.models.Dashboard.findOne({ _id: dashboardId }).lean();
+      const dashboard = await dashboardRepository.findById({
+        dashboardId: String(dashboardId || "").trim(),
+      });
       if (!dashboard) {
         throw createGraphQLError("Dashboard not found");
       }

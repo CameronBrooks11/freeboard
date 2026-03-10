@@ -181,6 +181,9 @@ const loadPoolConstructor = async () => {
         : "Unknown error";
     throw new Error(
       `PostgreSQL migration commands require the 'pg' package. Install it in packages/api before running migrations. Original error: ${errorMessage}`,
+      {
+        cause: error,
+      },
     );
   }
 
@@ -206,7 +209,10 @@ export const createMigrationPool = async () => {
 
   const poolConfig = {
     connectionString: databaseUrl,
-    connectionTimeoutMillis: normalizePositiveInteger(process.env.POSTGRES_CONNECT_TIMEOUT_MS, 30000),
+    connectionTimeoutMillis: normalizePositiveInteger(
+      process.env.POSTGRES_CONNECT_TIMEOUT_MS,
+      30000,
+    ),
     max: normalizePositiveInteger(
       process.env.POSTGRES_POOL_MAX_CONNECTIONS || process.env.POSTGRES_POOL_MAX,
       5,

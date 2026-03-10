@@ -8,8 +8,8 @@
     "dev:raw": "tsx watch src/index.ts",
     "build": "tsc -p ../shared/tsconfig.build.json && tsc -p tsconfig.build.json",
     "start": "npm run build && node dist/index.js",
-    "test": "tsc -p ../shared/tsconfig.build.json && tsx --test --test-concurrency=1",
-    "test:ci": "tsc -p ../shared/tsconfig.build.json && tsx --test --test-concurrency=1"
+    "test": "cross-env DB_BACKEND=mongo tsc -p ../shared/tsconfig.build.json && cross-env DB_BACKEND=mongo tsx --test --test-concurrency=1",
+    "test:ci": "cross-env DB_BACKEND=mongo tsc -p ../shared/tsconfig.build.json && cross-env DB_BACKEND=mongo tsx --test --test-concurrency=1"
   },
   "private": true,
   "dependencies": {

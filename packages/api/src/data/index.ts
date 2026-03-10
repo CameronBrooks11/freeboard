@@ -14,8 +14,7 @@ const normalizeBackend = (value: unknown): DataBackend | null => {
   return null;
 };
 
-export const resolveDataBackend = (): DataBackend =>
-  normalizeBackend(config.dbBackend) || "mongo";
+export const resolveDataBackend = (): DataBackend => normalizeBackend(config.dbBackend) || "mongo";
 
 const createDataStore = (): DataStore => {
   const backend = resolveDataBackend();

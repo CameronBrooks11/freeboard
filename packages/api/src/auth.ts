@@ -159,7 +159,10 @@ export const getUser = async (context: ApiContext) => {
   }
 
   const _id = context.user._id || null;
-  const user = await dataStore.models.User.findOne({ _id }).lean();
+  if (!_id) {
+    throw createGraphQLError("You must be logged in to perform this action");
+  }
+  const user = await userRepository.findById({ userId: String(_id) });
   if (!user) {
     throw createGraphQLError("You must be logged in to perform this action");
   }
@@ -216,3 +219,4 @@ export const validateAuthToken = async (token: string): Promise<AuthTokenClaims>
   const payload = ensureJwtPayloadObject(decoded);
   return payload as AuthTokenClaims;
 };
+const userRepository = dataStore.repositories.users;

@@ -35,7 +35,8 @@ type DashboardPermissions = {
   canDelete: boolean;
   isOwner: boolean;
 };
-const { Dashboard, User } = dataStore.models;
+const dashboardRepository = dataStore.repositories.dashboards;
+const userRepository = dataStore.repositories.users;
 
 const DASHBOARD_MUTABLE_FIELDS = new Set([
   "title",
@@ -491,7 +492,9 @@ export const transformDashboardForContext = (
   });
 
 export const getDashboardOrNotFound = async (_id: unknown): Promise<DashboardLike> => {
-  const dashboard = await Dashboard.findOne({ _id }).lean();
+  const dashboard = await dashboardRepository.findById({
+    dashboardId: String(_id || "").trim(),
+  });
   if (!dashboard) {
     throw createGraphQLError("Dashboard not found");
   }
@@ -638,12 +641,12 @@ export const buildCollaboratorView = async (dashboard: DashboardLike) => {
   const ownerUserId = toComparableId(dashboard.user);
   const aclEntries = uniqueAclEntries(dashboard.acl || []);
   const userIds = [ownerUserId, ...aclEntries.map((entry) => toComparableId(entry.userId))].filter(
-    Boolean,
+    (entry): entry is string => Boolean(entry),
   );
 
-  const users = await User.find({ _id: { $in: userIds } })
-    .select("_id email")
-    .lean();
+  const users = await userRepository.findByIds({
+    userIds,
+  });
   const emailByUserId = new Map(users.map((user) => [toComparableId(user._id), user.email]));
 
   const collaborators = [

@@ -9,6 +9,8 @@ import { SERVICE_ACCOUNT_SCOPES } from "./serviceAccountScopes.js";
 import { dataStore } from "./data/index.js";
 
 const SERVICE_ACCOUNT_SCOPE_SET = new Set(SERVICE_ACCOUNT_SCOPES);
+const serviceAccountRepository = dataStore.repositories.serviceAccounts;
+const serviceAccountTokenRepository = dataStore.repositories.serviceAccountTokens;
 
 const toComparableId = (value: unknown): string | null => {
   if (!value) {
@@ -86,10 +88,9 @@ export const issueServiceAccountToken = async ({
   expiresInHours?: number | null;
   actorUserId?: unknown;
 }) => {
-  const account = await dataStore.models.ServiceAccount.findOne({
-    _id: serviceAccountId,
-    active: true,
-  }).lean();
+  const account = await serviceAccountRepository.findActiveById({
+    accountId: String(serviceAccountId || "").trim(),
+  });
   if (!account) {
     return null;
   }
@@ -97,6 +98,10 @@ export const issueServiceAccountToken = async ({
   const tokenScopes = normalizeServiceAccountScopes(scopes);
   const resolvedScopes =
     tokenScopes.length > 0 ? tokenScopes : normalizeServiceAccountScopes(account.scopes);
+  const normalizedAccountId = toComparableId(account._id);
+  if (!normalizedAccountId) {
+    return null;
+  }
   const secret = generateSecret();
   const tokenHash = hashSecret(secret);
   const expiresAt =
@@ -104,22 +109,15 @@ export const issueServiceAccountToken = async ({
       ? null
       : new Date(Date.now() + Math.max(1, Math.floor(Number(expiresInHours) || 1)) * 3600_000);
 
-  const tokenDoc = await new dataStore.models.ServiceAccountToken({
-    serviceAccountId: toComparableId(account._id),
+  const createdToken = await serviceAccountTokenRepository.create({
+    serviceAccountId: normalizedAccountId,
     scopes: resolvedScopes,
     label: String(label || "").trim() || null,
     tokenHash,
     tokenPrefix: secret.slice(0, 8),
     expiresAt,
     createdByUserId: toComparableId(actorUserId),
-  }).save();
-
-  const createdToken = await dataStore.models.ServiceAccountToken.findOne({
-    _id: tokenDoc._id,
-  }).lean();
-  if (!createdToken) {
-    return null;
-  }
+  });
 
   return {
     token: buildToken({ tokenId: createdToken._id, secret }),
@@ -133,9 +131,9 @@ export const authenticateServiceAccountToken = async (rawToken: unknown) => {
     return null;
   }
 
-  const tokenRecord = await dataStore.models.ServiceAccountToken.findOne({
-    _id: parsed.tokenId,
-  }).lean();
+  const tokenRecord = await serviceAccountTokenRepository.findById({
+    tokenId: parsed.tokenId,
+  });
   if (!tokenRecord || tokenRecord.revokedAt) {
     return null;
   }
@@ -149,21 +147,23 @@ export const authenticateServiceAccountToken = async (rawToken: unknown) => {
     return null;
   }
 
-  const account = await dataStore.models.ServiceAccount.findOne({
-    _id: tokenRecord.serviceAccountId,
-    active: true,
-  }).lean();
+  const account = await serviceAccountRepository.findActiveById({
+    accountId: tokenRecord.serviceAccountId,
+  });
   if (!account) {
     return null;
   }
 
   const now = new Date();
   await Promise.allSettled([
-    dataStore.models.ServiceAccountToken.updateOne(
-      { _id: tokenRecord._id },
-      { $set: { lastUsedAt: now } },
-    ),
-    dataStore.models.ServiceAccount.updateOne({ _id: account._id }, { $set: { lastUsedAt: now } }),
+    serviceAccountTokenRepository.touchLastUsed({
+      tokenId: tokenRecord._id,
+      lastUsedAt: now,
+    }),
+    serviceAccountRepository.touchLastUsed({
+      accountId: account._id,
+      lastUsedAt: now,
+    }),
   ]);
 
   return {

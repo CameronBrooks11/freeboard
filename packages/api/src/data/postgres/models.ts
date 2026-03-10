@@ -7,7 +7,7 @@ type PlaceholderCallable = {
 
 const createNotImplementedError = (modelName: string, operation: string): Error =>
   new Error(
-    `DB_BACKEND=postgres model '${modelName}' does not implement '${operation}' yet. Complete Sprint 30.4 Postgres repositories before enabling this path in production.`,
+    `DB_BACKEND=postgres model '${modelName}' does not implement '${operation}'. Runtime code should use datastore repositories instead of models.`,
   );
 
 const createPostgresModelPlaceholder = (modelName: string): PlaceholderCallable => {
@@ -29,7 +29,7 @@ const createPostgresModelPlaceholder = (modelName: string): PlaceholderCallable 
       if (propertyKey === Symbol.toStringTag) {
         return "PostgresModelPlaceholder";
       }
-      return (..._args: unknown[]): never => {
+      return (): never => {
         throw createNotImplementedError(modelName, String(propertyKey));
       };
     },

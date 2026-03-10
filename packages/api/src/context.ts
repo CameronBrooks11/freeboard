@@ -1,6 +1,6 @@
 /**
  * @module context
- * Creates the GraphQL execution context, including PubSub, models, and authenticated user.
+ * Creates the GraphQL execution context with PubSub and authenticated principal state.
  */
 
 import { createPubSub } from "graphql-yoga";
@@ -29,7 +29,6 @@ export type UserPrincipal = AuthTokenClaims & {
 
 export type ApiContext = {
   pubsub: ReturnType<typeof createPubSub>;
-  models: { Dashboard: DataStore["models"]["Dashboard"]; User: DataStore["models"]["User"] };
   dataStore: DataStore;
   clientIp: string | null;
   user?: UserPrincipal;
@@ -42,16 +41,6 @@ export type ApiContext = {
  */
 
 /**
- * Dashboard model type.
- * @typedef {Object} DashboardModel
- */
-
-/**
- * User model type.
- * @typedef {Object} UserModel
- */
-
-/**
  * HTTP request object.
  * @typedef {Object} IncomingMessage
  */
@@ -59,9 +48,6 @@ export type ApiContext = {
 /**
  * @typedef {Object} Context
  * @property {PubSub}         pubsub           - PubSub engine for subscriptions.
- * @property {Object}         models           - GraphQL models available in resolvers.
- * @property {DashboardModel} models.Dashboard - Dashboard model type.
- * @property {UserModel}      models.User      - User model type.
  * @property {Object}        [user]            - Authenticated user claims, if provided.
  */
 
@@ -85,10 +71,6 @@ export const setContext = async ({
   const context: ApiContext = {
     pubsub: createPubSub(),
     dataStore,
-    models: {
-      Dashboard: dataStore.models.Dashboard,
-      User: dataStore.models.User,
-    },
     clientIp,
   };
 
@@ -125,10 +107,12 @@ export const setContext = async ({
     try {
       // Validate JWT and attach user claims to context
       const user: AuthTokenClaims = await validateAuthToken(token);
-      const persistedUser = await dataStore.models.User.findOne({
-        _id: user?._id,
-        active: true,
-      }).lean();
+      const userId = String(user?._id || "").trim();
+      const persistedUser = userId
+        ? await dataStore.repositories.users.findActiveById({
+            userId,
+          })
+        : null;
       if (!persistedUser) {
         recordAuthFailureMetric();
         return context;

@@ -40,6 +40,9 @@ const loadPgPoolConstructor = async (): Promise<PgPoolConstructor> => {
         : "Unknown error";
     throw new Error(
       `PostgreSQL backend requires the 'pg' package. Install it in packages/api before using DB_BACKEND=postgres. Original error: ${errorMessage}`,
+      {
+        cause: error,
+      },
     );
   }
 
@@ -70,7 +73,9 @@ const normalizePositiveInteger = (value: unknown, fallback: number): number => {
 
 const createPoolConfig = (): Record<string, unknown> => {
   if (!config.postgresUrl) {
-    throw new Error("DATABASE_URL or FREEBOARD_POSTGRES_URL must be configured for postgres backend.");
+    throw new Error(
+      "DATABASE_URL or FREEBOARD_POSTGRES_URL must be configured for postgres backend.",
+    );
   }
 
   const poolConfig: Record<string, unknown> = {

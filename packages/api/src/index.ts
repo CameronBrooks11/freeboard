@@ -110,7 +110,7 @@ const ensureAdminUser = async () => {
   }
 
   console.log("Admin creation is enabled. Checking for existing admin...");
-  const admin = await dataStore.models.User.findOne({ email: config.adminEmail });
+  const admin = await dataStore.repositories.users.findByEmail({ email: config.adminEmail });
 
   if (admin) {
     console.log(`Admin user already exists: ${config.adminEmail}`);
@@ -118,12 +118,12 @@ const ensureAdminUser = async () => {
   }
 
   console.log(`No admin found with email '${config.adminEmail}'. Creating one now...`);
-  await new dataStore.models.User({
+  await dataStore.repositories.users.create({
     email: config.adminEmail,
     password: config.adminPassword,
     role: "admin",
     active: true,
-  }).save();
+  });
   console.log(`Admin user created: ${config.adminEmail}`);
 };
 
@@ -279,7 +279,9 @@ const handleGatewayIntrospection = async (
       return;
     }
 
-    const dashboard = await dataStore.models.Dashboard.findOne({ _id: dashboardId }).lean();
+    const dashboard = await dataStore.repositories.dashboards.findById({
+      dashboardId,
+    });
     if (!dashboard) {
       sendJson(res, 404, { error: "Dashboard not found" });
       return;

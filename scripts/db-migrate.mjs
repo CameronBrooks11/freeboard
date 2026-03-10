@@ -40,7 +40,9 @@ const main = async () => {
     const migrations = loadMigrations();
     const applied = await listAppliedMigrations(pool);
 
-    const migrationByVersion = new Map(migrations.map((migration) => [migration.version, migration]));
+    const migrationByVersion = new Map(
+      migrations.map((migration) => [migration.version, migration]),
+    );
     const appliedByVersion = new Map(applied.map((row) => [row.version, row]));
 
     for (const appliedRow of applied) {

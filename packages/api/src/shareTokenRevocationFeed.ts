@@ -65,7 +65,9 @@ export const recordShareTokenRevocationEvent = async ({
   }
 
   const normalizedVersion = Math.max(0, Math.floor(Number(shareTokenVersion) || 0));
-  const repositoryReady = await Promise.resolve(dataStore.repositories.shareTokenRevocationFeed.isReady());
+  const repositoryReady = await Promise.resolve(
+    dataStore.repositories.shareTokenRevocationFeed.isReady(),
+  );
   if (!repositoryReady) {
     return;
   }
