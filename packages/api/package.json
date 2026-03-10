@@ -9,7 +9,8 @@
     "build": "tsc -p ../shared/tsconfig.build.json && tsc -p tsconfig.build.json",
     "start": "npm run build && node dist/index.js",
     "test": "cross-env NODE_ENV=test DB_BACKEND=mongo SECURITY_LIMITER_BACKEND= tsc -p ../shared/tsconfig.build.json && cross-env NODE_ENV=test DB_BACKEND=mongo SECURITY_LIMITER_BACKEND= tsx --test --test-concurrency=1",
-    "test:ci": "cross-env NODE_ENV=test DB_BACKEND=mongo SECURITY_LIMITER_BACKEND= tsc -p ../shared/tsconfig.build.json && cross-env NODE_ENV=test DB_BACKEND=mongo SECURITY_LIMITER_BACKEND= tsx --test --test-concurrency=1"
+    "test:ci": "cross-env NODE_ENV=test DB_BACKEND=mongo SECURITY_LIMITER_BACKEND= tsc -p ../shared/tsconfig.build.json && cross-env NODE_ENV=test DB_BACKEND=mongo SECURITY_LIMITER_BACKEND= tsx --test --test-concurrency=1",
+    "test:ci:postgres-smoke": "cross-env NODE_ENV=test DB_BACKEND=postgres SECURITY_LIMITER_BACKEND=postgres tsc -p ../shared/tsconfig.build.json && cross-env NODE_ENV=test DB_BACKEND=postgres SECURITY_LIMITER_BACKEND=postgres tsx --test --test-concurrency=1 test/postgres-release-readiness.test.ts"
   },
   "private": true,
   "dependencies": {

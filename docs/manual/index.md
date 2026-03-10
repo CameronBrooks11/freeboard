@@ -38,6 +38,7 @@ Use this manual in two tracks:
 - [Datasource Gateway](/manual/gateway)
 - [Realtime Operations Runbook](/manual/realtime-operations)
 - [Security Controls Rollout Runbook](/manual/security-controls-rollout)
+- [PostgreSQL Release Readiness Checklist](/manual/release-readiness-postgres)
 - [Credential Key Rotation](/manual/credential-key-rotation)
 - [Ansible](/manual/ansible)
 - [Legacy: Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)

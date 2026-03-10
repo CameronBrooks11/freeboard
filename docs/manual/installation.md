@@ -132,3 +132,9 @@ For security-control changes (proxy trust headers/hops, limiter backend/failure-
 - [Security Controls Rollout Runbook](/manual/security-controls-rollout)
 
 This runbook defines staged deploy order (`proxy -> API -> gateway`), canary watch metrics, and rollback steps.
+
+## Release Readiness Runbook
+
+For final PostgreSQL release hardening and pre-release checklist signoff, use:
+
+- [PostgreSQL Release Readiness Checklist](/manual/release-readiness-postgres)

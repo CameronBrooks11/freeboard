@@ -310,6 +310,47 @@ jobs:
       - name: Run API tests
         run: npm run test:api
 
+  test-api-postgres-smoke:
+    name: Test API Postgres smoke
+    needs: changes
+    if: needs.changes.outputs.run_api_tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: freeboard
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d freeboard"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_BACKEND: postgres
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/freeboard
+      SECURITY_LIMITER_BACKEND: postgres
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Validate migration readiness (strict)
+        run: npm run check:db:migration-readiness:strict
+      - name: Apply migrations
+        run: npm run db:migrate
+      - name: Run API Postgres smoke tests
+        run: npm run test:api:postgres
+
   test-shared:
     name: Test Shared
     needs: changes
@@ -516,6 +557,7 @@ jobs:
       - docs-integrity
       - lint
       - test-api
+      - test-api-postgres-smoke
       - test-shared
       - test-ui
       - test-gateway
@@ -553,6 +595,7 @@ jobs:
           check_required "${{ needs.changes.outputs.run_docs_integrity }}" "${{ needs.docs-integrity.result }}" "docs-integrity"
           check_required "${{ needs.changes.outputs.non_docs }}" "${{ needs.lint.result }}" "lint"
           check_required "${{ needs.changes.outputs.run_api_tests }}" "${{ needs.test-api.result }}" "test-api"
+          check_required "${{ needs.changes.outputs.run_api_tests }}" "${{ needs.test-api-postgres-smoke.result }}" "test-api-postgres-smoke"
           check_required "${{ needs.changes.outputs.run_shared_tests }}" "${{ needs.test-shared.result }}" "test-shared"
           check_required "${{ needs.changes.outputs.run_ui_tests }}" "${{ needs.test-ui.result }}" "test-ui"
           check_required "${{ needs.changes.outputs.run_gateway_tests }}" "${{ needs.test-gateway.result }}" "test-gateway"

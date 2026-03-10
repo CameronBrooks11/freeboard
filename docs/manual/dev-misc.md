@@ -25,6 +25,7 @@
 - Verify docs pipeline (generate + stage): `npm run docs:verify`
 - Verify build/syntax: `npm run build:verify`
 - Full local CI pass: `npm run ci`
+- Postgres release-readiness matrix: `npm run check:release:postgres`
 - Start realtime fixture stack: `npm run demo:realtime:up`
 - Stop realtime fixture stack: `npm run demo:realtime:down`
 - Realtime fixture smoke test: `npm run demo:realtime:smoke`
@@ -62,7 +63,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 
 ## CI Troubleshooting (Quick)
 
-- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-shared`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `docker-sanity`, `typecheck`).
+- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-api-postgres-smoke`, `test-shared`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `db-migration-gate`, `build-verify`, `docker-sanity`, `typecheck`).
 - If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
 - If `Validate TS source debt` fails, remove unsafe TS patterns (`as any`, `as unknown as`, `: any`, `Record<string, any>`, `[key: string]: any`, `@ts-ignore`, `@ts-nocheck`) from `packages/*/src`.
 - If `Validate UI theme contrast` fails, update theme token values in `packages/ui/src/assets/css/themes/*.css` so critical foreground/background token pairs meet the script threshold.
@@ -80,6 +81,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 - Required branch gate remains `Required CI` from `.github/workflows/ci.yml`.
 - `lint` job enforces runtime eval bans through ESLint (`no-eval`, `no-new-func`, `no-implied-eval`), `npm run check:ts:debt`, and runtime dependency hygiene (`npm run check:runtime-deps`).
 - `test-shared` job validates shared runtime policy/client-IP utility behavior for `packages/shared` and shared-surface changes.
+- `test-api-postgres-smoke` job validates Postgres datastore repository behavior against a real Postgres service after migrations are applied.
 - `test-ui` job runs behavior-based UI regression tests (including layout policy behavior checks).
 - `test-e2e-smoke` job in `CI` runs cross-service browser assertions from `e2e/smoke.spec.js` on relevant API, UI, gateway, `packages/shared`, and e2e changes and is included in `Required CI`.
 - `docker-sanity` job validates API/gateway/UI Docker builds on Dockerfile/runtime dependency changes.

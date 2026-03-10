@@ -23,6 +23,7 @@ type PgPoolLike = {
   ) => Promise<PgQueryResult<T>>;
   connect: () => Promise<PgClientLike>;
   end: () => Promise<void>;
+  on: (event: "error", listener: (error: unknown) => void) => void;
 };
 
 type PgPoolConstructor = new (poolConfig: Record<string, unknown>) => PgPoolLike;
@@ -102,7 +103,15 @@ export const getPostgresPool = async (): Promise<PgPoolLike> => {
   if (!postgresPoolPromise) {
     postgresPoolPromise = (async () => {
       const Pool = await loadPgPoolConstructor();
-      return new Pool(createPoolConfig());
+      const pool = new Pool(createPoolConfig());
+      pool.on("error", (error) => {
+        const errorMessage =
+          error && typeof error === "object" && "message" in error
+            ? String((error as { message?: string }).message || "Unknown error")
+            : "Unknown error";
+        console.error(`PostgreSQL pool background error: ${errorMessage}`);
+      });
+      return pool;
     })().catch((error) => {
       postgresPoolPromise = null;
       throw error;

@@ -6,8 +6,9 @@
 import { spawn } from "node:child_process";
 
 const isWindows = process.platform === "win32";
-const npmCmd = isWindows ? "npm.cmd" : "npm";
 const dockerCmd = isWindows ? "docker.exe" : "docker";
+const npmExecPath = process.env.npm_execpath;
+const npmNodeExecPath = process.env.npm_node_execpath || process.execPath;
 
 const E2E_BASE_URL = process.env.E2E_BASE_URL || "http://127.0.0.1:5173";
 const E2E_API_URL = process.env.E2E_API_URL || "http://127.0.0.1:4001/graphql";
@@ -37,7 +38,38 @@ const resolveSecurityLimiterBackend = () => {
   return "postgres";
 };
 
-const e2eRuntimeEnv = Object.freeze({
+const normalizeEnv = (inputEnv) => {
+  const normalized = {};
+  for (const [key, value] of Object.entries(inputEnv || {})) {
+    if (typeof value === "string") {
+      normalized[key] = value;
+    }
+  }
+  return normalized;
+};
+
+const getNpmRunCommand = (scriptName, scriptArgs = []) => {
+  if (npmExecPath) {
+    return {
+      command: npmNodeExecPath,
+      args: [npmExecPath, "run", scriptName, ...scriptArgs],
+    };
+  }
+
+  if (isWindows) {
+    return {
+      command: "cmd.exe",
+      args: ["/d", "/s", "/c", "npm", "run", scriptName, ...scriptArgs],
+    };
+  }
+
+  return {
+    command: "npm",
+    args: ["run", scriptName, ...scriptArgs],
+  };
+};
+
+const e2eRuntimeEnv = normalizeEnv({
   ...process.env,
   DB_BACKEND: "postgres",
   SECURITY_LIMITER_BACKEND: resolveSecurityLimiterBackend(),
@@ -68,17 +100,31 @@ const run = (command, args, { env = process.env, inheritStdio = true } = {}) =>
     });
   });
 
-const startProcess = (command, args, { env = process.env } = {}) => {
+const startProcess = (command, args, { env = process.env, label = null } = {}) => {
   const child = spawn(command, args, {
     stdio: "inherit",
     env,
   });
   child.on("error", (error) => {
-    console.error(`Failed to start process: ${command} ${args.join(" ")}`);
+    const processLabel = label || `${command} ${args.join(" ")}`;
+    console.error(`Failed to start process: ${processLabel}`);
     console.error(error?.message || error);
   });
   runningChildren.push(child);
   return child;
+};
+
+const runNpmScript = async (scriptName, { env = e2eRuntimeEnv } = {}) => {
+  const npmRun = getNpmRunCommand(scriptName);
+  await run(npmRun.command, npmRun.args, { env });
+};
+
+const startNpmScript = (scriptName, { env = e2eRuntimeEnv } = {}) => {
+  const npmRun = getNpmRunCommand(scriptName);
+  return startProcess(npmRun.command, npmRun.args, {
+    env,
+    label: `npm run ${scriptName}`,
+  });
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -169,17 +215,17 @@ const main = async () => {
     "180",
   ]);
 
-  await run(npmCmd, ["run", "db:migrate"], { env: e2eRuntimeEnv });
+  await runNpmScript("db:migrate", { env: e2eRuntimeEnv });
 
-  startProcess(npmCmd, ["run", "dev:api"], { env: e2eRuntimeEnv });
-  startProcess(npmCmd, ["run", "dev:gateway"], { env: e2eRuntimeEnv });
-  startProcess(npmCmd, ["run", "dev:ui"], { env: e2eRuntimeEnv });
+  startNpmScript("dev:api", { env: e2eRuntimeEnv });
+  startNpmScript("dev:gateway", { env: e2eRuntimeEnv });
+  startNpmScript("dev:ui", { env: e2eRuntimeEnv });
 
   await waitForHttp(E2E_BASE_URL, E2E_STARTUP_TIMEOUT_MS);
   await waitForHttp(E2E_API_URL, E2E_STARTUP_TIMEOUT_MS);
   await waitForHttp(E2E_GATEWAY_URL, E2E_STARTUP_TIMEOUT_MS);
 
-  await run(npmCmd, ["run", "test:e2e"], { env: e2eRuntimeEnv });
+  await runNpmScript("test:e2e", { env: e2eRuntimeEnv });
 };
 
 try {
