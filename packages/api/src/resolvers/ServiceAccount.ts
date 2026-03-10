@@ -8,9 +8,7 @@ import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatPrincipalHasServiceScope, ensureThatUserIsAdministrator } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
 import { config } from "../config.js";
-import AuditEvent from "../models/AuditEvent.js";
-import ServiceAccount from "../models/ServiceAccount.js";
-import ServiceAccountToken from "../models/ServiceAccountToken.js";
+import { dataStore } from "../data/index.js";
 import { getApiRuntimeMetricsSnapshot } from "../runtimeMetrics.js";
 import { issueServiceAccountToken, normalizeServiceAccountScopes } from "../serviceAccountAuth.js";
 
@@ -25,6 +23,7 @@ const GATEWAY_RUNTIME_METRICS_TIMEOUT_MS = Math.max(
   500,
   Math.floor(Number(process.env.GATEWAY_RUNTIME_METRICS_TIMEOUT_MS) || 2500),
 );
+const { AuditEvent, ServiceAccount, ServiceAccountToken } = dataStore.models;
 
 const SCOPE_ENUM_MAP = Object.freeze({
   DATASOURCE_MINT: "datasource:mint",

@@ -5,8 +5,7 @@
 
 import crypto from "node:crypto";
 import { createGraphQLError } from "graphql-yoga";
-import Dashboard from "../models/Dashboard.js";
-import User from "../models/User.js";
+import { dataStore } from "../data/index.js";
 import { getAuthPolicyState } from "../policyStore.js";
 import { normalizeDashboardAccessLevel, normalizeDashboardVisibility } from "../policy.js";
 import { transformDashboard } from "./merge.js";
@@ -36,6 +35,7 @@ type DashboardPermissions = {
   canDelete: boolean;
   isOwner: boolean;
 };
+const { Dashboard, User } = dataStore.models;
 
 const DASHBOARD_MUTABLE_FIELDS = new Set([
   "title",

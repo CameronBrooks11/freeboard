@@ -13,7 +13,9 @@ import {
   redactSecretShape,
 } from "../credentialEncryption.js";
 import type { EncryptedSecretPayload } from "../credentialEncryption.js";
-import CredentialProfile, { CREDENTIAL_PROFILE_TYPES } from "../models/CredentialProfile.js";
+import { dataStore } from "../data/index.js";
+
+const { CREDENTIAL_PROFILE_TYPES } = dataStore.constants;
 
 const normalizeProfileType = (value: unknown): string => {
   const normalized = String(value || "none")
@@ -124,7 +126,7 @@ const resolvers: IResolvers = {
   Query: {
     credentialProfiles: async (parent, args, context) => {
       ensureThatUserHasRole(context, ["editor", "admin"]);
-      const profiles = await CredentialProfile.find({}).sort({ name: 1 }).lean();
+      const profiles = await dataStore.models.CredentialProfile.find({}).sort({ name: 1 }).lean();
       return profiles.map(toCredentialProfileResponse);
     },
   },
@@ -142,7 +144,7 @@ const resolvers: IResolvers = {
         secret,
       });
 
-      const created = await new CredentialProfile({
+      const created = await new dataStore.models.CredentialProfile({
         name: String(input?.name || "").trim(),
         description: String(input?.description || "").trim(),
         type,
@@ -170,7 +172,7 @@ const resolvers: IResolvers = {
     adminUpdateCredentialProfile: async (parent, { _id, input }, context) => {
       ensureThatUserIsAdministrator(context);
 
-      const existing = await CredentialProfile.findOne({ _id }).lean();
+      const existing = await dataStore.models.CredentialProfile.findOne({ _id }).lean();
       if (!existing) {
         throw createGraphQLError("Credential profile not found");
       }
@@ -194,7 +196,7 @@ const resolvers: IResolvers = {
         secret: nextSecret,
       });
 
-      const updated = await CredentialProfile.findOneAndUpdate(
+      const updated = await dataStore.models.CredentialProfile.findOneAndUpdate(
         { _id },
         {
           $set: {
@@ -237,7 +239,9 @@ const resolvers: IResolvers = {
     adminDeleteCredentialProfile: async (parent, { _id }, context) => {
       ensureThatUserIsAdministrator(context);
 
-      const deleted = await CredentialProfile.findOneAndDelete({ _id }).lean();
+      const deleted = await dataStore.models.CredentialProfile.findOneAndDelete({
+        _id,
+      }).lean();
       if (!deleted) {
         throw createGraphQLError("Credential profile not found");
       }

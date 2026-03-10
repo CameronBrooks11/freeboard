@@ -4,7 +4,7 @@
  */
 
 import mongoose from "mongoose";
-import ShareTokenRevocationEvent from "./models/ShareTokenRevocationEvent.js";
+import { dataStore } from "./data/index.js";
 
 type CursorPayload = {
   createdAtMs: number;
@@ -76,13 +76,14 @@ export const recordShareTokenRevocationEvent = async ({
   }
 
   const normalizedVersion = Math.max(0, Math.floor(Number(shareTokenVersion) || 0));
-  const readyState = ShareTokenRevocationEvent?.db?.readyState ?? mongoose.connection?.readyState;
+  const readyState =
+    dataStore.models.ShareTokenRevocationEvent?.db?.readyState ?? mongoose.connection?.readyState;
   if (readyState !== 1) {
     return;
   }
 
   try {
-    await new ShareTokenRevocationEvent({
+    await new dataStore.models.ShareTokenRevocationEvent({
       dashboardId: normalizedDashboardId,
       shareTokenVersion: normalizedVersion,
       revokedAt: new Date(revokedAt),
@@ -142,7 +143,7 @@ export const queryShareTokenRevocationFeed = async ({
     cursorExpired = true;
   }
 
-  const events = await ShareTokenRevocationEvent.find({
+  const events = await dataStore.models.ShareTokenRevocationEvent.find({
     revokedAt: { $gte: retentionCutoff },
     ...(cursorExpired ? {} : cursorFilter),
   })

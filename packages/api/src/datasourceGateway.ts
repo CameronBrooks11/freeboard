@@ -6,9 +6,7 @@
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import { config } from "./config.js";
-import BrokerProfile from "./models/BrokerProfile.js";
-import CredentialProfile from "./models/CredentialProfile.js";
-import User from "./models/User.js";
+import { dataStore } from "./data/index.js";
 import {
   applyQueryCredentialToUrl,
   normalizeAuthPlacement,
@@ -209,7 +207,9 @@ export const buildCanonicalDatasourceIntent = async ({
   const credentialProfileId = String(settings.credentialProfileId || "").trim() || null;
   let credentialProfile = null;
   if (credentialProfileId) {
-    credentialProfile = await CredentialProfile.findOne({ _id: credentialProfileId }).lean();
+    credentialProfile = await dataStore.models.CredentialProfile.findOne({
+      _id: credentialProfileId,
+    }).lean();
     if (!credentialProfile) {
       throw createClientError(403, "Credential profile not found", "CREDENTIAL_PROFILE_NOT_FOUND");
     }
@@ -258,7 +258,9 @@ export const buildCanonicalStreamingIntent = async ({
     const credentialProfileId = String(settings.credentialProfileId || "").trim() || null;
     let credentialProfile = null;
     if (credentialProfileId) {
-      credentialProfile = await CredentialProfile.findOne({ _id: credentialProfileId }).lean();
+      credentialProfile = await dataStore.models.CredentialProfile.findOne({
+        _id: credentialProfileId,
+      }).lean();
       if (!credentialProfile) {
         throw createClientError(
           403,
@@ -305,7 +307,9 @@ export const buildCanonicalStreamingIntent = async ({
       );
     }
 
-    const brokerProfile = await BrokerProfile.findOne({ _id: brokerProfileId }).lean();
+    const brokerProfile = await dataStore.models.BrokerProfile.findOne({
+      _id: brokerProfileId,
+    }).lean();
     if (!brokerProfile) {
       throw createClientError(403, "Broker profile not found", "BROKER_PROFILE_NOT_FOUND");
     }
@@ -321,7 +325,9 @@ export const buildCanonicalStreamingIntent = async ({
     let credentialProfile = null;
     const credentialProfileId = String(brokerProfile.credentialProfileId || "").trim() || null;
     if (credentialProfileId) {
-      credentialProfile = await CredentialProfile.findOne({ _id: credentialProfileId }).lean();
+      credentialProfile = await dataStore.models.CredentialProfile.findOne({
+        _id: credentialProfileId,
+      }).lean();
       if (!credentialProfile) {
         throw createClientError(
           403,
@@ -790,7 +796,10 @@ export const resolveGatewayIntrospection = async ({
       throw createClientError(403, "Share token is stale", "SHARE_TOKEN_STALE");
     }
   } else {
-    const user = await User.findOne({ _id: tokenClaims.sub, active: true }).lean();
+    const user = await dataStore.models.User.findOne({
+      _id: tokenClaims.sub,
+      active: true,
+    }).lean();
     if (!user || !canUserReadDashboard({ dashboard, user })) {
       throw createClientError(403, "Dashboard access denied", "FORBIDDEN");
     }

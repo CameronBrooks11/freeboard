@@ -4,11 +4,11 @@
  */
 
 import { createGraphQLError } from "graphql-yoga";
-import User from "./models/User.js";
 import { config } from "./config.js";
 import jwt from "jsonwebtoken";
 import type { StringValue } from "ms";
 import type { ApiContext, UserPrincipal, ServiceAccountPrincipal } from "./context.js";
+import { dataStore } from "./data/index.js";
 
 export type AuthTokenClaims = jwt.JwtPayload & {
   _id: string;
@@ -159,7 +159,7 @@ export const getUser = async (context: ApiContext) => {
   }
 
   const _id = context.user._id || null;
-  const user = await User.findOne({ _id }).lean();
+  const user = await dataStore.models.User.findOne({ _id }).lean();
   if (!user) {
     throw createGraphQLError("You must be logged in to perform this action");
   }

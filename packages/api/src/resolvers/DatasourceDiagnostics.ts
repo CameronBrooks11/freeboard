@@ -5,8 +5,7 @@
 
 import { ensureThatPrincipalHasServiceScope } from "../auth.js";
 import type { IResolvers } from "@graphql-tools/utils";
-import Dashboard from "../models/Dashboard.js";
-import BrokerProfile from "../models/BrokerProfile.js";
+import { dataStore } from "../data/index.js";
 
 const ALLOWED_DATASOURCE_TYPES = new Set(["http", "clock", "static", "sse", "websocket", "mqtt"]);
 const EXTERNAL_VISIBILITIES = new Set(["link", "public"]);
@@ -58,7 +57,9 @@ const resolvers: IResolvers = {
     adminDatasourceDiagnostics: async (parent, args, context) => {
       ensureThatPrincipalHasServiceScope(context, ["datasource:diagnostics:read"]);
 
-      const dashboards = await Dashboard.find({}).select("_id visibility datasources").lean();
+      const dashboards = await dataStore.models.Dashboard.find({})
+        .select("_id visibility datasources")
+        .lean();
 
       const brokerProfileIds = new Set<string>();
       dashboards.forEach((dashboard) => {
@@ -75,7 +76,7 @@ const resolvers: IResolvers = {
         });
       });
 
-      const brokerProfiles = await BrokerProfile.find({
+      const brokerProfiles = await dataStore.models.BrokerProfile.find({
         _id: { $in: [...brokerProfileIds] },
       })
         .select("_id credentialProfileId")

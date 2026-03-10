@@ -18,8 +18,6 @@ import { URL } from "url";
 import schema from "./gql.js";
 import { setContext } from "./context.js";
 import { config } from "./config.js";
-import User from "./models/User.js";
-import Dashboard from "./models/Dashboard.js";
 import {
   resolveGatewayIntrospection,
   validateDatasourceSessionToken,
@@ -33,6 +31,7 @@ import { queryShareTokenRevocationFeed } from "./shareTokenRevocationFeed.js";
 import { recordApiHttpRequest } from "./runtimeMetrics.js";
 import { deriveClientIp } from "./clientIp.js";
 import { hashLimiterKeyPart } from "./securityLimiter.js";
+import { dataStore } from "./data/index.js";
 
 import dns from "dns";
 
@@ -73,7 +72,7 @@ const ensureAdminUser = async () => {
   }
 
   console.log("Admin creation is enabled. Checking for existing admin...");
-  const admin = await User.findOne({ email: config.adminEmail });
+  const admin = await dataStore.models.User.findOne({ email: config.adminEmail });
 
   if (admin) {
     console.log(`Admin user already exists: ${config.adminEmail}`);
@@ -81,7 +80,7 @@ const ensureAdminUser = async () => {
   }
 
   console.log(`No admin found with email '${config.adminEmail}'. Creating one now...`);
-  await new User({
+  await new dataStore.models.User({
     email: config.adminEmail,
     password: config.adminPassword,
     role: "admin",
@@ -242,7 +241,7 @@ const handleGatewayIntrospection = async (
       return;
     }
 
-    const dashboard = await Dashboard.findOne({ _id: dashboardId }).lean();
+    const dashboard = await dataStore.models.Dashboard.findOne({ _id: dashboardId }).lean();
     if (!dashboard) {
       sendJson(res, 404, { error: "Dashboard not found" });
       return;

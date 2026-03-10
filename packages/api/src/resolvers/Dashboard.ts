@@ -7,9 +7,8 @@ import { createGraphQLError, createPubSub } from "graphql-yoga";
 import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatUserHasRole, ensureThatUserIsLogged } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
-import Dashboard from "../models/Dashboard.js";
-import User from "../models/User.js";
 import { getAuthPolicyState } from "../policyStore.js";
+import { dataStore } from "../data/index.js";
 import {
   buildCollaboratorView,
   ensureDashboardDeletable,
@@ -60,7 +59,9 @@ const resolvers: IResolvers = {
         throw createGraphQLError("Dashboard not found");
       }
 
-      const dashboard = await Dashboard.findOne({ shareToken: normalizedToken }).lean();
+      const dashboard = await dataStore.models.Dashboard.findOne({
+        shareToken: normalizedToken,
+      }).lean();
       if (!dashboard) {
         throw createGraphQLError("Dashboard not found");
       }
@@ -88,7 +89,7 @@ const resolvers: IResolvers = {
         filter = { $or: scopedFilters };
       }
 
-      const dashboards = await Dashboard.find(filter).lean();
+      const dashboards = await dataStore.models.Dashboard.find(filter).lean();
       return dashboards
         .map((dashboard) => {
           const permissions = resolveDashboardPermissions(dashboard, context);
@@ -120,13 +121,15 @@ const resolvers: IResolvers = {
       const visibility = await resolveCreateVisibility(sanitizedInput, context);
       delete sanitizedInput.visibility;
 
-      const created = await new Dashboard({
+      const created = await new dataStore.models.Dashboard({
         ...sanitizedInput,
         visibility,
         user: context.user._id,
       }).save();
 
-      const createdDashboard = await Dashboard.findOne({ _id: created._id }).lean();
+      const createdDashboard = await dataStore.models.Dashboard.findOne({
+        _id: created._id,
+      }).lean();
       if (!createdDashboard) {
         throw createGraphQLError("Dashboard not found");
       }
@@ -181,7 +184,7 @@ const resolvers: IResolvers = {
         }
       }
 
-      const updated = await Dashboard.findOneAndUpdate(
+      const updated = await dataStore.models.Dashboard.findOneAndUpdate(
         { _id },
         { $set: updatePayload },
         { new: true, runValidators: true },
@@ -216,7 +219,7 @@ const resolvers: IResolvers = {
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardDeletable(existing, context);
 
-      const deleted = await Dashboard.findOneAndDelete({ _id }).lean();
+      const deleted = await dataStore.models.Dashboard.findOneAndDelete({ _id }).lean();
       if (!deleted) {
         throw createGraphQLError("Dashboard not found");
       }
@@ -259,7 +262,7 @@ const resolvers: IResolvers = {
       const shareTokenVersionUpdate =
         nextShareTokenVersion === null ? {} : { shareTokenVersion: nextShareTokenVersion };
 
-      const updated = await Dashboard.findOneAndUpdate(
+      const updated = await dataStore.models.Dashboard.findOneAndUpdate(
         { _id },
         {
           $set: {
@@ -304,7 +307,7 @@ const resolvers: IResolvers = {
       ensureDashboardShareManageable(existing, context);
       const nextShareTokenVersion = Math.max(0, Number(existing.shareTokenVersion) || 0) + 1;
 
-      const updated = await Dashboard.findOneAndUpdate(
+      const updated = await dataStore.models.Dashboard.findOneAndUpdate(
         { _id },
         {
           $set: {
@@ -346,7 +349,10 @@ const resolvers: IResolvers = {
       if (!isValidEmail(normalizedEmail)) {
         throw createGraphQLError("The email is not valid");
       }
-      const user = await User.findOne({ email: normalizedEmail, active: true }).lean();
+      const user = await dataStore.models.User.findOne({
+        email: normalizedEmail,
+        active: true,
+      }).lean();
       if (!user) {
         throw createGraphQLError("User not found or login not allowed");
       }
@@ -370,7 +376,7 @@ const resolvers: IResolvers = {
         },
       ]);
 
-      const updated = await Dashboard.findOneAndUpdate(
+      const updated = await dataStore.models.Dashboard.findOneAndUpdate(
         { _id },
         { $set: { acl: nextAcl } },
         { new: true, runValidators: true },
@@ -414,7 +420,7 @@ const resolvers: IResolvers = {
         (entry) => toComparableId(entry.userId) !== targetUserId,
       );
 
-      const updated = await Dashboard.findOneAndUpdate(
+      const updated = await dataStore.models.Dashboard.findOneAndUpdate(
         { _id },
         { $set: { acl: nextAcl } },
         { new: true, runValidators: true },
@@ -444,7 +450,7 @@ const resolvers: IResolvers = {
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardOwnershipTransferAllowed(existing, context);
 
-      const nextOwner = await User.findOne({
+      const nextOwner = await dataStore.models.User.findOne({
         _id: newOwnerUserId,
         active: true,
       }).lean();
@@ -472,7 +478,7 @@ const resolvers: IResolvers = {
         },
       ]);
 
-      const updated = await Dashboard.findOneAndUpdate(
+      const updated = await dataStore.models.Dashboard.findOneAndUpdate(
         { _id },
         {
           $set: {
@@ -509,7 +515,7 @@ const resolvers: IResolvers = {
       subscribe: async (_, args, context) => {
         ensureThatUserIsLogged(context);
 
-        const dashboard = await Dashboard.findOne({ _id: args._id }).lean();
+        const dashboard = await dataStore.models.Dashboard.findOne({ _id: args._id }).lean();
         if (!dashboard) {
           throw createGraphQLError("Dashboard not found");
         }

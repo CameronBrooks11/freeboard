@@ -72,11 +72,7 @@ const mergeResolvedEnv = () => {
 const hasConfiguredValue = (env, keys) =>
   keys.some((key) => typeof env[key] === "string" && String(env[key]).trim() !== "");
 
-const resolveBackend = ({
-  explicitBackend,
-  hasMongoUrl,
-  hasPostgresUrl,
-}) => {
+const resolveBackend = ({ explicitBackend, hasMongoUrl, hasPostgresUrl }) => {
   if (explicitBackend) {
     return explicitBackend;
   }
@@ -109,9 +105,7 @@ const main = () => {
   const warnings = [];
 
   if (explicitBackend && !allowedBackends.has(explicitBackend)) {
-    errors.push(
-      `DB_BACKEND='${explicitBackendRaw}' is invalid. Expected one of: mongo, postgres.`,
-    );
+    errors.push(`DB_BACKEND='${explicitBackendRaw}' is invalid. Expected one of: mongo, postgres.`);
   }
 
   const backend = resolveBackend({
@@ -163,8 +157,12 @@ const main = () => {
     );
   }
 
-  console.log(`${LOG_PREFIX} backend=${backend} explicit=${Boolean(explicitBackend)} strict=${strictMode}`);
-  console.log(`${LOG_PREFIX} mongoUrlConfigured=${hasMongoUrl} postgresUrlConfigured=${hasPostgresUrl}`);
+  console.log(
+    `${LOG_PREFIX} backend=${backend} explicit=${Boolean(explicitBackend)} strict=${strictMode}`,
+  );
+  console.log(
+    `${LOG_PREFIX} mongoUrlConfigured=${hasMongoUrl} postgresUrlConfigured=${hasPostgresUrl}`,
+  );
 
   if (warnings.length > 0) {
     console.warn(`${LOG_PREFIX} warnings:`);

@@ -6,9 +6,7 @@
 import { createGraphQLError } from "graphql-yoga";
 import type { IResolvers } from "@graphql-tools/utils";
 import bcrypt from "bcryptjs";
-import User from "../models/User.js";
-import InviteToken from "../models/InviteToken.js";
-import PasswordResetToken from "../models/PasswordResetToken.js";
+import { dataStore } from "../data/index.js";
 import {
   ensureLimitOfUsersIsNotReached,
   ensureThatUserIsAdministrator,
@@ -46,6 +44,8 @@ import {
   toInviteView,
   toSessionVersion,
 } from "./userHelpers.js";
+
+const { InviteToken, PasswordResetToken, User } = dataStore.models;
 
 const resolvers: IResolvers = {
   Query: {

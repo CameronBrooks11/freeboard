@@ -8,10 +8,10 @@ import { createGraphQLError } from "graphql-yoga";
 import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatUserHasRole, ensureThatUserIsAdministrator } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
-import BrokerProfile, { BROKER_PROFILE_PROTOCOLS } from "../models/BrokerProfile.js";
-import CredentialProfile from "../models/CredentialProfile.js";
+import { dataStore } from "../data/index.js";
 
 const MQTT_ALLOWED_URL_PROTOCOLS = new Set(["mqtt:", "mqtts:"]);
+const { BROKER_PROFILE_PROTOCOLS } = dataStore.constants;
 
 const normalizeProtocol = (value: unknown): string => {
   const normalized = String(value || "mqtt")
@@ -98,7 +98,7 @@ const ensureMqttCredentialProfile = async (
     return null;
   }
 
-  const credentialProfile = await CredentialProfile.findOne({
+  const credentialProfile = await dataStore.models.CredentialProfile.findOne({
     _id: credentialProfileId,
   })
     .select("_id type")
@@ -155,7 +155,7 @@ const resolvers: IResolvers = {
 
       const normalizedProtocol = protocol ? normalizeProtocol(protocol) : null;
       const filter = normalizedProtocol ? { protocol: normalizedProtocol } : {};
-      const profiles = await BrokerProfile.find(filter).sort({ name: 1 }).lean();
+      const profiles = await dataStore.models.BrokerProfile.find(filter).sort({ name: 1 }).lean();
       return profiles.map(toBrokerProfileResponse);
     },
   },
@@ -178,7 +178,7 @@ const resolvers: IResolvers = {
 
       let created;
       try {
-        created = await new BrokerProfile({
+        created = await new dataStore.models.BrokerProfile({
           name,
           description: normalizeDescription(input?.description),
           protocol,
@@ -215,7 +215,7 @@ const resolvers: IResolvers = {
     adminUpdateBrokerProfile: async (_parent, { _id, input }, context) => {
       ensureThatUserIsAdministrator(context);
 
-      const existing = await BrokerProfile.findOne({ _id }).lean();
+      const existing = await dataStore.models.BrokerProfile.findOne({ _id }).lean();
       if (!existing) {
         throw createGraphQLError("Broker profile not found");
       }
@@ -261,7 +261,7 @@ const resolvers: IResolvers = {
 
       let updated;
       try {
-        updated = await BrokerProfile.findOneAndUpdate(
+        updated = await dataStore.models.BrokerProfile.findOneAndUpdate(
           { _id },
           { $set: updatePayload },
           { new: true, runValidators: true },
@@ -295,7 +295,7 @@ const resolvers: IResolvers = {
     adminDeleteBrokerProfile: async (_parent, { _id }, context) => {
       ensureThatUserIsAdministrator(context);
 
-      const deleted = await BrokerProfile.findOneAndDelete({ _id }).lean();
+      const deleted = await dataStore.models.BrokerProfile.findOneAndDelete({ _id }).lean();
       if (!deleted) {
         throw createGraphQLError("Broker profile not found");
       }

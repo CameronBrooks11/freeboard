@@ -4,8 +4,8 @@
  */
 
 import crypto from "node:crypto";
-import SecurityLimiterState from "./models/SecurityLimiterState.js";
 import { config } from "./config.js";
+import { dataStore } from "./data/index.js";
 
 type SecurityLimiterBackend = "memory" | "mongo";
 
@@ -238,7 +238,7 @@ const consumeFixedWindowMongo = async ({
   nowMs: number;
   windowMs: number;
 }): Promise<ConsumeFixedWindowResult> => {
-  const updated = await SecurityLimiterState.findOneAndUpdate(
+  const updated = await dataStore.models.SecurityLimiterState.findOneAndUpdate(
     { _id: documentId },
     {
       $setOnInsert: {
@@ -292,7 +292,7 @@ const readLockMemory = (documentId: string, nowMs: number): LimiterLockState => 
 };
 
 const readLockMongo = async (documentId: string, nowMs: number): Promise<LimiterLockState> => {
-  const existing = await SecurityLimiterState.findOne(
+  const existing = await dataStore.models.SecurityLimiterState.findOne(
     {
       _id: documentId,
       kind: "lock",
@@ -309,7 +309,9 @@ const readLockMongo = async (documentId: string, nowMs: number): Promise<Limiter
   const lockUntilMs = Number(new Date(existing?.lockUntil || 0).getTime()) || 0;
   if (lockUntilMs <= nowMs) {
     if (existing) {
-      await SecurityLimiterState.deleteOne({ _id: documentId }).maxTimeMS(mongoTimeoutMs).exec();
+      await dataStore.models.SecurityLimiterState.deleteOne({ _id: documentId })
+        .maxTimeMS(mongoTimeoutMs)
+        .exec();
     }
     return {
       blocked: false,
@@ -332,7 +334,7 @@ const setLockMemory = (documentId: string, lockUntilMs: number, nowMs: number): 
 };
 
 const setLockMongo = async (documentId: string, lockUntilMs: number): Promise<void> => {
-  await SecurityLimiterState.findOneAndUpdate(
+  await dataStore.models.SecurityLimiterState.findOneAndUpdate(
     { _id: documentId },
     {
       $set: {
@@ -362,14 +364,16 @@ const clearStateMemory = (counterPrefix: string, lockDocumentId: string, nowMs: 
 
 const clearStateMongo = async (counterPrefix: string, lockDocumentId: string): Promise<void> => {
   await Promise.all([
-    SecurityLimiterState.deleteMany({
+    dataStore.models.SecurityLimiterState.deleteMany({
       _id: {
         $regex: new RegExp(`^${escapeRegex(counterPrefix)}`),
       },
     })
       .maxTimeMS(mongoTimeoutMs)
       .exec(),
-    SecurityLimiterState.deleteOne({ _id: lockDocumentId }).maxTimeMS(mongoTimeoutMs).exec(),
+    dataStore.models.SecurityLimiterState.deleteOne({ _id: lockDocumentId })
+      .maxTimeMS(mongoTimeoutMs)
+      .exec(),
   ]);
 };
 

@@ -4,10 +4,9 @@
  */
 
 import crypto from "node:crypto";
-import ServiceAccount from "./models/ServiceAccount.js";
-import ServiceAccountToken from "./models/ServiceAccountToken.js";
 import { config } from "./config.js";
 import { SERVICE_ACCOUNT_SCOPES } from "./serviceAccountScopes.js";
+import { dataStore } from "./data/index.js";
 
 const SERVICE_ACCOUNT_SCOPE_SET = new Set(SERVICE_ACCOUNT_SCOPES);
 
@@ -87,7 +86,10 @@ export const issueServiceAccountToken = async ({
   expiresInHours?: number | null;
   actorUserId?: unknown;
 }) => {
-  const account = await ServiceAccount.findOne({ _id: serviceAccountId, active: true }).lean();
+  const account = await dataStore.models.ServiceAccount.findOne({
+    _id: serviceAccountId,
+    active: true,
+  }).lean();
   if (!account) {
     return null;
   }
@@ -102,7 +104,7 @@ export const issueServiceAccountToken = async ({
       ? null
       : new Date(Date.now() + Math.max(1, Math.floor(Number(expiresInHours) || 1)) * 3600_000);
 
-  const tokenDoc = await new ServiceAccountToken({
+  const tokenDoc = await new dataStore.models.ServiceAccountToken({
     serviceAccountId: toComparableId(account._id),
     scopes: resolvedScopes,
     label: String(label || "").trim() || null,
@@ -112,7 +114,9 @@ export const issueServiceAccountToken = async ({
     createdByUserId: toComparableId(actorUserId),
   }).save();
 
-  const createdToken = await ServiceAccountToken.findOne({ _id: tokenDoc._id }).lean();
+  const createdToken = await dataStore.models.ServiceAccountToken.findOne({
+    _id: tokenDoc._id,
+  }).lean();
   if (!createdToken) {
     return null;
   }
@@ -129,7 +133,9 @@ export const authenticateServiceAccountToken = async (rawToken: unknown) => {
     return null;
   }
 
-  const tokenRecord = await ServiceAccountToken.findOne({ _id: parsed.tokenId }).lean();
+  const tokenRecord = await dataStore.models.ServiceAccountToken.findOne({
+    _id: parsed.tokenId,
+  }).lean();
   if (!tokenRecord || tokenRecord.revokedAt) {
     return null;
   }
@@ -143,7 +149,7 @@ export const authenticateServiceAccountToken = async (rawToken: unknown) => {
     return null;
   }
 
-  const account = await ServiceAccount.findOne({
+  const account = await dataStore.models.ServiceAccount.findOne({
     _id: tokenRecord.serviceAccountId,
     active: true,
   }).lean();
@@ -153,8 +159,11 @@ export const authenticateServiceAccountToken = async (rawToken: unknown) => {
 
   const now = new Date();
   await Promise.allSettled([
-    ServiceAccountToken.updateOne({ _id: tokenRecord._id }, { $set: { lastUsedAt: now } }),
-    ServiceAccount.updateOne({ _id: account._id }, { $set: { lastUsedAt: now } }),
+    dataStore.models.ServiceAccountToken.updateOne(
+      { _id: tokenRecord._id },
+      { $set: { lastUsedAt: now } },
+    ),
+    dataStore.models.ServiceAccount.updateOne({ _id: account._id }, { $set: { lastUsedAt: now } }),
   ]);
 
   return {

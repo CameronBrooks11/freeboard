@@ -6,12 +6,12 @@
 import { createPubSub } from "graphql-yoga";
 import type { IncomingMessage } from "http";
 import { validateAuthToken, type AuthTokenClaims } from "./auth.js";
-import User from "./models/User.js";
-import Dashboard from "./models/Dashboard.js";
 import { authenticateServiceAccountToken } from "./serviceAccountAuth.js";
 import { recordAuthFailureMetric } from "./runtimeMetrics.js";
 import { config } from "./config.js";
 import { deriveClientIp } from "./clientIp.js";
+import { dataStore } from "./data/index.js";
+import type { DataStore } from "./data/contracts.js";
 
 export type ServiceAccountPrincipal = {
   _id: unknown;
@@ -29,7 +29,8 @@ export type UserPrincipal = AuthTokenClaims & {
 
 export type ApiContext = {
   pubsub: ReturnType<typeof createPubSub>;
-  models: { Dashboard: typeof Dashboard; User: typeof User };
+  models: { Dashboard: DataStore["models"]["Dashboard"]; User: DataStore["models"]["User"] };
+  dataStore: DataStore;
   clientIp: string | null;
   user?: UserPrincipal;
   serviceAccount?: ServiceAccountPrincipal;
@@ -83,9 +84,10 @@ export const setContext = async ({
 
   const context: ApiContext = {
     pubsub: createPubSub(),
+    dataStore,
     models: {
-      Dashboard,
-      User,
+      Dashboard: dataStore.models.Dashboard,
+      User: dataStore.models.User,
     },
     clientIp,
   };
@@ -123,7 +125,7 @@ export const setContext = async ({
     try {
       // Validate JWT and attach user claims to context
       const user: AuthTokenClaims = await validateAuthToken(token);
-      const persistedUser = await User.findOne({
+      const persistedUser = await dataStore.models.User.findOne({
         _id: user?._id,
         active: true,
       }).lean();

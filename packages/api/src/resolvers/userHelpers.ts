@@ -5,10 +5,7 @@
 
 import { createGraphQLError } from "graphql-yoga";
 import crypto from "node:crypto";
-import User from "../models/User.js";
-import Dashboard from "../models/Dashboard.js";
-import InviteToken from "../models/InviteToken.js";
-import PasswordResetToken from "../models/PasswordResetToken.js";
+import { dataStore } from "../data/index.js";
 import { createAuthToken } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
 import { normalizeNonAdminRole } from "../policy.js";
@@ -19,6 +16,8 @@ import {
   normalizeEmail,
 } from "../validators.js";
 import { generateOneTimeToken, hashOneTimeToken } from "../tokenSecurity.js";
+
+const { Dashboard, InviteToken, PasswordResetToken, User } = dataStore.models;
 type UserLike = {
   _id?: unknown;
   email?: unknown;
