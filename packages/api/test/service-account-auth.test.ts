@@ -2,28 +2,25 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { afterEach, test } from "node:test";
 
-import ServiceAccount from "../src/models/ServiceAccount.js";
-import ServiceAccountToken from "../src/models/ServiceAccountToken.js";
 import { config } from "../src/config.js";
+import { dataStore } from "../src/data/index.js";
 import {
   authenticateServiceAccountToken,
   normalizeServiceAccountScopes,
 } from "../src/serviceAccountAuth.js";
 
-const originalServiceAccountFindOne = ServiceAccount.findOne;
-const originalServiceAccountUpdateOne = ServiceAccount.updateOne;
-const originalServiceAccountTokenFindOne = ServiceAccountToken.findOne;
-const originalServiceAccountTokenUpdateOne = ServiceAccountToken.updateOne;
-
-const asLean = (value) => ({
-  lean: async () => value,
-});
+const serviceAccountRepository = dataStore.repositories.serviceAccounts;
+const serviceAccountTokenRepository = dataStore.repositories.serviceAccountTokens;
+const originalServiceAccountFindActiveById = serviceAccountRepository.findActiveById;
+const originalServiceAccountTouchLastUsed = serviceAccountRepository.touchLastUsed;
+const originalServiceAccountTokenFindById = serviceAccountTokenRepository.findById;
+const originalServiceAccountTokenTouchLastUsed = serviceAccountTokenRepository.touchLastUsed;
 
 afterEach(() => {
-  ServiceAccount.findOne = originalServiceAccountFindOne;
-  ServiceAccount.updateOne = originalServiceAccountUpdateOne;
-  ServiceAccountToken.findOne = originalServiceAccountTokenFindOne;
-  ServiceAccountToken.updateOne = originalServiceAccountTokenUpdateOne;
+  serviceAccountRepository.findActiveById = originalServiceAccountFindActiveById;
+  serviceAccountRepository.touchLastUsed = originalServiceAccountTouchLastUsed;
+  serviceAccountTokenRepository.findById = originalServiceAccountTokenFindById;
+  serviceAccountTokenRepository.touchLastUsed = originalServiceAccountTokenTouchLastUsed;
 });
 
 test("normalizeServiceAccountScopes keeps only supported unique values", () => {
@@ -61,16 +58,17 @@ test("authenticateServiceAccountToken validates hash and updates lastUsedAt", as
     scopes: ["ops:read", "datasource:mint"],
   };
 
-  ServiceAccountToken.findOne = ({ _id }) => asLean(_id === tokenId ? tokenRecord : null);
-  ServiceAccount.findOne = ({ _id, active }) =>
-    asLean(_id === "svc-1" && active === true ? accountRecord : null);
+  serviceAccountTokenRepository.findById = async ({ tokenId: lookupTokenId }) =>
+    lookupTokenId === tokenId ? tokenRecord : null;
+  serviceAccountRepository.findActiveById = async ({ accountId }) =>
+    accountId === "svc-1" ? accountRecord : null;
 
   let tokenLastUsedUpdateSeen = false;
   let accountLastUsedUpdateSeen = false;
-  ServiceAccountToken.updateOne = async () => {
+  serviceAccountTokenRepository.touchLastUsed = async () => {
     tokenLastUsedUpdateSeen = true;
   };
-  ServiceAccount.updateOne = async () => {
+  serviceAccountRepository.touchLastUsed = async () => {
     accountLastUsedUpdateSeen = true;
   };
 
@@ -83,21 +81,25 @@ test("authenticateServiceAccountToken validates hash and updates lastUsedAt", as
 });
 
 test("authenticateServiceAccountToken rejects invalid token hash", async () => {
-  ServiceAccountToken.findOne = () =>
-    asLean({
-      _id: "token-1",
-      serviceAccountId: "svc-1",
-      scopes: ["ops:read"],
-      tokenHash: "not-a-real-hash",
-      revokedAt: null,
-      expiresAt: null,
-    });
-  ServiceAccount.findOne = () =>
-    asLean({
-      _id: "svc-1",
-      active: true,
-      scopes: ["ops:read"],
-    });
+  serviceAccountTokenRepository.findById = async () => ({
+    _id: "token-1",
+    serviceAccountId: "svc-1",
+    scopes: ["ops:read"],
+    tokenHash: "not-a-real-hash",
+    revokedAt: null,
+    expiresAt: null,
+  });
+  serviceAccountRepository.findActiveById = async () => ({
+    _id: "svc-1",
+    active: true,
+    scopes: ["ops:read"],
+    name: "ops",
+    description: "",
+    createdByUserId: null,
+    lastUsedAt: null,
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+  });
 
   const result = await authenticateServiceAccountToken("fsa_token-1.secret");
   assert.equal(result, null);

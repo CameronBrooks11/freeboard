@@ -3,25 +3,39 @@ import { afterEach, test } from "node:test";
 import bcrypt from "bcryptjs";
 
 import { validateAuthToken } from "../src/auth.js";
-import InviteToken from "../src/models/InviteToken.js";
-import Policy from "../src/models/Policy.js";
-import User from "../src/models/User.js";
-import UserResolvers from "../src/resolvers/User.js";
+import { dataStore } from "../src/data/index.js";
 import { resetLoginThrottleState } from "../src/loginThrottle.js";
+import UserResolvers from "../src/resolvers/User.js";
 
-const asLean = (value) => ({
-  lean: async () => value,
-});
+const policyRepository = dataStore.repositories.policy;
+const userRepository = dataStore.repositories.users;
+const inviteTokenRepository = dataStore.repositories.inviteTokens;
+const auditRepository = dataStore.repositories.audit;
 
 const originalMethods = {
-  policyFindOne: Policy.findOne,
-  userFindOne: User.findOne,
-  userEstimateCount: User.estimatedDocumentCount,
-  userCountDocuments: User.countDocuments,
-  userFindOneAndUpdate: User.findOneAndUpdate,
-  userPrototypeSave: User.prototype.save,
-  inviteFindOne: InviteToken.findOne,
+  policyReadValue: policyRepository.readValue,
+  userFindById: userRepository.findById,
+  userFindByEmail: userRepository.findByEmail,
+  userCountAll: userRepository.countAll,
+  userUpdateById: userRepository.updateById,
+  userCreate: userRepository.create,
+  inviteFindActiveByTokenHash: inviteTokenRepository.findActiveByTokenHash,
+  auditIsReady: auditRepository.isReady,
 };
+
+const buildUser = (overrides = {}) => ({
+  _id: "user-1",
+  email: "user@example.com",
+  password: bcrypt.hashSync("StrongPass123!", 8),
+  role: "viewer",
+  active: true,
+  sessionVersion: 0,
+  registrationDate: new Date("2026-01-01T00:00:00.000Z"),
+  lastLogin: new Date("2026-01-01T00:00:00.000Z"),
+  createdAt: new Date("2026-01-01T00:00:00.000Z"),
+  updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+  ...overrides,
+});
 
 const stubPolicyValues = (overrides = {}) => {
   const defaults = {
@@ -29,25 +43,23 @@ const stubPolicyValues = (overrides = {}) => {
     "auth.registration.defaultRole": "viewer",
     "auth.publish.editorCanPublish": false,
     "app.execution.mode": "safe",
+    "dashboard.visibility.default": "private",
+    "dashboard.listing.public.enabled": false,
   };
   const values = { ...defaults, ...overrides };
 
-  Policy.findOne = ({ key }) => {
-    if (!Object.prototype.hasOwnProperty.call(values, key)) {
-      return asLean(null);
-    }
-    return asLean({ key, value: values[key] });
-  };
+  policyRepository.readValue = async ({ key }) => values[key] ?? null;
 };
 
 afterEach(() => {
-  Policy.findOne = originalMethods.policyFindOne;
-  User.findOne = originalMethods.userFindOne;
-  User.estimatedDocumentCount = originalMethods.userEstimateCount;
-  User.countDocuments = originalMethods.userCountDocuments;
-  User.findOneAndUpdate = originalMethods.userFindOneAndUpdate;
-  User.prototype.save = originalMethods.userPrototypeSave;
-  InviteToken.findOne = originalMethods.inviteFindOne;
+  policyRepository.readValue = originalMethods.policyReadValue;
+  userRepository.findById = originalMethods.userFindById;
+  userRepository.findByEmail = originalMethods.userFindByEmail;
+  userRepository.countAll = originalMethods.userCountAll;
+  userRepository.updateById = originalMethods.userUpdateById;
+  userRepository.create = originalMethods.userCreate;
+  inviteTokenRepository.findActiveByTokenHash = originalMethods.inviteFindActiveByTokenHash;
+  auditRepository.isReady = originalMethods.auditIsReady;
   resetLoginThrottleState();
 });
 
@@ -55,6 +67,7 @@ test("registerUser rejects when registration mode is disabled", async () => {
   stubPolicyValues({
     "auth.registration.mode": "disabled",
   });
+  auditRepository.isReady = () => false;
 
   await assert.rejects(
     () =>
@@ -70,6 +83,7 @@ test("registerUser rejects when registration mode requires invite", async () => 
   stubPolicyValues({
     "auth.registration.mode": "invite",
   });
+  auditRepository.isReady = () => false;
 
   await assert.rejects(
     () =>
@@ -86,26 +100,19 @@ test("registerUser respects open mode and default role policy", async () => {
     "auth.registration.mode": "open",
     "auth.registration.defaultRole": "editor",
   });
+  auditRepository.isReady = () => false;
 
   let savedUser = null;
-  User.estimatedDocumentCount = async () => 0;
-  User.findOne = (filter) => {
-    if (filter.email) {
-      return asLean(null);
-    }
-    if (filter._id === "user-1") {
-      return asLean(savedUser);
-    }
-    return asLean(null);
-  };
-  User.prototype.save = async function saveStub() {
-    savedUser = {
+  userRepository.countAll = async () => 0;
+  userRepository.findByEmail = async () => null;
+  userRepository.create = async ({ email, role, active }) => {
+    savedUser = buildUser({
       _id: "user-1",
-      email: this.email,
-      role: this.role,
-      active: this.active,
-    };
-    return { _id: "user-1" };
+      email,
+      role,
+      active,
+    });
+    return savedUser;
   };
 
   const result = await UserResolvers.Mutation.registerUser(null, {
@@ -125,11 +132,10 @@ test("registerUser respects open mode and default role policy", async () => {
 });
 
 test("authUser returns explicit deactivation message for inactive users", async () => {
-  User.findOne = () =>
-    asLean({
+  userRepository.findByEmail = async () =>
+    buildUser({
       _id: "user-1",
       email: "inactive.user@example.com",
-      role: "viewer",
       active: false,
       password: bcrypt.hashSync("StrongPass123!", 8),
     });
@@ -163,8 +169,8 @@ test("adminCreateInvite rejects non-admin context", async () => {
 });
 
 test("adminUpdateUser prevents self-demotion", async () => {
-  User.findOne = () =>
-    asLean({
+  userRepository.findById = async () =>
+    buildUser({
       _id: "admin-1",
       email: "admin@example.com",
       role: "admin",
@@ -188,7 +194,7 @@ test("adminUpdateUser prevents self-demotion", async () => {
 });
 
 test("acceptInvite rejects invalid or expired token", async () => {
-  InviteToken.findOne = () => asLean(null);
+  inviteTokenRepository.findActiveByTokenHash = async () => null;
 
   await assert.rejects(
     () =>
@@ -201,22 +207,19 @@ test("acceptInvite rejects invalid or expired token", async () => {
 });
 
 test("adminUpdateUser increments sessionVersion when role or active changes", async () => {
-  let updatePayload = null;
-  User.findOne = ({ _id }) =>
-    asLean(
-      _id === "user-1"
-        ? {
-            _id: "user-1",
-            email: "editor@example.com",
-            role: "editor",
-            active: true,
-          }
-        : null,
-    );
-  User.findOneAndUpdate = (filter, update) => {
-    assert.deepEqual(filter, { _id: "user-1" });
-    updatePayload = update;
-    return asLean({
+  let updateParams = null;
+  userRepository.findById = async ({ userId }) =>
+    userId === "user-1"
+      ? buildUser({
+          _id: "user-1",
+          email: "editor@example.com",
+          role: "editor",
+          active: true,
+        })
+      : null;
+  userRepository.updateById = async (params) => {
+    updateParams = params;
+    return buildUser({
       _id: "user-1",
       email: "editor@example.com",
       role: "viewer",
@@ -224,6 +227,7 @@ test("adminUpdateUser increments sessionVersion when role or active changes", as
       sessionVersion: 1,
     });
   };
+  auditRepository.isReady = () => false;
 
   const result = await UserResolvers.Mutation.adminUpdateUser(
     null,
@@ -231,12 +235,13 @@ test("adminUpdateUser increments sessionVersion when role or active changes", as
     { user: { _id: "admin-1", role: "admin", active: true } },
   );
 
-  assert.deepEqual(updatePayload, {
-    $set: {
+  assert.deepEqual(updateParams, {
+    userId: "user-1",
+    patch: {
       role: "viewer",
       active: false,
     },
-    $inc: { sessionVersion: 1 },
+    incrementSessionVersion: true,
   });
   assert.equal(result.active, false);
   assert.equal(result.role, "viewer");
@@ -244,8 +249,8 @@ test("adminUpdateUser increments sessionVersion when role or active changes", as
 
 test("authUser throttles repeated failed login attempts", async () => {
   const passwordHash = bcrypt.hashSync("StrongPass123!", 8);
-  User.findOne = () =>
-    asLean({
+  userRepository.findByEmail = async () =>
+    buildUser({
       _id: "user-1",
       email: "user@example.com",
       role: "viewer",
@@ -253,7 +258,6 @@ test("authUser throttles repeated failed login attempts", async () => {
       sessionVersion: 0,
       password: passwordHash,
     });
-  User.findOneAndUpdate = () => asLean(null);
 
   for (let i = 0; i < 5; i += 1) {
     await assert.rejects(

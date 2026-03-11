@@ -124,16 +124,13 @@ const boundedInteger = (
   return normalized;
 };
 
-type DataBackend = "mongo" | "postgres";
+type DataBackend = "postgres";
 type SecurityLimiterBackend = "memory" | "postgres";
 
 const normalizeDataBackend = (value: unknown): DataBackend | null => {
   const normalized = String(value || "")
     .trim()
     .toLowerCase();
-  if (normalized === "mongo") {
-    return "mongo";
-  }
   if (normalized === "postgres") {
     return "postgres";
   }
@@ -189,20 +186,16 @@ const normalizeLimiterNamespace = (value: unknown, fallback: string): string => 
 
 const environment = String(process.env.NODE_ENV || "development").toLowerCase();
 const isNonDevRuntime = isNonDevRuntimeEnv(environment);
-const isTestRuntime = environment === "test";
 const explicitBackendRaw = String(process.env.DB_BACKEND || "")
   .trim()
   .toLowerCase();
 const explicitBackend = explicitBackendRaw ? normalizeDataBackend(explicitBackendRaw) : null;
 if (explicitBackendRaw && !explicitBackend) {
-  throw new Error("DB_BACKEND must be one of: postgres, mongo.");
+  throw new Error("DB_BACKEND must be one of: postgres.");
 }
 const postgresUrl = resolvePostgresUrl();
 const hasExplicitPostgresUrl = Boolean(postgresUrl);
-const dbBackend: DataBackend = explicitBackend === "mongo" && isTestRuntime ? "mongo" : "postgres";
-if (explicitBackend === "mongo" && !isTestRuntime) {
-  throw new Error("DB_BACKEND='mongo' is supported only in NODE_ENV=test during transition.");
-}
+const dbBackend: DataBackend = "postgres";
 const explicitLimiterBackendRaw = String(process.env.SECURITY_LIMITER_BACKEND || "")
   .trim()
   .toLowerCase();
@@ -244,7 +237,7 @@ const credentialEncryptionKey =
  * @typedef {Object} Config
  * @property {string} host              - Hostname for the API server.
  * @property {number} port              - Port the API server listens on.
- * @property {"mongo"|"postgres"} dbBackend - Selected data backend.
+ * @property {"postgres"} dbBackend - Selected data backend.
  * @property {string|null} postgresUrl  - PostgreSQL connection URL when configured.
  * @property {number} postgresConnectTimeoutMs - PostgreSQL connection timeout.
  * @property {string} jwtSecret         - Secret key for signing JWTs.

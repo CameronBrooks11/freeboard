@@ -221,7 +221,7 @@ test("config rejects non-postgres DB_BACKEND values", async () => {
   await withEnv(
     {
       NODE_ENV: "production",
-      DB_BACKEND: "mongo",
+      DB_BACKEND: "mysql",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
       DATABASE_URL: TEST_DATABASE_URL,
@@ -230,29 +230,26 @@ test("config rejects non-postgres DB_BACKEND values", async () => {
       CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
     },
     async () => {
-      await assert.rejects(
-        () => importConfigFresh(),
-        /DB_BACKEND='mongo' is supported only in NODE_ENV=test during transition/,
-      );
+      await assert.rejects(() => importConfigFresh(), /DB_BACKEND must be one of: postgres/);
     },
   );
 });
 
-test("config allows DB_BACKEND=mongo in test runtime for compatibility tests", async () => {
+test("config accepts explicit DB_BACKEND=postgres", async () => {
   await withEnv(
     {
       NODE_ENV: "test",
-      DB_BACKEND: "mongo",
+      DB_BACKEND: "postgres",
       SECURITY_LIMITER_BACKEND: "",
-      DATABASE_URL: "",
-      FREEBOARD_POSTGRES_URL: "",
+      DATABASE_URL: TEST_DATABASE_URL,
+      FREEBOARD_POSTGRES_URL: TEST_DATABASE_URL,
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
     },
     async () => {
       const { config } = await importConfigFresh();
-      assert.equal(config.dbBackend, "mongo");
-      assert.equal(config.postgresUrl, null);
+      assert.equal(config.dbBackend, "postgres");
+      assert.equal(config.postgresUrl, TEST_DATABASE_URL);
     },
   );
 });
@@ -285,7 +282,7 @@ test("config rejects unsupported security limiter backend values", async () => {
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
       DATABASE_URL: TEST_DATABASE_URL,
-      SECURITY_LIMITER_BACKEND: "mongo",
+      SECURITY_LIMITER_BACKEND: "redis",
       JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
       GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
       CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,

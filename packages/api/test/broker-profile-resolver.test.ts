@@ -2,45 +2,40 @@ import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 
 import BrokerProfileResolvers from "../src/resolvers/BrokerProfile.js";
-import BrokerProfile from "../src/models/BrokerProfile.js";
-import CredentialProfile from "../src/models/CredentialProfile.js";
+import { dataStore } from "../src/data/index.js";
 
+const brokerProfileRepository = dataStore.repositories.brokerProfiles;
+const credentialProfileRepository = dataStore.repositories.credentialProfiles;
 const originalMethods = {
-  brokerFind: BrokerProfile.find,
-  brokerFindOne: BrokerProfile.findOne,
-  brokerFindOneAndUpdate: BrokerProfile.findOneAndUpdate,
-  brokerFindOneAndDelete: BrokerProfile.findOneAndDelete,
-  brokerPrototypeSave: BrokerProfile.prototype.save,
-  credentialProfileFindOne: CredentialProfile.findOne,
+  brokerListSortedByName: brokerProfileRepository.listSortedByName,
+  brokerCreate: brokerProfileRepository.create,
+  credentialProfileFindById: credentialProfileRepository.findById,
 };
 
-const asLean = (value) => ({
-  lean: async () => value,
-});
-
 afterEach(() => {
-  BrokerProfile.find = originalMethods.brokerFind;
-  BrokerProfile.findOne = originalMethods.brokerFindOne;
-  BrokerProfile.findOneAndUpdate = originalMethods.brokerFindOneAndUpdate;
-  BrokerProfile.findOneAndDelete = originalMethods.brokerFindOneAndDelete;
-  BrokerProfile.prototype.save = originalMethods.brokerPrototypeSave;
-  CredentialProfile.findOne = originalMethods.credentialProfileFindOne;
+  brokerProfileRepository.listSortedByName = originalMethods.brokerListSortedByName;
+  brokerProfileRepository.create = originalMethods.brokerCreate;
+  credentialProfileRepository.findById = originalMethods.credentialProfileFindById;
 });
 
 test("brokerProfiles query returns profiles for editor role", async () => {
-  BrokerProfile.find = () => ({
-    sort: () =>
-      asLean([
-        {
-          _id: "broker-1",
-          name: "Factory Broker",
-          protocol: "mqtt",
-          brokerUrl: "mqtt://broker.example.com:1883",
-          topicAllowlist: ["factory/#"],
-          allowPublicUse: false,
-        },
-      ]),
-  });
+  brokerProfileRepository.listSortedByName = async () => [
+    {
+      _id: "broker-1",
+      name: "Factory Broker",
+      description: "",
+      protocol: "mqtt",
+      brokerUrl: "mqtt://broker.example.com:1883",
+      tls: {},
+      credentialProfileId: null,
+      allowPublicUse: false,
+      topicAllowlist: ["factory/#"],
+      createdBy: null,
+      updatedBy: null,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    },
+  ];
 
   const result = await BrokerProfileResolvers.Query.brokerProfiles(
     null,
@@ -55,8 +50,18 @@ test("brokerProfiles query returns profiles for editor role", async () => {
 });
 
 test("adminCreateBrokerProfile enforces basic credential profile for mqtt", async () => {
-  CredentialProfile.findOne = () => ({
-    select: () => asLean({ _id: "cred-1", type: "bearer" }),
+  credentialProfileRepository.findById = async () => ({
+    _id: "cred-1",
+    name: "HTTP bearer",
+    description: "",
+    type: "bearer",
+    allowPublicUse: false,
+    metadata: {},
+    secret: {},
+    createdBy: null,
+    updatedBy: null,
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    updatedAt: new Date("2026-01-01T00:00:00.000Z"),
   });
 
   await assert.rejects(
@@ -78,29 +83,35 @@ test("adminCreateBrokerProfile enforces basic credential profile for mqtt", asyn
 });
 
 test("adminCreateBrokerProfile creates mqtt broker profile with normalized values", async () => {
-  CredentialProfile.findOne = () => ({
-    select: () => asLean({ _id: "cred-basic", type: "basic" }),
+  credentialProfileRepository.findById = async () => ({
+    _id: "cred-basic",
+    name: "MQTT basic",
+    description: "",
+    type: "basic",
+    allowPublicUse: false,
+    metadata: {},
+    secret: {},
+    createdBy: null,
+    updatedBy: null,
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    updatedAt: new Date("2026-01-01T00:00:00.000Z"),
   });
 
-  BrokerProfile.prototype.save = async function saveStub() {
-    return {
-      _id: "broker-created",
-      allowPublicUse: this.allowPublicUse,
-      toObject: () => ({
-        _id: "broker-created",
-        name: this.name,
-        description: this.description,
-        protocol: this.protocol,
-        brokerUrl: this.brokerUrl,
-        tls: this.tls,
-        credentialProfileId: this.credentialProfileId,
-        allowPublicUse: this.allowPublicUse,
-        topicAllowlist: this.topicAllowlist,
-        createdAt: new Date("2026-01-01T00:00:00.000Z"),
-        updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-      }),
-    };
-  };
+  brokerProfileRepository.create = async (params) => ({
+    _id: "broker-created",
+    name: params.name,
+    description: params.description,
+    protocol: params.protocol,
+    brokerUrl: params.brokerUrl,
+    tls: params.tls,
+    credentialProfileId: params.credentialProfileId,
+    allowPublicUse: params.allowPublicUse,
+    topicAllowlist: params.topicAllowlist,
+    createdBy: String(params.createdBy || ""),
+    updatedBy: String(params.updatedBy || ""),
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+  });
 
   const result = await BrokerProfileResolvers.Mutation.adminCreateBrokerProfile(
     null,

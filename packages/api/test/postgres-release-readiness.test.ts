@@ -4,13 +4,10 @@ import { after, beforeEach, test } from "node:test";
 import { dataStore } from "../src/data/index.js";
 import { closePostgresPool, getPostgresPool } from "../src/db/postgres/client.js";
 
-const isPostgresTestRun =
-  String(process.env.DB_BACKEND || "")
-    .trim()
-    .toLowerCase() === "postgres";
+const isPostgresTestRun = String(process.env.RUN_POSTGRES_RELEASE_READINESS || "").trim() === "1";
 
 if (!isPostgresTestRun) {
-  test("postgres release readiness smoke is skipped outside postgres backend runs", {
+  test("postgres release readiness smoke is skipped outside explicit readiness runs", {
     skip: true,
   });
 }

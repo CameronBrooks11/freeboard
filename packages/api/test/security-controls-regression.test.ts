@@ -6,20 +6,17 @@ import bcrypt from "bcryptjs";
 import { deriveClientIp } from "../src/clientIp.js";
 import { config } from "../src/config.js";
 import { resetLoginThrottleState } from "../src/loginThrottle.js";
-import Dashboard from "../src/models/Dashboard.js";
-import User from "../src/models/User.js";
 import { resetRateLimitState } from "../src/rateLimit.js";
 import DatasourceResolvers from "../src/resolvers/Datasource.js";
 import UserResolvers from "../src/resolvers/User.js";
 import { getApiRuntimeMetricsSnapshot } from "../src/runtimeMetrics.js";
+import { dataStore } from "../src/data/index.js";
 
-const originalDashboardFindOne = Dashboard.findOne;
-const originalUserFindOne = User.findOne;
-const originalUserFindOneAndUpdate = User.findOneAndUpdate;
-
-const asLean = (value: unknown) => ({
-  lean: async () => value,
-});
+const dashboardRepository = dataStore.repositories.dashboards;
+const userRepository = dataStore.repositories.users;
+const originalDashboardFindById = dashboardRepository.findById;
+const originalUserFindByEmail = userRepository.findByEmail;
+const originalUserTouchLastLogin = userRepository.touchLastLogin;
 
 const createRequest = ({
   forwardedFor,
@@ -43,9 +40,9 @@ const deriveTrustedIpFromForwardedChain = (forwardedFor: string): string =>
   });
 
 afterEach(() => {
-  Dashboard.findOne = originalDashboardFindOne;
-  User.findOne = originalUserFindOne;
-  User.findOneAndUpdate = originalUserFindOneAndUpdate;
+  dashboardRepository.findById = originalDashboardFindById;
+  userRepository.findByEmail = originalUserFindByEmail;
+  userRepository.touchLastLogin = originalUserTouchLastLogin;
   resetLoginThrottleState();
   resetRateLimitState();
 });
@@ -55,24 +52,27 @@ test("authUser throttle enforces trusted IP identity and blocks spoofed-prefix b
   const passwordHash = bcrypt.hashSync("StrongPass123!", 8);
   const maxAttempts = Math.max(1, Number(config.authLoginMaxAttempts) || 1);
 
-  User.findOne = ({ email }: { email?: string }) => {
+  userRepository.findByEmail = async ({ email }) => {
     const normalizedEmail = String(email || "")
       .trim()
       .toLowerCase();
-    return asLean(
-      normalizedEmail === "user@example.com"
-        ? {
-            _id: "user-1",
-            email: "user@example.com",
-            role: "viewer",
-            active: true,
-            sessionVersion: 0,
-            password: passwordHash,
-          }
-        : null,
-    );
+    if (normalizedEmail !== "user@example.com") {
+      return null;
+    }
+    return {
+      _id: "user-1",
+      email: "user@example.com",
+      role: "viewer",
+      active: true,
+      sessionVersion: 0,
+      password: passwordHash,
+      registrationDate: new Date("2026-01-01T00:00:00.000Z"),
+      lastLogin: new Date("2026-01-01T00:00:00.000Z"),
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    };
   };
-  User.findOneAndUpdate = () => asLean(null);
+  userRepository.touchLastLogin = async () => {};
 
   const trustedIpFromRequestA = deriveTrustedIpFromForwardedChain("198.51.100.10, 203.0.113.44");
   const trustedIpFromRequestB = deriveTrustedIpFromForwardedChain("198.51.100.11, 203.0.113.44");
@@ -125,30 +125,37 @@ test("public datasource mint limiter keys by trusted IP and rejects spoofed forw
   const beforeMetrics = getApiRuntimeMetricsSnapshot();
   const publicIpLimit = Math.max(1, Number(config.datasourceTokenMintRateLimitPublicIpPerMin) || 1);
 
-  Dashboard.findOne = ({ _id }: { _id?: string }) =>
-    asLean(
-      _id === "dash-public-rate-limit"
-        ? {
-            _id: "dash-public-rate-limit",
-            user: "owner-1",
-            visibility: "public",
-            shareToken: "public-share-token",
-            shareTokenVersion: 1,
-            acl: [],
-            datasources: [
-              {
-                id: "ds-public-1",
-                type: "http",
-                settings: {
-                  url: "https://example.com/api/status",
-                  method: "GET",
-                  parser: "json",
-                },
+  dashboardRepository.findById = async ({ dashboardId }) =>
+    dashboardId === "dash-public-rate-limit"
+      ? {
+          _id: "dash-public-rate-limit",
+          user: "owner-1",
+          version: "1",
+          title: "Rate-limit dashboard",
+          visibility: "public",
+          shareToken: "public-share-token",
+          shareTokenVersion: 1,
+          acl: [],
+          image: null,
+          datasources: [
+            {
+              id: "ds-public-1",
+              type: "http",
+              settings: {
+                url: "https://example.com/api/status",
+                method: "GET",
+                parser: "json",
               },
-            ],
-          }
-        : null,
-    );
+            },
+          ],
+          columns: 3,
+          width: "md",
+          panes: [],
+          settings: {},
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        }
+      : null;
 
   const trustedIpFromRequestA = deriveTrustedIpFromForwardedChain("198.51.100.20, 203.0.113.70");
   const trustedIpFromRequestB = deriveTrustedIpFromForwardedChain("198.51.100.21, 203.0.113.70");

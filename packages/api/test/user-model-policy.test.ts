@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import User from "../src/models/User.js";
+import { normalizeRole } from "../src/policy.js";
 import { isStrongPassword, isValidEmail, normalizeEmail } from "../src/validators.js";
 
 test("email validator accepts standard normalized address", () => {
@@ -19,38 +19,12 @@ test("password validator enforces strong policy", () => {
   assert.equal(isStrongPassword("StrongPass123!"), true);
 });
 
-test("user model rejects invalid email/password at schema validation", () => {
-  const user = new User({
-    email: "invalid-email",
-    password: "weakpass",
-  });
-
-  const validationError = user.validateSync();
-  assert.ok(validationError);
-  assert.ok(validationError.errors.email);
-  assert.ok(validationError.errors.password);
+test("normalizeRole accepts supported role values", () => {
+  assert.equal(normalizeRole("viewer"), "viewer");
+  assert.equal(normalizeRole(" Editor "), "editor");
+  assert.equal(normalizeRole("ADMIN"), "admin");
 });
 
-test("user model accepts valid credentials at schema validation", () => {
-  const user = new User({
-    email: "valid.user@example.com",
-    password: "StrongPass123!",
-  });
-
-  const validationError = user.validateSync();
-  assert.equal(validationError, undefined);
-  assert.equal(user.role, "viewer");
-  assert.equal(user.sessionVersion, 0);
-});
-
-test("user model rejects unsupported role values", () => {
-  const user = new User({
-    email: "valid.user@example.com",
-    password: "StrongPass123!",
-    role: "superadmin",
-  });
-
-  const validationError = user.validateSync();
-  assert.ok(validationError);
-  assert.ok(validationError.errors.role);
+test("normalizeRole rejects unsupported role values", () => {
+  assert.throws(() => normalizeRole("superadmin"), /Invalid role/);
 });
