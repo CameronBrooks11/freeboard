@@ -8,7 +8,7 @@ import {
   loadMigrations,
 } from "./lib/postgres-migration-utils.mjs";
 
-const LOG_PREFIX = "[db:migrate:status]";
+const LOG_PREFIX = "[db:schema:status]";
 
 const main = async () => {
   const pool = await createMigrationPool();
@@ -39,7 +39,7 @@ const main = async () => {
     const migrationVersions = new Set(migrations.map((migration) => migration.version));
     const unknownApplied = applied.filter((row) => !migrationVersions.has(row.version));
     if (unknownApplied.length > 0) {
-      console.warn(`${LOG_PREFIX} applied migrations missing from files:`);
+      console.warn(`${LOG_PREFIX} applied schema migrations missing from files:`);
       for (const row of unknownApplied) {
         console.warn(`${LOG_PREFIX} - ${row.version} ${row.name}`);
       }

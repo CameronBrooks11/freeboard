@@ -23,44 +23,44 @@ Use this runbook for final release hardening when PostgreSQL is the active datas
 Primary command (runs full Sprint 30.9 matrix):
 
 ```bash
-npm run check:release:postgres
+npm run check:release
 ```
 
 Optional (skip browser smoke temporarily):
 
 ```bash
-npm run check:release:postgres -- --skip-e2e
+npm run check:release -- --skip-e2e
 ```
 
 E2E bootstrap port behavior:
 
-1. `check:release:postgres` bootstraps a disposable Postgres compose container by default for the full matrix (including migration checks), then shuts it down at the end.
+1. `check:release` bootstraps a disposable Postgres compose container by default for the full matrix (including schema checks), then shuts it down at the end.
 2. The disposable container uses host port `55432` by default to avoid collisions with local/staging Postgres already using `5432`.
 3. Override port with `CHECK_RELEASE_E2E_POSTGRES_PORT=<port>` when needed.
 4. Disable automatic bootstrap only if you intentionally want an external DB:
    - `CHECK_RELEASE_BOOTSTRAP_POSTGRES=0`
-   - or `npm run check:release:postgres -- --no-bootstrap-postgres`
+   - or `npm run check:release -- --no-bootstrap-postgres`
 
 Equivalent manual command set:
 
 ```bash
-npm run check:db:migration-readiness:strict
-npm run db:migrate:status
-npm run db:migrate
-npm run db:migrate:status
+npm run check:db:ready:strict
+npm run db:schema:status
+npm run db:schema:apply
+npm run db:schema:status
 npm run format:check
 npm run lint
 npm run check:ts:debt
 npm run check:ts:source-artifacts
 npm run test:shared
 npm run test:api
-npm run test:api:postgres
+npm run test:api:smoke
 npm run test:ui
 npm run test:gateway
 npm run test:e2e:smoke
 npm run build:verify
 npm run typecheck
-npm run db:migrate:status
+npm run db:schema:status
 ```
 
 ## Security and Ops Runbook Pass
@@ -86,5 +86,5 @@ Record completion evidence in your release notes/change log:
 
 1. validation matrix run ID and timestamp
 2. CI run URL with passing required jobs
-3. migration status output (pre/post)
+3. schema status output (pre/post)
 4. runbook owner signoff (engineering + operations)

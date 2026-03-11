@@ -124,7 +124,7 @@ For compose-backed Postgres:
 
 1. Create/update DB credentials in a maintenance window.
 2. Update `FREEBOARD_POSTGRES_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` in secret store.
-3. Restart API and rerun migration status checks (`npm run db:migrate:status`) against the updated connection.
+3. Restart API and rerun schema status checks (`npm run db:schema:status`) against the updated connection.
 
 Credential rotation should be validated with API login and datasource execution checks before closing the change.
 
@@ -208,8 +208,8 @@ Use masked/protected CI variables and avoid logging secret values.
 
 1. Identify exposed secret class and impacted boundary (user auth, gateway trust, db creds, encryption key).
 2. Contain quickly:
-   - for external access incidents, optionally enforce private visibility:
-     - `npm run dashboards:visibility:enforce-private -- --apply`
+   - disable external routes/ingress for impacted surfaces.
+   - move impacted dashboards to `private` visibility via admin/API controls.
 3. Rotate compromised secrets using the playbooks above.
 4. Verify authentication, datasource fetch, realtime flows, and admin access paths.
 5. Record rotation timestamp + scope in your operations log.

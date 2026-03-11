@@ -3,7 +3,7 @@
 import { spawn } from "node:child_process";
 import { URL } from "node:url";
 
-const LOG_PREFIX = "[check-release-readiness-postgres]";
+const LOG_PREFIX = "[check:release]";
 const isWindows = process.platform === "win32";
 const dockerCommand = isWindows ? "docker.exe" : "docker";
 const npmExecPath = process.env.npm_execpath;
@@ -186,23 +186,23 @@ const main = async () => {
   });
 
   const matrix = [
-    "check:db:migration-readiness:strict",
-    "db:migrate:status",
-    "db:migrate",
-    "db:migrate:status",
+    "check:db:ready:strict",
+    "db:schema:status",
+    "db:schema:apply",
+    "db:schema:status",
     "format:check",
     "lint",
     "check:ts:debt",
     "check:ts:source-artifacts",
     "test:shared",
     "test:api",
-    "test:api:postgres",
+    "test:api:smoke",
     "test:ui",
     "test:gateway",
     ...(skipE2E ? [] : ["test:e2e:smoke"]),
     "build:verify",
     "typecheck",
-    "db:migrate:status",
+    "db:schema:status",
   ];
 
   console.log(

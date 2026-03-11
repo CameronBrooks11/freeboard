@@ -6,7 +6,6 @@ import dotenv from "dotenv";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
-const allowedBackends = new Set(["mongo", "postgres"]);
 
 dotenv.config({ path: path.join(repoRoot, ".env") });
 
@@ -49,14 +48,13 @@ const encryptWithKey = (secret, key) => {
   };
 };
 
-const resolveBackend = () => {
-  const raw = String(process.env.DB_BACKEND || "postgres")
+const ensurePostgresBackend = () => {
+  const backend = String(process.env.DB_BACKEND || "postgres")
     .trim()
     .toLowerCase();
-  if (!allowedBackends.has(raw)) {
-    throw new Error("DB_BACKEND must be one of: postgres, mongo.");
+  if (backend !== "postgres") {
+    throw new Error("This script is postgres-only. Set DB_BACKEND=postgres.");
   }
-  return raw;
 };
 
 const resolvePostgresUrl = () => {
@@ -79,7 +77,7 @@ const loadPoolConstructor = async () => {
         ? String(error.message || "Unknown error")
         : "Unknown error";
     throw new Error(
-      `DB_BACKEND=postgres requires the 'pg' package. Install dependencies before running key rotation. Original error: ${errorMessage}`,
+      `This script requires the 'pg' package. Install dependencies before running key rotation. Original error: ${errorMessage}`,
       { cause: error },
     );
   }
@@ -120,36 +118,6 @@ const runPostgresReencryption = async ({ oldKey, newKey }) => {
   return { scanned, updated };
 };
 
-const runMongoReencryption = async ({ oldKey, newKey }) => {
-  const { default: mongoose } = await import("mongoose");
-  const { default: CredentialProfile } =
-    await import("../packages/api/src/models/CredentialProfile.ts");
-
-  const mongoUrl = String(process.env.MONGO_URL || "").trim();
-  if (!mongoUrl) {
-    throw new Error("MONGO_URL is required when DB_BACKEND=mongo.");
-  }
-
-  await mongoose.connect(mongoUrl);
-
-  let scanned = 0;
-  let updated = 0;
-
-  try {
-    for await (const profile of CredentialProfile.find({}).cursor()) {
-      scanned += 1;
-      const decrypted = decryptWithKey(profile.secret, oldKey);
-      const nextSecret = encryptWithKey(decrypted, newKey);
-      await CredentialProfile.updateOne({ _id: profile._id }, { $set: { secret: nextSecret } });
-      updated += 1;
-    }
-  } finally {
-    await mongoose.disconnect();
-  }
-
-  return { scanned, updated };
-};
-
 const oldKey = decodeKey(
   process.env.CREDENTIAL_ENCRYPTION_KEY_OLD || process.env.CREDENTIAL_ENCRYPTION_KEY,
   "CREDENTIAL_ENCRYPTION_KEY_OLD (or CREDENTIAL_ENCRYPTION_KEY)",
@@ -163,12 +131,8 @@ if (Buffer.compare(oldKey, newKey) === 0) {
   throw new Error("Old and new credential encryption keys are identical");
 }
 
-const backend = resolveBackend();
-const result =
-  backend === "postgres"
-    ? await runPostgresReencryption({ oldKey, newKey })
-    : await runMongoReencryption({ oldKey, newKey });
-
+ensurePostgresBackend();
+const result = await runPostgresReencryption({ oldKey, newKey });
 console.log(
-  `Credential re-encryption completed for backend=${backend}. scanned=${result.scanned} updated=${result.updated}`,
+  `Credential re-encryption completed for backend=postgres. scanned=${result.scanned} updated=${result.updated}`,
 );

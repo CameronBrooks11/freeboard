@@ -105,7 +105,7 @@ API env precedence:
 `npm run dev` behavior:
 
 - starts Postgres via `docker-compose.postgres.yml` and waits for healthy status
-- runs API migrations (`npm run db:migrate`)
+- applies API schema changes (`npm run db:schema:apply`)
 - starts UI/API/Gateway
 - on Ctrl+C, stops UI/API/Gateway and leaves Postgres running
 

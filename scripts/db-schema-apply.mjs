@@ -10,7 +10,7 @@ import {
   loadMigrations,
 } from "./lib/postgres-migration-utils.mjs";
 
-const LOG_PREFIX = "[db:migrate]";
+const LOG_PREFIX = "[db:schema:apply]";
 
 const parsePositiveInteger = (value, fallback) => {
   const parsed = Number(value);
@@ -62,21 +62,21 @@ const main = async () => {
     if (!isDown) {
       const pending = migrations.filter((migration) => !appliedByVersion.has(migration.version));
       if (pending.length === 0) {
-        console.log(`${LOG_PREFIX} No pending migrations.`);
+        console.log(`${LOG_PREFIX} Schema is already up to date.`);
         return;
       }
 
-      console.log(`${LOG_PREFIX} Applying ${pending.length} migration(s)...`);
+      console.log(`${LOG_PREFIX} Applying ${pending.length} schema migration(s)...`);
       for (const migration of pending) {
         console.log(`${LOG_PREFIX} up ${formatMigrationLabel(migration)}`);
         await applyMigrationUp(pool, migration);
       }
-      console.log(`${LOG_PREFIX} Applied ${pending.length} migration(s).`);
+      console.log(`${LOG_PREFIX} Applied ${pending.length} schema migration(s).`);
       return;
     }
 
     if (applied.length === 0) {
-      console.log(`${LOG_PREFIX} No applied migrations to roll back.`);
+      console.log(`${LOG_PREFIX} No applied schema migrations to roll back.`);
       return;
     }
 
@@ -85,7 +85,7 @@ const main = async () => {
     );
     const rollbackSelection = appliedDescending.slice(0, steps);
 
-    console.log(`${LOG_PREFIX} Rolling back ${rollbackSelection.length} migration(s)...`);
+    console.log(`${LOG_PREFIX} Rolling back ${rollbackSelection.length} schema migration(s)...`);
     for (const appliedRow of rollbackSelection) {
       const migration = migrationByVersion.get(appliedRow.version);
       if (!migration) {
@@ -96,7 +96,7 @@ const main = async () => {
       console.log(`${LOG_PREFIX} down ${formatMigrationLabel(migration)}`);
       await applyMigrationDown(pool, migration);
     }
-    console.log(`${LOG_PREFIX} Rolled back ${rollbackSelection.length} migration(s).`);
+    console.log(`${LOG_PREFIX} Rolled back ${rollbackSelection.length} schema migration(s).`);
   } finally {
     await pool.end();
   }

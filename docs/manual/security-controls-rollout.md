@@ -125,7 +125,7 @@ Run this minimum command set after rollout/rollback verification:
 npm run lint
 npm run check:ts:debt
 npm run test:api
-npm run test:api:postgres
+npm run test:api:smoke
 npm run test:gateway
 npm run test:ui
 npm run test:e2e:smoke

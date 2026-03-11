@@ -209,14 +209,14 @@ const main = async () => {
     process.exit(dbUpCode);
   }
 
-  console.log("Running PostgreSQL migrations...");
-  const npmRunMigrate = getNpmRunCommand("db:migrate");
+  console.log("Applying PostgreSQL schema changes...");
+  const npmRunMigrate = getNpmRunCommand("db:schema:apply");
   const migrateCode = await run(npmRunMigrate.command, npmRunMigrate.args, {
     env: devRuntimeEnv,
   });
   if (migrateCode !== 0) {
     console.error("");
-    console.error("PostgreSQL migrations failed. Recent Postgres logs:");
+    console.error("PostgreSQL schema apply failed. Recent Postgres logs:");
     await run(dockerCommand, [...composeArgs, "logs", "--tail", "200", dbServiceName]);
     process.exit(migrateCode);
   }

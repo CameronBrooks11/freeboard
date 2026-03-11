@@ -3,12 +3,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const LOG_PREFIX = "[check-db-migration-readiness]";
+const LOG_PREFIX = "[check:db:ready]";
 const projectRoot = process.cwd();
 const envFiles = [".env.dev", ".env"];
 
 const allowedBackends = new Set(["postgres"]);
-const mongoUrlKeys = ["MONGO_URL", "FREEBOARD_MONGO_URL"];
 const postgresUrlKeys = ["DATABASE_URL", "FREEBOARD_POSTGRES_URL"];
 
 const parseBoolean = (value) => {
@@ -19,7 +18,7 @@ const parseBoolean = (value) => {
 };
 
 const resolveStrictMode = (argv, env) =>
-  argv.includes("--strict") || parseBoolean(env.DB_MIGRATION_READINESS_STRICT);
+  argv.includes("--strict") || parseBoolean(env.DB_READY_STRICT);
 
 const parseEnvFile = (filePath) => {
   if (!fs.existsSync(filePath)) {
@@ -83,7 +82,6 @@ const main = () => {
     .toLowerCase();
   const explicitBackend = explicitBackendRaw || null;
 
-  const hasMongoUrl = hasConfiguredValue(resolvedEnv, mongoUrlKeys);
   const hasPostgresUrl = hasConfiguredValue(resolvedEnv, postgresUrlKeys);
 
   const errors = [];
@@ -105,28 +103,14 @@ const main = () => {
     );
   }
 
-  if (hasMongoUrl && hasPostgresUrl) {
-    warnings.push(
-      "Both Mongo and Postgres URLs are configured. Mongo URLs are ignored in active runtime paths.",
-    );
-  }
-
-  if (hasMongoUrl && !hasPostgresUrl) {
-    warnings.push(
-      "Mongo URLs are configured without Postgres URL. Active runtime paths are Postgres-only and will fail until Postgres URL is set.",
-    );
-  }
-
-  if (!explicitBackend && !hasPostgresUrl) {
+  if (!explicitBackend && hasPostgresUrl) {
     warnings.push("No DB_BACKEND is configured; defaulting to postgres for readiness checks.");
   }
 
   console.log(
     `${LOG_PREFIX} backend=${backend} explicit=${Boolean(explicitBackend)} strict=${strictMode}`,
   );
-  console.log(
-    `${LOG_PREFIX} mongoUrlConfigured=${hasMongoUrl} postgresUrlConfigured=${hasPostgresUrl}`,
-  );
+  console.log(`${LOG_PREFIX} postgresUrlConfigured=${hasPostgresUrl}`);
 
   if (warnings.length > 0) {
     console.warn(`${LOG_PREFIX} warnings:`);

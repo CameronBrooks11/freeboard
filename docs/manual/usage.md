@@ -73,17 +73,10 @@ In private -> external (`link/public`) transitions, share tokens are rotated.
 - To pin an immutable build, use `sha-<short-commit>` tags from the publish workflow.
 - Rollback is tag-based: set prior known-good tags and redeploy with compose.
 
-## Dashboard maintenance commands
+## Dashboard maintenance
 
-- Migrate legacy `published` dashboards to visibility model:
-  - Dry run: `npm run dashboards:visibility:migrate-legacy`
-  - Apply: `npm run dashboards:visibility:migrate-legacy -- --apply`
-- Migrate legacy datasource payloads (`json` type / embedded `authProviders`) to the current HTTP datasource model:
-  - Dry run: `npm run dashboards:datasource:migrate-legacy-http`
-  - Apply: `npm run dashboards:datasource:migrate-legacy-http -- --apply`
-- Force all dashboards to `private` (emergency containment):
-  - Dry run: `npm run dashboards:visibility:enforce-private`
-  - Apply: `npm run dashboards:visibility:enforce-private -- --apply`
+- Legacy one-off dashboard migration/enforcement scripts were removed from active runtime operations.
+- Use standard admin flows (dashboard settings, sharing, and account controls) for ongoing maintenance.
 
 ## Next references
 

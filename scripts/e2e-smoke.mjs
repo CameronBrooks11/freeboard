@@ -215,7 +215,7 @@ const main = async () => {
     "180",
   ]);
 
-  await runNpmScript("db:migrate", { env: e2eRuntimeEnv });
+  await runNpmScript("db:schema:apply", { env: e2eRuntimeEnv });
 
   startNpmScript("dev:api", { env: e2eRuntimeEnv });
   startNpmScript("dev:gateway", { env: e2eRuntimeEnv });
