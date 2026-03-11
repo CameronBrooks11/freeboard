@@ -60,12 +60,3 @@
       Player script source not found at {{ kiosk_player_script_source }}.
       Update kiosk_player_script_source to point to this repo's player.sh.
   when: kiosk_enable_player | bool
-
-- name: Validate Mongo preload architecture gate
-  ansible.builtin.assert:
-    that:
-      - ansible_architecture in mongo_arm_supported_architectures
-    fail_msg: >-
-      mongo_preload is only supported on {{ mongo_arm_supported_architectures | join(', ') }};
-      current architecture is {{ ansible_architecture }}.
-  when: kiosk_enable_mongo_preload | bool

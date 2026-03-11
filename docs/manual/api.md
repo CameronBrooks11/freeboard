@@ -14,7 +14,6 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with repository-dr
 - Exports a frozen `config` object with:
   - `dbBackend`
   - `postgresUrl` (PostgreSQL connection string)
-  - `mongoUrl` (legacy adapter connection string)
   - `port` (HTTP port)
   - `jwtSecret`, `jwtTimeExpiration`
   - `jwtGatewaySecret`, `gatewayServiceToken`, `credentialEncryptionKey`

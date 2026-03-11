@@ -267,7 +267,7 @@ const rootManualSidebar = [
       { text: "Postgres Release Readiness", link: "/manual/release-readiness-postgres" },
       { text: "Credential Key Rotation", link: "/manual/credential-key-rotation" },
       { text: "Ansible", link: "/manual/ansible" },
-      { text: "Legacy: Raspberry Pi MongoDB", link: "/manual/raspberry-pi-mongodb" },
+      { text: "Legacy Datastore Architecture", link: "/manual/legacy-datastore-architecture" },
       { text: "Docs Site Setup", link: "/manual/docs-site-setup" },
       { text: "Development Misc", link: "/manual/dev-misc" },
       { text: "TypeScript Standards", link: "/manual/typescript-standards" },

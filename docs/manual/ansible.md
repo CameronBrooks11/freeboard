@@ -8,7 +8,7 @@ This automation is designed for production-safe operation:
 
 - explicit profile selection
 - fail-fast preflight checks
-- optional high-risk roles (boot tuning, runtime, legacy Mongo preload)
+- optional high-risk roles (boot tuning, runtime)
 - backup/rollback path for managed system files
 
 ## Supported targets
@@ -27,7 +27,6 @@ Roles:
 - `kiosk_display`: X11 + Chromium dependencies/config
 - `kiosk_player`: `player.sh` deployment + `/etc/freeboard/kiosk.env` + `freeboard-kiosk.service`
 - `container_runtime` (optional): Docker install
-- `mongo_preload` (legacy optional): ARM Mongo image preload (not part of release runtime path)
 - `kiosk_boot_tuning` (optional): splash and boot tuning
 
 Rollback playbook: `ansible/rollback.yml`
@@ -145,7 +144,6 @@ Target selected roles/tags if needed:
 - `kiosk_display`
 - `kiosk_player`
 - `container_runtime`
-- `mongo_preload`
 - `kiosk_boot_tuning`
 
 Example:
@@ -180,14 +178,6 @@ The role installs:
 - `FREEBOARD_URL_CHECK_TIMEOUT_SECONDS`
 - `FREEBOARD_URL_CHECK_INTERVAL_SECONDS`
 - `FREEBOARD_URL_CHECK_MAX_ATTEMPTS`
-
-## Legacy Raspberry Pi Mongo preload note
-
-If you enable `mongo_preload`, this playbook uses the pinned community `themattman` Raspberry Pi Mongo release configured in `ansible/vars.yml`.
-
-For support tradeoffs, upgrade workflow, and links to upstream references, see:
-
-- [Legacy: Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)
 
 ## Rollback
 

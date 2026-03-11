@@ -46,6 +46,7 @@ It adds:
 - Runtime metrics guide: `docs/manual/runtime-metrics.md`
 - Deployment profiles: `docs/manual/deployment-profiles.md`
 - Kiosk + Ansible operations: `docs/manual/ansible.md`
+- Legacy datastore architecture (archival): `docs/manual/legacy-datastore-architecture.md`
 - Secrets runbook: `docs/manual/secrets-operations.md`
 - Package docs:
   - API: `packages/api/README.md`
@@ -89,7 +90,6 @@ Open:
 
 - `.env.dev`: minimal local development configuration (copy to `.env` to start quickly)
 - `.env.example`: full variable reference and defaults
-- `.env.pi`: legacy Raspberry Pi Mongo fallback overrides (archival only)
 
 API env precedence:
 
@@ -258,9 +258,9 @@ Rollback:
 ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/rollback.yml
 ```
 
-Legacy Mongo notes (archival only):
+Legacy datastore notes (archival only):
 
-- `docs/manual/raspberry-pi-mongodb.md`
+- `docs/manual/legacy-datastore-architecture.md`
 
 ## Acknowledgement
 

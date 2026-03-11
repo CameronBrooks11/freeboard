@@ -9,26 +9,22 @@ kiosk_profile_defaults:
     kiosk_enable_display: true
     kiosk_enable_container_runtime: false
     kiosk_enable_boot_tuning: false
-    kiosk_enable_mongo_preload: false
   appliance_with_runtime:
     kiosk_enable_player: true
     kiosk_enable_display: true
     kiosk_enable_container_runtime: true
     kiosk_enable_boot_tuning: false
-    kiosk_enable_mongo_preload: false
   appliance_with_runtime_and_boot_tuning:
     kiosk_enable_player: true
     kiosk_enable_display: true
     kiosk_enable_container_runtime: true
     kiosk_enable_boot_tuning: true
-    kiosk_enable_mongo_preload: false
 
 # Optional overrides (set to true/false in host/group vars if needed).
 kiosk_enable_player: ~
 kiosk_enable_display: ~
 kiosk_enable_container_runtime: ~
 kiosk_enable_boot_tuning: ~
-kiosk_enable_mongo_preload: ~
 
 # Supported platforms.
 kiosk_supported_distributions:
@@ -125,20 +121,6 @@ container_runtime_packages:
   - containerd.io
   - docker-compose-plugin
 
-# Optional Mongo preload role.
-# Community Raspberry Pi Mongo baseline:
-# docs/manual/raspberry-pi-mongodb.md
-mongo_preload_enabled: true
-mongo_arm_supported_architectures:
-  - aarch64
-  - armv7l
-  - armv6l
-mongo_arm_release_tag: r7.0.28-mongodb-raspberrypi-docker-unofficial
-# Asset naming can vary by release; override filename/tag if upstream changes.
-mongo_arm_tar_filename: "mongodb.ce.pi4.{{ mongo_arm_release_tag }}.tar.gz"
-mongo_arm_tar_url: "https://github.com/themattman/mongodb-raspberrypi-docker/releases/download/{{ mongo_arm_release_tag }}/{{ mongo_arm_tar_filename }}"
-mongo_arm_tar_path: "/tmp/{{ mongo_arm_tar_filename }}"
-
 # Optional boot tuning role.
 kiosk_boot_config_path: /boot/firmware/config.txt
 kiosk_boot_cmdline_path: /boot/firmware/cmdline.txt
@@ -171,7 +153,7 @@ kiosk_disable_swap: false
 
 # Optional compose runtime defaults for appliance hosts that also run API/gateway services.
 server_runtime_env_defaults:
-  SECURITY_LIMITER_BACKEND: mongo
+  SECURITY_LIMITER_BACKEND: postgres
   SECURITY_LIMITER_FAILURE_MODE: fail-closed
   REALTIME_LIMITER_FAILURE_MODE: fail-closed
   GATEWAY_LIMITER_TIMEOUT_MS: "3000"

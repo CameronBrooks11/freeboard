@@ -35,17 +35,6 @@
         kiosk_enable_boot_tuning: >-
           {{ (kiosk_enable_boot_tuning is not none)
              | ternary(kiosk_enable_boot_tuning | bool, kiosk_profile_selected_defaults.kiosk_enable_boot_tuning | bool) }}
-        kiosk_enable_mongo_preload: >-
-          {{ (kiosk_enable_mongo_preload is not none)
-             | ternary(kiosk_enable_mongo_preload | bool, kiosk_profile_selected_defaults.kiosk_enable_mongo_preload | bool) }}
-      tags:
-        - always
-
-    - name: Validate runtime dependency chain
-      ansible.builtin.assert:
-        that:
-          - not (kiosk_enable_mongo_preload | bool) or (kiosk_enable_container_runtime | bool)
-        fail_msg: "kiosk_enable_mongo_preload=true requires kiosk_enable_container_runtime=true"
       tags:
         - always
 
@@ -75,13 +64,6 @@
       when: kiosk_enable_container_runtime | bool
       tags:
         - container_runtime
-
-    - name: Configure optional Mongo preload
-      ansible.builtin.include_role:
-        name: mongo_preload
-      when: kiosk_enable_mongo_preload | bool
-      tags:
-        - mongo_preload
 
     - name: Configure optional boot tuning and splash screen
       ansible.builtin.include_role:

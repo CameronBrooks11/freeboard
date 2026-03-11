@@ -55,9 +55,7 @@ const backendArg = process.argv.find((arg) => arg.startsWith("--backend="));
 if (backendArg) {
   const requestedBackend = backendArg.slice("--backend=".length).trim().toLowerCase();
   if (requestedBackend !== "postgres") {
-    console.error(
-      "Mongo runtime bootstrap is deprecated. Use Postgres-only `npm run dev` flow for active development.",
-    );
+    console.error("Only postgres backend is supported for `npm run dev`.");
     process.exit(1);
   }
 }

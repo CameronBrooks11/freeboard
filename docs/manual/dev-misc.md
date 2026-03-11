@@ -156,9 +156,9 @@ Postgres-first helpers:
 - Stop Postgres: `npm run dev:postgres:down`
 - Reset Postgres data volume: `npm run dev:postgres:reset`
 
-Raspberry Pi note:
+Legacy datastore note:
 
-- Use `.env.pi` as your player/kiosk override baseline when needed.
+- Historical datastore context and Raspberry Pi limitations are documented in [Legacy Datastore Architecture](/manual/legacy-datastore-architecture).
 
 ## Quick Size Snapshot (`cloc`)
 

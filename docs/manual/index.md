@@ -41,7 +41,7 @@ Use this manual in two tracks:
 - [PostgreSQL Release Readiness Checklist](/manual/release-readiness-postgres)
 - [Credential Key Rotation](/manual/credential-key-rotation)
 - [Ansible](/manual/ansible)
-- [Legacy: Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb)
+- [Legacy Datastore Architecture](/manual/legacy-datastore-architecture)
 - [Documentation Site Setup](/manual/docs-site-setup)
 - [Development Misc](/manual/dev-misc)
 - [TypeScript Standards](/manual/typescript-standards)
