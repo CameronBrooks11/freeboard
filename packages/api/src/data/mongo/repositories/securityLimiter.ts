@@ -1,8 +1,7 @@
 import type SecurityLimiterState from "../../../models/SecurityLimiterState.js";
-import { config } from "../../../config.js";
 import type { SecurityLimiterRepository } from "../../contracts.js";
 
-const mongoTimeoutMs = Math.max(250, Number(config.securityLimiterMongoTimeoutMs) || 2500);
+const mongoTimeoutMs = 2500;
 
 export const createMongoSecurityLimiterRepository = (
   SecurityLimiterStateModel: typeof SecurityLimiterState,

@@ -7,7 +7,7 @@ import crypto from "node:crypto";
 import { config } from "./config.js";
 import { dataStore } from "./data/index.js";
 
-type SecurityLimiterBackend = "memory" | "mongo" | "postgres";
+type SecurityLimiterBackend = "memory" | "postgres";
 
 type ConsumeFixedWindowParams = {
   scope: string;
@@ -223,7 +223,7 @@ const consumeFixedWindowMemory = ({
   });
 };
 
-const consumeFixedWindowMongo = async ({
+const consumeFixedWindowPersistent = async ({
   documentId,
   limit,
   resetAtMs,
@@ -269,7 +269,7 @@ const readLockMemory = (documentId: string, nowMs: number): LimiterLockState => 
   };
 };
 
-const readLockMongo = async (documentId: string, nowMs: number): Promise<LimiterLockState> => {
+const readLockPersistent = async (documentId: string, nowMs: number): Promise<LimiterLockState> => {
   const lockUntil = await persistentLimiterRepository.getLockUntil({ documentId });
   const lockUntilMs = Number(new Date(lockUntil || 0).getTime()) || 0;
   if (lockUntilMs <= nowMs) {
@@ -296,7 +296,7 @@ const setLockMemory = (documentId: string, lockUntilMs: number, nowMs: number): 
   });
 };
 
-const setLockMongo = async (documentId: string, lockUntilMs: number): Promise<void> => {
+const setLockPersistent = async (documentId: string, lockUntilMs: number): Promise<void> => {
   await persistentLimiterRepository.upsertLock({
     documentId,
     lockUntil: new Date(lockUntilMs),
@@ -314,7 +314,10 @@ const clearStateMemory = (counterPrefix: string, lockDocumentId: string, nowMs: 
   maybePruneMemoryState(nowMs, { force: true });
 };
 
-const clearStateMongo = async (counterPrefix: string, lockDocumentId: string): Promise<void> => {
+const clearStatePersistent = async (
+  counterPrefix: string,
+  lockDocumentId: string,
+): Promise<void> => {
   await Promise.all([
     persistentLimiterRepository.deleteCounterByPrefix({ counterPrefix }),
     persistentLimiterRepository.deleteById({ documentId: lockDocumentId }),
@@ -373,7 +376,7 @@ export const consumeSecurityLimiterFixedWindow = async ({
 
   if (isPersistentRepositoryBackend()) {
     assertPersistentBackendCompatible();
-    return consumeFixedWindowMongo({
+    return consumeFixedWindowPersistent({
       documentId,
       limit: normalizedLimit,
       resetAtMs,
@@ -408,7 +411,7 @@ export const getSecurityLimiterLockState = async ({
 
   if (isPersistentRepositoryBackend()) {
     assertPersistentBackendCompatible();
-    return readLockMongo(lockDocumentId, nowMs);
+    return readLockPersistent(lockDocumentId, nowMs);
   }
 
   return readLockMemory(lockDocumentId, nowMs);
@@ -434,7 +437,7 @@ export const setSecurityLimiterLock = async ({
 
   if (isPersistentRepositoryBackend()) {
     assertPersistentBackendCompatible();
-    await setLockMongo(lockDocumentId, lockUntilMs);
+    await setLockPersistent(lockDocumentId, lockUntilMs);
     return;
   }
 
@@ -457,7 +460,7 @@ export const clearSecurityLimiterState = async ({
 
   if (isPersistentRepositoryBackend()) {
     assertPersistentBackendCompatible();
-    await clearStateMongo(counterPrefix, lockDocumentId);
+    await clearStatePersistent(counterPrefix, lockDocumentId);
     return;
   }
 

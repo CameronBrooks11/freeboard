@@ -4,18 +4,15 @@ import type { DataStore } from "./contracts.js";
 import type { DataBackend } from "./types.js";
 import { config } from "../config.js";
 
-const normalizeBackend = (value: unknown): DataBackend | null => {
-  const normalized = String(value || "")
+export const resolveDataBackend = (): DataBackend => {
+  const normalized = String(config.dbBackend || "")
     .trim()
     .toLowerCase();
-  if (normalized === "mongo" || normalized === "postgres") {
-    return normalized;
+  if (normalized === "mongo") {
+    return "mongo";
   }
-  return null;
+  return "postgres";
 };
-
-export const resolveDataBackend = (): DataBackend =>
-  normalizeBackend(config.dbBackend) || "postgres";
 
 const createDataStore = (): DataStore => {
   const backend = resolveDataBackend();

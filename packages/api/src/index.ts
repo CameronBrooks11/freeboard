@@ -11,7 +11,6 @@
 import { createServer } from "http";
 import type { IncomingMessage, ServerResponse } from "http";
 import { createYoga } from "graphql-yoga";
-import mongoose from "mongoose";
 import { useGraphQLSSE } from "@graphql-yoga/plugin-graphql-sse";
 import { URL } from "url";
 
@@ -41,32 +40,6 @@ import dns from "dns";
 
 dns.setDefaultResultOrder?.("ipv4first");
 
-/**
- * Connect to MongoDB and fail fast on startup errors.
- */
-const connectToMongo = async () => {
-  let attempts = 0;
-  let connected = false;
-  while (!connected) {
-    attempts += 1;
-    try {
-      await mongoose.connect(config.mongoUrl, {
-        serverSelectionTimeoutMS: 30000,
-      });
-      console.info(`MongoDB connected on ${config.mongoUrl}`);
-      connected = true;
-    } catch (error) {
-      const errorMessage =
-        error && typeof error === "object" && "message" in error
-          ? (error as { message?: string }).message
-          : undefined;
-      console.error(`MongoDB connection attempt ${attempts} failed. Retrying in 2s...`);
-      console.error(errorMessage || error);
-      await new Promise<void>((resolve) => setTimeout(resolve, 2000));
-    }
-  }
-};
-
 const connectToPostgres = async () => {
   let attempts = 0;
   let connected = false;
@@ -90,15 +63,7 @@ const connectToPostgres = async () => {
 };
 
 const connectToConfiguredDataBackend = async () => {
-  if (dataStore.backend === "mongo") {
-    await connectToMongo();
-    return;
-  }
-  if (dataStore.backend === "postgres") {
-    await connectToPostgres();
-    return;
-  }
-  throw new Error(`Unsupported DB backend '${String(dataStore.backend)}'`);
+  await connectToPostgres();
 };
 
 /**
