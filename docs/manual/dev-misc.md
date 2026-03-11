@@ -11,6 +11,7 @@
 - UI i18n composition-mode guardrail: `npm run check:ui:i18n-composition-mode`
 - TS source debt guardrail: `npm run check:ts:debt`
 - TS source artifact guardrail: `npm run check:ts:source-artifacts`
+- Legacy datastore residue guardrail: `npm run check:repo:legacy-residue`
 - UI bundle budget guardrail (warn-first): `npm run check:ui:bundle-budget`
 - UI lint only: `npm run lint:ui`
 - API lint only: `npm run lint:api`
@@ -45,6 +46,7 @@ npm run check:ui:store-boundaries
 npm run check:ui:theme-contrast
 npm run check:ui:i18n-parity
 npm run check:ui:i18n-composition-mode
+npm run check:repo:legacy-residue
 npm run check:ts:debt
 npm run check:ts:source-artifacts
 npm run check:runtime-deps
@@ -65,6 +67,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 
 - If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-api-smoke`, `test-shared`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `db-schema-gate`, `build-verify`, `docker-sanity`, `typecheck`).
 - If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
+- If format job fails on `Legacy datastore residue gate`, remove blocked legacy datastore terms from tracked files unless they belong in `/manual/legacy-datastore-architecture`.
 - If `Validate TS source debt` fails, remove unsafe TS patterns (`as any`, `as unknown as`, `: any`, `Record<string, any>`, `[key: string]: any`, `@ts-ignore`, `@ts-nocheck`) from `packages/*/src`.
 - If `Validate UI theme contrast` fails, update theme token values in `packages/ui/src/assets/css/themes/*.css` so critical foreground/background token pairs meet the script threshold.
 - If `Validate UI i18n parity` fails, align locale keys/placeholders to `packages/ui/src/i18n/locales/en.ts`.

@@ -236,6 +236,8 @@ jobs:
         run: npm ci
       - name: Format check
         run: npm run format:check
+      - name: Legacy datastore residue gate
+        run: npm run check:repo:legacy-residue
 
   docs-integrity:
     name: Docs integrity

@@ -47,13 +47,11 @@ docs/.vitepress/cache/
 .venv/
 .envrc
 !.env.example
-!.env.pi
 !.env.dev
 
 # Docker / local data
 db/
 data/
-mongo-data/
 docker-data/
 *.pid
 *.seed
