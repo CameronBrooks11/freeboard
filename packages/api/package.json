@@ -18,7 +18,7 @@
     "@graphql-tools/schema": "^10.0.9",
     "@graphql-tools/utils": "^11.0.0",
     "@graphql-yoga/logger": "^2.0.1",
-    "@graphql-yoga/plugin-graphql-sse": "^3.18.0",
+    "@graphql-yoga/plugin-graphql-sse": "^3.18.1",
     "@whatwg-node/events": "^0.1.2",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",
@@ -28,7 +28,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.1.0",
     "mongoose": "^8.8.3",
-    "nanoid": "^5.1.6",
+    "nanoid": "^5.1.7",
     "uuid": "^13.0.0"
   }
 }
