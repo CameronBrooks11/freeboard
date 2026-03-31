@@ -183,7 +183,7 @@ jobs:
 
       - name: Build and push Docker image (mainline amd64/arm64)
         if: steps.changes.outputs.changed == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           # Mainline publish track: current runtime baseline.
           platforms: linux/amd64,linux/arm64
@@ -198,7 +198,7 @@ jobs:
 
       - name: Build and push Docker image (legacy armv7)
         if: steps.changes.outputs.changed == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           # Legacy compatibility lane for 32-bit Raspberry Pi deployments.
           platforms: linux/arm/v7
