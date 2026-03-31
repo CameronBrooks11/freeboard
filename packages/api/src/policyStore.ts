@@ -3,7 +3,6 @@
  * Persistence helpers for auth/registration policy values.
  */
 
-import Policy from "./models/Policy.js";
 import { config } from "./config.js";
 import {
   normalizeDashboardVisibility,
@@ -11,6 +10,7 @@ import {
   normalizeNonAdminRole,
   normalizeRegistrationMode,
 } from "./policy.js";
+import { dataStore } from "./data/index.js";
 
 const POLICY_KEYS = Object.freeze({
   registrationMode: "auth.registration.mode",
@@ -41,8 +41,7 @@ type PolicyState = {
 };
 
 const readStoredPolicy = async (key: string): Promise<unknown> => {
-  const record = await Policy.findOne({ key }).lean();
-  return record?.value;
+  return dataStore.repositories.policy.readValue({ key });
 };
 
 const writeStoredPolicy = async (
@@ -50,20 +49,7 @@ const writeStoredPolicy = async (
   value: unknown,
   updatedBy: string | null = null,
 ): Promise<void> => {
-  await Policy.findOneAndUpdate(
-    { key },
-    {
-      $set: {
-        value,
-        updatedBy,
-      },
-    },
-    {
-      upsert: true,
-      new: true,
-      setDefaultsOnInsert: true,
-    },
-  ).lean();
+  await dataStore.repositories.policy.writeValue({ key, value, updatedBy });
 };
 
 /**

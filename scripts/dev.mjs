@@ -1,17 +1,40 @@
 /**
  * @file Development bootstrap script.
- * @description Starts Mongo via Docker Compose, then launches UI/API/Gateway services.
+ * @description Starts a database via Docker Compose, then launches UI/API/Gateway services.
  */
 
 import { spawn } from "node:child_process";
 
 const isWindows = process.platform === "win32";
 const dockerCommand = isWindows ? "docker.exe" : "docker";
-const composeArgs = ["compose", "-f", "docker-compose.mongo.yml"];
 const npmExecPath = process.env.npm_execpath;
 const npmNodeExecPath = process.env.npm_node_execpath || process.execPath;
 const HELP_FLAGS = new Set(["--help", "-h"]);
 const LOG_PREFIX = "[dev]";
+const composeFile = "docker-compose.postgres.yml";
+const composeArgs = ["compose", "-f", composeFile];
+const dbServiceName = "postgres";
+const dbLabel = "Postgres";
+
+const resolveSecurityLimiterBackend = () => {
+  const configured = String(process.env.SECURITY_LIMITER_BACKEND || "")
+    .trim()
+    .toLowerCase();
+
+  if (configured === "memory") {
+    return "memory";
+  }
+  if (configured === "postgres") {
+    return "postgres";
+  }
+  return "postgres";
+};
+
+const devRuntimeEnv = Object.freeze({
+  ...process.env,
+  DB_BACKEND: "postgres",
+  SECURITY_LIMITER_BACKEND: resolveSecurityLimiterBackend(),
+});
 
 let servicesProcess = null;
 let isShuttingDown = false;
@@ -19,13 +42,32 @@ let isShuttingDown = false;
 const printUsage = () => {
   console.log("Usage: npm run dev");
   console.log("");
-  console.log("Starts Mongo via docker compose, then starts UI/API/Gateway dev services.");
-  console.log("On shutdown, dev services stop and Mongo remains running.");
+  console.log("Starts Postgres via docker compose, runs migrations, then starts UI/API/Gateway.");
+  console.log("On shutdown, dev services stop and the database container remains running.");
 };
 
 if (process.argv.some((arg) => HELP_FLAGS.has(arg))) {
   printUsage();
   process.exit(0);
+}
+
+const backendArg = process.argv.find((arg) => arg.startsWith("--backend="));
+if (backendArg) {
+  const requestedBackend = backendArg.slice("--backend=".length).trim().toLowerCase();
+  if (requestedBackend !== "postgres") {
+    console.error("Only postgres backend is supported for `npm run dev`.");
+    process.exit(1);
+  }
+}
+
+const envBackend = String(process.env.DEV_DB_BACKEND || process.env.DB_BACKEND || "")
+  .trim()
+  .toLowerCase();
+if (envBackend && envBackend !== "postgres") {
+  console.error(
+    `DEV_DB_BACKEND/DB_BACKEND='${envBackend}' is unsupported for scripts/dev.mjs. Use postgres.`,
+  );
+  process.exit(1);
 }
 
 const getNpmRunCommand = (scriptName) => {
@@ -51,9 +93,9 @@ const getNpmRunCommand = (scriptName) => {
   };
 };
 
-const run = (command, args, { stdio = "inherit" } = {}) =>
+const run = (command, args, { stdio = "inherit", env = process.env } = {}) =>
   new Promise((resolve, reject) => {
-    const child = spawn(command, args, { stdio });
+    const child = spawn(command, args, { stdio, env });
 
     child.on("error", reject);
     child.on("exit", (code, signal) => {
@@ -132,9 +174,9 @@ const shutdown = async (exitCode) => {
   await stopServices();
 
   console.log("");
-  console.log("Mongo container is left running for faster iteration.");
-  console.log("Use `npm run dev:mongo:logs` to inspect Mongo logs.");
-  console.log("Use `npm run dev:mongo:down` when done.");
+  console.log(`${dbLabel} container is left running for faster iteration.`);
+  console.log(`Use \`npm run dev:postgres:logs\` to inspect ${dbLabel} logs.`);
+  console.log("Use `npm run dev:postgres:down` when done.");
   process.exit(exitCode);
 };
 
@@ -147,8 +189,8 @@ process.on("SIGTERM", () => {
 });
 
 const main = async () => {
-  console.log("Starting Mongo container...");
-  const mongoUpCode = await run(dockerCommand, [
+  console.log(`Starting ${dbLabel} container...`);
+  const dbUpCode = await run(dockerCommand, [
     ...composeArgs,
     "up",
     "-d",
@@ -158,11 +200,23 @@ const main = async () => {
     "180",
   ]);
 
-  if (mongoUpCode !== 0) {
+  if (dbUpCode !== 0) {
     console.error("");
-    console.error("Mongo startup failed. Recent Mongo logs:");
-    await run(dockerCommand, [...composeArgs, "logs", "--tail", "200", "mongo"]);
-    process.exit(mongoUpCode);
+    console.error(`${dbLabel} startup failed. Recent ${dbLabel} logs:`);
+    await run(dockerCommand, [...composeArgs, "logs", "--tail", "200", dbServiceName]);
+    process.exit(dbUpCode);
+  }
+
+  console.log("Applying PostgreSQL schema changes...");
+  const npmRunMigrate = getNpmRunCommand("db:schema:apply");
+  const migrateCode = await run(npmRunMigrate.command, npmRunMigrate.args, {
+    env: devRuntimeEnv,
+  });
+  if (migrateCode !== 0) {
+    console.error("");
+    console.error("PostgreSQL schema apply failed. Recent Postgres logs:");
+    await run(dockerCommand, [...composeArgs, "logs", "--tail", "200", dbServiceName]);
+    process.exit(migrateCode);
   }
 
   console.log("");
@@ -170,13 +224,14 @@ const main = async () => {
   console.log("- UI:    http://localhost:5173/");
   console.log("- API:   http://127.0.0.1:4001/graphql");
   console.log("- Gateway: http://127.0.0.1:8001/");
-  console.log("- Mongo: mongodb://127.0.0.1:27017/freeboard (credentials from .env)");
+  console.log("- Postgres: postgresql://127.0.0.1:5432/freeboard (credentials from .env)");
   console.log("");
 
   const npmRunDevServices = getNpmRunCommand("dev:services");
   servicesProcess = spawn(npmRunDevServices.command, npmRunDevServices.args, {
     stdio: "inherit",
     detached: !isWindows,
+    env: devRuntimeEnv,
   });
 
   servicesProcess.on("error", async (error) => {

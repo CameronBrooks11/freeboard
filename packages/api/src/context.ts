@@ -1,17 +1,17 @@
 /**
  * @module context
- * Creates the GraphQL execution context, including PubSub, models, and authenticated user.
+ * Creates the GraphQL execution context with PubSub and authenticated principal state.
  */
 
 import { createPubSub } from "graphql-yoga";
 import type { IncomingMessage } from "http";
 import { validateAuthToken, type AuthTokenClaims } from "./auth.js";
-import User from "./models/User.js";
-import Dashboard from "./models/Dashboard.js";
 import { authenticateServiceAccountToken } from "./serviceAccountAuth.js";
 import { recordAuthFailureMetric } from "./runtimeMetrics.js";
 import { config } from "./config.js";
 import { deriveClientIp } from "./clientIp.js";
+import { dataStore } from "./data/index.js";
+import type { DataStore } from "./data/contracts.js";
 
 export type ServiceAccountPrincipal = {
   _id: unknown;
@@ -29,7 +29,7 @@ export type UserPrincipal = AuthTokenClaims & {
 
 export type ApiContext = {
   pubsub: ReturnType<typeof createPubSub>;
-  models: { Dashboard: typeof Dashboard; User: typeof User };
+  dataStore: DataStore;
   clientIp: string | null;
   user?: UserPrincipal;
   serviceAccount?: ServiceAccountPrincipal;
@@ -41,16 +41,6 @@ export type ApiContext = {
  */
 
 /**
- * Dashboard model type.
- * @typedef {Object} DashboardModel
- */
-
-/**
- * User model type.
- * @typedef {Object} UserModel
- */
-
-/**
  * HTTP request object.
  * @typedef {Object} IncomingMessage
  */
@@ -58,9 +48,6 @@ export type ApiContext = {
 /**
  * @typedef {Object} Context
  * @property {PubSub}         pubsub           - PubSub engine for subscriptions.
- * @property {Object}         models           - GraphQL models available in resolvers.
- * @property {DashboardModel} models.Dashboard - Dashboard model type.
- * @property {UserModel}      models.User      - User model type.
  * @property {Object}        [user]            - Authenticated user claims, if provided.
  */
 
@@ -83,10 +70,7 @@ export const setContext = async ({
 
   const context: ApiContext = {
     pubsub: createPubSub(),
-    models: {
-      Dashboard,
-      User,
-    },
+    dataStore,
     clientIp,
   };
 
@@ -123,10 +107,12 @@ export const setContext = async ({
     try {
       // Validate JWT and attach user claims to context
       const user: AuthTokenClaims = await validateAuthToken(token);
-      const persistedUser = await User.findOne({
-        _id: user?._id,
-        active: true,
-      }).lean();
+      const userId = String(user?._id || "").trim();
+      const persistedUser = userId
+        ? await dataStore.repositories.users.findActiveById({
+            userId,
+          })
+        : null;
       if (!persistedUser) {
         recordAuthFailureMetric();
         return context;

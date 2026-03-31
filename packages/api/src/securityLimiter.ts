@@ -1,13 +1,13 @@
 /**
  * @module securityLimiter
- * Shared fixed-window limiter primitives backed by Mongo TTL records (or memory fallback).
+ * Shared fixed-window limiter primitives backed by datastore repositories (or memory fallback).
  */
 
 import crypto from "node:crypto";
-import SecurityLimiterState from "./models/SecurityLimiterState.js";
 import { config } from "./config.js";
+import { dataStore } from "./data/index.js";
 
-type SecurityLimiterBackend = "memory" | "mongo";
+type SecurityLimiterBackend = "memory" | "postgres";
 
 type ConsumeFixedWindowParams = {
   scope: string;
@@ -79,8 +79,8 @@ const limiterNamespace = String(config.securityLimiterNamespace || "freeboard:se
 const limiterHashSalt = String(config.securityLimiterHashSalt || config.jwtSecret || "freeboard")
   .trim()
   .slice(0, 512);
-const mongoTimeoutMs = Math.max(250, Number(config.securityLimiterMongoTimeoutMs) || 2500);
 const memoryMaxKeys = Math.max(1000, Number(config.securityLimiterMemoryMaxKeys) || 10000);
+const persistentLimiterRepository = dataStore.repositories.securityLimiter;
 
 const normalizeScope = (value: unknown): string => {
   const normalized = String(value || "")
@@ -102,8 +102,6 @@ const normalizeKeyMaterial = (value: unknown): string =>
     .trim()
     .toLowerCase()
     .slice(0, MAX_KEY_MATERIAL_LENGTH) || "unknown";
-
-const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const hashKeyMaterial = (value: string): string =>
   crypto.createHmac("sha256", limiterHashSalt).update(value).digest("hex");
@@ -225,7 +223,7 @@ const consumeFixedWindowMemory = ({
   });
 };
 
-const consumeFixedWindowMongo = async ({
+const consumeFixedWindowPersistent = async ({
   documentId,
   limit,
   resetAtMs,
@@ -238,30 +236,10 @@ const consumeFixedWindowMongo = async ({
   nowMs: number;
   windowMs: number;
 }): Promise<ConsumeFixedWindowResult> => {
-  const updated = await SecurityLimiterState.findOneAndUpdate(
-    { _id: documentId },
-    {
-      $setOnInsert: {
-        kind: "counter",
-        count: 0,
-      },
-      $set: {
-        expiresAt: new Date(resetAtMs + windowMs),
-      },
-      $inc: {
-        count: 1,
-      },
-    },
-    {
-      upsert: true,
-      new: true,
-    },
-  )
-    .lean()
-    .maxTimeMS(mongoTimeoutMs)
-    .exec();
-
-  const count = Math.max(0, Number(updated?.count) || 0);
+  const count = await persistentLimiterRepository.incrementCounter({
+    documentId,
+    expiresAt: new Date(resetAtMs + windowMs),
+  });
   return resolveCounterResult({
     count,
     limit,
@@ -291,25 +269,12 @@ const readLockMemory = (documentId: string, nowMs: number): LimiterLockState => 
   };
 };
 
-const readLockMongo = async (documentId: string, nowMs: number): Promise<LimiterLockState> => {
-  const existing = await SecurityLimiterState.findOne(
-    {
-      _id: documentId,
-      kind: "lock",
-    },
-    {
-      _id: 0,
-      lockUntil: 1,
-    },
-  )
-    .lean()
-    .maxTimeMS(mongoTimeoutMs)
-    .exec();
-
-  const lockUntilMs = Number(new Date(existing?.lockUntil || 0).getTime()) || 0;
+const readLockPersistent = async (documentId: string, nowMs: number): Promise<LimiterLockState> => {
+  const lockUntil = await persistentLimiterRepository.getLockUntil({ documentId });
+  const lockUntilMs = Number(new Date(lockUntil || 0).getTime()) || 0;
   if (lockUntilMs <= nowMs) {
-    if (existing) {
-      await SecurityLimiterState.deleteOne({ _id: documentId }).maxTimeMS(mongoTimeoutMs).exec();
+    if (lockUntil) {
+      await persistentLimiterRepository.deleteById({ documentId });
     }
     return {
       blocked: false,
@@ -331,23 +296,12 @@ const setLockMemory = (documentId: string, lockUntilMs: number, nowMs: number): 
   });
 };
 
-const setLockMongo = async (documentId: string, lockUntilMs: number): Promise<void> => {
-  await SecurityLimiterState.findOneAndUpdate(
-    { _id: documentId },
-    {
-      $set: {
-        kind: "lock",
-        lockUntil: new Date(lockUntilMs),
-        expiresAt: new Date(lockUntilMs + LOCK_EXPIRY_GRACE_MS),
-      },
-    },
-    {
-      upsert: true,
-      new: false,
-    },
-  )
-    .maxTimeMS(mongoTimeoutMs)
-    .exec();
+const setLockPersistent = async (documentId: string, lockUntilMs: number): Promise<void> => {
+  await persistentLimiterRepository.upsertLock({
+    documentId,
+    lockUntil: new Date(lockUntilMs),
+    expiresAt: new Date(lockUntilMs + LOCK_EXPIRY_GRACE_MS),
+  });
 };
 
 const clearStateMemory = (counterPrefix: string, lockDocumentId: string, nowMs: number): void => {
@@ -360,20 +314,29 @@ const clearStateMemory = (counterPrefix: string, lockDocumentId: string, nowMs: 
   maybePruneMemoryState(nowMs, { force: true });
 };
 
-const clearStateMongo = async (counterPrefix: string, lockDocumentId: string): Promise<void> => {
+const clearStatePersistent = async (
+  counterPrefix: string,
+  lockDocumentId: string,
+): Promise<void> => {
   await Promise.all([
-    SecurityLimiterState.deleteMany({
-      _id: {
-        $regex: new RegExp(`^${escapeRegex(counterPrefix)}`),
-      },
-    })
-      .maxTimeMS(mongoTimeoutMs)
-      .exec(),
-    SecurityLimiterState.deleteOne({ _id: lockDocumentId }).maxTimeMS(mongoTimeoutMs).exec(),
+    persistentLimiterRepository.deleteCounterByPrefix({ counterPrefix }),
+    persistentLimiterRepository.deleteById({ documentId: lockDocumentId }),
   ]);
 };
 
-const isMongoBackend = (): boolean => limiterBackend === "mongo";
+const isPersistentRepositoryBackend = (): boolean => limiterBackend !== "memory";
+
+const assertPersistentBackendCompatible = (): void => {
+  if (!isPersistentRepositoryBackend()) {
+    return;
+  }
+  if (limiterBackend === dataStore.backend) {
+    return;
+  }
+  throw new Error(
+    `SECURITY_LIMITER_BACKEND='${limiterBackend}' is incompatible with DB_BACKEND='${dataStore.backend}'.`,
+  );
+};
 
 export const getSecurityLimiterBackend = (): SecurityLimiterBackend => limiterBackend;
 
@@ -411,8 +374,9 @@ export const consumeSecurityLimiterFixedWindow = async ({
   const resetAtMs = (bucketId + 1) * normalizedWindowMs;
   const documentId = buildCounterDocumentId(normalizedScope, keyHash, bucketId);
 
-  if (isMongoBackend()) {
-    return consumeFixedWindowMongo({
+  if (isPersistentRepositoryBackend()) {
+    assertPersistentBackendCompatible();
+    return consumeFixedWindowPersistent({
       documentId,
       limit: normalizedLimit,
       resetAtMs,
@@ -445,8 +409,9 @@ export const getSecurityLimiterLockState = async ({
     hashKeyMaterial(normalizedKeyMaterial),
   );
 
-  if (isMongoBackend()) {
-    return readLockMongo(lockDocumentId, nowMs);
+  if (isPersistentRepositoryBackend()) {
+    assertPersistentBackendCompatible();
+    return readLockPersistent(lockDocumentId, nowMs);
   }
 
   return readLockMemory(lockDocumentId, nowMs);
@@ -470,8 +435,9 @@ export const setSecurityLimiterLock = async ({
     hashKeyMaterial(normalizedKeyMaterial),
   );
 
-  if (isMongoBackend()) {
-    await setLockMongo(lockDocumentId, lockUntilMs);
+  if (isPersistentRepositoryBackend()) {
+    assertPersistentBackendCompatible();
+    await setLockPersistent(lockDocumentId, lockUntilMs);
     return;
   }
 
@@ -492,8 +458,9 @@ export const clearSecurityLimiterState = async ({
   const counterPrefix = buildCounterDocumentPrefix(normalizedScope, keyHash);
   const lockDocumentId = buildLockDocumentId(normalizedScope, keyHash);
 
-  if (isMongoBackend()) {
-    await clearStateMongo(counterPrefix, lockDocumentId);
+  if (isPersistentRepositoryBackend()) {
+    assertPersistentBackendCompatible();
+    await clearStatePersistent(counterPrefix, lockDocumentId);
     return;
   }
 

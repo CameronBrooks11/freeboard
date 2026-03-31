@@ -12,7 +12,7 @@ freeboard is a modern fork of [Jim Heising's Freeboard](https://github.com/Freeb
 
 It adds:
 
-- persistent dashboard storage in MongoDB
+- persistent dashboard storage in PostgreSQL
 - GraphQL API backend
 - Vue 3 frontend
 - gateway-backed HTTP datasources with egress controls
@@ -25,7 +25,7 @@ It adds:
 ![npm](https://img.shields.io/badge/npm-11.x-CB3837?style=for-the-badge&logo=npm&logoColor=white)
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white)
 ![GraphQL](https://img.shields.io/badge/GraphQL-API-E10098?style=for-the-badge&logo=graphql&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Ansible](https://img.shields.io/badge/Ansible-Automation-EE0000?style=for-the-badge&logo=ansible&logoColor=white)
 ![MQTT](https://img.shields.io/badge/MQTT-Realtime-660066?style=for-the-badge&logo=eclipsemosquitto&logoColor=white)
@@ -46,6 +46,7 @@ It adds:
 - Runtime metrics guide: `docs/manual/runtime-metrics.md`
 - Deployment profiles: `docs/manual/deployment-profiles.md`
 - Kiosk + Ansible operations: `docs/manual/ansible.md`
+- Legacy datastore architecture (archival): `docs/manual/legacy-datastore-architecture.md`
 - Secrets runbook: `docs/manual/secrets-operations.md`
 - Package docs:
   - API: `packages/api/README.md`
@@ -89,7 +90,6 @@ Open:
 
 - `.env.dev`: minimal local development configuration (copy to `.env` to start quickly)
 - `.env.example`: full variable reference and defaults
-- `.env.pi`: Raspberry Pi-focused overrides (including Mongo image pin guidance)
 
 API env precedence:
 
@@ -104,24 +104,25 @@ API env precedence:
 
 `npm run dev` behavior:
 
-- starts Mongo via `docker-compose.mongo.yml` and waits for healthy status
+- starts Postgres via `docker-compose.postgres.yml` and waits for healthy status
+- applies API schema changes (`npm run db:schema:apply`)
 - starts UI/API/Gateway
-- on Ctrl+C, stops UI/API/Gateway and leaves Mongo running
+- on Ctrl+C, stops UI/API/Gateway and leaves Postgres running
 
-Helpful Mongo commands:
+Helpful Postgres commands:
 
 ```bash
-npm run dev:mongo:up
-npm run dev:mongo:status
-npm run dev:mongo:logs
-npm run dev:mongo:down
-npm run dev:mongo:reset
+npm run dev:postgres:up
+npm run dev:postgres:status
+npm run dev:postgres:logs
+npm run dev:postgres:down
+npm run dev:postgres:reset
 ```
 
 ### Containerized runtime (Compose)
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
 ```
 
 Minimum required `.env` values before shared/staging/production use:
@@ -130,12 +131,11 @@ Minimum required `.env` values before shared/staging/production use:
 - `JWT_GATEWAY_SECRET`
 - `GATEWAY_SERVICE_TOKEN`
 - `CREDENTIAL_ENCRYPTION_KEY`
-- `FREEBOARD_MONGO_URL`
+- `FREEBOARD_POSTGRES_URL`
 - `EGRESS_ALLOWED_HOSTS`
-- `MONGO_INITDB_ROOT_USERNAME`
-- `MONGO_INITDB_ROOT_PASSWORD`
-- `MONGO_APP_USERNAME`
-- `MONGO_APP_PASSWORD`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DB`
 
 Optional image pinning:
 
@@ -258,10 +258,9 @@ Rollback:
 ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/rollback.yml
 ```
 
-Raspberry Pi MongoDB guidance:
+Legacy datastore notes (archival only):
 
-- `docs/manual/raspberry-pi-mongodb.md`
-- `docs/manual/ansible.md` (Pattern A vs Pattern B details)
+- `docs/manual/legacy-datastore-architecture.md`
 
 ## Acknowledgement
 

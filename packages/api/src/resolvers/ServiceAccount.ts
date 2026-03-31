@@ -8,9 +8,7 @@ import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatPrincipalHasServiceScope, ensureThatUserIsAdministrator } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
 import { config } from "../config.js";
-import AuditEvent from "../models/AuditEvent.js";
-import ServiceAccount from "../models/ServiceAccount.js";
-import ServiceAccountToken from "../models/ServiceAccountToken.js";
+import { dataStore } from "../data/index.js";
 import { getApiRuntimeMetricsSnapshot } from "../runtimeMetrics.js";
 import { issueServiceAccountToken, normalizeServiceAccountScopes } from "../serviceAccountAuth.js";
 
@@ -25,6 +23,9 @@ const GATEWAY_RUNTIME_METRICS_TIMEOUT_MS = Math.max(
   500,
   Math.floor(Number(process.env.GATEWAY_RUNTIME_METRICS_TIMEOUT_MS) || 2500),
 );
+const auditRepository = dataStore.repositories.audit;
+const serviceAccountRepository = dataStore.repositories.serviceAccounts;
+const serviceAccountTokenRepository = dataStore.repositories.serviceAccountTokens;
 
 const SCOPE_ENUM_MAP = Object.freeze({
   DATASOURCE_MINT: "datasource:mint",
@@ -155,13 +156,8 @@ const resolvers: IResolvers = {
     adminServiceAccounts: async (parent, args, context) => {
       ensureThatUserIsAdministrator(context);
       const [accounts, activeTokens] = await Promise.all([
-        ServiceAccount.find({}).sort({ createdAt: "desc" }).lean(),
-        ServiceAccountToken.find({
-          revokedAt: null,
-          $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
-        })
-          .select("_id serviceAccountId")
-          .lean(),
+        serviceAccountRepository.listSortedByCreatedAtDesc(),
+        serviceAccountTokenRepository.listActive(),
       ]);
 
       const tokenCountByAccount = new Map();
@@ -184,13 +180,17 @@ const resolvers: IResolvers = {
     adminServiceAccountTokens: async (parent, { serviceAccountId }, context) => {
       ensureThatUserIsAdministrator(context);
       const normalizedAccountId = toComparableId(serviceAccountId);
-      const account = await ServiceAccount.findOne({ _id: normalizedAccountId }).lean();
+      if (!normalizedAccountId) {
+        throw createGraphQLError("Service account not found");
+      }
+      const account = await serviceAccountRepository.findById({ accountId: normalizedAccountId });
       if (!account) {
         throw createGraphQLError("Service account not found");
       }
-      const tokens = await ServiceAccountToken.find({ serviceAccountId: normalizedAccountId })
-        .sort({ createdAt: "desc" })
-        .lean();
+      const tokens =
+        await serviceAccountTokenRepository.listByServiceAccountIdSortedByCreatedAtDesc({
+          serviceAccountId: normalizedAccountId,
+        });
       return tokens.map(toTokenRecordView);
     },
 
@@ -200,15 +200,11 @@ const resolvers: IResolvers = {
       context,
     ) => {
       ensureThatUserIsAdministrator(context);
-      const query: Record<string, unknown> = {};
       const prefix = String(actionPrefix || "").trim();
-      if (prefix) {
-        query.action = { $regex: `^${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}` };
-      }
-      return AuditEvent.find(query)
-        .sort({ createdAt: "desc" })
-        .limit(clampAuditLimit(limit))
-        .lean();
+      return auditRepository.queryEvents({
+        actionPrefix: prefix || null,
+        limit: clampAuditLimit(limit),
+      });
     },
 
     adminRuntimeMetrics: async (parent, args, context) => {
@@ -233,17 +229,13 @@ const resolvers: IResolvers = {
         scopes: input?.scopes,
       });
 
-      const account = await new ServiceAccount({
+      const created = await serviceAccountRepository.create({
         name: normalizedName,
         description: String(input?.description || "").trim(),
         active: input?.active === undefined ? true : Boolean(input.active),
         scopes: normalizedScopes,
         createdByUserId: toComparableId(context.user?._id),
-      }).save();
-      const created = await ServiceAccount.findOne({ _id: account._id }).lean();
-      if (!created) {
-        throw createGraphQLError("Service account not found after creation");
-      }
+      });
       await recordAuditEvent({
         actorUserId: context.user?._id || null,
         action: "service_account.created",
@@ -258,12 +250,17 @@ const resolvers: IResolvers = {
 
     adminUpdateServiceAccount: async (parent, { _id, input }, context) => {
       ensureThatUserIsAdministrator(context);
-      const existing = await ServiceAccount.findOne({ _id }).lean();
+      const existing = await serviceAccountRepository.findById({ accountId: _id });
       if (!existing) {
         throw createGraphQLError("Service account not found");
       }
 
-      const updatePayload: Record<string, unknown> = {};
+      const updatePayload: {
+        name?: string;
+        description?: string;
+        active?: boolean;
+        scopes?: string[];
+      } = {};
       if (Object.prototype.hasOwnProperty.call(input || {}, "name")) {
         const name = String(input.name || "").trim();
         if (!name || name.length < 3) {
@@ -289,11 +286,10 @@ const resolvers: IResolvers = {
         updatePayload.scopes = scopes;
       }
 
-      const updated = await ServiceAccount.findOneAndUpdate(
-        { _id },
-        { $set: updatePayload },
-        { new: true, runValidators: true },
-      ).lean();
+      const updated = await serviceAccountRepository.updateById({
+        accountId: _id,
+        patch: updatePayload,
+      });
       if (!updated) {
         throw createGraphQLError("Service account not found");
       }
@@ -305,23 +301,22 @@ const resolvers: IResolvers = {
         targetId: updated._id,
         metadata: { fields: Object.keys(updatePayload) },
       });
-      const tokenCount = await ServiceAccountToken.countDocuments({
+      const tokenCount = await serviceAccountTokenRepository.countActiveByServiceAccountId({
         serviceAccountId: updated._id,
-        revokedAt: null,
       });
       return toServiceAccountView(updated, tokenCount);
     },
 
     adminDeleteServiceAccount: async (parent, { _id }, context) => {
       ensureThatUserIsAdministrator(context);
-      const deleted = await ServiceAccount.findOneAndDelete({ _id }).lean();
+      const deleted = await serviceAccountRepository.deleteById({ accountId: _id });
       if (!deleted) {
         throw createGraphQLError("Service account not found");
       }
-      await ServiceAccountToken.updateMany(
-        { serviceAccountId: deleted._id, revokedAt: null },
-        { $set: { revokedAt: new Date() } },
-      );
+      await serviceAccountTokenRepository.revokeActiveByServiceAccountId({
+        serviceAccountId: deleted._id,
+        revokedAt: new Date(),
+      });
       await recordAuditEvent({
         actorUserId: context.user?._id || null,
         action: "service_account.deleted",
@@ -366,15 +361,15 @@ const resolvers: IResolvers = {
 
     adminRotateServiceAccountToken: async (parent, { _id, expiresInHours = null }, context) => {
       ensureThatUserIsAdministrator(context);
-      const existing = await ServiceAccountToken.findOne({ _id }).lean();
+      const existing = await serviceAccountTokenRepository.findById({ tokenId: _id });
       if (!existing) {
         throw createGraphQLError("Service account token not found");
       }
 
-      await ServiceAccountToken.updateOne(
-        { _id: existing._id, revokedAt: null },
-        { $set: { revokedAt: new Date() } },
-      );
+      await serviceAccountTokenRepository.revokeById({
+        tokenId: existing._id,
+        revokedAt: new Date(),
+      });
 
       const issued = await issueServiceAccountToken({
         serviceAccountId: existing.serviceAccountId,
@@ -404,11 +399,10 @@ const resolvers: IResolvers = {
 
     adminRevokeServiceAccountToken: async (parent, { _id }, context) => {
       ensureThatUserIsAdministrator(context);
-      const revoked = await ServiceAccountToken.findOneAndUpdate(
-        { _id, revokedAt: null },
-        { $set: { revokedAt: new Date() } },
-        { new: true },
-      ).lean();
+      const revoked = await serviceAccountTokenRepository.revokeById({
+        tokenId: _id,
+        revokedAt: new Date(),
+      });
       if (!revoked) {
         return false;
       }

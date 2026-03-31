@@ -9,11 +9,13 @@ import type { ApiContext } from "../context.js";
 import { recordAuditEvent } from "../audit.js";
 import { config } from "../config.js";
 import { createClientError, mintDatasourceSessionToken } from "../datasourceGateway.js";
-import Dashboard from "../models/Dashboard.js";
 import { consumeRateLimit } from "../rateLimit.js";
 import { buildLimiterCompositeKey, hashLimiterKeyPart } from "../securityLimiter.js";
 import { ensureThatPrincipalHasServiceScope } from "../auth.js";
 import { recordDatasourceMintMetric } from "../runtimeMetrics.js";
+import { dataStore } from "../data/index.js";
+
+const dashboardRepository = dataStore.repositories.dashboards;
 
 const toComparableId = (value: unknown): string | null => {
   if (!value) {
@@ -186,7 +188,9 @@ const resolvers: IResolvers = {
       if (context.serviceAccount) {
         ensureThatPrincipalHasServiceScope(context, ["datasource:mint"]);
       }
-      const dashboard = await Dashboard.findOne({ _id: dashboardId }).lean();
+      const dashboard = await dashboardRepository.findById({
+        dashboardId: String(dashboardId || "").trim(),
+      });
       if (!dashboard) {
         throw createGraphQLError("Dashboard not found");
       }

@@ -13,7 +13,10 @@ import {
   redactSecretShape,
 } from "../credentialEncryption.js";
 import type { EncryptedSecretPayload } from "../credentialEncryption.js";
-import CredentialProfile, { CREDENTIAL_PROFILE_TYPES } from "../models/CredentialProfile.js";
+import { dataStore } from "../data/index.js";
+
+const { CREDENTIAL_PROFILE_TYPES } = dataStore.constants;
+const credentialProfileRepository = dataStore.repositories.credentialProfiles;
 
 const normalizeProfileType = (value: unknown): string => {
   const normalized = String(value || "none")
@@ -113,6 +116,33 @@ const toCredentialProfileResponse = (profile: Record<string, unknown>) => {
   };
 };
 
+const toDuplicateNameGraphQLError = (error: unknown) => {
+  const typedError =
+    error && typeof error === "object"
+      ? (error as {
+          code?: unknown;
+          keyPattern?: Record<string, unknown>;
+          constraint?: unknown;
+          detail?: unknown;
+        })
+      : null;
+  if (Number(typedError?.code) === 11000 && typedError?.keyPattern?.name) {
+    return createGraphQLError("Credential profile name must be unique", {
+      extensions: { code: "BAD_USER_INPUT" },
+    });
+  }
+  if (
+    String(typedError?.code || "") === "23505" &&
+    (String(typedError?.constraint || "").includes("credential_profiles_name") ||
+      String(typedError?.detail || "").includes("(name)="))
+  ) {
+    return createGraphQLError("Credential profile name must be unique", {
+      extensions: { code: "BAD_USER_INPUT" },
+    });
+  }
+  return null;
+};
+
 const resolvers: IResolvers = {
   CredentialProfileType: {
     NONE: "none",
@@ -124,7 +154,7 @@ const resolvers: IResolvers = {
   Query: {
     credentialProfiles: async (parent, args, context) => {
       ensureThatUserHasRole(context, ["editor", "admin"]);
-      const profiles = await CredentialProfile.find({}).sort({ name: 1 }).lean();
+      const profiles = await credentialProfileRepository.listSortedByName();
       return profiles.map(toCredentialProfileResponse);
     },
   },
@@ -142,16 +172,25 @@ const resolvers: IResolvers = {
         secret,
       });
 
-      const created = await new CredentialProfile({
-        name: String(input?.name || "").trim(),
-        description: String(input?.description || "").trim(),
-        type,
-        allowPublicUse: Boolean(input?.allowPublicUse),
-        metadata,
-        secret: encryptCredentialSecret(secret),
-        createdBy: context.user._id,
-        updatedBy: context.user._id,
-      }).save();
+      let created;
+      try {
+        created = await credentialProfileRepository.create({
+          name: String(input?.name || "").trim(),
+          description: String(input?.description || "").trim(),
+          type,
+          allowPublicUse: Boolean(input?.allowPublicUse),
+          metadata,
+          secret: encryptCredentialSecret(secret),
+          createdBy: context.user._id,
+          updatedBy: context.user._id,
+        });
+      } catch (error) {
+        const duplicateError = toDuplicateNameGraphQLError(error);
+        if (duplicateError) {
+          throw duplicateError;
+        }
+        throw error;
+      }
 
       await recordAuditEvent({
         actorUserId: context.user._id,
@@ -164,13 +203,13 @@ const resolvers: IResolvers = {
         },
       });
 
-      return toCredentialProfileResponse(created.toObject());
+      return toCredentialProfileResponse(created);
     },
 
     adminUpdateCredentialProfile: async (parent, { _id, input }, context) => {
       ensureThatUserIsAdministrator(context);
 
-      const existing = await CredentialProfile.findOne({ _id }).lean();
+      const existing = await credentialProfileRepository.findById({ profileId: _id });
       if (!existing) {
         throw createGraphQLError("Credential profile not found");
       }
@@ -183,7 +222,9 @@ const resolvers: IResolvers = {
 
       let nextSecret;
       if (input?.secret === undefined) {
-        nextSecret = decryptCredentialSecret(existing.secret);
+        nextSecret = decryptCredentialSecret(
+          (existing.secret || null) as EncryptedSecretPayload | null,
+        );
       } else {
         nextSecret = normalizeSecret(input.secret);
       }
@@ -194,10 +235,11 @@ const resolvers: IResolvers = {
         secret: nextSecret,
       });
 
-      const updated = await CredentialProfile.findOneAndUpdate(
-        { _id },
-        {
-          $set: {
+      let updated;
+      try {
+        updated = await credentialProfileRepository.updateById({
+          profileId: _id,
+          patch: {
             name: input?.name === undefined ? existing.name : String(input.name || "").trim(),
             description:
               input?.description === undefined
@@ -212,9 +254,14 @@ const resolvers: IResolvers = {
             secret: encryptCredentialSecret(nextSecret),
             updatedBy: context.user._id,
           },
-        },
-        { new: true, runValidators: true },
-      ).lean();
+        });
+      } catch (error) {
+        const duplicateError = toDuplicateNameGraphQLError(error);
+        if (duplicateError) {
+          throw duplicateError;
+        }
+        throw error;
+      }
 
       await recordAuditEvent({
         actorUserId: context.user._id,
@@ -237,7 +284,9 @@ const resolvers: IResolvers = {
     adminDeleteCredentialProfile: async (parent, { _id }, context) => {
       ensureThatUserIsAdministrator(context);
 
-      const deleted = await CredentialProfile.findOneAndDelete({ _id }).lean();
+      const deleted = await credentialProfileRepository.deleteById({
+        profileId: _id,
+      });
       if (!deleted) {
         throw createGraphQLError("Credential profile not found");
       }

@@ -5,11 +5,12 @@
 
 import { ensureThatPrincipalHasServiceScope } from "../auth.js";
 import type { IResolvers } from "@graphql-tools/utils";
-import Dashboard from "../models/Dashboard.js";
-import BrokerProfile from "../models/BrokerProfile.js";
+import { dataStore } from "../data/index.js";
 
 const ALLOWED_DATASOURCE_TYPES = new Set(["http", "clock", "static", "sse", "websocket", "mqtt"]);
 const EXTERNAL_VISIBILITIES = new Set(["link", "public"]);
+const brokerProfileRepository = dataStore.repositories.brokerProfiles;
+const dashboardRepository = dataStore.repositories.dashboards;
 type DatasourceLike = {
   type?: unknown;
   settings?: {
@@ -58,7 +59,7 @@ const resolvers: IResolvers = {
     adminDatasourceDiagnostics: async (parent, args, context) => {
       ensureThatPrincipalHasServiceScope(context, ["datasource:diagnostics:read"]);
 
-      const dashboards = await Dashboard.find({}).select("_id visibility datasources").lean();
+      const dashboards = await dashboardRepository.listForDiagnostics();
 
       const brokerProfileIds = new Set<string>();
       dashboards.forEach((dashboard) => {
@@ -75,11 +76,9 @@ const resolvers: IResolvers = {
         });
       });
 
-      const brokerProfiles = await BrokerProfile.find({
-        _id: { $in: [...brokerProfileIds] },
-      })
-        .select("_id credentialProfileId")
-        .lean();
+      const brokerProfiles = await brokerProfileRepository.findByIds({
+        profileIds: [...brokerProfileIds],
+      });
       const brokerCredentialMap = new Map(
         brokerProfiles.map((profile) => [
           String(profile._id),

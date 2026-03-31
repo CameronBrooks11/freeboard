@@ -18,8 +18,8 @@ Use this runbook for security-control deployments and incident rollback. It keep
 - API and gateway trust hop values must be aligned for the same topology:
   - `API_TRUST_PROXY_HOPS=<n>`
   - `REALTIME_TRUST_PROXY_HOPS=<n>`
-- In non-dev runtime, API security limiter backend must be shared Mongo state:
-  - `SECURITY_LIMITER_BACKEND=mongo`
+- In non-dev runtime, API security limiter backend must match the configured datastore backend:
+  - `DB_BACKEND=postgres` -> `SECURITY_LIMITER_BACKEND=postgres`
 - Failure-mode defaults for non-dev runtime:
   - `SECURITY_LIMITER_FAILURE_MODE=fail-closed`
   - `REALTIME_LIMITER_FAILURE_MODE=fail-closed`
@@ -58,7 +58,7 @@ Monitor limiter outcomes in runtime metrics:
 ### 2. API
 
 - deploy with finalized `API_TRUST_PROXY_HOPS`.
-- confirm `SECURITY_LIMITER_BACKEND=mongo`.
+- confirm `SECURITY_LIMITER_BACKEND` matches `DB_BACKEND`.
 - confirm `SECURITY_LIMITER_FAILURE_MODE=fail-closed` (unless approved temporary degraded run).
 
 ### 3. Gateway
@@ -125,6 +125,7 @@ Run this minimum command set after rollout/rollback verification:
 npm run lint
 npm run check:ts:debt
 npm run test:api
+npm run test:api:smoke
 npm run test:gateway
 npm run test:ui
 npm run test:e2e:smoke

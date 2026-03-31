@@ -1,0 +1,14 @@
+DROP TABLE IF EXISTS share_token_revocation_events;
+DROP TABLE IF EXISTS security_limiter_state;
+DROP TABLE IF EXISTS audit_events;
+DROP TABLE IF EXISTS policy_kv;
+DROP TABLE IF EXISTS password_reset_tokens;
+DROP TABLE IF EXISTS invite_tokens;
+DROP TABLE IF EXISTS service_account_tokens;
+DROP TABLE IF EXISTS service_accounts;
+DROP TABLE IF EXISTS broker_profiles;
+DROP TABLE IF EXISTS credential_profiles;
+DROP TABLE IF EXISTS dashboard_acl;
+DROP TABLE IF EXISTS dashboards;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS schema_migrations;

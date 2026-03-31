@@ -2,13 +2,10 @@ import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 
 import DatasourceResolvers from "../src/resolvers/Datasource.js";
-import Dashboard from "../src/models/Dashboard.js";
+import { dataStore } from "../src/data/index.js";
 
-const originalDashboardFindOne = Dashboard.findOne;
-
-const asLean = (value) => ({
-  lean: async () => value,
-});
+const dashboardRepository = dataStore.repositories.dashboards;
+const originalDashboardFindById = dashboardRepository.findById;
 
 const buildDashboard = () => ({
   _id: "dash-1",
@@ -29,11 +26,12 @@ const buildDashboard = () => ({
 });
 
 afterEach(() => {
-  Dashboard.findOne = originalDashboardFindOne;
+  dashboardRepository.findById = originalDashboardFindById;
 });
 
 test("mintDatasourceSessionToken allows normal authenticated user context", async () => {
-  Dashboard.findOne = ({ _id }) => asLean(_id === "dash-1" ? buildDashboard() : null);
+  dashboardRepository.findById = async ({ dashboardId }) =>
+    dashboardId === "dash-1" ? buildDashboard() : null;
 
   const result = await DatasourceResolvers.Mutation.mintDatasourceSessionToken(
     null,

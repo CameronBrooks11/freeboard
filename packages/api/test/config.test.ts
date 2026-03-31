@@ -3,11 +3,18 @@ import { test } from "node:test";
 
 const CONFIG_ENV_KEYS = [
   "NODE_ENV",
+  "DB_BACKEND",
   "JWT_SECRET",
   "CREATE_ADMIN",
   "ADMIN_EMAIL",
   "ADMIN_PASSWORD",
-  "MONGO_URL",
+  "DATABASE_URL",
+  "FREEBOARD_POSTGRES_URL",
+  "POSTGRES_CONNECT_TIMEOUT_MS",
+  "POSTGRES_POOL_MAX_CONNECTIONS",
+  "POSTGRES_POOL_MAX",
+  "POSTGRES_POOL_IDLE_TIMEOUT_MS",
+  "POSTGRES_SSL_MODE",
   "PORT",
   "AUTH_REGISTRATION_MODE",
   "AUTH_REGISTRATION_DEFAULT_ROLE",
@@ -23,7 +30,6 @@ const CONFIG_ENV_KEYS = [
   "SECURITY_LIMITER_FAILURE_MODE",
   "SECURITY_LIMITER_NAMESPACE",
   "SECURITY_LIMITER_HASH_SALT",
-  "SECURITY_LIMITER_MONGO_TIMEOUT_MS",
   "SECURITY_LIMITER_MEMORY_MAX_KEYS",
   "JWT_GATEWAY_SECRET",
   "GATEWAY_SERVICE_TOKEN",
@@ -44,13 +50,16 @@ const withEnv = async (overrides, run) => {
   const original = Object.fromEntries(CONFIG_ENV_KEYS.map((key) => [key, process.env[key]]));
 
   for (const key of CONFIG_ENV_KEYS) {
-    if (Object.prototype.hasOwnProperty.call(overrides, key)) {
-      const value = overrides[key];
-      if (value === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = value;
-      }
+    if (!Object.prototype.hasOwnProperty.call(overrides, key)) {
+      delete process.env[key];
+      continue;
+    }
+
+    const value = overrides[key];
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
     }
   }
 
@@ -75,6 +84,7 @@ const TEST_CREDENTIAL_ENCRYPTION_KEY = Buffer.from(
   "4f9d2acb71e84c36a90f5e12d7b3c4aa5d61e8f90b2c47d38ea16f4bc9d2037f",
   "hex",
 ).toString("base64");
+const TEST_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:5432/freeboard";
 
 test("config rejects weak JWT secret in non-development runtime", async () => {
   await withEnv(
@@ -84,7 +94,7 @@ test("config rejects weak JWT secret in non-development runtime", async () => {
       CREATE_ADMIN: "false",
       ADMIN_EMAIL: "admin@example.com",
       ADMIN_PASSWORD: "StrongPass123!",
-      MONGO_URL: "mongodb://127.0.0.1:27017/freeboard",
+      DATABASE_URL: TEST_DATABASE_URL,
       PORT: "4001",
       JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
       GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
@@ -102,7 +112,7 @@ test("config rejects deterministic local-dev JWT secret pattern in non-developme
       NODE_ENV: "production",
       JWT_SECRET: "freeboard-local-dev-jwt-secret-0123456789",
       CREATE_ADMIN: "false",
-      MONGO_URL: "mongodb://127.0.0.1:27017/freeboard",
+      DATABASE_URL: TEST_DATABASE_URL,
       JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
       GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
       CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
@@ -119,7 +129,7 @@ test("config rejects deterministic local-dev credential encryption key in non-de
       NODE_ENV: "production",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
-      MONGO_URL: "mongodb://127.0.0.1:27017/freeboard",
+      DATABASE_URL: TEST_DATABASE_URL,
       JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
       GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
       CREDENTIAL_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
@@ -133,14 +143,14 @@ test("config rejects deterministic local-dev credential encryption key in non-de
   );
 });
 
-test("config enforces mongo security limiter backend in non-development runtime", async () => {
+test("config rejects memory security limiter backend in non-development runtime", async () => {
   await withEnv(
     {
       NODE_ENV: "production",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       SECURITY_LIMITER_BACKEND: "memory",
       CREATE_ADMIN: "false",
-      MONGO_URL: "mongodb://127.0.0.1:27017/freeboard",
+      DATABASE_URL: TEST_DATABASE_URL,
       JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
       GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
       CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
@@ -148,7 +158,7 @@ test("config enforces mongo security limiter backend in non-development runtime"
     async () => {
       await assert.rejects(
         () => importConfigFresh(),
-        /SECURITY_LIMITER_BACKEND must be set to 'mongo'/,
+        /SECURITY_LIMITER_BACKEND must not be set to 'memory'/,
       );
     },
   );
@@ -162,7 +172,7 @@ test("config rejects invalid admin email when CREATE_ADMIN=true", async () => {
       CREATE_ADMIN: "true",
       ADMIN_EMAIL: "invalid-email",
       ADMIN_PASSWORD: "StrongPass123!",
-      MONGO_URL: "mongodb://127.0.0.1:27017/freeboard",
+      DATABASE_URL: TEST_DATABASE_URL,
       PORT: "4001",
     },
     async () => {
@@ -179,7 +189,7 @@ test("config rejects weak admin password when CREATE_ADMIN=true", async () => {
       CREATE_ADMIN: "true",
       ADMIN_EMAIL: "admin@example.com",
       ADMIN_PASSWORD: "weakpass",
-      MONGO_URL: "mongodb://127.0.0.1:27017/freeboard",
+      DATABASE_URL: TEST_DATABASE_URL,
       PORT: "4001",
     },
     async () => {
@@ -196,7 +206,7 @@ test("config accepts valid CREATE_ADMIN credentials and normalizes email", async
       CREATE_ADMIN: "true",
       ADMIN_EMAIL: "  Admin@Example.com ",
       ADMIN_PASSWORD: "StrongPass123!",
-      MONGO_URL: "mongodb://127.0.0.1:27017/freeboard",
+      DATABASE_URL: TEST_DATABASE_URL,
       PORT: "4001",
     },
     async () => {
@@ -207,20 +217,81 @@ test("config accepts valid CREATE_ADMIN credentials and normalizes email", async
   );
 });
 
-test("config requires explicit MONGO_URL in non-development runtime", async () => {
+test("config rejects non-postgres DB_BACKEND values", async () => {
   await withEnv(
     {
       NODE_ENV: "production",
+      DB_BACKEND: "mysql",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
-      // Keep key present but blank so repo-root .env cannot repopulate it during config import.
-      MONGO_URL: "",
+      DATABASE_URL: TEST_DATABASE_URL,
       JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
       GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
       CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
     },
     async () => {
-      await assert.rejects(() => importConfigFresh(), /MONGO_URL must be explicitly configured/);
+      await assert.rejects(() => importConfigFresh(), /DB_BACKEND must be one of: postgres/);
+    },
+  );
+});
+
+test("config accepts explicit DB_BACKEND=postgres", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "test",
+      DB_BACKEND: "postgres",
+      SECURITY_LIMITER_BACKEND: "",
+      DATABASE_URL: TEST_DATABASE_URL,
+      FREEBOARD_POSTGRES_URL: TEST_DATABASE_URL,
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      CREATE_ADMIN: "false",
+    },
+    async () => {
+      const { config } = await importConfigFresh();
+      assert.equal(config.dbBackend, "postgres");
+      assert.equal(config.postgresUrl, TEST_DATABASE_URL);
+    },
+  );
+});
+
+test("config requires Postgres URL", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "production",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      CREATE_ADMIN: "false",
+      DATABASE_URL: "",
+      FREEBOARD_POSTGRES_URL: "",
+      JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
+      GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
+      CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
+    },
+    async () => {
+      await assert.rejects(
+        () => importConfigFresh(),
+        /DATABASE_URL or FREEBOARD_POSTGRES_URL is required for Postgres runtime/,
+      );
+    },
+  );
+});
+
+test("config rejects unsupported security limiter backend values", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "production",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      CREATE_ADMIN: "false",
+      DATABASE_URL: TEST_DATABASE_URL,
+      SECURITY_LIMITER_BACKEND: "redis",
+      JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
+      GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
+      CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
+    },
+    async () => {
+      await assert.rejects(
+        () => importConfigFresh(),
+        /SECURITY_LIMITER_BACKEND must be one of: memory, postgres/,
+      );
     },
   );
 });
@@ -231,6 +302,7 @@ test("config rejects unsupported registration mode", async () => {
       NODE_ENV: "development",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
+      DATABASE_URL: TEST_DATABASE_URL,
       AUTH_REGISTRATION_MODE: "invalid-mode",
     },
     async () => {
@@ -245,6 +317,7 @@ test("config rejects unsupported registration default role", async () => {
       NODE_ENV: "development",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
+      DATABASE_URL: TEST_DATABASE_URL,
       AUTH_REGISTRATION_MODE: "open",
       AUTH_REGISTRATION_DEFAULT_ROLE: "admin",
     },
@@ -260,6 +333,7 @@ test("config accepts valid auth policy environment overrides", async () => {
       NODE_ENV: "development",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
+      DATABASE_URL: TEST_DATABASE_URL,
       AUTH_REGISTRATION_MODE: "open",
       AUTH_REGISTRATION_DEFAULT_ROLE: "editor",
       AUTH_EDITOR_CAN_PUBLISH: "true",
@@ -293,6 +367,7 @@ test("config rejects unsupported dashboard default visibility", async () => {
       NODE_ENV: "development",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
+      DATABASE_URL: TEST_DATABASE_URL,
       DASHBOARD_DEFAULT_VISIBILITY: "internal",
     },
     async () => {
@@ -307,6 +382,7 @@ test("config rejects unsupported execution mode", async () => {
       NODE_ENV: "development",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
+      DATABASE_URL: TEST_DATABASE_URL,
       EXECUTION_MODE: "unsafe",
     },
     async () => {

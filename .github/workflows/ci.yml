@@ -30,6 +30,7 @@ jobs:
       run_ui_tests: ${{ steps.classify.outputs.run_ui_tests }}
       run_gateway_tests: ${{ steps.classify.outputs.run_gateway_tests }}
       run_e2e_smoke: ${{ steps.classify.outputs.run_e2e_smoke }}
+      run_db_schema_gate: ${{ steps.classify.outputs.run_db_schema_gate }}
       run_build_verify: ${{ steps.classify.outputs.run_build_verify }}
       run_typecheck: ${{ steps.classify.outputs.run_typecheck }}
       run_docker_sanity: ${{ steps.classify.outputs.run_docker_sanity }}
@@ -88,7 +89,8 @@ jobs:
               - 'e2e/**'
               - 'scripts/e2e-smoke.mjs'
               - 'playwright.e2e.config.mjs'
-              - 'docker-compose.mongo.yml'
+              - 'docker-compose.yml'
+              - 'docker-compose.postgres.yml'
               - 'package.json'
               - 'package-lock.json'
               - '.nvmrc'
@@ -159,6 +161,11 @@ jobs:
             run_e2e_smoke=true
           fi
 
+          run_db_schema_gate=false
+          if [[ "$api" == "true" || "$runtime_shared" == "true" || "$shared" == "true" || "$e2e" == "true" ]]; then
+            run_db_schema_gate=true
+          fi
+
           run_build_verify=false
           if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             run_build_verify=true
@@ -189,6 +196,7 @@ jobs:
           echo "run_ui_tests=$run_ui_tests" >> "$GITHUB_OUTPUT"
           echo "run_gateway_tests=$run_gateway_tests" >> "$GITHUB_OUTPUT"
           echo "run_e2e_smoke=$run_e2e_smoke" >> "$GITHUB_OUTPUT"
+          echo "run_db_schema_gate=$run_db_schema_gate" >> "$GITHUB_OUTPUT"
           echo "run_build_verify=$run_build_verify" >> "$GITHUB_OUTPUT"
           echo "run_typecheck=$run_typecheck" >> "$GITHUB_OUTPUT"
           echo "run_docker_sanity=$run_docker_sanity" >> "$GITHUB_OUTPUT"
@@ -204,6 +212,7 @@ jobs:
           echo "  run_ui_tests=$run_ui_tests"
           echo "  run_gateway_tests=$run_gateway_tests"
           echo "  run_e2e_smoke=$run_e2e_smoke"
+          echo "  run_db_schema_gate=$run_db_schema_gate"
           echo "  run_build_verify=$run_build_verify"
           echo "  run_typecheck=$run_typecheck"
           echo "  run_docker_sanity=$run_docker_sanity"
@@ -227,6 +236,8 @@ jobs:
         run: npm ci
       - name: Format check
         run: npm run format:check
+      - name: Legacy datastore residue gate
+        run: npm run check:repo:legacy-residue
 
   docs-integrity:
     name: Docs integrity
@@ -300,6 +311,47 @@ jobs:
         run: npm ci
       - name: Run API tests
         run: npm run test:api
+
+  test-api-smoke:
+    name: Test API smoke (Postgres)
+    needs: changes
+    if: needs.changes.outputs.run_api_tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: freeboard
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d freeboard"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_BACKEND: postgres
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/freeboard
+      SECURITY_LIMITER_BACKEND: postgres
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Validate DB readiness (strict)
+        run: npm run check:db:ready:strict
+      - name: Apply schema
+        run: npm run db:schema:apply
+      - name: Run API smoke tests
+        run: npm run test:api:smoke
 
   test-shared:
     name: Test Shared
@@ -395,6 +447,55 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  db-schema-gate:
+    name: DB schema gate (Postgres)
+    needs: changes
+    if: needs.changes.outputs.run_db_schema_gate == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: freeboard
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d freeboard"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_BACKEND: postgres
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/freeboard
+      SECURITY_LIMITER_BACKEND: postgres
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Validate DB readiness (strict)
+        run: npm run check:db:ready:strict
+      - name: Verify schema status (pre-apply)
+        run: npm run db:schema:status
+      - name: Apply schema
+        run: npm run db:schema:apply
+      - name: Verify schema status (post-apply)
+        run: npm run db:schema:status
+      - name: Roll back one schema migration
+        run: npm run db:schema:rollback -- --steps=1
+      - name: Re-apply schema
+        run: npm run db:schema:apply
+      - name: Verify schema status (final)
+        run: npm run db:schema:status
+
   build-verify:
     name: Build verify
     needs: changes
@@ -458,10 +559,12 @@ jobs:
       - docs-integrity
       - lint
       - test-api
+      - test-api-smoke
       - test-shared
       - test-ui
       - test-gateway
       - test-e2e-smoke
+      - db-schema-gate
       - build-verify
       - docker-sanity
       - typecheck
@@ -494,10 +597,12 @@ jobs:
           check_required "${{ needs.changes.outputs.run_docs_integrity }}" "${{ needs.docs-integrity.result }}" "docs-integrity"
           check_required "${{ needs.changes.outputs.non_docs }}" "${{ needs.lint.result }}" "lint"
           check_required "${{ needs.changes.outputs.run_api_tests }}" "${{ needs.test-api.result }}" "test-api"
+          check_required "${{ needs.changes.outputs.run_api_tests }}" "${{ needs.test-api-smoke.result }}" "test-api-smoke"
           check_required "${{ needs.changes.outputs.run_shared_tests }}" "${{ needs.test-shared.result }}" "test-shared"
           check_required "${{ needs.changes.outputs.run_ui_tests }}" "${{ needs.test-ui.result }}" "test-ui"
           check_required "${{ needs.changes.outputs.run_gateway_tests }}" "${{ needs.test-gateway.result }}" "test-gateway"
           check_required "${{ needs.changes.outputs.run_e2e_smoke }}" "${{ needs.test-e2e-smoke.result }}" "test-e2e-smoke"
+          check_required "${{ needs.changes.outputs.run_db_schema_gate }}" "${{ needs.db-schema-gate.result }}" "db-schema-gate"
           check_required "${{ needs.changes.outputs.run_build_verify }}" "${{ needs.build-verify.result }}" "build-verify"
           check_required "${{ needs.changes.outputs.run_docker_sanity }}" "${{ needs.docker-sanity.result }}" "docker-sanity"
           check_required "${{ needs.changes.outputs.run_typecheck }}" "${{ needs.typecheck.result }}" "typecheck"

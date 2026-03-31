@@ -3,9 +3,8 @@
  * Small helper for persisting non-blocking audit events.
  */
 
-import mongoose from "mongoose";
-import AuditEvent from "./models/AuditEvent.js";
 import { recordAuditWriteFailureMetric } from "./runtimeMetrics.js";
+import { dataStore } from "./data/index.js";
 
 type AuditEventInput = {
   actorUserId?: string | null;
@@ -37,19 +36,19 @@ export const recordAuditEvent = async ({
     return;
   }
 
-  const readyState = AuditEvent?.db?.readyState ?? mongoose.connection?.readyState;
-  if (readyState !== 1) {
+  const repositoryReady = await Promise.resolve(dataStore.repositories.audit.isReady());
+  if (!repositoryReady) {
     return;
   }
 
   try {
-    await new AuditEvent({
+    await dataStore.repositories.audit.insertEvent({
       actorUserId,
       action,
       targetType,
       targetId,
       metadata,
-    }).save();
+    });
   } catch (error) {
     recordAuditWriteFailureMetric();
     const errorMessage =

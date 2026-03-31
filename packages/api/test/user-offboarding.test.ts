@@ -1,17 +1,11 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 
-import Dashboard from "../src/models/Dashboard.js";
-import User from "../src/models/User.js";
+import { dataStore } from "../src/data/index.js";
 import UserResolvers from "../src/resolvers/User.js";
 
-const asLean = (value) => ({
-  lean: async () => value,
-});
-
-const asSortedLean = (value) => ({
-  sort: () => asLean(value),
-});
+const dashboardRepository = dataStore.repositories.dashboards;
+const userRepository = dataStore.repositories.users;
 
 const buildDashboard = (overrides = {}) => ({
   _id: "dash-1",
@@ -23,76 +17,87 @@ const buildDashboard = (overrides = {}) => ({
 });
 
 const originalMethods = {
-  dashboardFind: Dashboard.find,
-  dashboardFindOneAndUpdate: Dashboard.findOneAndUpdate,
-  userFindOne: User.findOne,
-  userFindOneAndDelete: User.findOneAndDelete,
+  dashboardFindImpactedByUserId: dashboardRepository.findImpactedByUserId,
+  dashboardUpdateById: dashboardRepository.updateById,
+  userFindById: userRepository.findById,
+  userDeleteById: userRepository.deleteById,
+  userFindFirstActiveAdmin: userRepository.findFirstActiveAdmin,
 };
 
 afterEach(() => {
-  Dashboard.find = originalMethods.dashboardFind;
-  Dashboard.findOneAndUpdate = originalMethods.dashboardFindOneAndUpdate;
-  User.findOne = originalMethods.userFindOne;
-  User.findOneAndDelete = originalMethods.userFindOneAndDelete;
+  dashboardRepository.findImpactedByUserId = originalMethods.dashboardFindImpactedByUserId;
+  dashboardRepository.updateById = originalMethods.dashboardUpdateById;
+  userRepository.findById = originalMethods.userFindById;
+  userRepository.deleteById = originalMethods.userDeleteById;
+  userRepository.findFirstActiveAdmin = originalMethods.userFindFirstActiveAdmin;
 });
 
 test("adminDeleteUser reassigns owned dashboards and removes stale ACL access", async () => {
   const updatedDashboards = [];
 
-  User.findOne = ({ _id }) =>
-    asLean(
-      _id === "target-user"
-        ? {
-            _id: "target-user",
-            email: "target@example.com",
-            role: "editor",
-            active: false,
-          }
-        : null,
-    );
-  User.findOneAndDelete = ({ _id }) =>
-    asLean(
-      _id === "target-user"
-        ? {
-            _id: "target-user",
-            email: "target@example.com",
-            role: "editor",
-            active: false,
-          }
-        : null,
-    );
+  userRepository.findById = async ({ userId }) =>
+    userId === "target-user"
+      ? {
+          _id: "target-user",
+          email: "target@example.com",
+          role: "editor",
+          active: false,
+          password: "ignored",
+          sessionVersion: 0,
+          registrationDate: new Date("2026-01-01T00:00:00.000Z"),
+          lastLogin: new Date("2026-01-01T00:00:00.000Z"),
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        }
+      : null;
+  userRepository.deleteById = async ({ userId }) =>
+    userId === "target-user"
+      ? {
+          _id: "target-user",
+          email: "target@example.com",
+          role: "editor",
+          active: false,
+          password: "ignored",
+          sessionVersion: 0,
+          registrationDate: new Date("2026-01-01T00:00:00.000Z"),
+          lastLogin: new Date("2026-01-01T00:00:00.000Z"),
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        }
+      : null;
 
-  Dashboard.find = () =>
-    asLean([
-      buildDashboard({
-        _id: "dash-owned",
-        user: "target-user",
-        visibility: "public",
-        shareToken: "owned-token",
-        acl: [
-          { userId: "target-user", accessLevel: "editor" },
-          { userId: "admin-1", accessLevel: "viewer" },
-          { userId: "viewer-1", accessLevel: "viewer" },
-        ],
-      }),
-      buildDashboard({
-        _id: "dash-acl",
-        user: "other-owner",
-        visibility: "private",
-        shareToken: "acl-token",
-        acl: [
-          { userId: "target-user", accessLevel: "viewer" },
-          { userId: "editor-2", accessLevel: "editor" },
-        ],
-      }),
-    ]);
-  Dashboard.findOneAndUpdate = (filter, update) => {
-    updatedDashboards.push({ filter, update });
-    return asLean({
-      _id: filter._id,
+  dashboardRepository.findImpactedByUserId = async () => [
+    buildDashboard({
+      _id: "dash-owned",
+      user: "target-user",
+      visibility: "public",
+      shareToken: "owned-token",
+      acl: [
+        { userId: "target-user", accessLevel: "editor" },
+        { userId: "admin-1", accessLevel: "viewer" },
+        { userId: "viewer-1", accessLevel: "viewer" },
+      ],
+    }),
+    buildDashboard({
+      _id: "dash-acl",
+      user: "other-owner",
+      visibility: "private",
+      shareToken: "acl-token",
+      acl: [
+        { userId: "target-user", accessLevel: "viewer" },
+        { userId: "editor-2", accessLevel: "editor" },
+      ],
+    }),
+  ];
+  dashboardRepository.updateById = async ({ dashboardId, patch }) => {
+    updatedDashboards.push({ dashboardId, patch });
+    return {
+      _id: dashboardId,
       ...buildDashboard(),
-      ...update.$set,
-    });
+      ...patch,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    };
   };
 
   const result = await UserResolvers.Mutation.adminDeleteUser(
@@ -104,31 +109,35 @@ test("adminDeleteUser reassigns owned dashboards and removes stale ACL access", 
   assert.equal(result._id, "target-user");
   assert.equal(updatedDashboards.length, 2);
 
-  const ownedUpdate = updatedDashboards.find((entry) => entry.filter._id === "dash-owned");
+  const ownedUpdate = updatedDashboards.find((entry) => entry.dashboardId === "dash-owned");
   assert.ok(ownedUpdate);
-  assert.equal(ownedUpdate.update.$set.user, "admin-1");
-  assert.equal(ownedUpdate.update.$set.visibility, "private");
-  assert.equal(typeof ownedUpdate.update.$set.shareToken, "string");
-  assert.ok(ownedUpdate.update.$set.shareToken.length > 0);
-  assert.deepEqual(ownedUpdate.update.$set.acl, [{ userId: "viewer-1", accessLevel: "viewer" }]);
+  assert.equal(ownedUpdate.patch.user, "admin-1");
+  assert.equal(ownedUpdate.patch.visibility, "private");
+  assert.equal(typeof ownedUpdate.patch.shareToken, "string");
+  assert.ok(String(ownedUpdate.patch.shareToken).length > 0);
+  assert.deepEqual(ownedUpdate.patch.acl, [{ userId: "viewer-1", accessLevel: "viewer" }]);
 
-  const aclOnlyUpdate = updatedDashboards.find((entry) => entry.filter._id === "dash-acl");
+  const aclOnlyUpdate = updatedDashboards.find((entry) => entry.dashboardId === "dash-acl");
   assert.ok(aclOnlyUpdate);
-  assert.deepEqual(aclOnlyUpdate.update.$set.acl, [{ userId: "editor-2", accessLevel: "editor" }]);
+  assert.deepEqual(aclOnlyUpdate.patch.acl, [{ userId: "editor-2", accessLevel: "editor" }]);
 });
 
 test("adminDeleteUser rejects permanent deletion for active users", async () => {
-  User.findOne = ({ _id }) =>
-    asLean(
-      _id === "target-user"
-        ? {
-            _id: "target-user",
-            email: "target@example.com",
-            role: "viewer",
-            active: true,
-          }
-        : null,
-    );
+  userRepository.findById = async ({ userId }) =>
+    userId === "target-user"
+      ? {
+          _id: "target-user",
+          email: "target@example.com",
+          role: "viewer",
+          active: true,
+          password: "ignored",
+          sessionVersion: 0,
+          registrationDate: new Date("2026-01-01T00:00:00.000Z"),
+          lastLogin: new Date("2026-01-01T00:00:00.000Z"),
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        }
+      : null;
 
   await assert.rejects(
     () =>
@@ -142,29 +151,30 @@ test("adminDeleteUser rejects permanent deletion for active users", async () => 
 });
 
 test("deleteMyUserAccount blocks removal when no fallback admin exists for owned dashboards", async () => {
-  User.findOne = (filter) => {
-    if (filter._id === "editor-1") {
-      return asLean({
-        _id: "editor-1",
-        email: "editor@example.com",
-        role: "editor",
-        active: true,
-      });
-    }
-    if (filter.role === "admin") {
-      return asSortedLean(null);
-    }
-    return asLean(null);
-  };
+  userRepository.findById = async ({ userId }) =>
+    userId === "editor-1"
+      ? {
+          _id: "editor-1",
+          email: "editor@example.com",
+          role: "editor",
+          active: true,
+          password: "ignored",
+          sessionVersion: 0,
+          registrationDate: new Date("2026-01-01T00:00:00.000Z"),
+          lastLogin: new Date("2026-01-01T00:00:00.000Z"),
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        }
+      : null;
+  userRepository.findFirstActiveAdmin = async () => null;
 
-  Dashboard.find = () =>
-    asLean([
-      buildDashboard({
-        _id: "dash-owned",
-        user: "editor-1",
-        acl: [],
-      }),
-    ]);
+  dashboardRepository.findImpactedByUserId = async () => [
+    buildDashboard({
+      _id: "dash-owned",
+      user: "editor-1",
+      acl: [],
+    }),
+  ];
 
   await assert.rejects(
     () =>

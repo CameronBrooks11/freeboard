@@ -3,45 +3,45 @@ import { afterEach, test } from "node:test";
 
 import { createAuthToken } from "../src/auth.js";
 import { setContext } from "../src/context.js";
-import ServiceAccount from "../src/models/ServiceAccount.js";
-import ServiceAccountToken from "../src/models/ServiceAccountToken.js";
-import User from "../src/models/User.js";
 import { config } from "../src/config.js";
+import { dataStore } from "../src/data/index.js";
 import crypto from "node:crypto";
 
-const asLean = (value) => ({
-  lean: async () => value,
-});
-
-const originalFindOne = User.findOne;
-const originalServiceAccountFindOne = ServiceAccount.findOne;
-const originalServiceAccountUpdateOne = ServiceAccount.updateOne;
-const originalServiceAccountTokenFindOne = ServiceAccountToken.findOne;
-const originalServiceAccountTokenUpdateOne = ServiceAccountToken.updateOne;
+const userRepository = dataStore.repositories.users;
+const serviceAccountRepository = dataStore.repositories.serviceAccounts;
+const serviceAccountTokenRepository = dataStore.repositories.serviceAccountTokens;
+const originalUserFindActiveById = userRepository.findActiveById;
+const originalServiceAccountFindActiveById = serviceAccountRepository.findActiveById;
+const originalServiceAccountTouchLastUsed = serviceAccountRepository.touchLastUsed;
+const originalServiceAccountTokenFindById = serviceAccountTokenRepository.findById;
+const originalServiceAccountTokenTouchLastUsed = serviceAccountTokenRepository.touchLastUsed;
 
 afterEach(() => {
-  User.findOne = originalFindOne;
-  ServiceAccount.findOne = originalServiceAccountFindOne;
-  ServiceAccount.updateOne = originalServiceAccountUpdateOne;
-  ServiceAccountToken.findOne = originalServiceAccountTokenFindOne;
-  ServiceAccountToken.updateOne = originalServiceAccountTokenUpdateOne;
+  userRepository.findActiveById = originalUserFindActiveById;
+  serviceAccountRepository.findActiveById = originalServiceAccountFindActiveById;
+  serviceAccountRepository.touchLastUsed = originalServiceAccountTouchLastUsed;
+  serviceAccountTokenRepository.findById = originalServiceAccountTokenFindById;
+  serviceAccountTokenRepository.touchLastUsed = originalServiceAccountTokenTouchLastUsed;
 });
 
 test("setContext hydrates authenticated user when sessionVersion matches", async () => {
   const token = createAuthToken("viewer@example.com", "viewer", true, "user-1", 2);
 
-  User.findOne = ({ _id, active }) =>
-    asLean(
-      _id === "user-1" && active === true
-        ? {
-            _id: "user-1",
-            email: "viewer@example.com",
-            role: "viewer",
-            active: true,
-            sessionVersion: 2,
-          }
-        : null,
-    );
+  userRepository.findActiveById = async ({ userId }) =>
+    userId === "user-1"
+      ? {
+          _id: "user-1",
+          email: "viewer@example.com",
+          role: "viewer",
+          active: true,
+          sessionVersion: 2,
+          password: "ignored",
+          registrationDate: new Date("2026-01-01T00:00:00.000Z"),
+          lastLogin: new Date("2026-01-01T00:00:00.000Z"),
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        }
+      : null;
 
   const context = await setContext({
     req: {
@@ -71,18 +71,21 @@ test("setContext derives clientIp from socket address when trust hops are disabl
 test("setContext rejects stale JWT when sessionVersion no longer matches", async () => {
   const token = createAuthToken("viewer@example.com", "viewer", true, "user-1", 0);
 
-  User.findOne = ({ _id, active }) =>
-    asLean(
-      _id === "user-1" && active === true
-        ? {
-            _id: "user-1",
-            email: "viewer@example.com",
-            role: "viewer",
-            active: true,
-            sessionVersion: 3,
-          }
-        : null,
-    );
+  userRepository.findActiveById = async ({ userId }) =>
+    userId === "user-1"
+      ? {
+          _id: "user-1",
+          email: "viewer@example.com",
+          role: "viewer",
+          active: true,
+          sessionVersion: 3,
+          password: "ignored",
+          registrationDate: new Date("2026-01-01T00:00:00.000Z"),
+          lastLogin: new Date("2026-01-01T00:00:00.000Z"),
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        }
+      : null;
 
   const context = await setContext({
     req: {
@@ -102,32 +105,39 @@ test("setContext hydrates authenticated service account principal from fsa token
     .update(`${secret}:${config.jwtSecret}`)
     .digest("hex");
 
-  ServiceAccountToken.findOne = ({ _id }) =>
-    asLean(
-      _id === tokenId
-        ? {
-            _id: tokenId,
-            serviceAccountId: "svc-1",
-            tokenHash,
-            scopes: ["ops:read"],
-            revokedAt: null,
-            expiresAt: null,
-          }
-        : null,
-    );
-  ServiceAccount.findOne = ({ _id, active }) =>
-    asLean(
-      _id === "svc-1" && active === true
-        ? {
-            _id: "svc-1",
-            name: "ops-bot",
-            active: true,
-            scopes: ["ops:read"],
-          }
-        : null,
-    );
-  ServiceAccountToken.updateOne = async () => {};
-  ServiceAccount.updateOne = async () => {};
+  serviceAccountTokenRepository.findById = async ({ tokenId: lookupTokenId }) =>
+    lookupTokenId === tokenId
+      ? {
+          _id: tokenId,
+          serviceAccountId: "svc-1",
+          label: null,
+          scopes: ["ops:read"],
+          tokenHash,
+          tokenPrefix: "service-",
+          expiresAt: null,
+          revokedAt: null,
+          createdByUserId: null,
+          lastUsedAt: null,
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        }
+      : null;
+  serviceAccountRepository.findActiveById = async ({ accountId }) =>
+    accountId === "svc-1"
+      ? {
+          _id: "svc-1",
+          name: "ops-bot",
+          description: "",
+          active: true,
+          scopes: ["ops:read"],
+          createdByUserId: null,
+          lastUsedAt: null,
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        }
+      : null;
+  serviceAccountTokenRepository.touchLastUsed = async () => {};
+  serviceAccountRepository.touchLastUsed = async () => {};
 
   const context = await setContext({
     req: {

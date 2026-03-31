@@ -10,20 +10,20 @@ This runbook covers:
 - API <-> gateway shared trust secrets
 - Credential profile encryption key lifecycle
 - Admin bootstrap password handling
-- Mongo credential variables used by Compose deployments
+- Postgres credential variables used by Compose deployments
 
 ## Secret Inventory
 
-| Variable                                                    | Used by              | Purpose                                                  | Production requirement                     |
-| ----------------------------------------------------------- | -------------------- | -------------------------------------------------------- | ------------------------------------------ |
-| `JWT_SECRET`                                                | API                  | Signs user auth JWTs                                     | Required, strong value (>=32 chars)        |
-| `JWT_GATEWAY_SECRET`                                        | API + Gateway        | Signs/verifies datasource session tokens                 | Required, strong value (>=32 chars)        |
-| `GATEWAY_SERVICE_TOKEN`                                     | API + Gateway        | Auth for gateway internal introspection/revocation calls | Required, strong value (>=32 chars)        |
-| `CREDENTIAL_ENCRYPTION_KEY`                                 | API                  | Encrypts datasource credential profile secrets at rest   | Required, valid base64-encoded 32-byte key |
-| `ADMIN_PASSWORD`                                            | API bootstrap only   | One-time initial admin creation when `CREATE_ADMIN=true` | Bootstrap-only; disable after first login  |
-| `FREEBOARD_MONGO_URL`                                       | API (containerized)  | App DB connection string (includes app DB creds)         | Required for containerized runtime         |
-| `MONGO_INITDB_ROOT_USERNAME` / `MONGO_INITDB_ROOT_PASSWORD` | Mongo init container | Mongo root bootstrap account                             | Required for compose mongo init            |
-| `MONGO_APP_USERNAME` / `MONGO_APP_PASSWORD`                 | Mongo init + API URL | App DB account bootstrap credentials                     | Required for compose mongo init            |
+| Variable                              | Used by             | Purpose                                                  | Production requirement                     |
+| ------------------------------------- | ------------------- | -------------------------------------------------------- | ------------------------------------------ |
+| `JWT_SECRET`                          | API                 | Signs user auth JWTs                                     | Required, strong value (>=32 chars)        |
+| `JWT_GATEWAY_SECRET`                  | API + Gateway       | Signs/verifies datasource session tokens                 | Required, strong value (>=32 chars)        |
+| `GATEWAY_SERVICE_TOKEN`               | API + Gateway       | Auth for gateway internal introspection/revocation calls | Required, strong value (>=32 chars)        |
+| `CREDENTIAL_ENCRYPTION_KEY`           | API                 | Encrypts datasource credential profile secrets at rest   | Required, valid base64-encoded 32-byte key |
+| `ADMIN_PASSWORD`                      | API bootstrap only  | One-time initial admin creation when `CREATE_ADMIN=true` | Bootstrap-only; disable after first login  |
+| `FREEBOARD_POSTGRES_URL`              | API (containerized) | App DB connection string                                 | Required for containerized runtime         |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` | Postgres container  | DB bootstrap account used for compose init               | Required for compose postgres init         |
+| `POSTGRES_DB`                         | Postgres container  | Default database name                                    | Required for compose postgres init         |
 
 ## Env Precedence and Runtime Expectations
 
@@ -61,7 +61,7 @@ Production:
 - Keep `CREATE_ADMIN=false` after initial bootstrap.
 - Use explicit strong values for `JWT_SECRET`, `JWT_GATEWAY_SECRET`, `GATEWAY_SERVICE_TOKEN`.
 - Use valid base64 32-byte `CREDENTIAL_ENCRYPTION_KEY`.
-- Use non-default Mongo root/app credentials.
+- Use non-default Postgres credentials.
 
 ## Initial Setup and Bootstrap
 
@@ -118,21 +118,15 @@ This rotation requires running `npm run credentials:reencrypt` with old/new keys
   - user self-service "Forgot Password"
   - admin-issued reset tokens from Admin Console for managed accounts
 
-### Mongo Credentials (`FREEBOARD_MONGO_URL`, app/root credentials)
+### Postgres Credentials (`FREEBOARD_POSTGRES_URL`, `POSTGRES_*`)
 
-For compose-backed Mongo:
+For compose-backed Postgres:
 
-1. Rotate app user password in Mongo in a maintenance window, for example:
+1. Create/update DB credentials in a maintenance window.
+2. Update `FREEBOARD_POSTGRES_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` in secret store.
+3. Restart API and rerun schema status checks (`npm run db:schema:status`) against the updated connection.
 
-```bash
-mongosh "mongodb://<root-user>:<root-pass>@<mongo-host>:27017/admin" \
-  --eval "db.getSiblingDB('freeboard').updateUser('freeboard_app', { pwd: '<new-app-pass>' })"
-```
-
-2. Update `FREEBOARD_MONGO_URL` and `MONGO_APP_PASSWORD` in secret store.
-3. Restart API (and mongo init path only if re-provisioning a new DB volume).
-
-Root credential rotation should be tightly controlled and validated separately from app credential rotation.
+Credential rotation should be validated with API login and datasource execution checks before closing the change.
 
 ## Secret Storage Patterns (Optional Production Patterns)
 
@@ -214,8 +208,8 @@ Use masked/protected CI variables and avoid logging secret values.
 
 1. Identify exposed secret class and impacted boundary (user auth, gateway trust, db creds, encryption key).
 2. Contain quickly:
-   - for external access incidents, optionally enforce private visibility:
-     - `npm run dashboards:visibility:enforce-private -- --apply`
+   - disable external routes/ingress for impacted surfaces.
+   - move impacted dashboards to `private` visibility via admin/API controls.
 3. Rotate compromised secrets using the playbooks above.
 4. Verify authentication, datasource fetch, realtime flows, and admin access paths.
 5. Record rotation timestamp + scope in your operations log.

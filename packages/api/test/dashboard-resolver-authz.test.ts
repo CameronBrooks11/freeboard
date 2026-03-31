@@ -1,25 +1,31 @@
 import assert from "node:assert/strict";
-import { afterEach, test } from "node:test";
+import { afterEach, beforeEach, test } from "node:test";
 
-import Dashboard from "../src/models/Dashboard.js";
-import Policy from "../src/models/Policy.js";
-import User from "../src/models/User.js";
+import { dataStore } from "../src/data/index.js";
 import DashboardResolvers from "../src/resolvers/Dashboard.js";
 
-const originalMethods = {
-  dashboardFind: Dashboard.find,
-  dashboardFindOne: Dashboard.findOne,
-  dashboardFindOneAndUpdate: Dashboard.findOneAndUpdate,
-  dashboardFindOneAndDelete: Dashboard.findOneAndDelete,
-  dashboardPrototypeSave: Dashboard.prototype.save,
-  policyFindOne: Policy.findOne,
-  userFind: User.find,
-  userFindOne: User.findOne,
-};
+const dashboardRepository = dataStore.repositories.dashboards;
+const userRepository = dataStore.repositories.users;
+const policyRepository = dataStore.repositories.policy;
+const auditRepository = dataStore.repositories.audit;
+const revocationRepository = dataStore.repositories.shareTokenRevocationFeed;
 
-const asLean = (value) => ({
-  lean: async () => value,
-});
+const originalMethods = {
+  dashboardFindById: dashboardRepository.findById,
+  dashboardFindByShareToken: dashboardRepository.findByShareToken,
+  dashboardUpdateById: dashboardRepository.updateById,
+  dashboardDeleteById: dashboardRepository.deleteById,
+  dashboardCreate: dashboardRepository.create,
+  dashboardListAccessible: dashboardRepository.listAccessible,
+  dashboardListAll: dashboardRepository.listAll,
+  userFindByEmail: userRepository.findByEmail,
+  userFindByIds: userRepository.findByIds,
+  userFindActiveById: userRepository.findActiveById,
+  policyReadValue: policyRepository.readValue,
+  auditIsReady: auditRepository.isReady,
+  revocationIsReady: revocationRepository.isReady,
+  revocationInsertEvent: revocationRepository.insertEvent,
+};
 
 const buildDashboardDoc = (overrides = {}) => ({
   _id: "dash-1",
@@ -41,6 +47,20 @@ const buildDashboardDoc = (overrides = {}) => ({
   ...overrides,
 });
 
+const buildUser = (overrides = {}) => ({
+  _id: "user-1",
+  email: "user@example.com",
+  password: "ignored",
+  role: "viewer",
+  active: true,
+  sessionVersion: 0,
+  registrationDate: new Date("2026-01-01T00:00:00.000Z"),
+  lastLogin: new Date("2026-01-01T00:00:00.000Z"),
+  createdAt: new Date("2026-01-01T00:00:00.000Z"),
+  updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+  ...overrides,
+});
+
 const stubPolicyValues = (overrides = {}) => {
   const defaults = {
     "auth.registration.mode": "disabled",
@@ -52,27 +72,34 @@ const stubPolicyValues = (overrides = {}) => {
   };
   const values = { ...defaults, ...overrides };
 
-  Policy.findOne = ({ key }) => {
-    if (!Object.prototype.hasOwnProperty.call(values, key)) {
-      return asLean(null);
-    }
-    return asLean({ key, value: values[key] });
-  };
+  policyRepository.readValue = async ({ key }) => values[key] ?? null;
 };
 
+beforeEach(() => {
+  auditRepository.isReady = () => false;
+  revocationRepository.isReady = () => false;
+  revocationRepository.insertEvent = async () => {};
+});
+
 afterEach(() => {
-  Dashboard.find = originalMethods.dashboardFind;
-  Dashboard.findOne = originalMethods.dashboardFindOne;
-  Dashboard.findOneAndUpdate = originalMethods.dashboardFindOneAndUpdate;
-  Dashboard.findOneAndDelete = originalMethods.dashboardFindOneAndDelete;
-  Dashboard.prototype.save = originalMethods.dashboardPrototypeSave;
-  Policy.findOne = originalMethods.policyFindOne;
-  User.find = originalMethods.userFind;
-  User.findOne = originalMethods.userFindOne;
+  dashboardRepository.findById = originalMethods.dashboardFindById;
+  dashboardRepository.findByShareToken = originalMethods.dashboardFindByShareToken;
+  dashboardRepository.updateById = originalMethods.dashboardUpdateById;
+  dashboardRepository.deleteById = originalMethods.dashboardDeleteById;
+  dashboardRepository.create = originalMethods.dashboardCreate;
+  dashboardRepository.listAccessible = originalMethods.dashboardListAccessible;
+  dashboardRepository.listAll = originalMethods.dashboardListAll;
+  userRepository.findByEmail = originalMethods.userFindByEmail;
+  userRepository.findByIds = originalMethods.userFindByIds;
+  userRepository.findActiveById = originalMethods.userFindActiveById;
+  policyRepository.readValue = originalMethods.policyReadValue;
+  auditRepository.isReady = originalMethods.auditIsReady;
+  revocationRepository.isReady = originalMethods.revocationIsReady;
+  revocationRepository.insertEvent = originalMethods.revocationInsertEvent;
 });
 
 test("dashboard query denies private dashboard to non-owner", async () => {
-  Dashboard.findOne = () => asLean(buildDashboardDoc({ visibility: "private" }));
+  dashboardRepository.findById = async () => buildDashboardDoc({ visibility: "private" });
 
   await assert.rejects(
     () =>
@@ -86,7 +113,7 @@ test("dashboard query denies private dashboard to non-owner", async () => {
 });
 
 test("dashboard query allows public dashboard for anonymous user", async () => {
-  Dashboard.findOne = () => asLean(buildDashboardDoc({ visibility: "public" }));
+  dashboardRepository.findById = async () => buildDashboardDoc({ visibility: "public" });
 
   const result = await DashboardResolvers.Query.dashboard(null, { _id: "dash-1" }, {});
 
@@ -98,12 +125,10 @@ test("dashboard query allows public dashboard for anonymous user", async () => {
 });
 
 test("dashboardByShareToken allows anonymous link access", async () => {
-  Dashboard.findOne = ({ shareToken }) =>
-    asLean(
-      shareToken === "token-1"
-        ? buildDashboardDoc({ visibility: "link", shareToken: "token-1" })
-        : null,
-    );
+  dashboardRepository.findByShareToken = async ({ shareToken }) =>
+    shareToken === "token-1"
+      ? buildDashboardDoc({ visibility: "link", shareToken: "token-1" })
+      : null;
 
   const result = await DashboardResolvers.Query.dashboardByShareToken(
     null,
@@ -116,8 +141,8 @@ test("dashboardByShareToken allows anonymous link access", async () => {
 });
 
 test("dashboardByShareToken denies private dashboard to anonymous user", async () => {
-  Dashboard.findOne = () =>
-    asLean(buildDashboardDoc({ visibility: "private", shareToken: "token-1" }));
+  dashboardRepository.findByShareToken = async () =>
+    buildDashboardDoc({ visibility: "private", shareToken: "token-1" });
 
   await assert.rejects(
     () => DashboardResolvers.Query.dashboardByShareToken(null, { shareToken: "token-1" }, {}),
@@ -126,23 +151,20 @@ test("dashboardByShareToken denies private dashboard to anonymous user", async (
 });
 
 test("updateDashboard allows acl editor and strips immutable fields", async () => {
-  let receivedUpdate = null;
-  Dashboard.findOne = () =>
-    asLean(
-      buildDashboardDoc({
-        user: "owner-1",
-        acl: [{ userId: "editor-1", accessLevel: "editor" }],
-      }),
-    );
-  Dashboard.findOneAndUpdate = (filter, update) => {
-    assert.deepEqual(filter, { _id: "dash-1" });
-    receivedUpdate = update;
-    return asLean(
-      buildDashboardDoc({
-        title: "Updated",
-        acl: [{ userId: "editor-1", accessLevel: "editor" }],
-      }),
-    );
+  let receivedPatch = null;
+  dashboardRepository.findById = async () =>
+    buildDashboardDoc({
+      user: "owner-1",
+      acl: [{ userId: "editor-1", accessLevel: "editor" }],
+    });
+  dashboardRepository.updateById = async ({ dashboardId, patch }) => {
+    assert.equal(dashboardId, "dash-1");
+    receivedPatch = patch;
+    return buildDashboardDoc({
+      title: "Updated",
+      settings: { theme: "dark" },
+      acl: [{ userId: "editor-1", accessLevel: "editor" }],
+    });
   };
 
   const result = await DashboardResolvers.Mutation.updateDashboard(
@@ -158,8 +180,9 @@ test("updateDashboard allows acl editor and strips immutable fields", async () =
     { user: { _id: "editor-1", role: "editor" } },
   );
 
-  assert.deepEqual(receivedUpdate, {
-    $set: { title: "Updated", settings: { theme: "dark" } },
+  assert.deepEqual(receivedPatch, {
+    title: "Updated",
+    settings: { theme: "dark" },
   });
   assert.equal(result.title, "Updated");
   assert.equal(result.canEdit, true);
@@ -194,7 +217,7 @@ test("createDashboard rejects legacy json datasource type", async () => {
 });
 
 test("updateDashboard rejects http datasource without URL", async () => {
-  Dashboard.findOne = () => asLean(buildDashboardDoc());
+  dashboardRepository.findById = async () => buildDashboardDoc();
 
   await assert.rejects(
     () =>
@@ -221,7 +244,7 @@ test("updateDashboard rejects http datasource without URL", async () => {
 });
 
 test("updateDashboard rejects websocket query auth without queryParamName", async () => {
-  Dashboard.findOne = () => asLean(buildDashboardDoc());
+  dashboardRepository.findById = async () => buildDashboardDoc();
 
   await assert.rejects(
     () =>
@@ -250,7 +273,7 @@ test("updateDashboard rejects websocket query auth without queryParamName", asyn
 });
 
 test("updateDashboard rejects mqtt datasource without brokerProfileId", async () => {
-  Dashboard.findOne = () => asLean(buildDashboardDoc());
+  dashboardRepository.findById = async () => buildDashboardDoc();
 
   await assert.rejects(
     () =>
@@ -278,21 +301,17 @@ test("updateDashboard rejects mqtt datasource without brokerProfileId", async ()
 });
 
 test("deleteDashboard allows acl editor collaborator", async () => {
-  Dashboard.findOne = () =>
-    asLean(
-      buildDashboardDoc({
-        user: "owner-1",
-        acl: [{ userId: "editor-1", accessLevel: "editor" }],
-      }),
-    );
-  Dashboard.findOneAndDelete = (filter) => {
-    assert.deepEqual(filter, { _id: "dash-1" });
-    return asLean(
-      buildDashboardDoc({
-        user: "owner-1",
-        acl: [{ userId: "editor-1", accessLevel: "editor" }],
-      }),
-    );
+  dashboardRepository.findById = async () =>
+    buildDashboardDoc({
+      user: "owner-1",
+      acl: [{ userId: "editor-1", accessLevel: "editor" }],
+    });
+  dashboardRepository.deleteById = async ({ dashboardId }) => {
+    assert.equal(dashboardId, "dash-1");
+    return buildDashboardDoc({
+      user: "owner-1",
+      acl: [{ userId: "editor-1", accessLevel: "editor" }],
+    });
   };
 
   const result = await DashboardResolvers.Mutation.deleteDashboard(
@@ -309,7 +328,7 @@ test("setDashboardVisibility rejects external visibility when publish policy dis
   stubPolicyValues({
     "auth.publish.editorCanPublish": false,
   });
-  Dashboard.findOne = () => asLean(buildDashboardDoc({ visibility: "private" }));
+  dashboardRepository.findById = async () => buildDashboardDoc({ visibility: "private" });
 
   await assert.rejects(
     () =>
@@ -326,8 +345,8 @@ test("setDashboardVisibility allows reducing exposure to private even when publi
   stubPolicyValues({
     "auth.publish.editorCanPublish": false,
   });
-  Dashboard.findOne = () => asLean(buildDashboardDoc({ visibility: "public" }));
-  Dashboard.findOneAndUpdate = () => asLean(buildDashboardDoc({ visibility: "private" }));
+  dashboardRepository.findById = async () => buildDashboardDoc({ visibility: "public" });
+  dashboardRepository.updateById = async ({ patch }) => buildDashboardDoc({ ...patch });
 
   const result = await DashboardResolvers.Mutation.setDashboardVisibility(
     null,
@@ -345,22 +364,16 @@ test("setDashboardVisibility to private immediately revokes share-token access",
     visibility: "link",
     shareToken: "token-1",
   });
-  Dashboard.findOne = (filter) => {
-    if (filter?._id === "dash-1") {
-      return asLean(dashboardState);
-    }
-    if (filter?.shareToken === "token-1") {
-      return asLean(dashboardState);
-    }
-    return asLean(null);
-  };
-  Dashboard.findOneAndUpdate = (filter, update) => {
-    assert.deepEqual(filter, { _id: "dash-1" });
+  dashboardRepository.findById = async ({ dashboardId }) =>
+    dashboardId === "dash-1" ? dashboardState : null;
+  dashboardRepository.findByShareToken = async ({ shareToken }) =>
+    shareToken === "token-1" ? dashboardState : null;
+  dashboardRepository.updateById = async ({ patch }) => {
     dashboardState = {
       ...dashboardState,
-      ...update.$set,
+      ...patch,
     };
-    return asLean(dashboardState);
+    return dashboardState;
   };
 
   const updated = await DashboardResolvers.Mutation.setDashboardVisibility(
@@ -382,29 +395,26 @@ test("upsertDashboardAccess allows acl editor collaborator to grant viewer acces
     user: "owner-1",
     acl: [{ userId: "editor-1", accessLevel: "editor" }],
   });
-  Dashboard.findOne = ({ _id }) => asLean(_id === "dash-1" ? dashboardState : null);
-  User.findOne = ({ email }) =>
-    asLean(
-      email === "viewer@example.com"
-        ? {
-            _id: "viewer-2",
-            email: "viewer@example.com",
-            active: true,
-          }
-        : null,
-    );
-  Dashboard.findOneAndUpdate = (filter, update) => {
-    assert.deepEqual(filter, { _id: "dash-1" });
+  dashboardRepository.findById = async ({ dashboardId }) =>
+    dashboardId === "dash-1" ? dashboardState : null;
+  userRepository.findByEmail = async ({ email }) =>
+    email === "viewer@example.com"
+      ? buildUser({
+          _id: "viewer-2",
+          email: "viewer@example.com",
+          active: true,
+        })
+      : null;
+  dashboardRepository.updateById = async ({ dashboardId, patch }) => {
+    assert.equal(dashboardId, "dash-1");
     assert.ok(
-      update.$set.acl.some(
-        (entry) => entry.userId === "viewer-2" && entry.accessLevel === "viewer",
-      ),
+      patch.acl.some((entry) => entry.userId === "viewer-2" && entry.accessLevel === "viewer"),
     );
     dashboardState = {
       ...dashboardState,
-      ...update.$set,
+      ...patch,
     };
-    return asLean(dashboardState);
+    return dashboardState;
   };
 
   const result = await DashboardResolvers.Mutation.upsertDashboardAccess(
@@ -420,23 +430,18 @@ test("upsertDashboardAccess allows acl editor collaborator to grant viewer acces
 });
 
 test("dashboardCollaborators allows acl editor collaborator", async () => {
-  Dashboard.findOne = ({ _id }) =>
-    asLean(
-      _id === "dash-1"
-        ? buildDashboardDoc({
-            _id: "dash-1",
-            user: "owner-1",
-            acl: [{ userId: "editor-1", accessLevel: "editor" }],
-          })
-        : null,
-    );
-  User.find = () => ({
-    select: () =>
-      asLean([
-        { _id: "owner-1", email: "owner@example.com" },
-        { _id: "editor-1", email: "editor@example.com" },
-      ]),
-  });
+  dashboardRepository.findById = async ({ dashboardId }) =>
+    dashboardId === "dash-1"
+      ? buildDashboardDoc({
+          _id: "dash-1",
+          user: "owner-1",
+          acl: [{ userId: "editor-1", accessLevel: "editor" }],
+        })
+      : null;
+  userRepository.findByIds = async () => [
+    buildUser({ _id: "owner-1", email: "owner@example.com" }),
+    buildUser({ _id: "editor-1", email: "editor@example.com" }),
+  ];
 
   const result = await DashboardResolvers.Query.dashboardCollaborators(
     null,
@@ -459,19 +464,14 @@ test("createDashboard falls back to private when default visibility is external 
     "auth.publish.editorCanPublish": false,
   });
 
-  Dashboard.prototype.save = async function saveStub() {
-    return { _id: "dash-created" };
-  };
-  Dashboard.findOne = ({ _id }) =>
-    asLean(
-      _id === "dash-created"
-        ? buildDashboardDoc({
-            _id: "dash-created",
-            user: "editor-1",
-            visibility: "private",
-          })
-        : null,
-    );
+  dashboardRepository.create = async (params) =>
+    buildDashboardDoc({
+      _id: "dash-created",
+      user: String(params.user),
+      visibility: String(params.visibility || "private"),
+      title: String(params.title || ""),
+      version: String(params.version || ""),
+    });
 
   const result = await DashboardResolvers.Mutation.createDashboard(
     null,
@@ -532,7 +532,7 @@ test("updateDashboard rejects trusted widget capability changes while execution 
       },
     ],
   });
-  Dashboard.findOne = () => asLean(existing);
+  dashboardRepository.findById = async () => existing;
 
   await assert.rejects(
     () =>
@@ -567,18 +567,13 @@ test("dashboards query includes public dashboards only when listing policy enabl
     "dashboard.listing.public.enabled": true,
   });
 
-  Dashboard.find = (filter) => {
-    assert.deepEqual(filter, {
-      $or: [
-        { user: "viewer-1" },
-        { acl: { $elemMatch: { userId: "viewer-1" } } },
-        { visibility: "public" },
-      ],
-    });
-    return asLean([
+  dashboardRepository.listAccessible = async ({ viewerUserId, includePublic }) => {
+    assert.equal(viewerUserId, "viewer-1");
+    assert.equal(includePublic, true);
+    return [
       buildDashboardDoc({ _id: "owned", user: "viewer-1", visibility: "private" }),
       buildDashboardDoc({ _id: "public-1", user: "other-user", visibility: "public" }),
-    ]);
+    ];
   };
 
   const result = await DashboardResolvers.Query.dashboards(
@@ -602,14 +597,13 @@ test("setDashboardVisibility rotates existing share token when re-exposing from 
     visibility: "private",
     shareToken: "legacy-share-token",
   });
-  Dashboard.findOne = () => asLean(dashboardState);
-  Dashboard.findOneAndUpdate = (filter, update) => {
-    assert.deepEqual(filter, { _id: "dash-1" });
+  dashboardRepository.findById = async () => dashboardState;
+  dashboardRepository.updateById = async ({ patch }) => {
     dashboardState = {
       ...dashboardState,
-      ...update.$set,
+      ...patch,
     };
-    return asLean(dashboardState);
+    return dashboardState;
   };
 
   const result = await DashboardResolvers.Mutation.setDashboardVisibility(
@@ -624,31 +618,27 @@ test("setDashboardVisibility rotates existing share token when re-exposing from 
 });
 
 test("transferDashboardOwnership assigns previous owner editor ACL", async () => {
-  Dashboard.findOne = ({ _id }) =>
-    asLean(
-      _id === "dash-1"
-        ? buildDashboardDoc({
-            _id: "dash-1",
-            user: "owner-1",
-            acl: [{ userId: "viewer-2", accessLevel: "viewer" }],
-          })
-        : null,
-    );
-  User.findOne = ({ _id }) =>
-    asLean(_id === "new-owner" ? { _id: "new-owner", active: true } : null);
-  Dashboard.findOneAndUpdate = (filter, update) => {
-    assert.deepEqual(filter, { _id: "dash-1" });
-    assert.equal(update.$set.user, "new-owner");
+  dashboardRepository.findById = async ({ dashboardId }) =>
+    dashboardId === "dash-1"
+      ? buildDashboardDoc({
+          _id: "dash-1",
+          user: "owner-1",
+          acl: [{ userId: "viewer-2", accessLevel: "viewer" }],
+        })
+      : null;
+  userRepository.findActiveById = async ({ userId }) =>
+    userId === "new-owner" ? buildUser({ _id: "new-owner", active: true }) : null;
+  dashboardRepository.updateById = async ({ dashboardId, patch }) => {
+    assert.equal(dashboardId, "dash-1");
+    assert.equal(patch.user, "new-owner");
     assert.ok(
-      update.$set.acl.some((entry) => entry.userId === "owner-1" && entry.accessLevel === "editor"),
+      patch.acl.some((entry) => entry.userId === "owner-1" && entry.accessLevel === "editor"),
     );
-    return asLean(
-      buildDashboardDoc({
-        _id: "dash-1",
-        user: "new-owner",
-        acl: update.$set.acl,
-      }),
-    );
+    return buildDashboardDoc({
+      _id: "dash-1",
+      user: "new-owner",
+      acl: patch.acl,
+    });
   };
 
   const result = await DashboardResolvers.Mutation.transferDashboardOwnership(
@@ -663,13 +653,11 @@ test("transferDashboardOwnership assigns previous owner editor ACL", async () =>
 });
 
 test("transferDashboardOwnership rejects acl editor who is not owner", async () => {
-  Dashboard.findOne = () =>
-    asLean(
-      buildDashboardDoc({
-        user: "owner-1",
-        acl: [{ userId: "editor-1", accessLevel: "editor" }],
-      }),
-    );
+  dashboardRepository.findById = async () =>
+    buildDashboardDoc({
+      user: "owner-1",
+      acl: [{ userId: "editor-1", accessLevel: "editor" }],
+    });
 
   await assert.rejects(
     () =>

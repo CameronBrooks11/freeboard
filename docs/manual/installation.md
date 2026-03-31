@@ -41,14 +41,13 @@ FREEBOARD_UI_IMAGE_TAG=latest
 FREEBOARD_API_IMAGE_TAG=latest
 FREEBOARD_GATEWAY_IMAGE_TAG=latest
 
-# Mongo for API
-FREEBOARD_MONGO_URL=mongodb://freeboard_app:replace-with-strong-app-password@freeboard-mongo:27017/freeboard
+# Postgres for API (default runtime)
+FREEBOARD_POSTGRES_URL=postgresql://postgres:replace-with-strong-password@postgres:5432/freeboard
 
-# Mongo init credentials (docker-compose.mongo.yml)
-MONGO_INITDB_ROOT_USERNAME=replace-root-user
-MONGO_INITDB_ROOT_PASSWORD=replace-with-strong-root-password
-MONGO_APP_USERNAME=freeboard_app
-MONGO_APP_PASSWORD=replace-with-strong-app-password
+# Postgres init credentials (docker-compose.postgres.yml)
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=replace-with-strong-postgres-password
+POSTGRES_DB=freeboard
 
 # Gateway egress allowlist (required in non-development runtime)
 EGRESS_ALLOWED_HOSTS=api.open-meteo.com,api.coingecko.com
@@ -85,7 +84,7 @@ API env precedence:
 ## Run with Docker Compose
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.mongo.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
 ```
 
 Pinning examples:
@@ -120,10 +119,10 @@ Services:
 - Keep `EGRESS_ALLOW_PRIVATE_DESTINATIONS=false`
 - Set strict `EGRESS_ALLOWED_HOSTS`
 - Set `API_TRUST_PROXY_HOPS` and `REALTIME_TRUST_PROXY_HOPS` correctly for your reverse-proxy topology
-- Keep `SECURITY_LIMITER_BACKEND=mongo` and `SECURITY_LIMITER_FAILURE_MODE=fail-closed` in non-dev runtime
+- Keep `SECURITY_LIMITER_BACKEND` aligned with `DB_BACKEND` and `SECURITY_LIMITER_FAILURE_MODE=fail-closed` in non-dev runtime
 - Keep `REALTIME_LIMITER_FAILURE_MODE=fail-closed` unless degraded-mode fail-open is intentionally approved
 - Keep `CREATE_ADMIN=false` after bootstrap
-- Use non-default Mongo credentials
+- Use non-default Postgres credentials
 - Follow [Secrets Operations Runbook](/manual/secrets-operations) for setup/rotation/incident workflow
 
 ## Security Rollout Runbook
@@ -133,3 +132,9 @@ For security-control changes (proxy trust headers/hops, limiter backend/failure-
 - [Security Controls Rollout Runbook](/manual/security-controls-rollout)
 
 This runbook defines staged deploy order (`proxy -> API -> gateway`), canary watch metrics, and rollback steps.
+
+## Release Readiness Runbook
+
+For final PostgreSQL release hardening and pre-release checklist signoff, use:
+
+- [PostgreSQL Release Readiness Checklist](/manual/release-readiness-postgres)

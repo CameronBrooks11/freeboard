@@ -1,6 +1,6 @@
 {
   "name": "@freeboard/api",
-  "version": "0.1.0",
+  "version": "3.0.0",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
@@ -8,8 +8,9 @@
     "dev:raw": "tsx watch src/index.ts",
     "build": "tsc -p ../shared/tsconfig.build.json && tsc -p tsconfig.build.json",
     "start": "npm run build && node dist/index.js",
-    "test": "tsc -p ../shared/tsconfig.build.json && tsx --test --test-concurrency=1",
-    "test:ci": "tsc -p ../shared/tsconfig.build.json && tsx --test --test-concurrency=1"
+    "test": "cross-env NODE_ENV=test DB_BACKEND= FREEBOARD_POSTGRES_URL= SECURITY_LIMITER_BACKEND=memory DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/freeboard tsc -p ../shared/tsconfig.build.json && cross-env NODE_ENV=test DB_BACKEND= FREEBOARD_POSTGRES_URL= SECURITY_LIMITER_BACKEND=memory DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/freeboard tsx --test --test-concurrency=1",
+    "test:ci": "cross-env NODE_ENV=test DB_BACKEND= FREEBOARD_POSTGRES_URL= SECURITY_LIMITER_BACKEND=memory DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/freeboard tsc -p ../shared/tsconfig.build.json && cross-env NODE_ENV=test DB_BACKEND= FREEBOARD_POSTGRES_URL= SECURITY_LIMITER_BACKEND=memory DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/freeboard tsx --test --test-concurrency=1",
+    "test:ci:postgres-smoke": "cross-env NODE_ENV=test RUN_POSTGRES_RELEASE_READINESS=1 DB_BACKEND=postgres SECURITY_LIMITER_BACKEND=postgres tsc -p ../shared/tsconfig.build.json && cross-env NODE_ENV=test RUN_POSTGRES_RELEASE_READINESS=1 DB_BACKEND=postgres SECURITY_LIMITER_BACKEND=postgres tsx --test --test-concurrency=1 test/postgres-release-readiness.test.ts"
   },
   "private": true,
   "dependencies": {
@@ -26,9 +27,8 @@
     "graphql-subscriptions": "^3.0.0",
     "graphql-yoga": "^5.10.3",
     "jsonwebtoken": "^9.0.2",
-    "mongodb": "^7.1.0",
-    "mongoose": "^8.8.3",
     "nanoid": "^5.1.6",
+    "pg": "^8.20.0",
     "uuid": "^13.0.0"
   }
 }

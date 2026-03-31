@@ -8,13 +8,13 @@ For the complete secret lifecycle workflow (setup, bootstrap, non-key rotations,
 
 ## Scope
 
-- Affects encrypted `CredentialProfile.secret` records in MongoDB.
+- Affects encrypted `CredentialProfile.secret` records in the Postgres datastore (`DB_BACKEND=postgres`).
 - Does not rotate JWT signing keys (`JWT_SECRET`, `JWT_GATEWAY_SECRET`) or service tokens.
 
 ## Prerequisites
 
 - Confirm current services are healthy and you can access admin credential profile views.
-- Ensure the API can connect to the target MongoDB (`MONGO_URL`).
+- Ensure the runtime can connect to the target Postgres datastore (`DATABASE_URL` or `FREEBOARD_POSTGRES_URL`).
 - Ensure both keys are available in a secure secret store.
 - Keep a recent DB backup/snapshot before running rotation.
 
@@ -28,8 +28,9 @@ node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
 
 ## Rotation Procedure
 
-1. Export rotation variables in the shell running the migration:
-   - `MONGO_URL=<target-mongo-url>`
+1. Export rotation variables in the shell running the re-encryption:
+   - `DB_BACKEND=postgres`
+   - `DATABASE_URL=<target-postgres-url>` (or `FREEBOARD_POSTGRES_URL=<target-postgres-url>`)
    - `CREDENTIAL_ENCRYPTION_KEY_OLD=<current-key>`
    - `CREDENTIAL_ENCRYPTION_KEY_NEW=<new-key>`
 2. Run re-encryption:

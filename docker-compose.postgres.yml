@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: ${FREEBOARD_POSTGRES_IMAGE:-postgres:16}
+    restart: unless-stopped
+    container_name: freeboard-postgres
+    init: true
+    stop_grace_period: 10s
+    ports:
+      - ${FREEBOARD_POSTGRES_PORT:-5432}:5432
+    volumes:
+      - freeboard-postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-freeboard}
+    healthcheck:
+      test:
+        ["CMD-SHELL", 'pg_isready -h 127.0.0.1 -p 5432 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+    networks:
+      - freeboard
+
+networks:
+  freeboard:
+    name: freeboard
+    driver: bridge
+
+volumes:
+  freeboard-postgres-data:
+    name: freeboard-postgres-data

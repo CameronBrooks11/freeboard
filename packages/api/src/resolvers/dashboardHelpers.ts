@@ -5,8 +5,8 @@
 
 import crypto from "node:crypto";
 import { createGraphQLError } from "graphql-yoga";
-import Dashboard from "../models/Dashboard.js";
-import User from "../models/User.js";
+import { dataStore } from "../data/index.js";
+import type { DashboardAclEntryRecord, DashboardRecord } from "../data/contracts.js";
 import { getAuthPolicyState } from "../policyStore.js";
 import { normalizeDashboardAccessLevel, normalizeDashboardVisibility } from "../policy.js";
 import { transformDashboard } from "./merge.js";
@@ -22,12 +22,7 @@ type DashboardLike = UnknownRecord & {
   shareTokenVersion?: unknown;
   settings?: UnknownRecord;
   panes?: unknown;
-  acl?: Array<{
-    userId?: unknown;
-    accessLevel?: unknown;
-    grantedBy?: unknown;
-    grantedAt?: unknown;
-  }>;
+  acl?: DashboardAclEntryRecord[];
 };
 type DashboardPermissions = {
   canRead: boolean;
@@ -36,6 +31,8 @@ type DashboardPermissions = {
   canDelete: boolean;
   isOwner: boolean;
 };
+const dashboardRepository = dataStore.repositories.dashboards;
+const userRepository = dataStore.repositories.users;
 
 const DASHBOARD_MUTABLE_FIELDS = new Set([
   "title",
@@ -80,6 +77,17 @@ export const toComparableId = (value: unknown): string | null => {
     return value.toString();
   }
   return String(value);
+};
+
+const toDate = (value: unknown, fallback = new Date()): Date => {
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return value;
+  }
+  const normalized = new Date(value as Date | string | number);
+  if (!Number.isFinite(normalized.getTime())) {
+    return fallback;
+  }
+  return normalized;
 };
 
 export const getDashboardVisibility = (dashboard: DashboardLike): string => {
@@ -490,8 +498,10 @@ export const transformDashboardForContext = (
     canManageSharing: permissions.canManageSharing,
   });
 
-export const getDashboardOrNotFound = async (_id: unknown): Promise<DashboardLike> => {
-  const dashboard = await Dashboard.findOne({ _id }).lean();
+export const getDashboardOrNotFound = async (_id: unknown): Promise<DashboardRecord> => {
+  const dashboard = await dashboardRepository.findById({
+    dashboardId: String(_id || "").trim(),
+  });
   if (!dashboard) {
     throw createGraphQLError("Dashboard not found");
   }
@@ -617,18 +627,19 @@ export const uniqueAclEntries = (
     grantedBy?: unknown;
     grantedAt?: unknown;
   }> = [],
-) => {
-  const byUserId = new Map();
+): DashboardAclEntryRecord[] => {
+  const byUserId = new Map<string, DashboardAclEntryRecord>();
   entries.forEach((entry) => {
     const userId = toComparableId(entry?.userId);
     if (!userId) {
       return;
     }
+    const grantedAt = toDate(entry.grantedAt);
     byUserId.set(userId, {
       userId,
       accessLevel: normalizeDashboardAccessLevel(entry.accessLevel),
       grantedBy: toComparableId(entry.grantedBy) || null,
-      grantedAt: entry.grantedAt || new Date(),
+      grantedAt,
     });
   });
   return [...byUserId.values()];
@@ -638,12 +649,12 @@ export const buildCollaboratorView = async (dashboard: DashboardLike) => {
   const ownerUserId = toComparableId(dashboard.user);
   const aclEntries = uniqueAclEntries(dashboard.acl || []);
   const userIds = [ownerUserId, ...aclEntries.map((entry) => toComparableId(entry.userId))].filter(
-    Boolean,
+    (entry): entry is string => Boolean(entry),
   );
 
-  const users = await User.find({ _id: { $in: userIds } })
-    .select("_id email")
-    .lean();
+  const users = await userRepository.findByIds({
+    userIds,
+  });
   const emailByUserId = new Map(users.map((user) => [toComparableId(user._id), user.email]));
 
   const collaborators = [

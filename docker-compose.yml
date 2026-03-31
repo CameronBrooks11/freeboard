@@ -16,14 +16,14 @@ services:
     container_name: freeboard-api
     image: ghcr.io/cameronbrooks11/freeboard-api:${FREEBOARD_API_IMAGE_TAG:-latest}
     environment:
-      - MONGO_URL=${FREEBOARD_MONGO_URL:?Set FREEBOARD_MONGO_URL in .env for containerized deployments}
+      - DB_BACKEND=postgres
+      - DATABASE_URL=${FREEBOARD_POSTGRES_URL:-}
       - NODE_ENV=${FREEBOARD_RUNTIME_ENV:-production}
       - API_TRUST_PROXY_HOPS=${API_TRUST_PROXY_HOPS:-0}
-      - SECURITY_LIMITER_BACKEND=${SECURITY_LIMITER_BACKEND:-mongo}
+      - SECURITY_LIMITER_BACKEND=${SECURITY_LIMITER_BACKEND:-postgres}
       - SECURITY_LIMITER_FAILURE_MODE=${SECURITY_LIMITER_FAILURE_MODE:-fail-closed}
       - SECURITY_LIMITER_NAMESPACE=${SECURITY_LIMITER_NAMESPACE:-freeboard:security-limiter}
       - SECURITY_LIMITER_HASH_SALT=${SECURITY_LIMITER_HASH_SALT:-}
-      - SECURITY_LIMITER_MONGO_TIMEOUT_MS=${SECURITY_LIMITER_MONGO_TIMEOUT_MS:-2500}
       - SECURITY_LIMITER_MEMORY_MAX_KEYS=${SECURITY_LIMITER_MEMORY_MAX_KEYS:-10000}
       - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env for containerized deployments}
       - JWT_GATEWAY_SECRET=${JWT_GATEWAY_SECRET:?Set JWT_GATEWAY_SECRET in .env for containerized deployments}

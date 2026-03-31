@@ -2,8 +2,6 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
-import mongoose from "mongoose";
-import CredentialProfile from "../packages/api/src/models/CredentialProfile.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,10 +48,75 @@ const encryptWithKey = (secret, key) => {
   };
 };
 
-const mongoUrl = process.env.MONGO_URL;
-if (!mongoUrl) {
-  throw new Error("MONGO_URL is required");
-}
+const ensurePostgresBackend = () => {
+  const backend = String(process.env.DB_BACKEND || "postgres")
+    .trim()
+    .toLowerCase();
+  if (backend !== "postgres") {
+    throw new Error("This script is postgres-only. Set DB_BACKEND=postgres.");
+  }
+};
+
+const resolvePostgresUrl = () => {
+  const databaseUrl = String(
+    process.env.DATABASE_URL || process.env.FREEBOARD_POSTGRES_URL || "",
+  ).trim();
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL or FREEBOARD_POSTGRES_URL is required when DB_BACKEND=postgres.");
+  }
+  return databaseUrl;
+};
+
+const loadPoolConstructor = async () => {
+  let importedModule;
+  try {
+    importedModule = await import("pg");
+  } catch (error) {
+    const errorMessage =
+      error && typeof error === "object" && "message" in error
+        ? String(error.message || "Unknown error")
+        : "Unknown error";
+    throw new Error(
+      `This script requires the 'pg' package. Install dependencies before running key rotation. Original error: ${errorMessage}`,
+      { cause: error },
+    );
+  }
+  const poolConstructor = importedModule?.Pool;
+  if (typeof poolConstructor !== "function") {
+    throw new Error("Failed to load PostgreSQL Pool constructor from 'pg'.");
+  }
+  return poolConstructor;
+};
+
+const runPostgresReencryption = async ({ oldKey, newKey }) => {
+  const Pool = await loadPoolConstructor();
+  const pool = new Pool({ connectionString: resolvePostgresUrl() });
+
+  let scanned = 0;
+  let updated = 0;
+
+  try {
+    const profiles = await pool.query("SELECT id, secret FROM credential_profiles ORDER BY id ASC");
+    for (const row of profiles.rows) {
+      scanned += 1;
+      const decrypted = decryptWithKey(row.secret, oldKey);
+      const nextSecret = encryptWithKey(decrypted, newKey);
+      await pool.query(
+        `
+        UPDATE credential_profiles
+        SET secret = $1, updated_at = NOW()
+        WHERE id = $2
+        `,
+        [nextSecret, String(row.id || "")],
+      );
+      updated += 1;
+    }
+  } finally {
+    await pool.end();
+  }
+
+  return { scanned, updated };
+};
 
 const oldKey = decodeKey(
   process.env.CREDENTIAL_ENCRYPTION_KEY_OLD || process.env.CREDENTIAL_ENCRYPTION_KEY,
@@ -68,18 +131,8 @@ if (Buffer.compare(oldKey, newKey) === 0) {
   throw new Error("Old and new credential encryption keys are identical");
 }
 
-await mongoose.connect(mongoUrl);
-
-let scanned = 0;
-let updated = 0;
-
-for await (const profile of CredentialProfile.find({}).cursor()) {
-  scanned += 1;
-  const decrypted = decryptWithKey(profile.secret, oldKey);
-  const nextSecret = encryptWithKey(decrypted, newKey);
-  await CredentialProfile.updateOne({ _id: profile._id }, { $set: { secret: nextSecret } });
-  updated += 1;
-}
-
-await mongoose.disconnect();
-console.log(`Credential re-encryption completed. scanned=${scanned} updated=${updated}`);
+ensurePostgresBackend();
+const result = await runPostgresReencryption({ oldKey, newKey });
+console.log(
+  `Credential re-encryption completed for backend=postgres. scanned=${result.scanned} updated=${result.updated}`,
+);

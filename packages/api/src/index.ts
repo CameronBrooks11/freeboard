@@ -1,7 +1,7 @@
 /**
  * @module index
  * Entry point for the Freeboard API server.
- *  - Establishes MongoDB connection
+ *  - Establishes configured data backend connection
  *  - Ensures default admin user creation
  *  - Sets DNS result order to IPv4 first to avoid IPv6 localhost issues
  *  - Sets up GraphQL Yoga server with SSE support
@@ -11,15 +11,12 @@
 import { createServer } from "http";
 import type { IncomingMessage, ServerResponse } from "http";
 import { createYoga } from "graphql-yoga";
-import mongoose from "mongoose";
 import { useGraphQLSSE } from "@graphql-yoga/plugin-graphql-sse";
 import { URL } from "url";
 
 import schema from "./gql.js";
 import { setContext } from "./context.js";
 import { config } from "./config.js";
-import User from "./models/User.js";
-import Dashboard from "./models/Dashboard.js";
 import {
   resolveGatewayIntrospection,
   validateDatasourceSessionToken,
@@ -33,35 +30,40 @@ import { queryShareTokenRevocationFeed } from "./shareTokenRevocationFeed.js";
 import { recordApiHttpRequest } from "./runtimeMetrics.js";
 import { deriveClientIp } from "./clientIp.js";
 import { hashLimiterKeyPart } from "./securityLimiter.js";
+import { dataStore } from "./data/index.js";
+import {
+  describePostgresConnectionTarget,
+  verifyPostgresConnectivity,
+} from "./db/postgres/client.js";
 
 import dns from "dns";
 
 dns.setDefaultResultOrder?.("ipv4first");
 
-/**
- * Connect to MongoDB and fail fast on startup errors.
- */
-const connectToMongo = async () => {
+const connectToPostgres = async () => {
   let attempts = 0;
   let connected = false;
   while (!connected) {
     attempts += 1;
     try {
-      await mongoose.connect(config.mongoUrl, {
-        serverSelectionTimeoutMS: 30000,
-      });
-      console.info(`MongoDB connected on ${config.mongoUrl}`);
+      const health = await verifyPostgresConnectivity();
+      const target = describePostgresConnectionTarget() || "unknown target";
+      console.info(`PostgreSQL connected on ${target} (${health.durationMs}ms)`);
       connected = true;
     } catch (error) {
       const errorMessage =
         error && typeof error === "object" && "message" in error
           ? (error as { message?: string }).message
           : undefined;
-      console.error(`MongoDB connection attempt ${attempts} failed. Retrying in 2s...`);
+      console.error(`PostgreSQL connection attempt ${attempts} failed. Retrying in 2s...`);
       console.error(errorMessage || error);
       await new Promise<void>((resolve) => setTimeout(resolve, 2000));
     }
   }
+};
+
+const connectToConfiguredDataBackend = async () => {
+  await connectToPostgres();
 };
 
 /**
@@ -73,7 +75,7 @@ const ensureAdminUser = async () => {
   }
 
   console.log("Admin creation is enabled. Checking for existing admin...");
-  const admin = await User.findOne({ email: config.adminEmail });
+  const admin = await dataStore.repositories.users.findByEmail({ email: config.adminEmail });
 
   if (admin) {
     console.log(`Admin user already exists: ${config.adminEmail}`);
@@ -81,12 +83,12 @@ const ensureAdminUser = async () => {
   }
 
   console.log(`No admin found with email '${config.adminEmail}'. Creating one now...`);
-  await new User({
+  await dataStore.repositories.users.create({
     email: config.adminEmail,
     password: config.adminPassword,
     role: "admin",
     active: true,
-  }).save();
+  });
   console.log(`Admin user created: ${config.adminEmail}`);
 };
 
@@ -242,7 +244,9 @@ const handleGatewayIntrospection = async (
       return;
     }
 
-    const dashboard = await Dashboard.findOne({ _id: dashboardId }).lean();
+    const dashboard = await dataStore.repositories.dashboards.findById({
+      dashboardId,
+    });
     if (!dashboard) {
       sendJson(res, 404, { error: "Dashboard not found" });
       return;
@@ -445,7 +449,7 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
 
 const startServer = async () => {
   try {
-    await connectToMongo();
+    await connectToConfiguredDataBackend();
     await ensureAdminUser();
 
     // Start HTTP server on configured host and port

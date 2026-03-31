@@ -12,7 +12,7 @@ GraphQL API service for authentication, dashboard persistence, policy, and gatew
 
 - GraphQL schema/resolvers in `src/types` and `src/resolvers`
 - Auth, policy, and session enforcement
-- Dashboard/user/profile persistence via Mongo models in `src/models`
+- Dashboard/user/profile persistence via datastore repositories (Postgres release path)
 - Gateway trust bridge:
   - datasource session token minting (`src/datasourceGateway.js`)
   - gateway introspection/revocation feeds (`src/resolvers/Datasource.js` and related paths)
@@ -21,7 +21,8 @@ GraphQL API service for authentication, dashboard persistence, policy, and gatew
 
 Core:
 
-- `MONGO_URL` (local) or `FREEBOARD_MONGO_URL` (containerized runtime path from root compose)
+- `DB_BACKEND=postgres`
+- `DATABASE_URL` (local) or `FREEBOARD_POSTGRES_URL` (containerized runtime path from root compose)
 - `JWT_SECRET`
 - `JWT_GATEWAY_SECRET`
 - `GATEWAY_SERVICE_TOKEN`

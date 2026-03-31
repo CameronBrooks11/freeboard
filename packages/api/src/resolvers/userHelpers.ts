@@ -5,10 +5,8 @@
 
 import { createGraphQLError } from "graphql-yoga";
 import crypto from "node:crypto";
-import User from "../models/User.js";
-import Dashboard from "../models/Dashboard.js";
-import InviteToken from "../models/InviteToken.js";
-import PasswordResetToken from "../models/PasswordResetToken.js";
+import { dataStore } from "../data/index.js";
+import type { DashboardAclEntryRecord } from "../data/contracts.js";
 import { createAuthToken } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
 import { normalizeNonAdminRole } from "../policy.js";
@@ -19,6 +17,11 @@ import {
   normalizeEmail,
 } from "../validators.js";
 import { generateOneTimeToken, hashOneTimeToken } from "../tokenSecurity.js";
+
+const dashboardRepository = dataStore.repositories.dashboards;
+const inviteTokenRepository = dataStore.repositories.inviteTokens;
+const passwordResetTokenRepository = dataStore.repositories.passwordResetTokens;
+const userRepository = dataStore.repositories.users;
 type UserLike = {
   _id?: unknown;
   email?: unknown;
@@ -95,10 +98,8 @@ export const ensureSelfRegistrationAllowed = (registrationMode: unknown): void =
 };
 
 export const ensureAtLeastOneActiveAdminWillRemain = async (excludedUserId: unknown) => {
-  const remainingAdmins = await User.countDocuments({
-    role: "admin",
-    active: true,
-    _id: { $ne: excludedUserId },
+  const remainingAdmins = await userRepository.countActiveAdminsExcludingUser({
+    excludedUserId: String(excludedUserId || "").trim(),
   });
   if (remainingAdmins === 0) {
     throw createGraphQLError("At least one active administrator must remain", {
@@ -108,14 +109,9 @@ export const ensureAtLeastOneActiveAdminWillRemain = async (excludedUserId: unkn
 };
 
 export const findFallbackActiveAdmin = async (excludedUserId: unknown = null) => {
-  const filter: Record<string, unknown> = {
-    role: "admin",
-    active: true,
-  };
-  if (excludedUserId) {
-    filter._id = { $ne: excludedUserId };
-  }
-  return User.findOne(filter).sort({ registrationDate: 1 }).lean();
+  return userRepository.findFirstActiveAdmin({
+    excludedUserId: excludedUserId ? String(excludedUserId) : null,
+  });
 };
 
 export const reconcileDashboardAccessForRemovedUser = async ({
@@ -139,12 +135,9 @@ export const reconcileDashboardAccessForRemovedUser = async ({
     };
   }
 
-  const impactedDashboards = await Dashboard.find({
-    $or: [
-      { user: normalizedTargetUserId },
-      { acl: { $elemMatch: { userId: normalizedTargetUserId } } },
-    ],
-  }).lean();
+  const impactedDashboards = await dashboardRepository.findImpactedByUserId({
+    userId: normalizedTargetUserId,
+  });
 
   const ownedDashboards = impactedDashboards.filter(
     (dashboard) => toComparableId(dashboard.user) === normalizedTargetUserId,
@@ -165,9 +158,7 @@ export const reconcileDashboardAccessForRemovedUser = async ({
   for (const dashboard of impactedDashboards) {
     const dashboardId = toComparableId(dashboard._id);
     const ownerWasTarget = toComparableId(dashboard.user) === normalizedTargetUserId;
-    const currentAcl: Array<{ userId?: unknown }> = Array.isArray(dashboard.acl)
-      ? (dashboard.acl as Array<{ userId?: unknown }>)
-      : [];
+    const currentAcl: DashboardAclEntryRecord[] = Array.isArray(dashboard.acl) ? dashboard.acl : [];
     const aclWithoutTarget = currentAcl.filter(
       (entry) => toComparableId(entry?.userId) !== normalizedTargetUserId,
     );
@@ -184,7 +175,7 @@ export const reconcileDashboardAccessForRemovedUser = async ({
 
     const update = ownerWasTarget
       ? {
-          user: normalizedReplacementOwnerUserId,
+          user: normalizedReplacementOwnerUserId as string,
           visibility: "private",
           shareToken: generateShareToken(),
           acl: nextAcl,
@@ -193,11 +184,10 @@ export const reconcileDashboardAccessForRemovedUser = async ({
           acl: nextAcl,
         };
 
-    const updated = await Dashboard.findOneAndUpdate(
-      { _id: dashboardId },
-      { $set: update },
-      { new: true, runValidators: true },
-    ).lean();
+    const updated = await dashboardRepository.updateById({
+      dashboardId: String(dashboardId || "").trim(),
+      patch: update,
+    });
 
     if (!updated) {
       continue;
@@ -301,12 +291,10 @@ export const issueUserAuthToken = (user: UserLike): string =>
 export const findActiveInviteByToken = async (token: unknown) => {
   const tokenHash = hashOneTimeToken(token);
   const now = new Date();
-  return InviteToken.findOne({
+  return inviteTokenRepository.findActiveByTokenHash({
     tokenHash,
-    revokedAt: null,
-    acceptedAt: null,
-    expiresAt: { $gt: now },
-  }).lean();
+    now,
+  });
 };
 
 export const issueInviteToken = async ({
@@ -324,30 +312,22 @@ export const issueInviteToken = async ({
   ensureEmailIsValid(normalizedEmail);
   const normalizedRole = normalizeNonAdminRole(role);
 
-  const existingUser = await User.findOne({ email: normalizedEmail }).lean();
+  const existingUser = await userRepository.findByEmail({ email: normalizedEmail });
   if (existingUser) {
     throw createGraphQLError("Data provided is not valid");
   }
 
   const now = new Date();
-  await InviteToken.updateMany(
-    {
-      email: normalizedEmail,
-      revokedAt: null,
-      acceptedAt: null,
-      expiresAt: { $gt: now },
-    },
-    { $set: { revokedAt: now } },
-  );
+  await inviteTokenRepository.revokePendingByEmail({ email: normalizedEmail, now });
 
   const rawToken = generateOneTimeToken();
-  const invite = await new InviteToken({
+  const invite = await inviteTokenRepository.create({
     email: normalizedEmail,
     role: normalizedRole,
     tokenHash: hashOneTimeToken(rawToken),
-    createdBy: createdBy || null,
+    createdBy: createdBy ? String(createdBy) : null,
     expiresAt: computeExpiryDate(clampExpiryHours(expiresInHours, INVITE_DEFAULT_EXPIRY_HOURS)),
-  }).save();
+  });
 
   return {
     invite: toInviteView(invite),
@@ -367,24 +347,19 @@ export const issuePasswordResetToken = async ({
   expiresInHours?: number;
 }) => {
   const now = new Date();
-  await PasswordResetToken.updateMany(
-    {
-      userId: user._id,
-      revokedAt: null,
-      usedAt: null,
-      expiresAt: { $gt: now },
-    },
-    { $set: { revokedAt: now } },
-  );
+  await passwordResetTokenRepository.revokeActiveByUserId({
+    userId: String(user._id || "").trim(),
+    now,
+  });
 
   const rawToken = generateOneTimeToken();
-  const reset = await new PasswordResetToken({
-    userId: user._id,
+  const reset = await passwordResetTokenRepository.create({
+    userId: String(user._id || "").trim(),
     tokenHash: hashOneTimeToken(rawToken),
-    createdBy,
+    createdBy: createdBy ? String(createdBy) : null,
     requestedByEmail,
     expiresAt: computeExpiryDate(clampExpiryHours(expiresInHours, 1)),
-  }).save();
+  });
 
   return {
     userId: user._id,

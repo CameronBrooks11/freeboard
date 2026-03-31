@@ -11,6 +11,7 @@
 - UI i18n composition-mode guardrail: `npm run check:ui:i18n-composition-mode`
 - TS source debt guardrail: `npm run check:ts:debt`
 - TS source artifact guardrail: `npm run check:ts:source-artifacts`
+- Legacy datastore residue guardrail: `npm run check:repo:legacy-residue`
 - UI bundle budget guardrail (warn-first): `npm run check:ui:bundle-budget`
 - UI lint only: `npm run lint:ui`
 - API lint only: `npm run lint:api`
@@ -25,11 +26,12 @@
 - Verify docs pipeline (generate + stage): `npm run docs:verify`
 - Verify build/syntax: `npm run build:verify`
 - Full local CI pass: `npm run ci`
+- Postgres release-readiness matrix: `npm run check:release`
 - Start realtime fixture stack: `npm run demo:realtime:up`
 - Stop realtime fixture stack: `npm run demo:realtime:down`
 - Realtime fixture smoke test: `npm run demo:realtime:smoke`
 - Realtime integration loop (up + smoke + down): `npm run test:realtime:integration`
-- Browser E2E smoke flow (bootstraps mongo + ui/api/gateway + Playwright): `npm run test:e2e:smoke`
+- Browser E2E smoke flow (bootstraps postgres + ui/api/gateway + Playwright): `npm run test:e2e:smoke`
 - Production dependency audit: `npm run security:audit:prod`
 - Full dependency audit (including dev/build tooling): `npm run security:audit:all`
 
@@ -44,6 +46,7 @@ npm run check:ui:store-boundaries
 npm run check:ui:theme-contrast
 npm run check:ui:i18n-parity
 npm run check:ui:i18n-composition-mode
+npm run check:repo:legacy-residue
 npm run check:ts:debt
 npm run check:ts:source-artifacts
 npm run check:runtime-deps
@@ -62,8 +65,9 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 
 ## CI Troubleshooting (Quick)
 
-- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-shared`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `docker-sanity`, `typecheck`).
+- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-api-smoke`, `test-shared`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `db-schema-gate`, `build-verify`, `docker-sanity`, `typecheck`).
 - If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
+- If format job fails on `Legacy datastore residue gate`, remove blocked legacy datastore terms from tracked files unless they belong in `/manual/legacy-datastore-architecture`.
 - If `Validate TS source debt` fails, remove unsafe TS patterns (`as any`, `as unknown as`, `: any`, `Record<string, any>`, `[key: string]: any`, `@ts-ignore`, `@ts-nocheck`) from `packages/*/src`.
 - If `Validate UI theme contrast` fails, update theme token values in `packages/ui/src/assets/css/themes/*.css` so critical foreground/background token pairs meet the script threshold.
 - If `Validate UI i18n parity` fails, align locale keys/placeholders to `packages/ui/src/i18n/locales/en.ts`.
@@ -80,6 +84,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 - Required branch gate remains `Required CI` from `.github/workflows/ci.yml`.
 - `lint` job enforces runtime eval bans through ESLint (`no-eval`, `no-new-func`, `no-implied-eval`), `npm run check:ts:debt`, and runtime dependency hygiene (`npm run check:runtime-deps`).
 - `test-shared` job validates shared runtime policy/client-IP utility behavior for `packages/shared` and shared-surface changes.
+- `test-api-smoke` job validates Postgres datastore repository behavior against a real Postgres service after schema is applied.
 - `test-ui` job runs behavior-based UI regression tests (including layout policy behavior checks).
 - `test-e2e-smoke` job in `CI` runs cross-service browser assertions from `e2e/smoke.spec.js` on relevant API, UI, gateway, `packages/shared`, and e2e changes and is included in `Required CI`.
 - `docker-sanity` job validates API/gateway/UI Docker builds on Dockerfile/runtime dependency changes.
@@ -144,18 +149,19 @@ Optional non-required deploy checks:
   - dependency PR merged or explicitly deferred with rationale in PR notes
   - failed audit workflow resolved or acknowledged with a bounded remediation plan
 
-## Mongo Dev Helpers
+## Database Dev Helpers
 
-- Start Mongo only: `npm run dev:mongo:up`
-- View Mongo status: `npm run dev:mongo:status`
-- Tail Mongo logs: `npm run dev:mongo:logs`
-- Stop Mongo: `npm run dev:mongo:down`
-- Reset Mongo data volume: `npm run dev:mongo:reset`
+Postgres-first helpers:
 
-Raspberry Pi note:
+- Start Postgres only: `npm run dev:postgres:up`
+- View Postgres status: `npm run dev:postgres:status`
+- Tail Postgres logs: `npm run dev:postgres:logs`
+- Stop Postgres: `npm run dev:postgres:down`
+- Reset Postgres data volume: `npm run dev:postgres:reset`
 
-- Use `.env.pi` as your compose override baseline when needed.
-- Reference support/risk details in [Raspberry Pi MongoDB Guidance](/manual/raspberry-pi-mongodb).
+Legacy datastore note:
+
+- Historical datastore context and Raspberry Pi limitations are documented in [Legacy Datastore Architecture](/manual/legacy-datastore-architecture).
 
 ## Quick Size Snapshot (`cloc`)
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB backend (`mongoose`). It provides dashboard and user management via queries, mutations and subscriptions, and uses JWT for authentication.
+The Freeboard API is a GraphQL server built on `graphql-yoga` with repository-driven datastore access. The release runtime path is PostgreSQL. It provides dashboard and user management via queries, mutations and subscriptions, and uses JWT for authentication.
 
 ## Configuration (`config.ts`)
 
@@ -12,7 +12,8 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with a MongoDB bac
   - repo-root `.env`
   - code defaults
 - Exports a frozen `config` object with:
-  - `mongoUrl` (MongoDB connection string)
+  - `dbBackend`
+  - `postgresUrl` (PostgreSQL connection string)
   - `port` (HTTP port)
   - `jwtSecret`, `jwtTimeExpiration`
   - `jwtGatewaySecret`, `gatewayServiceToken`, `credentialEncryptionKey`
@@ -96,7 +97,7 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
   - Admin lifecycle flows (create/update/deactivate/delete, invites, reset issuance)
   - Session revocation paths on role/active/password transitions
 - **Merge Utility** (`resolvers/merge.ts`):
-  - `transformDashboard(u)` converts Mongoose doc to GraphQL object
+  - `transformDashboard(u)` converts datastore dashboard entity to GraphQL object
 - **Credential Profile Resolvers** (`resolvers/CredentialProfile.ts`):
   - Admin CRUD for credential profiles
   - Redacted secret metadata only in API responses
@@ -127,7 +128,7 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
 
 ## Server Entry Point (`index.ts`)
 
-- Connects to MongoDB (`mongoose.connect`)
+- Connects to configured data backend (PostgreSQL release path)
 - Optionally creates default admin user
 - Sets up HTTP server with `createYoga`:
   - `landingPage: false`
