@@ -148,7 +148,7 @@ jobs:
       - name: Extract metadata (tags, labels) for Docker
         if: steps.changes.outputs.changed == 'true'
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ matrix.image }}
           tags: |
@@ -166,7 +166,7 @@ jobs:
       - name: Extract metadata (tags, labels) for Docker armv7 legacy track
         if: steps.changes.outputs.changed == 'true'
         id: meta_armv7
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ matrix.image }}
           tags: |
