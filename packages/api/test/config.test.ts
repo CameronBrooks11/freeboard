@@ -302,6 +302,7 @@ test("config rejects unsupported registration mode", async () => {
       NODE_ENV: "development",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
+      DATABASE_URL: TEST_DATABASE_URL,
       AUTH_REGISTRATION_MODE: "invalid-mode",
     },
     async () => {
@@ -316,6 +317,7 @@ test("config rejects unsupported registration default role", async () => {
       NODE_ENV: "development",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
+      DATABASE_URL: TEST_DATABASE_URL,
       AUTH_REGISTRATION_MODE: "open",
       AUTH_REGISTRATION_DEFAULT_ROLE: "admin",
     },
@@ -331,6 +333,7 @@ test("config accepts valid auth policy environment overrides", async () => {
       NODE_ENV: "development",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
+      DATABASE_URL: TEST_DATABASE_URL,
       AUTH_REGISTRATION_MODE: "open",
       AUTH_REGISTRATION_DEFAULT_ROLE: "editor",
       AUTH_EDITOR_CAN_PUBLISH: "true",
@@ -364,6 +367,7 @@ test("config rejects unsupported dashboard default visibility", async () => {
       NODE_ENV: "development",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
+      DATABASE_URL: TEST_DATABASE_URL,
       DASHBOARD_DEFAULT_VISIBILITY: "internal",
     },
     async () => {
@@ -378,6 +382,7 @@ test("config rejects unsupported execution mode", async () => {
       NODE_ENV: "development",
       JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
       CREATE_ADMIN: "false",
+      DATABASE_URL: TEST_DATABASE_URL,
       EXECUTION_MODE: "unsafe",
     },
     async () => {
