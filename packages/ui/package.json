@@ -13,7 +13,7 @@
     "test:ci": "tsx --test --test-concurrency=1"
   },
   "dependencies": {
-    "@apollo/client": "^3.11.10",
+    "@apollo/client": "^4.1.6",
     "@guolao/vue-monaco-editor": "^1.5.4",
     "@vue/apollo-composable": "^4.2.1",
     "@vueuse/core": "^14.2.1",

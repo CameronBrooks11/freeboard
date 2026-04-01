@@ -37,16 +37,17 @@ export class SSELink extends ApolloLink {
    */
   request(operation: Operation): Observable<FetchResult> {
     return new Observable<FetchResult>((sink) => {
-      return this.client.subscribe(
-        { ...operation, query: print(operation.query) },
-        {
-          next: (
-            value: ExecutionResult<Record<string, unknown> | undefined, Record<string, unknown>>,
-          ) => sink.next(value as FetchResult),
-          complete: sink.complete.bind(sink),
-          error: sink.error.bind(sink),
-        },
-      );
+      const { operationName, ...rest } = operation;
+      const query = print(operation.query);
+      const params =
+        operationName !== undefined ? { ...rest, query, operationName } : { ...rest, query };
+      return this.client.subscribe(params, {
+        next: (
+          value: ExecutionResult<Record<string, unknown> | undefined, Record<string, unknown>>,
+        ) => sink.next(value as FetchResult),
+        complete: sink.complete.bind(sink),
+        error: sink.error.bind(sink),
+      });
     });
   }
 }
