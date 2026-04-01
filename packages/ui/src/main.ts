@@ -7,6 +7,7 @@ import { createApp, watch } from "vue";
 import { DefaultApolloClient } from "@vue/apollo-composable";
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/client/core";
 import { onError } from "@apollo/client/link/error";
+import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import App from "./App.vue";
 import { OhVueIcon, addIcons } from "oh-vue-icons";
 import {
@@ -109,7 +110,8 @@ const getHeaders = (): Record<string, string> => {
 /**
  * Apollo Link to handle GraphQL auth errors: logs out user and redirects to login page.
  */
-const errorLink = onError(({ graphQLErrors }) => {
+const errorLink = onError(({ error }) => {
+  const graphQLErrors = CombinedGraphQLErrors.is(error) ? error.errors : undefined;
   if (shouldForceLogoutOnGraphQLErrors(graphQLErrors)) {
     authStore.logout();
     profileCatalogStore.clearCredentialProfiles();
