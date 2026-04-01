@@ -15,4 +15,4 @@
 
 - [ ] **pnpm workspaces migration**: Faster installs and stricter dependency isolation. Defer unless npm workspace performance/reproducibility becomes a sustained issue.
 - [ ] **AJV lint-chain audit advisory**: Track upstream ESLint ecosystem updates to remove transitive `ajv <8.18.0` advisory without forcing global overrides (global AJV override currently breaks lint runtime behavior).
-- [ ] **Apollo Client v4 migration (when officially supported)**: Revisit upgrade once `@vue/apollo-composable` (or an approved replacement integration) has first-class Apollo v4 compatibility, then run a planned migration instead of shims/workarounds.
+- [x] **Apollo Client v4 migration**: Completed — upgraded to `@apollo/client@4.1.6`, updated error handler to `CombinedGraphQLErrors` API, and fixed SSE `operationName` compatibility (PR #78).
