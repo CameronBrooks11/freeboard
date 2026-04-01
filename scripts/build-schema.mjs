@@ -36,6 +36,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const schemaModulePath = resolve(__dirname, "../packages/api/src/gql.ts");
 const outputPath = resolve(__dirname, "../docs/auto/graphql/schema.graphql");
 
+// config.ts validates DATABASE_URL at module load time (correct for all runtime uses).
+// Schema generation only introspects type definitions — no DB connection is ever made.
+// Set a sentinel value so the guard is satisfied when no real URL is configured.
+if (!process.env.DATABASE_URL && !process.env.FREEBOARD_POSTGRES_URL) {
+  process.env.DATABASE_URL = "postgresql://localhost/build-schema-only";
+}
+
 const main = async () => {
   const schemaModule = await import(pathToFileURL(schemaModulePath).href);
   const schema = schemaModule.default || schemaModule.schema;
