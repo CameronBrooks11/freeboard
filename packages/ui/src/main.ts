@@ -46,7 +46,7 @@ import { useDashboardStore } from "./stores/dashboard.js";
 import { useProfileCatalogStore } from "./stores/profileCatalog.js";
 import { bootstrapApp } from "./bootstrap/appBootstrap.js";
 import { SSELink } from "./sse.js";
-import { createHead } from "@unhead/vue";
+import { createHead } from "@unhead/vue/client";
 import { i18n } from "./i18n/index.js";
 import { shouldForceLogoutOnGraphQLErrors } from "./apolloAuthError.js";
 import { subscribeToSystemThemeChanges } from "./ui/themeRuntime.js";

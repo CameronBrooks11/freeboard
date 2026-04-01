@@ -15,4 +15,5 @@
 
 - [ ] **pnpm workspaces migration**: Faster installs and stricter dependency isolation. Defer unless npm workspace performance/reproducibility becomes a sustained issue.
 - [ ] **AJV lint-chain audit advisory**: Track upstream ESLint ecosystem updates to remove transitive `ajv <8.18.0` advisory without forcing global overrides (global AJV override currently breaks lint runtime behavior).
+- [ ] **dompurify audit advisory via monaco-editor**: `monaco-editor@0.55.1` pins `dompurify@3.2.7` (CVE: GHSA-h8r8-wccr-v5f2, moderate). npm workspace overrides cannot re-resolve this transitive dep. Not directly exploitable — freeboard code never calls DOMPurify; monaco uses it internally for hover/markdown rendering. Not flagged by `security:audit:prod` (`--audit-level=high`). Resolve when `monaco-editor` ships a release with `dompurify >=3.3.2`, or if risk profile changes.
 - [x] **Apollo Client v4 migration**: Completed — upgraded to `@apollo/client@4.1.6`, updated error handler to `CombinedGraphQLErrors` API, and fixed SSE `operationName` compatibility (PR #78).
