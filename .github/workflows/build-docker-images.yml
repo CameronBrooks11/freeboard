@@ -110,7 +110,7 @@ jobs:
 
       - name: Set up Docker
         if: steps.changes.outputs.changed == 'true'
-        uses: docker/setup-docker-action@v4
+        uses: docker/setup-docker-action@v5
         with:
           daemon-config: |
             {
