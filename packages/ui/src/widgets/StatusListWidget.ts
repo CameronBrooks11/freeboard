@@ -48,7 +48,7 @@ export const parseStatusColorsMap = (rawValue: unknown): Record<string, string> 
     return { ...DEFAULT_STATUS_COLORS };
   }
 
-  if (rawValue && typeof rawValue === "object" && !Array.isArray(rawValue)) {
+  if (typeof rawValue === "object" && !Array.isArray(rawValue)) {
     return {
       ...DEFAULT_STATUS_COLORS,
       ...Object.fromEntries(

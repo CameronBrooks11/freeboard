@@ -36,11 +36,12 @@ const main = () => {
     }
 
     const absolutePath = path.join(projectRoot, relativePath);
-    if (!fs.existsSync(absolutePath) || fs.statSync(absolutePath).isDirectory()) {
+    let buffer;
+    try {
+      buffer = fs.readFileSync(absolutePath);
+    } catch {
       continue;
     }
-
-    const buffer = fs.readFileSync(absolutePath);
     // Skip binary files.
     if (buffer.includes(0)) {
       continue;

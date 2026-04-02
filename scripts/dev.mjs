@@ -4,11 +4,21 @@
  */
 
 import { spawn } from "node:child_process";
+import path from "node:path";
 
 const isWindows = process.platform === "win32";
 const dockerCommand = isWindows ? "docker.exe" : "docker";
-const npmExecPath = process.env.npm_execpath;
-const npmNodeExecPath = process.env.npm_node_execpath || process.execPath;
+
+const sanitizeExecPath = (p) => {
+  if (!p || typeof p !== "string") return null;
+  const trimmed = p.trim();
+  if (!path.isAbsolute(trimmed)) return null;
+  if (/[\s;&|<>`$\\*?{}[\]()!#~'"^]/.test(trimmed)) return null;
+  return trimmed;
+};
+
+const npmExecPath = sanitizeExecPath(process.env.npm_execpath);
+const npmNodeExecPath = sanitizeExecPath(process.env.npm_node_execpath) ?? process.execPath;
 const HELP_FLAGS = new Set(["--help", "-h"]);
 const LOG_PREFIX = "[dev]";
 const composeFile = "docker-compose.postgres.yml";
