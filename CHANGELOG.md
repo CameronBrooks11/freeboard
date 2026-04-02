@@ -29,21 +29,22 @@ Important pre-release project history is backfilled here from git history, code,
 
 ### 2026-02-24 to 2026-03-02: Localization and multilingual docs foundation
 
-- Added `fr`, `es`, and `de` locale baselines for the UI along with seeded translation workflows and native-review contribution paths.
-- Cut the UI i18n runtime over to Vue I18n composition mode with CI guardrails.
-- Added first-class multilingual documentation-site support and docs-i18n integrity checks.
+- Established the UI i18n runtime foundation, then added `fr`, `es`, and `de` locale baselines, translated docs seeds, and a native-review contribution workflow.
+- Cut the UI i18n runtime over to Vue I18n composition mode with CI guardrails and docs alignment.
+- Added first-class multilingual documentation-site routing and docs-i18n integrity checks so translated docs could be surfaced directly in the docs site.
 
 ### 2026-02-20 to 2026-02-22: Runtime integrity, themes, and contributor/reporting UX
 
-- Hardened shared runtime and limiter policy enforcement, along with CI smoke coverage for non-development and security-sensitive behavior.
-- Introduced a canonical theme system with live preview and contrast guardrails.
-- Added structured bug, security, and contribution intake plus in-app bug reporting.
+- Hardened shared limiter controls and aligned realtime fail-mode behavior across API and gateway runtime paths.
+- Hardened non-development runtime policy enforcement with stronger CI integrity coverage and runtime dependency checks.
+- Introduced a canonical theme system with live preview, a curated theme catalog, and contrast guardrails.
+- Added structured bug, security, and contribution intake workflows plus an in-app bug-reporting baseline.
 
 ### 2026-02-17 to 2026-02-19: Operations, build hardening, and TypeScript cutover
 
 - Added service accounts, scoped machine authentication, runtime metrics, and stronger admin observability.
-- Stabilized the UI build pipeline with explicit bundle budgets and build metrics.
-- Completed the TypeScript-first cutover across the codebase and enforced typecheck in CI.
+- Stabilized the UI build pipeline with explicit bundle budgets, build metrics, and cleaner build-configuration defaults.
+- Completed the TypeScript-first cutover across the codebase with stricter type settings, TS-first package conventions, and required typecheck in CI.
 
 ### 2026-02-15 to 2026-02-16: Gateway, realtime, widgets, and deployment expansion
 
