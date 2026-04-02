@@ -3,10 +3,6 @@
 [![CI](https://github.com/CameronBrooks11/freeboard/actions/workflows/ci.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/ci.yml)
 [![E2E Smoke](https://github.com/CameronBrooks11/freeboard/actions/workflows/e2e-smoke.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/e2e-smoke.yml)
 [![Docker Images](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-docker-images.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-docker-images.yml)
-[![Ansible Quality](https://github.com/CameronBrooks11/freeboard/actions/workflows/ansible-quality.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/ansible-quality.yml)
-
-[![GitHub Pages](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-pages.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/build-pages.yml)
-[![Repository Metrics](https://github.com/CameronBrooks11/freeboard/actions/workflows/metrics.yml/badge.svg)](https://github.com/CameronBrooks11/freeboard/actions/workflows/metrics.yml)
 
 freeboard is a modern fork of [Jim Heising's Freeboard](https://github.com/Freeboard/freeboard) focused on secure, production-grade dashboard delivery for IoT and operations use cases.
 
