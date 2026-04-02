@@ -6,15 +6,19 @@ The first formal public release will appear as the first official release entry 
 
 ## Unreleased
 
-No unreleased changes recorded yet.
+The first public release has not been cut yet. The notes below capture current pre-release stabilization work that is expected to feed into that first formal release entry once version, date, and scope are locked.
+
+- Stabilized the UI client for Apollo Client v4 and aligned Vue dependency resolution to clear typecheck regressions.
+- Fixed demo/build behavior for the upcoming release path, resolved dependency audit issues, and completed Vite 8 and TypeScript 6 compatibility adjustments.
+- Added CodeQL, dependency review, and `CODEOWNERS` guardrails, then cleaned up verified code-scanning findings and hardened script execution paths.
 
 ## First Public Release (TBD)
 
-This section will be finalized when the first public release version, date, and scope are locked.
+This section will be finalized when the first public release version, date, and scope are locked. At that point, the `Unreleased` notes above should be reviewed and moved here as the first official release entry.
 
 ## Historical Internal Milestones
 
-Pre-release project history will be backfilled here from git history, code, docs, and internal planning records.
+Important pre-release project history is backfilled here from git history, code, docs, and internal planning records.
 
 ### 2026-03-10 to 2026-03-31: PostgreSQL cutover and internal 3.0.0 milestone
 
