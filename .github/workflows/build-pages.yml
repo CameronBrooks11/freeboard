@@ -64,7 +64,7 @@ jobs:
       # Prepare and upload artifact to Pages
       - name: Configure GitHub Pages
         id: pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload static site
         uses: actions/upload-pages-artifact@v4
