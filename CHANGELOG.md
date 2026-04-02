@@ -22,10 +22,11 @@ Important pre-release project history is backfilled here from git history, code,
 
 ### 2026-03-10 to 2026-03-31: PostgreSQL cutover and internal 3.0.0 milestone
 
-- Built the PostgreSQL foundation with datastore abstractions, schema tooling, and Postgres-first local and CI workflows.
-- Completed a pre-release clean cutover to PostgreSQL as the only supported active datastore, removing Mongo from runtime paths and isolating legacy architecture details to archival documentation.
-- Added release-readiness automation for the Postgres release path, including schema checks, API smoke coverage, and CI guardrails against legacy datastore residue.
-- Marked the milestone with an internal `3.0.0` version bump across packages.
+- Introduced datastore abstractions, a PostgreSQL runtime foundation, repository-backed data access, and SQL schema lifecycle tooling for the new release backend.
+- Shifted local development, smoke tests, CI, and release-readiness validation to Postgres-first workflows with dedicated schema checks and API smoke coverage.
+- Completed a pre-release clean cutover to PostgreSQL as the only supported active datastore, removing Mongo runtime paths, source trees, and active backend selection.
+- Retired Mongo operational assets and consolidated the remaining datastore history into a single archival legacy document, then added CI guardrails against residual Mongo references.
+- Marked the transition with an internal `3.0.0` version bump across packages.
 
 ### 2026-02-24 to 2026-03-02: Localization and multilingual docs foundation
 
