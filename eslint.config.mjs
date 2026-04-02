@@ -21,6 +21,8 @@ export default [
       "**/coverage/**",
       "docs/auto/**",
       "docs/public/dev/**",
+      "playwright-report/**",
+      "test-results/**",
     ],
   },
   js.configs.recommended,
