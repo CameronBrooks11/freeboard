@@ -4,11 +4,21 @@
  */
 
 import { spawn } from "node:child_process";
+import path from "node:path";
 
 const isWindows = process.platform === "win32";
 const dockerCmd = isWindows ? "docker.exe" : "docker";
-const npmExecPath = process.env.npm_execpath;
-const npmNodeExecPath = process.env.npm_node_execpath || process.execPath;
+
+const sanitizeExecPath = (p) => {
+  if (!p || typeof p !== "string") return null;
+  const trimmed = p.trim();
+  if (!path.isAbsolute(trimmed)) return null;
+  if (/[\s;&|<>`$\\*?{}[\]()!#~'"^]/.test(trimmed)) return null;
+  return trimmed;
+};
+
+const npmExecPath = sanitizeExecPath(process.env.npm_execpath);
+const npmNodeExecPath = sanitizeExecPath(process.env.npm_node_execpath) ?? process.execPath;
 
 const E2E_BASE_URL = process.env.E2E_BASE_URL || "http://127.0.0.1:5173";
 const E2E_API_URL = process.env.E2E_API_URL || "http://127.0.0.1:4001/graphql";
