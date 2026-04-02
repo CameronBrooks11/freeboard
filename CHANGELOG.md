@@ -16,6 +16,20 @@ This section will be finalized when the first public release version, date, and 
 
 Pre-release project history will be backfilled here from git history, code, docs, and internal planning records.
 
+### 2026-02-15 to 2026-02-16: Gateway, realtime, widgets, and deployment expansion
+
+- Finalized gateway-backed HTTP datasources with server-managed credential profiles, datasource diagnostics, and migration tooling.
+- Added gateway-backed realtime datasources for SSE, WebSocket, and MQTT, including local demo and integration fixtures.
+- Expanded the widget set with table, bar chart, and status list widgets, along with responsive and mobile hardening plus curated theme packs.
+- Hardened deployment operations with versioned container tagging, compose pinning, and a modular kiosk automation model.
+
+### 2026-02-10 to 2026-02-13: Security, identity, and sharing foundation
+
+- Hardened the platform security and access model with centralized authorization, stricter production auth and bootstrap validation, regression gates, and deny-by-default proxy protections.
+- Added role-aware identity, a dedicated admin console, and policy-governed login and account flows.
+- Replaced ambiguous publish behavior with explicit dashboard visibility and sharing controls for collaboration workflows.
+- Moved the project to a Node 24 and npm 11 baseline.
+
 ### 2025-08 to 2025-09: Operational baseline, docs platform, and dashboard management
 
 - Improved local runtime behavior, container workflow defaults, and env-driven service host and port configuration.
