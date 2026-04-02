@@ -15,7 +15,8 @@ import {
   parseBase64Key,
 } from "@freeboard/shared/runtimePolicy.js";
 import {
-  getCredentialPolicyHints,
+  EMAIL_POLICY_MESSAGE,
+  PASSWORD_POLICY_MESSAGE,
   isStrongPassword,
   isValidEmail,
   normalizeEmail,
@@ -206,11 +207,8 @@ if (explicitLimiterBackendRaw && !explicitLimiterBackend) {
   throw new Error("SECURITY_LIMITER_BACKEND must be one of: memory, postgres.");
 }
 
-const credentialPolicy = getCredentialPolicyHints();
-
 const warnAndThrow = (message: string): never => {
-  // Log a generic warning to avoid leaking potentially sensitive details such as credential policies.
-  console.warn("Configuration warning (details not logged for security).");
+  console.warn(`Configuration warning: ${message}`);
   throw new Error(message);
 };
 
@@ -406,11 +404,11 @@ if (
 
 if (config.createAdmin) {
   if (!isValidEmail(config.adminEmail)) {
-    warnAndThrow(`CREATE_ADMIN=true requires valid ADMIN_EMAIL. ${credentialPolicy.email}.`);
+    warnAndThrow(`CREATE_ADMIN=true requires valid ADMIN_EMAIL. ${EMAIL_POLICY_MESSAGE}.`);
   }
 
   if (!isStrongPassword(config.adminPassword)) {
-    warnAndThrow(`CREATE_ADMIN=true requires strong ADMIN_PASSWORD. ${credentialPolicy.password}.`);
+    warnAndThrow(`CREATE_ADMIN=true requires strong ADMIN_PASSWORD. ${PASSWORD_POLICY_MESSAGE}.`);
   }
 }
 
