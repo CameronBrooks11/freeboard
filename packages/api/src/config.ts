@@ -209,7 +209,8 @@ if (explicitLimiterBackendRaw && !explicitLimiterBackend) {
 const credentialPolicy = getCredentialPolicyHints();
 
 const warnAndThrow = (message: string): never => {
-  console.warn(`Configuration warning: ${message}`);
+  // Log a generic warning to avoid leaking potentially sensitive details such as credential policies.
+  console.warn("Configuration warning (details not logged for security).");
   throw new Error(message);
 };
 
