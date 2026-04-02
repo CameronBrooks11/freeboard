@@ -16,6 +16,13 @@ This section will be finalized when the first public release version, date, and 
 
 Pre-release project history will be backfilled here from git history, code, docs, and internal planning records.
 
+### 2026-03-10 to 2026-03-31: PostgreSQL cutover and internal 3.0.0 milestone
+
+- Built the PostgreSQL foundation with datastore abstractions, schema tooling, and Postgres-first local and CI workflows.
+- Completed a pre-release clean cutover to PostgreSQL as the only supported active datastore, removing Mongo from runtime paths and isolating legacy architecture details to archival documentation.
+- Added release-readiness automation for the Postgres release path, including schema checks, API smoke coverage, and CI guardrails against legacy datastore residue.
+- Marked the milestone with an internal `3.0.0` version bump across packages.
+
 ### 2026-02-24 to 2026-03-02: Localization and multilingual docs foundation
 
 - Added `fr`, `es`, and `de` locale baselines for the UI along with seeded translation workflows and native-review contribution paths.
