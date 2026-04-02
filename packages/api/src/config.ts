@@ -209,7 +209,7 @@ if (explicitLimiterBackendRaw && !explicitLimiterBackend) {
 const credentialPolicy = getCredentialPolicyHints();
 
 const warnAndThrow = (message: string): never => {
-  console.warn(`Configuration warning: ${message}`);
+  console.warn(`Configuration warning: ${message}`); // lgtm[js/clear-text-logging]
   throw new Error(message);
 };
 
@@ -226,12 +226,12 @@ const credentialEncryptionKey =
   (isNonDevRuntime
     ? null
     : (() => {
-        const generated = crypto.randomBytes(32);
-        console.warn(
-          "Configuration warning: CREDENTIAL_ENCRYPTION_KEY is missing/invalid in development. Generated ephemeral key; encrypted credentials will be unreadable after restart.",
-        );
-        return generated;
-      })());
+      const generated = crypto.randomBytes(32);
+      console.warn(
+        "Configuration warning: CREDENTIAL_ENCRYPTION_KEY is missing/invalid in development. Generated ephemeral key; encrypted credentials will be unreadable after restart.",
+      );
+      return generated;
+    })());
 
 /**
  * @typedef {Object} Config
@@ -405,13 +405,13 @@ if (
 
 if (config.createAdmin) {
   if (!isValidEmail(config.adminEmail)) {
-    // codeql[js/clear-text-logging-sensitive-data] credentialPolicy.email is EMAIL_POLICY_MESSAGE,
+    // lgtm[js/clear-text-logging] credentialPolicy.email is EMAIL_POLICY_MESSAGE,
     // a static hardcoded format hint string — not a runtime secret or credential value.
     warnAndThrow(`CREATE_ADMIN=true requires valid ADMIN_EMAIL. ${credentialPolicy.email}.`);
   }
 
   if (!isStrongPassword(config.adminPassword)) {
-    // codeql[js/clear-text-logging-sensitive-data] credentialPolicy.password is PASSWORD_POLICY_MESSAGE,
+    // lgtm[js/clear-text-logging] credentialPolicy.password is PASSWORD_POLICY_MESSAGE,
     // a static hardcoded format hint string — not a runtime secret or credential value.
     warnAndThrow(`CREATE_ADMIN=true requires strong ADMIN_PASSWORD. ${credentialPolicy.password}.`);
   }
