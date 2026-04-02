@@ -69,7 +69,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       chunkSizeWarningLimit: 7000,
-      rollupOptions: {
+      rolldownOptions: {
         output: {
           manualChunks(id) {
             const normalizedId = id.replace(/\\/g, "/");
