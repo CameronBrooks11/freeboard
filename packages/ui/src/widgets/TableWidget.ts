@@ -311,10 +311,7 @@ export const formatTableCellValue = (value: unknown, format: unknown): string =>
 };
 
 export class TableWidget extends ReactiveWidget {
-  sortState: { field: string; direction: "asc" | "desc" } = {
-    field: "",
-    direction: "asc",
-  };
+  sortState!: { field: string; direction: "asc" | "desc" };
   currentPage = 1;
   lastInputs: {
     header: string;
