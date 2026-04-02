@@ -209,8 +209,7 @@ if (explicitLimiterBackendRaw && !explicitLimiterBackend) {
 const credentialPolicy = getCredentialPolicyHints();
 
 const warnAndThrow = (message: string): never => {
-  // Log a generic warning to avoid leaking potentially sensitive details such as credential policies.
-  console.warn("Configuration warning (details not logged for security).");
+  console.warn(`Configuration warning: ${message}`);
   throw new Error(message);
 };
 
@@ -406,10 +405,14 @@ if (
 
 if (config.createAdmin) {
   if (!isValidEmail(config.adminEmail)) {
+    // codeql[js/clear-text-logging-sensitive-data] credentialPolicy.email is EMAIL_POLICY_MESSAGE,
+    // a static hardcoded format hint string — not a runtime secret or credential value.
     warnAndThrow(`CREATE_ADMIN=true requires valid ADMIN_EMAIL. ${credentialPolicy.email}.`);
   }
 
   if (!isStrongPassword(config.adminPassword)) {
+    // codeql[js/clear-text-logging-sensitive-data] credentialPolicy.password is PASSWORD_POLICY_MESSAGE,
+    // a static hardcoded format hint string — not a runtime secret or credential value.
     warnAndThrow(`CREATE_ADMIN=true requires strong ADMIN_PASSWORD. ${credentialPolicy.password}.`);
   }
 }
