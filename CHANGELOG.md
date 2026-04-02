@@ -59,14 +59,16 @@ Important pre-release project history is backfilled here from git history, code,
 - Replaced ambiguous publish behavior with explicit dashboard visibility and sharing controls for collaboration workflows.
 - Moved the project to a Node 24 and npm 11 baseline.
 
-### 2025-08 to 2025-09: Operational baseline, docs platform, and dashboard management
+### 2025-08-02 to 2025-09-07: Operational baseline, docs platform, and dashboard management
 
-- Improved local runtime behavior, container workflow defaults, and env-driven service host and port configuration.
-- Established a VitePress-based documentation platform, staged GitHub Pages builds, and generated GraphQL and API reference material.
-- Expanded Raspberry Pi kiosk automation and player deployment support.
+- Re-established local development and container workflows with example env configuration, streamlined npm dev flows, and env-driven IPv4-safe host and port defaults across the UI, API, and proxy.
+- Added contributor-facing maintainability groundwork with JSDoc-based doc-generation prep, ESLint and VS Code defaults, and supporting developer docs.
+- Built a VitePress documentation site with GitHub Pages staging and generated GraphQL and API reference material, then internalized API, GraphQL, and demo documentation templates for docs publishing.
+- Expanded Raspberry Pi kiosk and player deployment automation with Ansible, X11 handling, service templating, and platform-specific setup improvements.
 - Added UI support for browsing and switching between saved dashboards.
 
-### 2025-01 to 2025-02: Project restart and modern fork bootstrap
+### 2025-01-27 to 2025-02-26: Project restart and modern fork bootstrap
 
-- Bootstrapped the modern fork around an npm workspace monorepo with a Vue 3 UI, GraphQL API, proxy and OAuth services, Mongo-backed persistence, Docker Compose packaging, and Raspberry Pi automation.
-- Performed early UI, CSS, and iframe stabilization while that new baseline was settling.
+- Restarted the project as an npm workspace monorepo with separate Vue 3 UI, GraphQL API, proxy, and OAuth services.
+- Established the initial runtime and deployment baseline with Mongo-backed dashboard persistence, Docker Compose packaging, and Raspberry Pi automation.
+- Applied early CSS, iframe, and general UI stabilization while the new baseline settled.
