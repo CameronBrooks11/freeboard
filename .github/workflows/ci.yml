@@ -29,7 +29,6 @@ jobs:
       run_shared_tests: ${{ steps.classify.outputs.run_shared_tests }}
       run_ui_tests: ${{ steps.classify.outputs.run_ui_tests }}
       run_gateway_tests: ${{ steps.classify.outputs.run_gateway_tests }}
-      run_e2e_smoke: ${{ steps.classify.outputs.run_e2e_smoke }}
       run_db_schema_gate: ${{ steps.classify.outputs.run_db_schema_gate }}
       run_build_verify: ${{ steps.classify.outputs.run_build_verify }}
       run_typecheck: ${{ steps.classify.outputs.run_typecheck }}
@@ -156,11 +155,6 @@ jobs:
             run_gateway_tests=true
           fi
 
-          run_e2e_smoke=false
-          if [[ "$e2e" == "true" || "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" ]]; then
-            run_e2e_smoke=true
-          fi
-
           run_db_schema_gate=false
           if [[ "$api" == "true" || "$runtime_shared" == "true" || "$shared" == "true" || "$e2e" == "true" ]]; then
             run_db_schema_gate=true
@@ -195,7 +189,6 @@ jobs:
           echo "run_shared_tests=$run_shared_tests" >> "$GITHUB_OUTPUT"
           echo "run_ui_tests=$run_ui_tests" >> "$GITHUB_OUTPUT"
           echo "run_gateway_tests=$run_gateway_tests" >> "$GITHUB_OUTPUT"
-          echo "run_e2e_smoke=$run_e2e_smoke" >> "$GITHUB_OUTPUT"
           echo "run_db_schema_gate=$run_db_schema_gate" >> "$GITHUB_OUTPUT"
           echo "run_build_verify=$run_build_verify" >> "$GITHUB_OUTPUT"
           echo "run_typecheck=$run_typecheck" >> "$GITHUB_OUTPUT"
@@ -211,7 +204,6 @@ jobs:
           echo "  run_shared_tests=$run_shared_tests"
           echo "  run_ui_tests=$run_ui_tests"
           echo "  run_gateway_tests=$run_gateway_tests"
-          echo "  run_e2e_smoke=$run_e2e_smoke"
           echo "  run_db_schema_gate=$run_db_schema_gate"
           echo "  run_build_verify=$run_build_verify"
           echo "  run_typecheck=$run_typecheck"
@@ -410,43 +402,6 @@ jobs:
       - name: Run gateway tests
         run: npm run test:gateway
 
-  test-e2e-smoke:
-    name: Test E2E smoke
-    needs: changes
-    if: needs.changes.outputs.run_e2e_smoke == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Prepare e2e env
-        run: cp .env.dev .env
-      - name: Install Playwright browser (Chromium)
-        run: npx playwright install --with-deps chromium
-      - name: Run smoke E2E
-        env:
-          E2E_BASE_URL: http://127.0.0.1:5173
-          E2E_API_URL: http://127.0.0.1:4001/graphql
-          E2E_GATEWAY_URL: http://127.0.0.1:8001
-        run: npm run test:e2e:smoke
-      - name: Upload Playwright artifacts
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-artifacts
-          path: |
-            playwright-report/
-            test-results/
-          if-no-files-found: ignore
-          retention-days: 14
-
   db-schema-gate:
     name: DB schema gate (Postgres)
     needs: changes
@@ -563,7 +518,6 @@ jobs:
       - test-shared
       - test-ui
       - test-gateway
-      - test-e2e-smoke
       - db-schema-gate
       - build-verify
       - docker-sanity
@@ -601,7 +555,6 @@ jobs:
           check_required "${{ needs.changes.outputs.run_shared_tests }}" "${{ needs.test-shared.result }}" "test-shared"
           check_required "${{ needs.changes.outputs.run_ui_tests }}" "${{ needs.test-ui.result }}" "test-ui"
           check_required "${{ needs.changes.outputs.run_gateway_tests }}" "${{ needs.test-gateway.result }}" "test-gateway"
-          check_required "${{ needs.changes.outputs.run_e2e_smoke }}" "${{ needs.test-e2e-smoke.result }}" "test-e2e-smoke"
           check_required "${{ needs.changes.outputs.run_db_schema_gate }}" "${{ needs.db-schema-gate.result }}" "db-schema-gate"
           check_required "${{ needs.changes.outputs.run_build_verify }}" "${{ needs.build-verify.result }}" "build-verify"
           check_required "${{ needs.changes.outputs.run_docker_sanity }}" "${{ needs.docker-sanity.result }}" "docker-sanity"

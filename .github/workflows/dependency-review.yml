@@ -1,0 +1,25 @@
+name: Dependency review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: Review dependency changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          # Fail on high or critical advisories introduced by this PR
+          fail-on-severity: high
+          # Warn on (but don't fail for) license changes; adjust if needed
+          deny-licenses: GPL-2.0, GPL-3.0, AGPL-3.0
