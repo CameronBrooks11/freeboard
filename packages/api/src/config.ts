@@ -226,12 +226,12 @@ const credentialEncryptionKey =
   (isNonDevRuntime
     ? null
     : (() => {
-      const generated = crypto.randomBytes(32);
-      console.warn(
-        "Configuration warning: CREDENTIAL_ENCRYPTION_KEY is missing/invalid in development. Generated ephemeral key; encrypted credentials will be unreadable after restart.",
-      );
-      return generated;
-    })());
+        const generated = crypto.randomBytes(32);
+        console.warn(
+          "Configuration warning: CREDENTIAL_ENCRYPTION_KEY is missing/invalid in development. Generated ephemeral key; encrypted credentials will be unreadable after restart.",
+        );
+        return generated;
+      })());
 
 /**
  * @typedef {Object} Config
