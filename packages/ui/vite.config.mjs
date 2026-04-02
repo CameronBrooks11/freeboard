@@ -68,6 +68,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      target: "baseline-widely-available",
       chunkSizeWarningLimit: 7000,
       rolldownOptions: {
         output: {
