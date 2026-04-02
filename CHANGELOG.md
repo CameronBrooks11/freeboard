@@ -47,16 +47,18 @@ Important pre-release project history is backfilled here from git history, code,
 
 ### 2026-02-15 to 2026-02-16: Gateway, realtime, widgets, and deployment expansion
 
-- Finalized gateway-backed HTTP datasources with server-managed credential profiles, datasource diagnostics, and migration tooling.
-- Added gateway-backed realtime datasources for SSE, WebSocket, and MQTT, including local demo and integration fixtures.
-- Expanded the widget set with table, bar chart, and status list widgets, along with responsive and mobile hardening plus curated theme packs.
-- Hardened deployment operations with versioned container tagging, compose pinning, and a modular kiosk automation model.
+- Finalized gateway-backed HTTP datasources with server-managed credential profiles, datasource diagnostics, and cutover and migration tooling.
+- Renamed the proxy service to `gateway` and clarified that architecture across packages, runtime scripts, and documentation.
+- Added gateway-backed realtime datasources for SSE, WebSocket, and MQTT, including demo fixtures, integration coverage, and realtime operations docs.
+- Expanded the widget set with table, bar chart, and status list widgets, along with responsive and mobile hardening, curated theme packs, and widget developer docs.
+- Hardened deployment operations with versioned container tagging, compose pinning, and a production-safe modular kiosk automation model.
 
 ### 2026-02-10 to 2026-02-13: Security, identity, and sharing foundation
 
-- Hardened the platform security and access model with centralized authorization, stricter production auth and bootstrap validation, regression gates, and deny-by-default proxy protections.
-- Added role-aware identity, a dedicated admin console, and policy-governed login and account flows.
-- Replaced ambiguous publish behavior with explicit dashboard visibility and sharing controls for collaboration workflows.
+- Hardened the platform security model by centralizing dashboard authorization, enforcing stricter production auth and bootstrap validation, and adding deny-by-default proxy SSRF and TLS protections.
+- Added comprehensive regression tests and CI gates for authorization, proxy security, auth and bootstrap validation, and identity and schema contracts.
+- Introduced role-aware identity, policy controls, and a dedicated admin console with stronger login and account-management flows.
+- Replaced ambiguous publish behavior with explicit dashboard visibility and sharing controls for collaboration and offboarding-safe workflows.
 - Moved the project to a Node 24 and npm 11 baseline.
 
 ### 2025-08-02 to 2025-09-07: Operational baseline, docs platform, and dashboard management
