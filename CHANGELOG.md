@@ -8,9 +8,11 @@ The first formal public release will appear as the first official release entry 
 
 The first public release has not been cut yet. The notes below capture current pre-release stabilization work that is expected to feed into that first formal release entry once version, date, and scope are locked.
 
-- Stabilized the UI client for Apollo Client v4 and aligned Vue dependency resolution to clear typecheck regressions.
-- Fixed demo/build behavior for the upcoming release path, resolved dependency audit issues, and completed Vite 8 and TypeScript 6 compatibility adjustments.
-- Added CodeQL, dependency review, and `CODEOWNERS` guardrails, then cleaned up verified code-scanning findings and hardened script execution paths.
+- Stabilized Apollo Client v4 compatibility in the UI by updating error handling and SSE `operationName` behavior.
+- Aligned Vue dependency resolution and related UI dependencies to clear large typecheck regressions during the client dependency transition.
+- Fixed demo/build correctness for the pre-release path and completed Vite 8 toolchain cleanup, including the move to `rolldownOptions` and tighter build and lint guardrails.
+- Resolved targeted audit-driven dependency issues needed for the pre-release dependency baseline.
+- Added CodeQL, dependency review, and `CODEOWNERS` guardrails, then cleaned up verified API, UI, and script code-scanning findings and hardened script execution paths used by development and release workflows.
 
 ## First Public Release (TBD)
 
@@ -61,7 +63,7 @@ Important pre-release project history is backfilled here from git history, code,
 - Added comprehensive regression tests and CI gates for authorization, proxy security, auth and bootstrap validation, and identity and schema contracts.
 - Introduced role-aware identity, policy controls, and a dedicated admin console with stronger login and account-management flows.
 - Replaced ambiguous publish behavior with explicit dashboard visibility and sharing controls for collaboration and offboarding-safe workflows.
-- Moved the project to a Node 24 and npm 11 baseline.
+- Moved the project to the `Node 24` and `npm 11` baseline.
 
 ### 2025-08-02 to 2025-09-07: Operational baseline, docs platform, and dashboard management
 
