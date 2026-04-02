@@ -16,6 +16,24 @@ This section will be finalized when the first public release version, date, and 
 
 Pre-release project history will be backfilled here from git history, code, docs, and internal planning records.
 
+### 2026-02-24 to 2026-03-02: Localization and multilingual docs foundation
+
+- Added `fr`, `es`, and `de` locale baselines for the UI along with seeded translation workflows and native-review contribution paths.
+- Cut the UI i18n runtime over to Vue I18n composition mode with CI guardrails.
+- Added first-class multilingual documentation-site support and docs-i18n integrity checks.
+
+### 2026-02-20 to 2026-02-22: Runtime integrity, themes, and contributor/reporting UX
+
+- Hardened shared runtime and limiter policy enforcement, along with CI smoke coverage for non-development and security-sensitive behavior.
+- Introduced a canonical theme system with live preview and contrast guardrails.
+- Added structured bug, security, and contribution intake plus in-app bug reporting.
+
+### 2026-02-17 to 2026-02-19: Operations, build hardening, and TypeScript cutover
+
+- Added service accounts, scoped machine authentication, runtime metrics, and stronger admin observability.
+- Stabilized the UI build pipeline with explicit bundle budgets and build metrics.
+- Completed the TypeScript-first cutover across the codebase and enforced typecheck in CI.
+
 ### 2026-02-15 to 2026-02-16: Gateway, realtime, widgets, and deployment expansion
 
 - Finalized gateway-backed HTTP datasources with server-managed credential profiles, datasource diagnostics, and migration tooling.
