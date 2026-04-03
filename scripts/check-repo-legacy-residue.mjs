@@ -7,6 +7,7 @@ import path from "node:path";
 const LOG_PREFIX = "[check:repo:legacy-residue]";
 const projectRoot = process.cwd();
 const blockedPattern = /\b(mongo|mongodb|mongoose)\b/i;
+const historicalChangelogHeading = "## Historical Internal Milestones";
 
 // Keep the legacy datastore archive and this guard script allowlisted.
 const allowlistedFiles = new Set([
@@ -49,9 +50,16 @@ const main = () => {
 
     const content = buffer.toString("utf8");
     const lines = content.split(/\r?\n/);
+    let inHistoricalChangelogSection = false;
     for (let index = 0; index < lines.length; index += 1) {
       const line = lines[index] || "";
+      if (relativePath === "CHANGELOG.md" && line.startsWith("## ")) {
+        inHistoricalChangelogSection = line.trim() === historicalChangelogHeading;
+      }
       if (!blockedPattern.test(line)) {
+        continue;
+      }
+      if (relativePath === "CHANGELOG.md" && inHistoricalChangelogSection) {
         continue;
       }
       failures.push({

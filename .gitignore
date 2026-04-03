@@ -31,6 +31,7 @@ packages/*/.vite/
 playwright-report/
 test-results/
 *.log
+.codex
 
 # Auto-generated documentation
 docs/auto/
