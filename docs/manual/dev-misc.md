@@ -67,7 +67,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 
 - If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-api-smoke`, `test-shared`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `db-schema-gate`, `build-verify`, `docker-sanity`, `typecheck`).
 - If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
-- If format job fails on `Legacy datastore residue gate`, remove blocked legacy datastore terms from tracked files unless they belong in `/manual/legacy-datastore-architecture`.
+- If format job fails on `Legacy datastore residue gate`, remove blocked legacy datastore terms from tracked files unless they belong in `/manual/legacy-datastore-architecture` or under `## Historical Internal Milestones` in `/CHANGELOG.md`.
 - If `Validate TS source debt` fails, remove unsafe TS patterns (`as any`, `as unknown as`, `: any`, `Record<string, any>`, `[key: string]: any`, `@ts-ignore`, `@ts-nocheck`) from `packages/*/src`.
 - If `Validate UI theme contrast` fails, update theme token values in `packages/ui/src/assets/css/themes/*.css` so critical foreground/background token pairs meet the script threshold.
 - If `Validate UI i18n parity` fails, align locale keys/placeholders to `packages/ui/src/i18n/locales/en.ts`.
