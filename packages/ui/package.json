@@ -17,7 +17,7 @@
     "@guolao/vue-monaco-editor": "^1.6.0",
     "@vue/apollo-composable": "^4.2.1",
     "@vueuse/core": "^14.2.1",
-    "@unhead/vue": "^2.1.12",
+    "@unhead/vue": "^2.1.13",
     "graphql": "^16.13.2",
     "graphql-sse": "^2.5.3",
     "graphql-tag": "^2.12.6",
@@ -26,9 +26,9 @@
     "pinia": "^3.0.4",
     "rpg-awesome": "^0.2.0",
     "talker.js": "^1.1.1",
-    "vue": "^3.5.31",
+    "vue": "^3.5.32",
     "vue-grid-layout-v3": "^3.1.1-rc.4",
-    "vue-i18n": "^11.3.0",
+    "vue-i18n": "^11.3.1",
     "vue-router": "^5.0.4"
   },
   "devDependencies": {
