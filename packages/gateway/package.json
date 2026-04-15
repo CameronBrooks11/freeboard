@@ -14,7 +14,7 @@
   "private": true,
   "dependencies": {
     "@freeboard/shared": "0.1.0",
-    "dotenv": "^17.4.1",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.2",
     "ws": "^8.20.0"
