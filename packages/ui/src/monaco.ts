@@ -14,7 +14,11 @@ import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
  * @memberof module:monaco
  * @type {{ getWorker: function(unknown, string): Worker }}
  */
-self.MonacoEnvironment = {
+type MonacoEnvironmentConfig = {
+  getWorker: (_: unknown, label: string) => Worker;
+};
+
+const monacoEnvironment: MonacoEnvironmentConfig = {
   /**
    * Factory returning the appropriate Worker instance based on language label.
    *
@@ -22,7 +26,7 @@ self.MonacoEnvironment = {
    * @param {string} label - Language label, e.g., "json", "css", "html", "typescript".
    * @returns {Worker} Worker instance for the specified language.
    */
-  getWorker(_, label) {
+  getWorker(_: unknown, label: string) {
     if (label === "json") {
       return new jsonWorker();
     }
@@ -40,6 +44,12 @@ self.MonacoEnvironment = {
     return new editorWorker();
   },
 };
+
+(
+  globalThis as typeof globalThis & {
+    MonacoEnvironment?: MonacoEnvironmentConfig;
+  }
+).MonacoEnvironment = monacoEnvironment;
 
 /**
  * The configured Monaco editor instance with custom worker environment.
