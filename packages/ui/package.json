@@ -21,7 +21,7 @@
     "graphql": "^16.13.2",
     "graphql-sse": "^2.5.3",
     "graphql-tag": "^2.12.6",
-    "monaco-editor": "0.53.0",
+    "monaco-editor": "0.55.1",
     "oh-vue-icons": "^1.0.0-rc3",
     "pinia": "^3.0.4",
     "rpg-awesome": "^0.2.0",
@@ -34,6 +34,6 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.6",
     "tinyglobby": "^0.2.16",
-    "vite": "^8.0.8"
+    "vite": "^8.0.9"
   }
 }
