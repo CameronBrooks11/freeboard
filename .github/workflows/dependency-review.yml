@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Dependency review
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
         with:
           # Fail on high or critical advisories introduced by this PR
           fail-on-severity: high
