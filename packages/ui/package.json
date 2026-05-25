@@ -13,7 +13,7 @@
     "test:ci": "tsx --test --test-concurrency=1"
   },
   "dependencies": {
-    "@apollo/client": "^4.1.9",
+    "@apollo/client": "^4.2.0",
     "@guolao/vue-monaco-editor": "^1.6.0",
     "@vue/apollo-composable": "^4.2.1",
     "@vueuse/core": "^14.3.0",
@@ -34,6 +34,6 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.7",
     "tinyglobby": "^0.2.16",
-    "vite": "^8.0.13"
+    "vite": "^8.0.14"
   }
 }
