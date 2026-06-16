@@ -303,6 +303,12 @@ export default defineConfig({
   description: "Demo + Docs",
   base,
   lang: "en-US",
+  // esbuild >=0.28 hard-errors when asked to lower destructuring for vite 6's
+  // default browser target during the docs bundle minify step. The docs site
+  // targets evergreen browsers, so build modern output and skip the downlevel.
+  vite: {
+    build: { target: "esnext" },
+  },
   lastUpdated: true,
   cleanUrls: true,
   ignoreDeadLinks: [
