@@ -20,7 +20,7 @@
     "@unhead/vue": "^3.1.4",
     "graphql": "^16.14.2",
     "graphql-sse": "^2.5.3",
-    "graphql-tag": "^2.12.6",
+    "graphql-tag": "^2.12.7",
     "monaco-editor": "0.55.1",
     "oh-vue-icons": "^1.0.0-rc3",
     "pinia": "^3.0.4",
@@ -28,7 +28,7 @@
     "talker.js": "^1.1.1",
     "vue": "^3.5.38",
     "vue-grid-layout-v3": "^3.1.1-rc.4",
-    "vue-i18n": "^11.4.5",
+    "vue-i18n": "^11.4.6",
     "vue-router": "^5.1.0"
   },
   "devDependencies": {
