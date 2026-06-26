@@ -32,19 +32,12 @@ export const transformDashboard = (
 
   return {
     _id: dashboardId,
-    version: dashboard.version,
-    title: dashboard.title,
     visibility: dashboard.visibility || "private",
     shareToken: canManageSharing ? dashboard.shareToken || null : null,
     shareTokenVersion: Number.isFinite(Number(dashboard.shareTokenVersion))
       ? Math.max(0, Math.floor(Number(dashboard.shareTokenVersion)))
       : 0,
-    image: dashboard.image,
-    datasources: dashboard.datasources,
-    columns: dashboard.columns,
-    panes: dashboard.panes,
-    width: dashboard.width,
-    settings: dashboard.settings,
+    document: dashboard.document,
     user: ownerId,
     acl: Array.isArray(dashboard.acl)
       ? dashboard.acl.map((entry) => ({

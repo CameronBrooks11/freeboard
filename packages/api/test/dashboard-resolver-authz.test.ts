@@ -27,25 +27,33 @@ const originalMethods = {
   revocationInsertEvent: revocationRepository.insertEvent,
 };
 
-const buildDashboardDoc = (overrides = {}) => ({
-  _id: "dash-1",
-  version: "1",
+const buildContent = (overrides = {}) => ({
+  schemaVersion: 1,
   title: "Main",
-  visibility: "private",
-  shareToken: "share-token-1",
-  shareTokenVersion: 0,
-  acl: [],
   image: null,
-  datasources: [],
   columns: 3,
   width: "md",
+  datasources: [],
   panes: [],
-  settings: {},
-  user: "owner-1",
-  createdAt: new Date("2026-01-01T00:00:00.000Z"),
-  updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+  settings: { theme: "auto" },
   ...overrides,
 });
+
+const buildDashboardDoc = (overrides = {}) => {
+  const { document: documentOverride, ...envelope } = overrides;
+  return {
+    _id: "dash-1",
+    visibility: "private",
+    shareToken: "share-token-1",
+    shareTokenVersion: 0,
+    acl: [],
+    user: "owner-1",
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    document: buildContent(documentOverride),
+    ...envelope,
+  };
+};
 
 const buildUser = (overrides = {}) => ({
   _id: "user-1",
@@ -152,6 +160,7 @@ test("dashboardByShareToken denies private dashboard to anonymous user", async (
 
 test("updateDashboard allows acl editor and strips immutable fields", async () => {
   let receivedPatch = null;
+  const replacementDocument = buildContent({ title: "Updated", settings: { theme: "dark" } });
   dashboardRepository.findById = async () =>
     buildDashboardDoc({
       user: "owner-1",
@@ -161,8 +170,7 @@ test("updateDashboard allows acl editor and strips immutable fields", async () =
     assert.equal(dashboardId, "dash-1");
     receivedPatch = patch;
     return buildDashboardDoc({
-      title: "Updated",
-      settings: { theme: "dark" },
+      document: replacementDocument,
       acl: [{ userId: "editor-1", accessLevel: "editor" }],
     });
   };
@@ -172,19 +180,17 @@ test("updateDashboard allows acl editor and strips immutable fields", async () =
     {
       _id: "dash-1",
       dashboard: {
-        title: "Updated",
+        document: replacementDocument,
         user: "hijack-attempt",
-        settings: { theme: "dark" },
       },
     },
     { user: { _id: "editor-1", role: "editor" } },
   );
 
   assert.deepEqual(receivedPatch, {
-    title: "Updated",
-    settings: { theme: "dark" },
+    document: replacementDocument,
   });
-  assert.equal(result.title, "Updated");
+  assert.equal(result.document.title, "Updated");
   assert.equal(result.canEdit, true);
   assert.equal(result.isOwner, false);
 });
@@ -198,16 +204,17 @@ test("createDashboard rejects legacy json datasource type", async () => {
         null,
         {
           dashboard: {
-            title: "Invalid",
-            version: "1",
-            datasources: [
-              {
-                id: "ds-1",
-                title: "Legacy",
-                type: "json",
-                settings: { url: "https://example.com/data.json" },
-              },
-            ],
+            document: buildContent({
+              title: "Invalid",
+              datasources: [
+                {
+                  id: "ds-1",
+                  title: "Legacy",
+                  type: "json",
+                  settings: { url: "https://example.com/data.json" },
+                },
+              ],
+            }),
           },
         },
         { user: { _id: "owner-1", role: "editor" } },
@@ -226,15 +233,17 @@ test("updateDashboard rejects http datasource without URL", async () => {
         {
           _id: "dash-1",
           dashboard: {
-            datasources: [
-              {
-                id: "ds-1",
-                type: "http",
-                settings: {
-                  method: "GET",
+            document: buildContent({
+              datasources: [
+                {
+                  id: "ds-1",
+                  type: "http",
+                  settings: {
+                    method: "GET",
+                  },
                 },
-              },
-            ],
+              ],
+            }),
           },
         },
         { user: { _id: "owner-1", role: "editor" } },
@@ -253,17 +262,19 @@ test("updateDashboard rejects websocket query auth without queryParamName", asyn
         {
           _id: "dash-1",
           dashboard: {
-            datasources: [
-              {
-                id: "ds-ws-1",
-                type: "websocket",
-                settings: {
-                  url: "wss://example.com/stream",
-                  parser: "json",
-                  authPlacement: "query",
+            document: buildContent({
+              datasources: [
+                {
+                  id: "ds-ws-1",
+                  type: "websocket",
+                  settings: {
+                    url: "wss://example.com/stream",
+                    parser: "json",
+                    authPlacement: "query",
+                  },
                 },
-              },
-            ],
+              ],
+            }),
           },
         },
         { user: { _id: "owner-1", role: "editor" } },
@@ -282,16 +293,18 @@ test("updateDashboard rejects mqtt datasource without brokerProfileId", async ()
         {
           _id: "dash-1",
           dashboard: {
-            datasources: [
-              {
-                id: "ds-mqtt-1",
-                type: "mqtt",
-                settings: {
-                  topic: "devices/temp",
-                  qos: 1,
+            document: buildContent({
+              datasources: [
+                {
+                  id: "ds-mqtt-1",
+                  type: "mqtt",
+                  settings: {
+                    topic: "devices/temp",
+                    qos: 1,
+                  },
                 },
-              },
-            ],
+              ],
+            }),
           },
         },
         { user: { _id: "owner-1", role: "editor" } },
@@ -469,21 +482,14 @@ test("createDashboard falls back to private when default visibility is external 
       _id: "dash-created",
       user: String(params.user),
       visibility: String(params.visibility || "private"),
-      title: String(params.title || ""),
-      version: String(params.version || ""),
+      document: params.document,
     });
 
   const result = await DashboardResolvers.Mutation.createDashboard(
     null,
     {
       dashboard: {
-        title: "Ops",
-        version: "1",
-        columns: 3,
-        width: "md",
-        settings: { theme: "auto" },
-        datasources: [],
-        panes: [],
+        document: buildContent({ title: "Ops" }),
       },
     },
     { user: { _id: "editor-1", role: "editor" } },
@@ -503,11 +509,13 @@ test("createDashboard rejects trusted dashboard settings while execution mode is
         null,
         {
           dashboard: {
-            title: "Ops",
-            version: "1",
-            settings: {
-              script: "window.alert('x')",
-            },
+            document: buildContent({
+              title: "Ops",
+              settings: {
+                theme: "auto",
+                script: "window.alert('x')",
+              },
+            }),
           },
         },
         { user: { _id: "editor-1", role: "editor" } },
@@ -523,19 +531,23 @@ test("updateDashboard rejects trusted widget capability changes while execution 
   const existing = buildDashboardDoc({
     _id: "dash-1",
     user: "owner-1",
-    panes: [
-      {
-        widgets: [
-          {
-            id: "w-html",
-            type: "html",
-            settings: {
-              mode: "text",
+    document: buildContent({
+      panes: [
+        {
+          id: "p-1",
+          layout: { i: "p-1" },
+          widgets: [
+            {
+              id: "w-html",
+              type: "html",
+              settings: {
+                mode: "text",
+              },
             },
-          },
-        ],
-      },
-    ],
+          ],
+        },
+      ],
+    }),
   });
   dashboardRepository.findById = async () => existing;
 
@@ -546,19 +558,23 @@ test("updateDashboard rejects trusted widget capability changes while execution 
         {
           _id: "dash-1",
           dashboard: {
-            panes: [
-              {
-                widgets: [
-                  {
-                    id: "w-html",
-                    type: "html",
-                    settings: {
-                      mode: "trusted_html",
+            document: buildContent({
+              panes: [
+                {
+                  id: "p-1",
+                  layout: { i: "p-1" },
+                  widgets: [
+                    {
+                      id: "w-html",
+                      type: "html",
+                      settings: {
+                        mode: "trusted_html",
+                      },
                     },
-                  },
-                ],
-              },
-            ],
+                  ],
+                },
+              ],
+            }),
           },
         },
         { user: { _id: "owner-1", role: "editor" } },

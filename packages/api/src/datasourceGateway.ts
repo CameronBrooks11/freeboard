@@ -42,11 +42,13 @@ type DashboardLike = {
   shareToken?: string | null;
   shareTokenVersion?: number | null;
   acl?: Array<{ userId?: unknown }>;
-  datasources?: Array<{
-    id?: unknown;
-    type?: string | null;
-    settings?: Record<string, unknown> | null;
-  }> | null;
+  document?: {
+    datasources?: Array<{
+      id?: unknown;
+      type?: string | null;
+      settings?: Record<string, unknown> | null;
+    }> | null;
+  } | null;
 };
 
 type PrincipalLike = {
@@ -168,7 +170,9 @@ export const findDashboardDatasource = (
   { allowedTypes = SUPPORTED_GATEWAY_DATASOURCE_TYPES } = {},
 ) => {
   const targetDatasourceId = toComparableId(datasourceId);
-  const datasources = Array.isArray(dashboard?.datasources) ? dashboard.datasources : [];
+  const datasources = Array.isArray(dashboard?.document?.datasources)
+    ? dashboard.document.datasources
+    : [];
   const datasource =
     datasources.find((entry) => toComparableId(entry?.id) === targetDatasourceId) || null;
 

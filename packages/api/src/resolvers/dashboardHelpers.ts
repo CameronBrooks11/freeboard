@@ -22,10 +22,13 @@ type DashboardLike = UnknownRecord & {
   visibility?: unknown;
   shareToken?: unknown;
   shareTokenVersion?: unknown;
-  settings?: UnknownRecord;
-  panes?: unknown;
+  document?: UnknownRecord;
   acl?: DashboardAclEntryRecord[];
 };
+
+/** Coerce an arbitrary value to a plain object record (non-objects become `{}`). */
+const asRecord = (value: unknown): UnknownRecord =>
+  value && typeof value === "object" && !Array.isArray(value) ? (value as UnknownRecord) : {};
 type DashboardPermissions = {
   canRead: boolean;
   canEdit: boolean;
@@ -36,18 +39,6 @@ type DashboardPermissions = {
 const dashboardRepository = dataStore.repositories.dashboards;
 const userRepository = dataStore.repositories.users;
 
-const DASHBOARD_MUTABLE_FIELDS = new Set([
-  "title",
-  "version",
-  "visibility",
-  "image",
-  "datasources",
-  "columns",
-  "width",
-  "panes",
-  "settings",
-]);
-
 const EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES = new Set(["link", "public"]);
 const ALLOWED_DATASOURCE_TYPES = new Set(["http", "clock", "static", "sse", "websocket", "mqtt"]);
 const ALLOWED_HTTP_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
@@ -56,15 +47,8 @@ const ALLOWED_STREAM_PARSERS = new Set(["json", "text"]);
 const ALLOWED_STREAM_AUTH_PLACEMENTS = new Set(["header", "query"]);
 
 export type SanitizedDashboardInput = {
-  title?: unknown;
-  version?: unknown;
+  document?: unknown;
   visibility?: unknown;
-  image?: unknown;
-  datasources?: unknown;
-  columns?: unknown;
-  width?: unknown;
-  panes?: unknown;
-  settings?: unknown;
   shareToken?: unknown;
   shareTokenVersion?: unknown;
 };
@@ -207,12 +191,16 @@ export const ensureDashboardPayloadAllowedByExecutionMode = async ({
     return;
   }
 
-  const hasTrustedSettingsInInput =
-    Object.prototype.hasOwnProperty.call(inputDashboard, "settings") &&
-    hasTrustedDashboardSettings(inputDashboard.settings);
-  const inputTrustedWidgetSignatures = Object.prototype.hasOwnProperty.call(inputDashboard, "panes")
-    ? trustedWidgetPayloadSignatures(inputDashboard.panes)
-    : [];
+  // Envelope-only mutations carry no document, so there is no content to gate.
+  if (!Object.prototype.hasOwnProperty.call(inputDashboard, "document")) {
+    return;
+  }
+
+  const inputContent = asRecord(inputDashboard.document);
+  const existingContent = asRecord(existingDashboard?.document);
+
+  const hasTrustedSettingsInInput = hasTrustedDashboardSettings(inputContent.settings);
+  const inputTrustedWidgetSignatures = trustedWidgetPayloadSignatures(inputContent.panes);
 
   if (!hasTrustedSettingsInInput && inputTrustedWidgetSignatures.length === 0) {
     return;
@@ -223,102 +211,67 @@ export const ensureDashboardPayloadAllowedByExecutionMode = async ({
     return;
   }
 
-  if (Object.prototype.hasOwnProperty.call(inputDashboard, "settings")) {
+  if (
+    hasTrustedSettingsInInput &&
+    trustedDashboardSettingsSignature(inputContent.settings) !==
+      trustedDashboardSettingsSignature(existingContent.settings)
+  ) {
+    throw createGraphQLError("Trusted dashboard settings require execution mode 'trusted'", {
+      extensions: { code: "FORBIDDEN" },
+    });
+  }
+
+  if (inputTrustedWidgetSignatures.length > 0) {
+    const existingTrustedWidgetSignatures = trustedWidgetPayloadSignatures(existingContent.panes);
     if (
-      hasTrustedSettingsInInput &&
-      trustedDashboardSettingsSignature(inputDashboard.settings) !==
-        trustedDashboardSettingsSignature(existingDashboard?.settings)
+      JSON.stringify(inputTrustedWidgetSignatures) !==
+      JSON.stringify(existingTrustedWidgetSignatures)
     ) {
-      throw createGraphQLError("Trusted dashboard settings require execution mode 'trusted'", {
+      throw createGraphQLError("Trusted widget capabilities require execution mode 'trusted'", {
         extensions: { code: "FORBIDDEN" },
       });
     }
   }
-
-  if (Object.prototype.hasOwnProperty.call(inputDashboard, "panes")) {
-    if (inputTrustedWidgetSignatures.length > 0) {
-      const existingTrustedWidgetSignatures = trustedWidgetPayloadSignatures(
-        existingDashboard?.panes,
-      );
-      if (
-        JSON.stringify(inputTrustedWidgetSignatures) !==
-        JSON.stringify(existingTrustedWidgetSignatures)
-      ) {
-        throw createGraphQLError("Trusted widget capabilities require execution mode 'trusted'", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
-    }
-  }
 };
 
-export const sanitizeDashboardInput = (dashboard: Record<string, unknown> = {}) => {
+export const sanitizeDashboardInput = (
+  dashboard: Record<string, unknown> = {},
+): SanitizedDashboardInput => {
   const sanitized: SanitizedDashboardInput = {};
-  for (const [key, value] of Object.entries(dashboard || {})) {
-    if (DASHBOARD_MUTABLE_FIELDS.has(key)) {
-      (sanitized as Record<string, unknown>)[key] = value;
-    }
+  if (Object.prototype.hasOwnProperty.call(dashboard, "document")) {
+    sanitized.document = dashboard.document;
+  }
+  if (Object.prototype.hasOwnProperty.call(dashboard, "visibility")) {
+    sanitized.visibility = dashboard.visibility;
   }
   return sanitized;
 };
 
-// The portable document content fields = the mutable fields minus the envelope
-// `visibility`. These are what a DashboardDocument is assembled from.
-const DASHBOARD_DOCUMENT_FIELDS = [
-  "title",
-  "version",
-  "image",
-  "datasources",
-  "columns",
-  "width",
-  "panes",
-  "settings",
-] as const;
-
-const pickDocumentContent = (source: UnknownRecord): UnknownRecord => {
-  const content: UnknownRecord = {};
-  for (const field of DASHBOARD_DOCUMENT_FIELDS) {
-    if (source[field] !== undefined) {
-      content[field] = source[field];
-    }
-  }
-  return content;
-};
-
-/**
- * Build the candidate portable document a write would produce: the existing
- * stored content (if any) overlaid with the sanitized content patch. Excludes
- * the envelope `visibility`. The candidate is validated, never persisted —
- * storage stays flat until Foundation D.
- *
- * @param {UnknownRecord} patch - Sanitized mutable input (a partial on update).
- * @param {DashboardRecord|null} [existing] - Stored record, for update merges.
- * @returns {UnknownRecord}
- */
-export const assembleDashboardDocumentCandidate = (
-  patch: UnknownRecord,
-  existing?: DashboardRecord | null,
-): UnknownRecord => ({
-  ...(existing ? pickDocumentContent(existing) : {}),
-  ...pickDocumentContent(patch),
-});
+/** The portable datasources carried inside a (sanitized) dashboard input's document. */
+export const inputDatasources = (input: SanitizedDashboardInput): unknown =>
+  asRecord(input.document).datasources;
 
 const toValidationErrorExtensions = (result: ValidationResult) =>
   result.errors.map((issue) => ({ code: issue.code, path: issue.path, message: issue.message }));
 
 /**
- * Validate a candidate document against the v1 contract; throw BAD_USER_INPUT
- * with structured validationErrors when invalid. Warnings never block.
+ * Validate a document against the v1 contract and return its canonical form
+ * (migrated: envelope keys stripped, schemaVersion stamped, pane ids derived).
+ * Throw BAD_USER_INPUT with structured validationErrors when invalid; this
+ * canonical value is what gets persisted, so clients cannot smuggle non-schema
+ * or server-owned keys into storage. Warnings never block.
  *
- * @param {UnknownRecord} candidate
+ * @param {unknown} candidate
+ * @returns {UnknownRecord} The canonical v1 document.
  */
-export const assertValidDashboardDocument = (candidate: UnknownRecord): void => {
+export const assertValidDashboardDocument = (candidate: unknown): UnknownRecord => {
   const result = validateDashboardDocument(candidate);
-  if (!result.valid) {
+  if (!result.valid || !result.document) {
     throw createGraphQLError("Dashboard document failed validation", {
       extensions: { code: "BAD_USER_INPUT", validationErrors: toValidationErrorExtensions(result) },
     });
   }
+  return result.document;
 };
 
 const createBadInputError = (message: string) =>

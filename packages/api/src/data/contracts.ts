@@ -165,18 +165,11 @@ export type DashboardDatasourceRecord = Record<string, unknown> & {
 export type DashboardRecord = {
   _id: string;
   user: string;
-  version: string;
-  title: string;
   visibility: string;
   shareToken: string;
   shareTokenVersion: number;
   acl: DashboardAclEntryRecord[];
-  image: string | null;
-  datasources: DashboardDatasourceRecord[];
-  columns: number | null;
-  width: string | null;
-  panes: unknown[];
-  settings: Record<string, unknown>;
+  document: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -189,39 +182,29 @@ export type DashboardRepository = {
     viewerUserId: string;
     includePublic: boolean;
   }): Promise<DashboardRecord[]>;
-  listForDiagnostics(): Promise<Array<Pick<DashboardRecord, "_id" | "visibility" | "datasources">>>;
+  listForDiagnostics(): Promise<
+    Array<
+      Pick<DashboardRecord, "_id" | "visibility"> & { datasources: DashboardDatasourceRecord[] }
+    >
+  >;
   findImpactedByUserId(params: { userId: string }): Promise<DashboardRecord[]>;
   create(params: {
-    title?: unknown;
-    version?: unknown;
     visibility?: unknown;
     user: unknown;
     shareToken?: unknown;
     shareTokenVersion?: unknown;
     acl?: DashboardAclEntryRecord[];
-    image?: unknown;
-    datasources?: unknown;
-    columns?: unknown;
-    width?: unknown;
-    panes?: unknown;
-    settings?: unknown;
+    document?: unknown;
   }): Promise<DashboardRecord>;
   updateById(params: {
     dashboardId: string;
     patch: {
       user?: unknown;
-      version?: unknown;
-      title?: unknown;
       visibility?: unknown;
       shareToken?: unknown;
       shareTokenVersion?: unknown;
       acl?: DashboardAclEntryRecord[];
-      image?: unknown;
-      datasources?: unknown;
-      columns?: unknown;
-      width?: unknown;
-      panes?: unknown;
-      settings?: unknown;
+      document?: unknown;
     };
   }): Promise<DashboardRecord | null>;
   deleteById(params: { dashboardId: string }): Promise<DashboardRecord | null>;

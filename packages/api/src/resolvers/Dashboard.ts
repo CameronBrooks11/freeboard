@@ -10,7 +10,6 @@ import { recordAuditEvent } from "../audit.js";
 import { getAuthPolicyState } from "../policyStore.js";
 import { dataStore } from "../data/index.js";
 import {
-  assembleDashboardDocumentCandidate,
   assertValidDashboardDocument,
   buildCollaboratorView,
   ensureDashboardDeletable,
@@ -23,6 +22,7 @@ import {
   generateShareToken,
   getDashboardOrNotFound,
   getDashboardVisibility,
+  inputDatasources,
   recordShareTokenRevocation,
   resolveCreateVisibility,
   resolveDashboardPermissions,
@@ -113,18 +113,17 @@ const resolvers: IResolvers = {
       ensureThatUserHasRole(context, ["editor", "admin"]);
 
       const sanitizedInput = sanitizeDashboardInput(dashboard);
-      validateDashboardDatasources(sanitizedInput.datasources);
+      validateDashboardDatasources(inputDatasources(sanitizedInput));
       await ensureDashboardPayloadAllowedByExecutionMode({
         inputDashboard: sanitizedInput,
       });
-      // C2: the create must produce a valid v1 document (after the cheaper
-      // datasource + execution-mode gates).
-      assertValidDashboardDocument(assembleDashboardDocumentCandidate(sanitizedInput));
+      // The create must carry a valid v1 document (after the cheaper datasource
+      // + execution-mode gates). Persist the canonical (migrated) document.
+      const document = assertValidDashboardDocument(sanitizedInput.document);
       const visibility = await resolveCreateVisibility(sanitizedInput, context);
-      delete sanitizedInput.visibility;
 
       const createdDashboard = await dashboardRepository.create({
-        ...sanitizedInput,
+        document,
         visibility,
         user: context.user._id,
       });
@@ -152,15 +151,17 @@ const resolvers: IResolvers = {
       ensureDashboardEditable(existing, context);
 
       const sanitizedInput = sanitizeDashboardInput(dashboard);
-      validateDashboardDatasources(sanitizedInput.datasources);
+      validateDashboardDatasources(inputDatasources(sanitizedInput));
       await ensureDashboardPayloadAllowedByExecutionMode({
         inputDashboard: sanitizedInput,
         existingDashboard: existing,
       });
-      // The merged document must be a valid v1 document (after the cheaper
-      // datasource + execution-mode gates). Envelope-only edits re-validate the
-      // unchanged stored content, which already passed on its own write.
-      assertValidDashboardDocument(assembleDashboardDocumentCandidate(sanitizedInput, existing));
+      // A document write must be valid v1; persist the canonical (migrated) form.
+      // Envelope-only edits carry no document and leave the (already-valid) stored
+      // document untouched.
+      if (sanitizedInput.document !== undefined) {
+        sanitizedInput.document = assertValidDashboardDocument(sanitizedInput.document);
+      }
       const updatePayload = { ...sanitizedInput };
       let nextShareTokenVersion = null;
 

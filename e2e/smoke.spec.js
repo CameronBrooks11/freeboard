@@ -84,7 +84,7 @@ test("smoke flow covers login, datasource render, share view, and policy save", 
 
   const dashboardPayload = {
     title: "E2E Smoke Dashboard",
-    version: "1",
+    schemaVersion: 1,
     columns: 3,
     width: "md",
     settings: { theme: "auto" },
@@ -131,7 +131,7 @@ test("smoke flow covers login, datasource render, share view, and policy save", 
     token: authToken,
     query: createMutation,
     variables: {
-      dashboard: dashboardPayload,
+      dashboard: { document: dashboardPayload },
     },
   });
 
@@ -201,7 +201,7 @@ test("small-layout dashboard renders stacked pane flow in authenticated and shar
 
   const dashboardPayload = {
     title: "E2E Small Layout Dashboard",
-    version: "1",
+    schemaVersion: 1,
     columns: 3,
     width: "sm",
     settings: { theme: "auto" },
@@ -270,7 +270,7 @@ test("small-layout dashboard renders stacked pane flow in authenticated and shar
     token: authToken,
     query: createMutation,
     variables: {
-      dashboard: dashboardPayload,
+      dashboard: { document: dashboardPayload },
     },
   });
 

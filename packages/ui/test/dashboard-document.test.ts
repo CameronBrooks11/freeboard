@@ -29,6 +29,33 @@ const legacyExport = () => ({
   ],
 });
 
+// The server record the load path receives: envelope columns + a nested document.
+const serverRecord = () => {
+  const {
+    version: _version,
+    _id,
+    visibility,
+    shareToken,
+    shareTokenVersion,
+    acl,
+    isOwner,
+    canEdit,
+    canManageSharing,
+    ...content
+  } = legacyExport();
+  return {
+    _id,
+    visibility,
+    shareToken,
+    shareTokenVersion,
+    acl,
+    isOwner,
+    canEdit,
+    canManageSharing,
+    document: content,
+  };
+};
+
 test("migrate strips envelope fields, folds version into generator, stamps schemaVersion", () => {
   const doc = migrateDashboardDocument(legacyExport());
 
@@ -58,7 +85,7 @@ test("migrate is non-mutating and idempotent on a current document", () => {
 
 test("toDocument produces a clean v1 document with no server metadata", () => {
   const dashboard = new Dashboard();
-  dashboard.deserialize(legacyExport());
+  dashboard.deserialize(serverRecord());
 
   const doc = dashboard.toDocument();
   assert.equal(doc.schemaVersion, 1);
@@ -87,7 +114,7 @@ test("loadDocument hydrates content but leaves the dashboard unsaved (no envelop
 
 test("document round-trips: toDocument -> migrate -> loadDocument -> toDocument is stable", () => {
   const source = new Dashboard();
-  source.deserialize(legacyExport());
+  source.deserialize(serverRecord());
   const first = source.toDocument();
 
   const rebuilt = new Dashboard();

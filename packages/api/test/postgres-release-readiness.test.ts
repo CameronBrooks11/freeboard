@@ -73,12 +73,17 @@ if (isPostgresTestRun) {
 
     const dashboard = await dataStore.repositories.dashboards.create({
       user: user._id,
-      title: "Postgres readiness dashboard",
-      version: "1",
       visibility: "private",
-      datasources: [],
-      panes: [],
-      settings: {},
+      document: {
+        schemaVersion: 1,
+        title: "Postgres readiness dashboard",
+        image: null,
+        columns: 3,
+        width: "md",
+        settings: { theme: "auto" },
+        datasources: [],
+        panes: [],
+      },
     });
 
     const hydratedDashboard = await dataStore.repositories.dashboards.findById({

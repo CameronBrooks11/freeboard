@@ -28,13 +28,6 @@ const toDate = (value: unknown, fallback = new Date()): Date => {
   return normalized;
 };
 
-const toUnknownArray = (value: unknown): unknown[] => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value;
-};
-
 const toDatasourceArray = (value: unknown): DashboardDatasourceRecord[] => {
   if (!Array.isArray(value)) {
     return [];
@@ -106,35 +99,21 @@ const normalizeAclEntries = (value: DashboardAclEntryRecord[] = []): DashboardAc
 const toRecord = (row: {
   id?: unknown;
   user_id?: unknown;
-  version?: unknown;
-  title?: unknown;
   visibility?: unknown;
   share_token?: unknown;
   share_token_version?: unknown;
   acl?: unknown;
-  image?: unknown;
-  datasources?: unknown;
-  columns?: unknown;
-  width?: unknown;
-  panes?: unknown;
-  settings?: unknown;
+  document?: unknown;
   created_at?: unknown;
   updated_at?: unknown;
 }): DashboardRecord => ({
   _id: String(row.id || ""),
   user: String(row.user_id || ""),
-  version: String(row.version || "1"),
-  title: String(row.title || ""),
   visibility: String(row.visibility || "private"),
   shareToken: String(row.share_token || ""),
   shareTokenVersion: Math.max(0, Math.floor(Number(row.share_token_version) || 0)),
   acl: toAclEntries(row.acl),
-  image: row.image ? String(row.image) : null,
-  datasources: toDatasourceArray(row.datasources),
-  columns: Number.isFinite(Number(row.columns)) ? Math.floor(Number(row.columns)) : null,
-  width: row.width ? String(row.width) : null,
-  panes: toUnknownArray(row.panes),
-  settings: toObjectRecord(row.settings),
+  document: toObjectRecord(row.document),
   createdAt: toDate(row.created_at),
   updatedAt: toDate(row.updated_at, toDate(row.created_at)),
 });
@@ -142,17 +121,10 @@ const toRecord = (row: {
 const DASHBOARD_SELECT_FIELDS = `
   d.id,
   d.user_id,
-  d.version,
-  d.title,
   d.visibility,
   d.share_token,
   d.share_token_version,
-  d.image,
-  d.datasources,
-  d.columns,
-  d.width,
-  d.panes,
-  d.settings,
+  d.document,
   d.created_at,
   d.updated_at,
   COALESCE(
@@ -274,7 +246,7 @@ export const createPostgresDashboardRepository = (): DashboardRepository => ({
       SELECT
         id,
         visibility,
-        datasources
+        document->'datasources' AS datasources
       FROM dashboards
       `,
     );
@@ -306,21 +278,7 @@ export const createPostgresDashboardRepository = (): DashboardRepository => ({
     return result.rows.map((row) => toRecord(row));
   },
 
-  create: async ({
-    title,
-    version,
-    visibility,
-    user,
-    shareToken,
-    shareTokenVersion,
-    acl,
-    image,
-    datasources,
-    columns,
-    width,
-    panes,
-    settings,
-  }) => {
+  create: async ({ visibility, user, shareToken, shareTokenVersion, acl, document }) => {
     const pool = await getPostgresPool();
     const client = await pool.connect();
 
@@ -330,8 +288,6 @@ export const createPostgresDashboardRepository = (): DashboardRepository => ({
       const dashboardId = nanoid();
       const insertedShareToken = String(shareToken || "").trim() || generateShareToken();
       const normalizedUser = String(user || "").trim();
-      const normalizedVersion = String(version || "1");
-      const normalizedTitle = String(title || "");
       const normalizedVisibility = String(visibility || "private");
 
       await client.query(
@@ -339,17 +295,10 @@ export const createPostgresDashboardRepository = (): DashboardRepository => ({
         INSERT INTO dashboards (
           id,
           user_id,
-          version,
-          title,
           visibility,
           share_token,
           share_token_version,
-          image,
-          datasources,
-          columns,
-          width,
-          panes,
-          settings,
+          document,
           created_at,
           updated_at
         )
@@ -359,14 +308,7 @@ export const createPostgresDashboardRepository = (): DashboardRepository => ({
           $3,
           $4,
           $5,
-          $6,
-          $7,
-          $8,
-          $9::jsonb,
-          $10,
-          $11,
-          $12::jsonb,
-          $13::jsonb,
+          $6::jsonb,
           NOW(),
           NOW()
         )
@@ -374,19 +316,10 @@ export const createPostgresDashboardRepository = (): DashboardRepository => ({
         [
           dashboardId,
           normalizedUser,
-          normalizedVersion,
-          normalizedTitle,
           normalizedVisibility,
           insertedShareToken,
           Math.max(0, Math.floor(Number(shareTokenVersion) || 0)),
-          image == null ? null : String(image),
-          JSON.stringify(Array.isArray(datasources) ? datasources : []),
-          columns === undefined ? null : columns,
-          width === undefined ? "md" : width,
-          JSON.stringify(Array.isArray(panes) ? panes : []),
-          JSON.stringify(
-            settings && typeof settings === "object" && !Array.isArray(settings) ? settings : {},
-          ),
+          JSON.stringify(toObjectRecord(document)),
         ],
       );
 
@@ -425,12 +358,6 @@ export const createPostgresDashboardRepository = (): DashboardRepository => ({
       if (Object.prototype.hasOwnProperty.call(patch, "user")) {
         add("user_id", String(patch.user || "").trim());
       }
-      if (Object.prototype.hasOwnProperty.call(patch, "version")) {
-        add("version", String(patch.version || ""));
-      }
-      if (Object.prototype.hasOwnProperty.call(patch, "title")) {
-        add("title", String(patch.title || ""));
-      }
       if (Object.prototype.hasOwnProperty.call(patch, "visibility")) {
         add("visibility", String(patch.visibility || ""));
       }
@@ -440,35 +367,8 @@ export const createPostgresDashboardRepository = (): DashboardRepository => ({
       if (Object.prototype.hasOwnProperty.call(patch, "shareTokenVersion")) {
         add("share_token_version", Math.max(0, Math.floor(Number(patch.shareTokenVersion) || 0)));
       }
-      if (Object.prototype.hasOwnProperty.call(patch, "image")) {
-        add("image", patch.image == null ? null : String(patch.image));
-      }
-      if (Object.prototype.hasOwnProperty.call(patch, "datasources")) {
-        add(
-          "datasources",
-          JSON.stringify(Array.isArray(patch.datasources) ? patch.datasources : []),
-          "::jsonb",
-        );
-      }
-      if (Object.prototype.hasOwnProperty.call(patch, "columns")) {
-        add("columns", patch.columns === undefined ? null : patch.columns);
-      }
-      if (Object.prototype.hasOwnProperty.call(patch, "width")) {
-        add("width", patch.width == null ? null : String(patch.width || ""));
-      }
-      if (Object.prototype.hasOwnProperty.call(patch, "panes")) {
-        add("panes", JSON.stringify(Array.isArray(patch.panes) ? patch.panes : []), "::jsonb");
-      }
-      if (Object.prototype.hasOwnProperty.call(patch, "settings")) {
-        add(
-          "settings",
-          JSON.stringify(
-            patch.settings && typeof patch.settings === "object" && !Array.isArray(patch.settings)
-              ? patch.settings
-              : {},
-          ),
-          "::jsonb",
-        );
+      if (Object.prototype.hasOwnProperty.call(patch, "document")) {
+        add("document", JSON.stringify(toObjectRecord(patch.document)), "::jsonb");
       }
 
       if (sets.length) {

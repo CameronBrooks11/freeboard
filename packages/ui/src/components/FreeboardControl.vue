@@ -28,14 +28,17 @@ const router = useRouter();
  */
 const saveDashboard = async () => {
   const wasSaved = isSaved.value;
-  const d = dashboard.value.serialize();
-  const id = typeof d._id === "string" ? d._id : null;
-  // Remove _id so create mutation can generate a new one when needed
-  delete d._id;
+  const id = typeof dashboard.value._id === "string" ? dashboard.value._id : null;
+  // The write payload is a portable document plus the envelope visibility; the
+  // server stores the document whole and owns the rest of the envelope.
+  const payload = {
+    document: dashboard.value.toDocument(),
+    visibility: dashboard.value.visibility,
+  };
 
   const savedDashboardId = await dashboardStore.saveDashboard(
     id,
-    d,
+    payload,
     createDashboard,
     updateDashboard,
   );

@@ -7,28 +7,40 @@ import {
   validateDatasourceSessionToken,
 } from "../src/datasourceGateway.js";
 
-const buildDashboard = (overrides = {}) => ({
-  _id: "dash-1",
-  visibility: "private",
-  shareToken: "share-token-1",
-  shareTokenVersion: 2,
-  user: "owner-1",
-  acl: [],
-  datasources: [
-    {
-      id: "ds-1",
-      type: "http",
-      settings: {
-        url: "https://example.com/api/status",
-        method: "GET",
-        parser: "json",
-        timeoutMs: 10000,
-        headers: { Accept: "application/json" },
-      },
+const buildDashboard = (overrides = {}) => {
+  const { datasources, ...envelope } = overrides;
+  return {
+    _id: "dash-1",
+    visibility: "private",
+    shareToken: "share-token-1",
+    shareTokenVersion: 2,
+    user: "owner-1",
+    acl: [],
+    document: {
+      schemaVersion: 1,
+      title: "Main",
+      image: null,
+      columns: 3,
+      width: "md",
+      settings: { theme: "auto" },
+      panes: [],
+      datasources: datasources ?? [
+        {
+          id: "ds-1",
+          type: "http",
+          settings: {
+            url: "https://example.com/api/status",
+            method: "GET",
+            parser: "json",
+            timeoutMs: 10000,
+            headers: { Accept: "application/json" },
+          },
+        },
+      ],
     },
-  ],
-  ...overrides,
-});
+    ...envelope,
+  };
+};
 
 test("hashDatasourceIntent is deterministic for canonical intent", () => {
   const baseIntent = {

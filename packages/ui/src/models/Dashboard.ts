@@ -225,7 +225,11 @@ export class Dashboard {
    * @param {Object} object - Serialized dashboard record.
    */
   deserialize(object: Record<string, unknown>): void {
-    this.loadDocument(object);
+    const document =
+      object.document && typeof object.document === "object"
+        ? (object.document as Record<string, unknown>)
+        : {};
+    this.loadDocument(document);
     this.applyRecordEnvelope(object);
   }
 
@@ -305,7 +309,9 @@ export class Dashboard {
    * @param {Object} object - Serialized dashboard record.
    */
   applyRecordEnvelope(object: Record<string, unknown>): void {
-    this.version = typeof object.version === "string" ? object.version : null;
+    // The wire no longer carries a top-level version; provenance lives in the
+    // document's generator. The model's version field is unused on save.
+    this.version = null;
     this._id = typeof object._id === "string" ? object._id : null;
     this.visibility = typeof object.visibility === "string" ? object.visibility : "private";
     this.shareToken = typeof object.shareToken === "string" ? object.shareToken : null;
