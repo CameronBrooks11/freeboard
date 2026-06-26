@@ -5,8 +5,10 @@
 
 import crypto from "node:crypto";
 import { createGraphQLError } from "graphql-yoga";
+import { validateDashboardDocument } from "@freeboard/core/validate.js";
 import { dataStore } from "../data/index.js";
 import type { DashboardAclEntryRecord, DashboardRecord } from "../data/contracts.js";
+import type { ValidationResult } from "@freeboard/core";
 import { getAuthPolicyState } from "../policyStore.js";
 import { normalizeDashboardAccessLevel, normalizeDashboardVisibility } from "../policy.js";
 import { transformDashboard } from "./merge.js";
@@ -259,6 +261,76 @@ export const sanitizeDashboardInput = (dashboard: Record<string, unknown> = {}) 
   }
   return sanitized;
 };
+
+// The portable document content fields = the mutable fields minus the envelope
+// `visibility`. These are what a DashboardDocument is assembled from.
+const DASHBOARD_DOCUMENT_FIELDS = [
+  "title",
+  "version",
+  "image",
+  "datasources",
+  "columns",
+  "width",
+  "panes",
+  "settings",
+] as const;
+
+const pickDocumentContent = (source: UnknownRecord): UnknownRecord => {
+  const content: UnknownRecord = {};
+  for (const field of DASHBOARD_DOCUMENT_FIELDS) {
+    if (source[field] !== undefined) {
+      content[field] = source[field];
+    }
+  }
+  return content;
+};
+
+/**
+ * Build the candidate portable document a write would produce: the existing
+ * stored content (if any) overlaid with the sanitized content patch. Excludes
+ * the envelope `visibility`. The candidate is validated, never persisted —
+ * storage stays flat until Foundation D.
+ *
+ * @param {UnknownRecord} patch - Sanitized mutable input (a partial on update).
+ * @param {DashboardRecord|null} [existing] - Stored record, for update merges.
+ * @returns {UnknownRecord}
+ */
+export const assembleDashboardDocumentCandidate = (
+  patch: UnknownRecord,
+  existing?: DashboardRecord | null,
+): UnknownRecord => ({
+  ...(existing ? pickDocumentContent(existing as unknown as UnknownRecord) : {}),
+  ...pickDocumentContent(patch),
+});
+
+const toValidationErrorExtensions = (result: ValidationResult) =>
+  result.errors.map((issue) => ({ code: issue.code, path: issue.path, message: issue.message }));
+
+/**
+ * Validate a candidate document against the v1 contract; throw BAD_USER_INPUT
+ * with structured validationErrors when invalid. Warnings never block.
+ *
+ * @param {UnknownRecord} candidate
+ */
+export const assertValidDashboardDocument = (candidate: UnknownRecord): void => {
+  const result = validateDashboardDocument(candidate);
+  if (!result.valid) {
+    throw createGraphQLError("Dashboard document failed validation", {
+      extensions: { code: "BAD_USER_INPUT", validationErrors: toValidationErrorExtensions(result) },
+    });
+  }
+};
+
+/**
+ * Whether a stored record's content is already a valid v1 document. Used to keep
+ * legacy-invalid dashboards editable: an update is rejected only when it would
+ * break an already-valid document.
+ *
+ * @param {DashboardRecord} existing
+ * @returns {boolean}
+ */
+export const isStoredDashboardDocumentValid = (existing: DashboardRecord): boolean =>
+  validateDashboardDocument(pickDocumentContent(existing as unknown as UnknownRecord)).valid;
 
 const createBadInputError = (message: string) =>
   createGraphQLError(message, {
