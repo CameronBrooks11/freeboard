@@ -1,0 +1,35 @@
+{
+  "name": "@freeboard/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "src/index.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./validate.js": {
+      "types": "./src/validate.ts",
+      "import": "./dist/validate.js"
+    },
+    "./dashboardDocument.js": {
+      "types": "./src/dashboardDocument.ts",
+      "import": "./dist/dashboardDocument.js"
+    },
+    "./datasourceTitles.js": {
+      "types": "./src/datasourceTitles.ts",
+      "import": "./dist/datasourceTitles.js"
+    }
+  },
+  "dependencies": {
+    "ajv": "^8.20.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "tsx --test --test-concurrency=1",
+    "test:ci": "tsx --test --test-concurrency=1"
+  }
+}

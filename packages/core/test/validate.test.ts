@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { validateDashboardDocument } from "../src/models/dashboardValidation.js";
-import minimalFixture from "../../../schema/fixtures/minimal.json";
-import fullFixture from "../../../schema/fixtures/full.json";
-import legacyInput from "../../../schema/fixtures/legacy-input.json";
+import { validateDashboardDocument } from "../src/validate.js";
+import minimalFixture from "./fixtures/minimal.json";
+import fullFixture from "./fixtures/full.json";
+import legacyInput from "./fixtures/legacy-input.json";
 
 /** A fresh, minimal v1 document that is valid as-is. */
 const validDoc = () => ({

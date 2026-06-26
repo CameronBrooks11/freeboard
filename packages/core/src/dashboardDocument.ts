@@ -1,13 +1,12 @@
 /**
- * @module models/dashboardDocument
+ * @module dashboardDocument
  * @description Portable dashboard-document helpers: the boundary between the
  * server record (envelope + content) and the portable, self-contained
- * DashboardDocument. Pure and framework-free so it can move to
- * `@freeboard/dashboard-core` later. The canonical contract lives in
- * `schema/dashboard-document.v1.schema.json`.
+ * DashboardDocument. Pure and framework-free. The canonical contract lives in
+ * `./schema/dashboard-document.v1.schema.json`.
  */
 
-import type { UnknownRecord } from "../types/runtime.js";
+import type { UnknownRecord } from "./types.js";
 
 /** Current portable document schema version (migration key). */
 export const DASHBOARD_DOCUMENT_SCHEMA_VERSION = 1;

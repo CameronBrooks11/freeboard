@@ -14,7 +14,7 @@ import {
   replaceDatasourceReferences,
   serializeDashboardState,
 } from "./dashboardRuntime.js";
-import { DASHBOARD_DOCUMENT_SCHEMA_VERSION } from "./dashboardDocument.js";
+import { DASHBOARD_DOCUMENT_SCHEMA_VERSION } from "@freeboard/core";
 import { generateModelId } from "./id.js";
 import { resolveDashboardIsOwner } from "./ownership.js";
 import { runtimeConfig } from "../runtime/config.js";

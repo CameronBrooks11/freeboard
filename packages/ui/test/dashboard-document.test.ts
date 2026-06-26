@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { Dashboard } from "../src/models/Dashboard.js";
-import { ENVELOPE_KEYS, migrateDashboardDocument } from "../src/models/dashboardDocument.js";
+import { ENVELOPE_KEYS, migrateDashboardDocument } from "@freeboard/core";
 
 const legacyExport = () => ({
   version: "2.9.0",

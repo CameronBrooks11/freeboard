@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { Dashboard, normalizeDashboardTheme } from "../models/Dashboard.js";
-import type { ValidationResult } from "../models/dashboardValidation.js";
+import type { ValidationResult } from "@freeboard/core";
 import { disposeDashboardAssets } from "../dashboardAssets.js";
 import { normalizeCreateDashboardPayload } from "../auth/publishPolicy.js";
 import { useAuthStore } from "./auth.js";
@@ -275,7 +275,7 @@ export const useDashboardStore = defineStore("dashboard", {
     // Validation is reached via dynamic import so Ajv stays in a lazy chunk off
     // the player path.
     async loadDashboardDocument(rawDocument: unknown): Promise<ValidationResult> {
-      const { validateDashboardDocument } = await import("../models/dashboardValidation.js");
+      const { validateDashboardDocument } = await import("@freeboard/core/validate.js");
       const result = validateDashboardDocument(rawDocument);
       if (!result.valid || !result.document) {
         return result;

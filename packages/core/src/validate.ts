@@ -1,29 +1,29 @@
 /**
- * @module models/dashboardValidation
+ * @module validate
  * @description Validate a portable dashboard payload against the v1
- * DashboardDocument contract at the import trust boundary. Pure and
- * framework-free so it can move to `@freeboard/dashboard-core` later.
+ * DashboardDocument contract. Pure and framework-free (Node/no-DOM).
  *
  * Pipeline: non-object guard -> raw schemaVersion gate (BEFORE migrate, because
  * migrate stamps schemaVersion=1) -> migrate -> structural (Ajv 2020-12 against
  * the canonical schema) -> semantic invariants. Never throws, never mutates;
  * returns the migrated document only when valid.
  *
- * This module statically imports Ajv and the schema; it is reached only via a
- * dynamic `import()` from the store, so Ajv lands in a lazy chunk off the player
- * path. Do not add an eager (static) import of this module.
+ * This is the ONLY module in the package that imports Ajv and the schema. It is
+ * exposed as the `./validate.js` subpath so browser consumers can reach it via a
+ * dynamic `import()` and keep Ajv in a lazy chunk off the player path. Never add
+ * an eager (value) re-export of this module from the package barrel.
  */
 
-import Ajv2020 from "ajv/dist/2020.js";
-import type { ErrorObject, ValidateFunction } from "ajv";
+import { Ajv2020 } from "ajv/dist/2020.js";
+import type { ErrorObject, ValidateFunction } from "ajv/dist/2020.js";
 
-import schemaJson from "../../../../schema/dashboard-document.v1.schema.json";
+import schemaJson from "./schema/dashboard-document.v1.schema.json" with { type: "json" };
 import {
   DASHBOARD_DOCUMENT_SCHEMA_VERSION,
   migrateDashboardDocument,
 } from "./dashboardDocument.js";
-import { RESERVED_DATASOURCE_TITLES, normalizeDatasourceTitle } from "./dashboardRuntime.js";
-import type { UnknownRecord } from "../types/runtime.js";
+import { RESERVED_DATASOURCE_TITLES, normalizeDatasourceTitle } from "./datasourceTitles.js";
+import type { UnknownRecord } from "./types.js";
 
 export type ValidationSeverity = "error" | "warning";
 

@@ -91,6 +91,13 @@ jobs:
                 break
               fi
             fi
+            # @freeboard/core is bundled into the UI image (and, from C2, the API).
+            if [[ "$file" == packages/core/* ]]; then
+              if [[ "${{ matrix.name }}" == "ui" ]]; then
+                PACKAGE_CHANGED=true
+                break
+              fi
+            fi
             case "$file" in
               package.json|package-lock.json|.dockerignore)
                 PACKAGE_CHANGED=true
