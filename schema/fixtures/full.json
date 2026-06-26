@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "title": "Server room",
+  "generator": { "name": "freeboard", "version": "3.0.0" },
+  "image": null,
+  "columns": 6,
+  "width": "lg",
+  "settings": { "theme": "dark", "allowMobileEdit": false },
+  "datasources": [
+    {
+      "id": "ds_temp",
+      "title": "Rack temp",
+      "type": "http",
+      "enabled": true,
+      "settings": {
+        "url": "https://example.com/api/temp",
+        "useGateway": true,
+        "refresh": 5
+      }
+    }
+  ],
+  "panes": [
+    {
+      "id": "pane_env",
+      "title": "Environment",
+      "layout": { "x": 0, "y": 0, "w": 2, "h": 2, "i": "pane_env" },
+      "widgets": [
+        {
+          "id": "w_temp",
+          "title": "Temperature",
+          "type": "text",
+          "enabled": true,
+          "settings": {
+            "headerText": "Rack temp",
+            "value": "datasources[\"ds_temp\"].celsius",
+            "unitText": "°C"
+          }
+        }
+      ]
+    }
+  ]
+}

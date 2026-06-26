@@ -1,0 +1,26 @@
+{
+  "version": "3.0.0",
+  "_id": "653f1c2a9b1e4a0012345678",
+  "title": "Legacy dashboard",
+  "visibility": "private",
+  "image": null,
+  "columns": 4,
+  "width": "md",
+  "datasources": [
+    {
+      "id": "ds1",
+      "title": "API",
+      "type": "http",
+      "enabled": true,
+      "settings": { "url": "https://example.com" }
+    }
+  ],
+  "panes": [
+    {
+      "title": "Pane",
+      "layout": { "x": 0, "y": 0, "w": 1, "h": 1, "i": "pane-abc" },
+      "widgets": [{ "id": "w1", "title": null, "type": "text", "enabled": true, "settings": {} }]
+    }
+  ],
+  "settings": { "theme": "auto", "allowMobileEdit": false }
+}
