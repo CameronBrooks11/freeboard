@@ -273,6 +273,8 @@ jobs:
         run: npm run lint
       - name: Validate UI store boundaries
         run: npm run check:ui:store-boundaries
+      - name: Validate UI lazy validation import
+        run: npm run check:ui:lazy-validation
       - name: Validate UI theme contrast
         run: npm run check:ui:theme-contrast
       - name: Validate UI i18n parity

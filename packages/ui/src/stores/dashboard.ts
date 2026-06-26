@@ -322,22 +322,26 @@ export const useDashboardStore = defineStore("dashboard", {
                 return;
               }
 
-              const result = await this.loadDashboardDocument(parsed);
-              const formatIssues = (issues: ValidationResult["errors"]) =>
-                issues
-                  .map((issue) => `• ${issue.message}${issue.path ? ` (${issue.path})` : ""}`)
-                  .join("\n");
+              try {
+                const result = await this.loadDashboardDocument(parsed);
+                const formatIssues = (issues: ValidationResult["errors"]) =>
+                  issues
+                    .map((issue) => `• ${issue.message}${issue.path ? ` (${issue.path})` : ""}`)
+                    .join("\n");
 
-              if (!result.valid) {
-                alert(`Import failed:\n${formatIssues(result.errors)}`);
-                return;
-              }
-              if (result.warnings.length > 0) {
-                alert(`Imported with warnings:\n${formatIssues(result.warnings)}`);
-              }
+                if (!result.valid) {
+                  alert(`Import failed:\n${formatIssues(result.errors)}`);
+                  return;
+                }
+                if (result.warnings.length > 0) {
+                  alert(`Imported with warnings:\n${formatIssues(result.warnings)}`);
+                }
 
-              this.isEditing = true;
-              this.syncEditingPermissions();
+                this.isEditing = true;
+                this.syncEditingPermissions();
+              } catch {
+                alert("Import failed: the dashboard validator could not be loaded.");
+              }
             });
 
             reader.readAsText(file);

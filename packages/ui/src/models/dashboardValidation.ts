@@ -58,16 +58,21 @@ const getValidator = (): ValidateFunction => {
 const isPlainObject = (value: unknown): value is UnknownRecord =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
+// RFC 6901: `~` and `/` in a property name must be escaped when appended to a
+// JSON Pointer. Ajv's `instancePath` is already escaped; appended keys are not.
+const escapePointerSegment = (segment: string): string =>
+  segment.replace(/~/g, "~0").replace(/\//g, "~1");
+
 const mapStructuralError = (error: ErrorObject): ValidationIssue => {
   let path = error.instancePath || "";
   const params = (error.params ?? {}) as Record<string, unknown>;
   if (error.keyword === "required" && typeof params.missingProperty === "string") {
-    path = `${path}/${params.missingProperty}`;
+    path = `${path}/${escapePointerSegment(params.missingProperty)}`;
   } else if (
     error.keyword === "additionalProperties" &&
     typeof params.additionalProperty === "string"
   ) {
-    path = `${path}/${params.additionalProperty}`;
+    path = `${path}/${escapePointerSegment(params.additionalProperty)}`;
   }
 
   let message = error.message || "is invalid";

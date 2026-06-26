@@ -82,6 +82,15 @@ test("metadata-smuggling: an unknown top-level field is rejected (additionalProp
   );
 });
 
+test("additionalProperties path is RFC 6901-escaped for keys with / or ~", () => {
+  const result = validateDashboardDocument({ ...validDoc(), "a/b~c": true });
+  assert.equal(result.valid, false);
+  assert.ok(
+    result.errors.some((e) => e.code === "schema.additionalProperties" && e.path === "/a~1b~0c"),
+    JSON.stringify(result.errors),
+  );
+});
+
 test("semantic errors: duplicate ids and reserved datasource title", () => {
   const dupDs = validateDashboardDocument({
     ...validDoc(),
@@ -147,14 +156,32 @@ test("non-object input is rejected as input.notObject", () => {
   }
 });
 
-test("validate never mutates its input (deep-frozen input passes)", () => {
-  const input = validDoc();
+test("validate never mutates its input (deep-frozen populated input passes)", () => {
+  const deepFreeze = (value) => {
+    if (value && typeof value === "object") {
+      Object.values(value).forEach(deepFreeze);
+      Object.freeze(value);
+    }
+    return value;
+  };
+  const input = deepFreeze({
+    schemaVersion: 1,
+    title: "Frozen",
+    columns: 3,
+    width: "md",
+    settings: { theme: "auto" },
+    datasources: [{ id: "d1", title: "API", type: "http", enabled: true, settings: { url: "x" } }],
+    panes: [
+      {
+        id: "p1",
+        title: "Pane",
+        layout: { x: 0, y: 0, w: 1, h: 1, i: "p1" },
+        widgets: [{ id: "w1", type: "text", settings: {} }],
+      },
+    ],
+  });
   const snapshot = JSON.parse(JSON.stringify(input));
-  Object.freeze(input);
-  Object.freeze(input.settings);
-  Object.freeze(input.datasources);
-  Object.freeze(input.panes);
   const result = validateDashboardDocument(input);
-  assert.equal(result.valid, true);
+  assert.equal(result.valid, true, JSON.stringify(result.errors));
   assert.deepEqual(input, snapshot);
 });
