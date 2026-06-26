@@ -4,7 +4,7 @@
   "version": "3.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --config vite.config.mjs",
+    "dev": "tsc -p ../core/tsconfig.build.json && vite --config vite.config.mjs",
     "build": "tsc -p ../core/tsconfig.build.json && vite build --config vite.config.mjs",
     "preview": "vite preview --config vite.config.mjs",
     "lint": "eslint --no-config-lookup --config ../../eslint.config.mjs \"src/**/*.{ts,vue}\"",
