@@ -321,17 +321,6 @@ export const assertValidDashboardDocument = (candidate: UnknownRecord): void => 
   }
 };
 
-/**
- * Whether a stored record's content is already a valid v1 document. Used to keep
- * legacy-invalid dashboards editable: an update is rejected only when it would
- * break an already-valid document.
- *
- * @param {DashboardRecord} existing
- * @returns {boolean}
- */
-export const isStoredDashboardDocumentValid = (existing: DashboardRecord): boolean =>
-  validateDashboardDocument(pickDocumentContent(existing)).valid;
-
 const createBadInputError = (message: string) =>
   createGraphQLError(message, {
     extensions: { code: "BAD_USER_INPUT" },
