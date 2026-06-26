@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { Dashboard, normalizeDashboardTheme } from "../models/Dashboard.js";
+import { migrateDashboardDocument } from "../models/dashboardDocument.js";
 import { disposeDashboardAssets } from "../dashboardAssets.js";
 import { normalizeCreateDashboardPayload } from "../auth/publishPolicy.js";
 import { useAuthStore } from "./auth.js";
@@ -252,6 +253,8 @@ export const useDashboardStore = defineStore("dashboard", {
       return applyDashboardThemeSelection(selectedTheme);
     },
 
+    // Server-record load path: a GraphQL response carries the envelope
+    // (id/visibility/sharing/ACL/permissions) alongside the content.
     loadDashboard(dashboardData: Record<string, unknown>) {
       this.showLoadingIndicator = true;
 
@@ -259,6 +262,22 @@ export const useDashboardStore = defineStore("dashboard", {
       this.dashboard = new Dashboard();
       this.dashboard.deserialize(dashboardData);
       this.isSaved = Boolean(this.dashboard._id);
+      this.loadDashboardAssets();
+      this.loadDashboardTheme();
+      this.syncEditingPermissions();
+      this.showLoadingIndicator = false;
+    },
+
+    // Portable-document load path: migrate then hydrate content only. The result
+    // is always unsaved (no server identity), independent of any envelope-ish
+    // fields a legacy file might still contain.
+    loadDashboardDocument(rawDocument: Record<string, unknown>) {
+      this.showLoadingIndicator = true;
+
+      this.dashboard.clearDashboard();
+      this.dashboard = new Dashboard();
+      this.dashboard.loadDocument(migrateDashboardDocument(rawDocument));
+      this.isSaved = false;
       this.loadDashboardAssets();
       this.loadDashboardTheme();
       this.syncEditingPermissions();
@@ -287,8 +306,7 @@ export const useDashboardStore = defineStore("dashboard", {
               }
               const jsonObject = JSON.parse(result);
 
-              this.loadDashboard(jsonObject);
-              this.isSaved = false;
+              this.loadDashboardDocument(jsonObject);
               this.isEditing = true;
               this.syncEditingPermissions();
             });
@@ -305,7 +323,7 @@ export const useDashboardStore = defineStore("dashboard", {
     exportDashboard() {
       const contentType = "application/octet-stream";
       const a = document.createElement("a");
-      const blob = new Blob([JSON.stringify(this.dashboard.serialize(), null, 2)], {
+      const blob = new Blob([JSON.stringify(this.dashboard.toDocument(), null, 2)], {
         type: contentType,
       });
       document.body.appendChild(a);

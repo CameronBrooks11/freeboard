@@ -14,6 +14,7 @@ import {
   replaceDatasourceReferences,
   serializeDashboardState,
 } from "./dashboardRuntime.js";
+import { DASHBOARD_DOCUMENT_SCHEMA_VERSION } from "./dashboardDocument.js";
 import { generateModelId } from "./id.js";
 import { resolveDashboardIsOwner } from "./ownership.js";
 import { runtimeConfig } from "../runtime/config.js";
@@ -218,49 +219,53 @@ export class Dashboard {
   }
 
   /**
-   * Populate the dashboard from a serialized object.
+   * Populate the dashboard from a serialized server record (envelope + content).
+   * Server responses and legacy in-DB payloads use this path.
    *
-   * @param {Object} object - Serialized dashboard data.
+   * @param {Object} object - Serialized dashboard record.
    */
   deserialize(object: Record<string, unknown>): void {
-    this.version = typeof object.version === "string" ? object.version : null;
-    this._id = typeof object._id === "string" ? object._id : null;
-    this.title = typeof object.title === "string" ? object.title : "Dashboard";
-    this.columns = Number.isFinite(Number(object.columns)) ? Number(object.columns) : MIN_COLUMNS;
-    this.image = typeof object.image === "string" ? object.image : null;
-    this.width = normalizeDashboardWidth(object.width);
-    this.visibility = typeof object.visibility === "string" ? object.visibility : "private";
-    this.shareToken = typeof object.shareToken === "string" ? object.shareToken : null;
-    this.shareTokenVersion = Number.isFinite(Number(object.shareTokenVersion))
-      ? Math.max(0, Math.floor(Number(object.shareTokenVersion)))
-      : 0;
-    this.acl = Array.isArray(object.acl)
-      ? object.acl
-          .filter((entry: unknown) => Boolean(entry) && typeof entry === "object")
-          .map((entry: unknown) => {
-            const aclEntry = entry as Record<string, unknown>;
-            return {
-              userId: String(aclEntry.userId || ""),
-              accessLevel: String(aclEntry.accessLevel || "viewer"),
-            };
-          })
-          .filter((entry) => entry.userId)
-      : [];
+    this.loadDocument(object);
+    this.applyRecordEnvelope(object);
+  }
+
+  /**
+   * Hydrate portable document content (title, layout, datasources, panes,
+   * settings) and reset server-owned envelope fields to unsaved/owned defaults.
+   * A portable document carries no identity, sharing, or permission metadata.
+   *
+   * @param {Object} document - DashboardDocument-shaped content.
+   */
+  loadDocument(document: Record<string, unknown>): void {
+    this.title = typeof document.title === "string" ? document.title : "Dashboard";
+    this.columns = Number.isFinite(Number(document.columns))
+      ? Number(document.columns)
+      : MIN_COLUMNS;
+    this.image = typeof document.image === "string" ? document.image : null;
+    this.width = normalizeDashboardWidth(document.width);
     const rawSettings: UnknownRecord =
-      object.settings && typeof object.settings === "object"
-        ? (object.settings as UnknownRecord)
+      document.settings && typeof document.settings === "object"
+        ? (document.settings as UnknownRecord)
         : {};
     this.settings = {
       ...rawSettings,
       theme: normalizeDashboardTheme(rawSettings.theme),
       allowMobileEdit: normalizeBooleanSetting(rawSettings.allowMobileEdit, false),
     };
-    this.isOwner = resolveDashboardIsOwner(object);
-    this.canEdit = object.canEdit === undefined ? this.isOwner : Boolean(object.canEdit);
-    this.canManageSharing =
-      object.canManageSharing === undefined ? this.isOwner : Boolean(object.canManageSharing);
 
-    (object.datasources as Array<Record<string, unknown>> | undefined)?.forEach(
+    // Envelope is server-owned; a portable document is unsaved and owned by the
+    // loader until it is saved to a server.
+    this.version = null;
+    this._id = null;
+    this.visibility = "private";
+    this.shareToken = null;
+    this.shareTokenVersion = 0;
+    this.acl = [];
+    this.isOwner = true;
+    this.canEdit = true;
+    this.canManageSharing = true;
+
+    (document.datasources as Array<Record<string, unknown>> | undefined)?.forEach(
       (datasourceConfig: Record<string, unknown>) => {
         const datasource = new Datasource();
         datasource.deserialize(datasourceConfig);
@@ -268,7 +273,7 @@ export class Dashboard {
       },
     );
 
-    (object.panes as Array<Record<string, unknown>> | undefined)?.forEach(
+    (document.panes as Array<Record<string, unknown>> | undefined)?.forEach(
       (paneConfig: Record<string, unknown>) => {
         const pane = new Pane();
         pane.deserialize(paneConfig);
@@ -290,6 +295,67 @@ export class Dashboard {
     this.panes?.forEach((pane: Pane) => {
       pane.widgets?.forEach((widget: Widget) => widget.processDatasourceUpdate(null, context));
     });
+  }
+
+  /**
+   * Apply server-owned envelope fields (identity, visibility, sharing, ACL,
+   * permissions) from a server record. The portable document content is loaded
+   * separately via {@link loadDocument}.
+   *
+   * @param {Object} object - Serialized dashboard record.
+   */
+  applyRecordEnvelope(object: Record<string, unknown>): void {
+    this.version = typeof object.version === "string" ? object.version : null;
+    this._id = typeof object._id === "string" ? object._id : null;
+    this.visibility = typeof object.visibility === "string" ? object.visibility : "private";
+    this.shareToken = typeof object.shareToken === "string" ? object.shareToken : null;
+    this.shareTokenVersion = Number.isFinite(Number(object.shareTokenVersion))
+      ? Math.max(0, Math.floor(Number(object.shareTokenVersion)))
+      : 0;
+    this.acl = Array.isArray(object.acl)
+      ? object.acl
+          .filter((entry: unknown) => Boolean(entry) && typeof entry === "object")
+          .map((entry: unknown) => {
+            const aclEntry = entry as Record<string, unknown>;
+            return {
+              userId: String(aclEntry.userId || ""),
+              accessLevel: String(aclEntry.accessLevel || "viewer"),
+            };
+          })
+          .filter((entry) => entry.userId)
+      : [];
+    this.isOwner = resolveDashboardIsOwner(object);
+    this.canEdit = object.canEdit === undefined ? this.isOwner : Boolean(object.canEdit);
+    this.canManageSharing =
+      object.canManageSharing === undefined ? this.isOwner : Boolean(object.canManageSharing);
+  }
+
+  /**
+   * Serialize this dashboard to a portable v1 DashboardDocument: content only,
+   * with no server-owned envelope (id, visibility, sharing, ACL, timestamps).
+   *
+   * @returns {Object} A v1 DashboardDocument.
+   */
+  toDocument(): UnknownRecord {
+    return {
+      schemaVersion: DASHBOARD_DOCUMENT_SCHEMA_VERSION,
+      title: this.title,
+      generator: { name: "freeboard", version: runtimeConfig.version },
+      image: this.image,
+      columns: this.columns,
+      width: this.width,
+      settings: { ...this.settings },
+      datasources: this.datasources.map((datasource) => datasource.serialize()),
+      panes: this.panes.map((pane) => {
+        const serialized = pane.serialize();
+        const layout =
+          serialized.layout && typeof serialized.layout === "object"
+            ? (serialized.layout as UnknownRecord)
+            : undefined;
+        const id = layout && typeof layout.i === "string" ? layout.i : undefined;
+        return { id, ...serialized };
+      }),
+    };
   }
 
   /**
