@@ -10,6 +10,8 @@ import { recordAuditEvent } from "../audit.js";
 import { getAuthPolicyState } from "../policyStore.js";
 import { dataStore } from "../data/index.js";
 import {
+  assembleDashboardDocumentCandidate,
+  assertValidDashboardDocument,
   buildCollaboratorView,
   ensureDashboardDeletable,
   ensureDashboardEditable,
@@ -21,6 +23,7 @@ import {
   generateShareToken,
   getDashboardOrNotFound,
   getDashboardVisibility,
+  isStoredDashboardDocumentValid,
   recordShareTokenRevocation,
   resolveCreateVisibility,
   resolveDashboardPermissions,
@@ -115,6 +118,9 @@ const resolvers: IResolvers = {
       await ensureDashboardPayloadAllowedByExecutionMode({
         inputDashboard: sanitizedInput,
       });
+      // C2: the create must produce a valid v1 document (after the cheaper
+      // datasource + execution-mode gates).
+      assertValidDashboardDocument(assembleDashboardDocumentCandidate(sanitizedInput));
       const visibility = await resolveCreateVisibility(sanitizedInput, context);
       delete sanitizedInput.visibility;
 
@@ -152,6 +158,11 @@ const resolvers: IResolvers = {
         inputDashboard: sanitizedInput,
         existingDashboard: existing,
       });
+      // C2: reject an edit that would break an already-valid document; a
+      // legacy-invalid stored dashboard stays editable (toward valid).
+      if (isStoredDashboardDocumentValid(existing)) {
+        assertValidDashboardDocument(assembleDashboardDocumentCandidate(sanitizedInput, existing));
+      }
       const updatePayload = { ...sanitizedInput };
       let nextShareTokenVersion = null;
 

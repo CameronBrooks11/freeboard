@@ -5,6 +5,7 @@ on:
       - "packages/api/**"
       - "packages/gateway/**"
       - "packages/shared/**"
+      - "packages/core/**"
       - "package.json"
       - "package-lock.json"
       - "scripts/docker-image-smoke.mjs"

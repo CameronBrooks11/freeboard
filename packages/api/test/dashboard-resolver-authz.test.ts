@@ -479,6 +479,11 @@ test("createDashboard falls back to private when default visibility is external 
       dashboard: {
         title: "Ops",
         version: "1",
+        columns: 3,
+        width: "md",
+        settings: { theme: "auto" },
+        datasources: [],
+        panes: [],
       },
     },
     { user: { _id: "editor-1", role: "editor" } },
