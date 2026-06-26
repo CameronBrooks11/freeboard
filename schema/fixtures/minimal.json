@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "title": "Minimal dashboard",
+  "columns": 3,
+  "width": "md",
+  "settings": { "theme": "auto" },
+  "datasources": [],
+  "panes": []
+}

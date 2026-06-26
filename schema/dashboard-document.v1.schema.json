@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://freeboard.dev/schema/dashboard-document/v1.json",
+  "title": "DashboardDocument",
+  "description": "Portable, self-contained Freeboard dashboard. Contains no server-owned metadata (id, owner, acl, share token, visibility, revision, timestamps) — those live in the server DashboardRecord envelope, not here.",
+  "type": "object",
+  "required": ["schemaVersion", "title", "columns", "width", "settings", "datasources", "panes"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Document schema version. Migration key only — distinct from the producing application's version (see `generator`)."
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "generator": { "$ref": "#/$defs/generator" },
+    "image": {
+      "type": ["string", "null"],
+      "description": "Optional thumbnail/preview reference."
+    },
+    "columns": { "type": "integer", "minimum": 3, "maximum": 12 },
+    "width": { "enum": ["sm", "md", "lg", "xl"] },
+    "settings": { "$ref": "#/$defs/settings" },
+    "datasources": { "type": "array", "items": { "$ref": "#/$defs/datasource" } },
+    "panes": { "type": "array", "items": { "$ref": "#/$defs/pane" } }
+  },
+  "$defs": {
+    "generator": {
+      "type": "object",
+      "description": "Provenance of the tool that produced this document. Informational only; NOT a schema/migration version. The pre-v1 top-level `version` string maps here.",
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "description": "Dashboard-level settings. `theme` is constrained; all other (plugin/feature) keys pass through.",
+      "required": ["theme"],
+      "additionalProperties": true,
+      "properties": {
+        "theme": {
+          "enum": [
+            "auto",
+            "light",
+            "paper",
+            "dark",
+            "slate",
+            "high-contrast",
+            "colorblind",
+            "amber-night"
+          ]
+        },
+        "allowMobileEdit": { "type": "boolean" }
+      }
+    },
+    "datasource": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable, document-unique id used by widget bindings."
+        },
+        "title": { "type": ["string", "null"] },
+        "type": { "type": ["string", "null"] },
+        "enabled": { "type": "boolean" },
+        "settings": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Per-datasource-type config. Validated by datasource manifests in a later phase. May contain instance-specific references (e.g. credentialProfileId, brokerProfileId) that are unresolved across servers — see README."
+        }
+      }
+    },
+    "pane": {
+      "type": "object",
+      "required": ["id", "layout", "widgets"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable, document-unique pane identity (canonical). The grid `layout.i` mirrors it."
+        },
+        "title": { "type": ["string", "null"] },
+        "layout": { "$ref": "#/$defs/layout" },
+        "widgets": { "type": "array", "items": { "$ref": "#/$defs/widget" } }
+      }
+    },
+    "layout": {
+      "type": "object",
+      "description": "Grid placement. `i` is the grid library's item key (mirrors the pane id). Extra grid fields pass through.",
+      "required": ["i"],
+      "additionalProperties": true,
+      "properties": {
+        "x": { "type": "integer", "minimum": 0 },
+        "y": { "type": "integer", "minimum": 0 },
+        "w": { "type": "integer", "minimum": 1 },
+        "h": { "type": "integer", "minimum": 1 },
+        "i": { "type": "string", "minLength": 1 }
+      }
+    },
+    "widget": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable, document-unique widget id."
+        },
+        "title": { "type": ["string", "null"] },
+        "type": { "type": ["string", "null"] },
+        "enabled": { "type": "boolean" },
+        "settings": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Per-widget-type config. Validated by widget manifests in a later phase."
+        }
+      }
+    }
+  }
+}
