@@ -23,7 +23,6 @@ import {
   generateShareToken,
   getDashboardOrNotFound,
   getDashboardVisibility,
-  isStoredDashboardDocumentValid,
   recordShareTokenRevocation,
   resolveCreateVisibility,
   resolveDashboardPermissions,
@@ -158,11 +157,10 @@ const resolvers: IResolvers = {
         inputDashboard: sanitizedInput,
         existingDashboard: existing,
       });
-      // C2: reject an edit that would break an already-valid document; a
-      // legacy-invalid stored dashboard stays editable (toward valid).
-      if (isStoredDashboardDocumentValid(existing)) {
-        assertValidDashboardDocument(assembleDashboardDocumentCandidate(sanitizedInput, existing));
-      }
+      // The merged document must be a valid v1 document (after the cheaper
+      // datasource + execution-mode gates). Envelope-only edits re-validate the
+      // unchanged stored content, which already passed on its own write.
+      assertValidDashboardDocument(assembleDashboardDocumentCandidate(sanitizedInput, existing));
       const updatePayload = { ...sanitizedInput };
       let nextShareTokenVersion = null;
 

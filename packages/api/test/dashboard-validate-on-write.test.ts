@@ -124,16 +124,20 @@ test("updateDashboard rejects an edit that breaks an already-valid document", as
   );
 });
 
-test("updateDashboard keeps a legacy-invalid dashboard editable", async () => {
+test("updateDashboard rejects any edit to an invalid stored document (no carve-out)", async () => {
   dashboards.findById = async () => storedRecord({ settings: {} });
-  const result = await updateDashboard({ title: "Renamed" });
-  assert.equal(result._id, "dash-1");
+  await assert.rejects(
+    () => updateDashboard({ title: "Renamed" }),
+    (err) => err.extensions?.code === "BAD_USER_INPUT",
+  );
 });
 
-test("an envelope-only (visibility) update is not blocked by document validity", async () => {
+test("updateDashboard rejects even an envelope-only edit when the stored document is invalid", async () => {
   dashboards.findById = async () => storedRecord({ settings: {} });
-  const result = await updateDashboard({ visibility: "private" });
-  assert.equal(result._id, "dash-1");
+  await assert.rejects(
+    () => updateDashboard({ visibility: "private" }),
+    (err) => err.extensions?.code === "BAD_USER_INPUT",
+  );
 });
 
 test("a visibility-only update on an already-valid dashboard is admitted (candidate equals stored content)", async () => {
