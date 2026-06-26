@@ -27,8 +27,8 @@
     "graphql-subscriptions": "^3.0.0",
     "graphql-yoga": "^5.10.3",
     "jsonwebtoken": "^9.0.2",
-    "nanoid": "^5.1.11",
-    "pg": "^8.21.0",
-    "uuid": "^14.0.0"
+    "nanoid": "^5.1.16",
+    "pg": "^8.22.0",
+    "uuid": "^14.0.1"
   }
 }
