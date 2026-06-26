@@ -3,25 +3,22 @@
  * @description Pure helpers for dashboard runtime behavior and serialization.
  */
 
+import { RESERVED_DATASOURCE_TITLES } from "@freeboard/core";
 import { normalizeDatasourceValue } from "../widgets/runtime/bindings.js";
 import type { UnknownRecord } from "../types/runtime.js";
 import type { Datasource } from "./Datasource.js";
 import type { Pane } from "./Pane.js";
 import type { Widget } from "./Widget.js";
 
-export const RESERVED_DATASOURCE_TITLES = new Set(["datasources", "datasourcetitles"]);
-
-/**
- * Normalize a datasource title for conflict/reserved comparisons: trim and
- * lowercase. Single source of truth shared by the runtime and the validator.
- *
- * @param {unknown} title
- * @returns {string}
- */
-export const normalizeDatasourceTitle = (title: unknown): string =>
-  String(title ?? "")
-    .trim()
-    .toLowerCase();
+// The pure datasource-title helpers now live in @freeboard/core
+// (single source of truth shared with the validator). Re-exported here so
+// existing import sites (Dashboard.ts, etc.) keep working unchanged.
+export {
+  RESERVED_DATASOURCE_TITLES,
+  ensureUniqueDatasourceTitle,
+  hasDatasourceTitleConflict,
+  normalizeDatasourceTitle,
+} from "@freeboard/core";
 
 type DatasourceSnapshot = Record<string, unknown> & {
   datasources: Record<string, unknown>;
@@ -89,66 +86,6 @@ export const buildDatasourceSnapshot = (datasources: Datasource[] = []): Datasou
   });
 
   return snapshot;
-};
-
-/**
- * Determine whether a datasource title conflicts with another datasource.
- *
- * @param {Array<any>} datasources
- * @param {string} title
- * @param {string|null} [excludeId]
- * @returns {boolean}
- */
-export const hasDatasourceTitleConflict = (
-  datasources: Datasource[],
-  title: string,
-  excludeId: string | null = null,
-): boolean => {
-  const candidate = normalizeDatasourceTitle(title);
-  if (!candidate) {
-    return true;
-  }
-
-  if (RESERVED_DATASOURCE_TITLES.has(candidate)) {
-    return true;
-  }
-
-  return datasources.some((datasource) => {
-    if (!datasource) {
-      return false;
-    }
-
-    if (excludeId && datasource.id === excludeId) {
-      return false;
-    }
-
-    return normalizeDatasourceTitle(datasource.title) === candidate;
-  });
-};
-
-/**
- * Ensure datasource title is unique and non-reserved.
- *
- * @param {Array<any>} datasources
- * @param {string} title
- * @param {string|null} [excludeId]
- * @returns {string}
- */
-export const ensureUniqueDatasourceTitle = (
-  datasources: Datasource[],
-  title: string,
-  excludeId: string | null = null,
-): string => {
-  const base = String(title || "").trim() || "Datasource";
-  let candidate = base;
-  let suffix = 2;
-
-  while (hasDatasourceTitleConflict(datasources, candidate, excludeId)) {
-    candidate = `${base} (${suffix})`;
-    suffix += 1;
-  }
-
-  return candidate;
 };
 
 /**

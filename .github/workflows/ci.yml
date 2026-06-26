@@ -27,6 +27,7 @@ jobs:
       run_docs_integrity: ${{ steps.classify.outputs.run_docs_integrity }}
       run_api_tests: ${{ steps.classify.outputs.run_api_tests }}
       run_shared_tests: ${{ steps.classify.outputs.run_shared_tests }}
+      run_core_tests: ${{ steps.classify.outputs.run_core_tests }}
       run_ui_tests: ${{ steps.classify.outputs.run_ui_tests }}
       run_gateway_tests: ${{ steps.classify.outputs.run_gateway_tests }}
       run_db_schema_gate: ${{ steps.classify.outputs.run_db_schema_gate }}
@@ -62,7 +63,6 @@ jobs:
             ui:
               - 'packages/ui/src/**'
               - 'packages/ui/test/**'
-              - 'schema/**'
               - 'packages/ui/tsconfig*.json'
               - 'packages/ui/package.json'
               - 'packages/ui/vite.config.mjs'
@@ -85,6 +85,7 @@ jobs:
               - 'packages/gateway/package.json'
               - 'packages/ui/package.json'
               - 'packages/shared/package.json'
+              - 'packages/core/package.json'
             e2e:
               - 'e2e/**'
               - 'scripts/e2e-smoke.mjs'
@@ -98,6 +99,8 @@ jobs:
               - '.github/workflows/ci.yml'
             runtime_shared:
               - 'packages/shared/**'
+            core:
+              - 'packages/core/**'
             shared:
               - 'package.json'
               - 'package-lock.json'
@@ -124,10 +127,11 @@ jobs:
           docker_sanity="${{ steps.filter.outputs.docker_sanity }}"
           e2e="${{ steps.filter.outputs.e2e }}"
           runtime_shared="${{ steps.filter.outputs.runtime_shared }}"
+          core="${{ steps.filter.outputs.core }}"
           shared="${{ steps.filter.outputs.shared }}"
 
           non_docs=false
-          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$core" == "true" || "$shared" == "true" ]]; then
             non_docs=true
           fi
 
@@ -137,18 +141,23 @@ jobs:
           fi
 
           run_api_tests=false
-          if [[ "$api" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$runtime_shared" == "true" || "$core" == "true" || "$shared" == "true" ]]; then
             run_api_tests=true
           fi
 
           run_ui_tests=false
-          if [[ "$ui" == "true" || "$shared" == "true" ]]; then
+          if [[ "$ui" == "true" || "$core" == "true" || "$shared" == "true" ]]; then
             run_ui_tests=true
           fi
 
           run_shared_tests=false
           if [[ "$runtime_shared" == "true" || "$shared" == "true" ]]; then
             run_shared_tests=true
+          fi
+
+          run_core_tests=false
+          if [[ "$core" == "true" || "$shared" == "true" ]]; then
+            run_core_tests=true
           fi
 
           run_gateway_tests=false
@@ -162,12 +171,12 @@ jobs:
           fi
 
           run_build_verify=false
-          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$core" == "true" || "$shared" == "true" ]]; then
             run_build_verify=true
           fi
 
           run_typecheck=false
-          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$shared" == "true" ]]; then
+          if [[ "$api" == "true" || "$ui" == "true" || "$gateway" == "true" || "$runtime_shared" == "true" || "$core" == "true" || "$shared" == "true" ]]; then
             run_typecheck=true
           fi
 
@@ -188,6 +197,7 @@ jobs:
           echo "run_docs_integrity=$run_docs_integrity" >> "$GITHUB_OUTPUT"
           echo "run_api_tests=$run_api_tests" >> "$GITHUB_OUTPUT"
           echo "run_shared_tests=$run_shared_tests" >> "$GITHUB_OUTPUT"
+          echo "run_core_tests=$run_core_tests" >> "$GITHUB_OUTPUT"
           echo "run_ui_tests=$run_ui_tests" >> "$GITHUB_OUTPUT"
           echo "run_gateway_tests=$run_gateway_tests" >> "$GITHUB_OUTPUT"
           echo "run_db_schema_gate=$run_db_schema_gate" >> "$GITHUB_OUTPUT"
@@ -203,6 +213,7 @@ jobs:
           echo "  run_docs_integrity=$run_docs_integrity"
           echo "  run_api_tests=$run_api_tests"
           echo "  run_shared_tests=$run_shared_tests"
+          echo "  run_core_tests=$run_core_tests"
           echo "  run_ui_tests=$run_ui_tests"
           echo "  run_gateway_tests=$run_gateway_tests"
           echo "  run_db_schema_gate=$run_db_schema_gate"
@@ -347,6 +358,25 @@ jobs:
         run: npm run db:schema:apply
       - name: Run API smoke tests
         run: npm run test:api:smoke
+
+  test-core:
+    name: Test core
+    needs: changes
+    if: needs.changes.outputs.run_core_tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Run core tests
+        run: npm run test:core
 
   test-shared:
     name: Test Shared
@@ -519,6 +549,7 @@ jobs:
       - test-api
       - test-api-smoke
       - test-shared
+      - test-core
       - test-ui
       - test-gateway
       - db-schema-gate
@@ -556,6 +587,7 @@ jobs:
           check_required "${{ needs.changes.outputs.run_api_tests }}" "${{ needs.test-api.result }}" "test-api"
           check_required "${{ needs.changes.outputs.run_api_tests }}" "${{ needs.test-api-smoke.result }}" "test-api-smoke"
           check_required "${{ needs.changes.outputs.run_shared_tests }}" "${{ needs.test-shared.result }}" "test-shared"
+          check_required "${{ needs.changes.outputs.run_core_tests }}" "${{ needs.test-core.result }}" "test-core"
           check_required "${{ needs.changes.outputs.run_ui_tests }}" "${{ needs.test-ui.result }}" "test-ui"
           check_required "${{ needs.changes.outputs.run_gateway_tests }}" "${{ needs.test-gateway.result }}" "test-gateway"
           check_required "${{ needs.changes.outputs.run_db_schema_gate }}" "${{ needs.db-schema-gate.result }}" "db-schema-gate"

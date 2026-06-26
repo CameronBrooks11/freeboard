@@ -12,17 +12,20 @@ WORKDIR /app
 RUN npm install -g npm@${NPM_VERSION}
 
 COPY package.json package-lock.json ./
+COPY packages/core/package.json packages/core/package.json
 COPY packages/ui/package.json packages/ui/package.json
 COPY tsconfig.base.json ./tsconfig.base.json
+COPY packages/core/tsconfig.json packages/core/tsconfig.json
+COPY packages/core/tsconfig.build.json packages/core/tsconfig.build.json
 # Build stage must include root toolchain deps (shared workspace tooling/overrides).
 RUN npm ci --workspace=packages/ui --include-workspace-root=true \
   && npm cache clean --force
 
+COPY packages/core ./packages/core
 COPY packages/ui ./packages/ui
-# The dashboard validator imports the canonical schema from the repo-root
-# schema/ dir (single source of truth); the UI build bundles it, so it must be
-# present in the build context.
-COPY schema ./schema
+# `npm run build` for the UI first builds @freeboard/core (tsc), which
+# bundles the canonical schema (from packages/core/src/schema); the
+# demo bundle imports the validator from the built core dist.
 RUN npm run build --workspace=packages/ui
 
 FROM nginxinc/nginx-unprivileged:1.27-alpine AS production-stage

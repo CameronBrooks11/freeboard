@@ -5,20 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.mjs",
-    "build": "vite build --config vite.config.mjs",
+    "build": "tsc -p ../core/tsconfig.build.json && vite build --config vite.config.mjs",
     "preview": "vite preview --config vite.config.mjs",
     "lint": "eslint --no-config-lookup --config ../../eslint.config.mjs \"src/**/*.{ts,vue}\"",
     "lint:fix": "eslint --no-config-lookup --config ../../eslint.config.mjs \"src/**/*.{ts,vue}\" --fix",
-    "test": "tsx --test --test-concurrency=1",
-    "test:ci": "tsx --test --test-concurrency=1"
+    "test": "tsc -p ../core/tsconfig.build.json && tsx --test --test-concurrency=1",
+    "test:ci": "tsc -p ../core/tsconfig.build.json && tsx --test --test-concurrency=1"
   },
   "dependencies": {
     "@apollo/client": "^4.2.3",
+    "@freeboard/core": "0.1.0",
     "@guolao/vue-monaco-editor": "^1.6.0",
     "@unhead/vue": "^3.1.4",
     "@vue/apollo-composable": "^4.2.1",
     "@vueuse/core": "^14.3.0",
-    "ajv": "^8.20.0",
     "graphql": "^16.14.2",
     "graphql-sse": "^2.5.3",
     "graphql-tag": "^2.12.6",
