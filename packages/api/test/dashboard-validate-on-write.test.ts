@@ -135,3 +135,9 @@ test("an envelope-only (visibility) update is not blocked by document validity",
   const result = await updateDashboard({ visibility: "private" });
   assert.equal(result._id, "dash-1");
 });
+
+test("a visibility-only update on an already-valid dashboard is admitted (candidate equals stored content)", async () => {
+  dashboards.findById = async () => storedRecord();
+  const result = await updateDashboard({ visibility: "private" });
+  assert.equal(result._id, "dash-1");
+});
