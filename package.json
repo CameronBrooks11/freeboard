@@ -91,7 +91,7 @@
     "clean:nuke": "npm run clean:all && rimraf package-lock.json",
     "reinstall": "npm run clean:deps && npm install",
     "docs:generate:api": "rimraf docs/auto/api && typedoc --options typedoc.json",
-    "docs:generate:graphql": "npm run build:shared && tsx scripts/build-schema.mjs",
+    "docs:generate:graphql": "npm run build:shared && npm run build:core && tsx scripts/build-schema.mjs",
     "docs:generate:vue": "vue-docgen -c docgen.config.js",
     "docs:generate": "npm run docs:generate:api && npm run docs:generate:graphql && npm run docs:generate:vue",
     "docs:verify": "npm run docs:generate && npm run site:stage",
