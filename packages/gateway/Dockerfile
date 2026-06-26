@@ -33,6 +33,7 @@ COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/gateway/package.json packages/gateway/package.json
 RUN npm ci --omit=dev --workspace=packages/gateway --include-workspace-root=false \
+  && mkdir -p packages/gateway/node_modules \
   && npm cache clean --force
 
 FROM ${NODE_IMAGE} AS runtime
@@ -40,6 +41,12 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
+# Ship workspace-nested deps too: npm can nest a dependency under
+# packages/gateway/node_modules (instead of hoisting to root) on a version
+# conflict, and copying only root node_modules would drop it at runtime. No
+# gateway dep nests today, but this prevents the #141 class of failure. The
+# mkdir above guarantees the path exists so this COPY is always valid.
+COPY --from=deps /app/packages/gateway/node_modules ./packages/gateway/node_modules
 COPY packages/gateway/package.json ./packages/gateway/package.json
 COPY --from=build /app/packages/gateway/dist ./packages/gateway/dist
 COPY --from=build /app/packages/shared/package.json ./packages/shared/package.json
