@@ -21,17 +21,10 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS dashboards (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
-  version TEXT NOT NULL,
-  title TEXT NOT NULL,
   visibility TEXT NOT NULL DEFAULT 'private' CHECK (visibility IN ('private', 'link', 'public')),
   share_token TEXT NOT NULL UNIQUE,
   share_token_version INTEGER NOT NULL DEFAULT 0 CHECK (share_token_version >= 0),
-  image TEXT,
-  datasources JSONB,
-  columns INTEGER,
-  width TEXT DEFAULT 'md',
-  panes JSONB,
-  settings JSONB,
+  document JSONB NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT dashboards_owner_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT

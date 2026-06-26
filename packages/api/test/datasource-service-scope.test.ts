@@ -12,17 +12,26 @@ const buildDashboard = () => ({
   user: "user-1",
   visibility: "private",
   acl: [],
-  datasources: [
-    {
-      id: "ds-1",
-      type: "http",
-      settings: {
-        url: "https://example.com/api",
-        method: "GET",
-        parser: "json",
+  document: {
+    schemaVersion: 1,
+    title: "Main",
+    image: null,
+    columns: 3,
+    width: "md",
+    settings: { theme: "auto" },
+    panes: [],
+    datasources: [
+      {
+        id: "ds-1",
+        type: "http",
+        settings: {
+          url: "https://example.com/api",
+          method: "GET",
+          parser: "json",
+        },
       },
-    },
-  ],
+    ],
+  },
 });
 
 afterEach(() => {

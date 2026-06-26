@@ -12,33 +12,35 @@ test("Dashboard.deserialize normalizes duplicate widget ids within a pane", () =
 
   dashboard.deserialize({
     _id: "dashboard-1",
-    title: "Main",
-    columns: 3,
-    width: "md",
-    settings: { theme: "auto" },
-    datasources: [],
-    panes: [
-      {
-        title: "Pane 1",
-        layout: { i: "pane-1", x: 0, y: 0, w: 1, h: 1 },
-        widgets: [
-          {
-            id: "duplicate-widget-id",
-            title: "Widget A",
-            type: "text",
-            settings: {},
-            enabled: true,
-          },
-          {
-            id: "duplicate-widget-id",
-            title: "Widget B",
-            type: "text",
-            settings: {},
-            enabled: true,
-          },
-        ],
-      },
-    ],
+    document: {
+      title: "Main",
+      columns: 3,
+      width: "md",
+      settings: { theme: "auto" },
+      datasources: [],
+      panes: [
+        {
+          title: "Pane 1",
+          layout: { i: "pane-1", x: 0, y: 0, w: 1, h: 1 },
+          widgets: [
+            {
+              id: "duplicate-widget-id",
+              title: "Widget A",
+              type: "text",
+              settings: {},
+              enabled: true,
+            },
+            {
+              id: "duplicate-widget-id",
+              title: "Widget B",
+              type: "text",
+              settings: {},
+              enabled: true,
+            },
+          ],
+        },
+      ],
+    },
   });
 
   const widgetIds = dashboard.panes[0].widgets.map((widget) => widget.id);
@@ -55,12 +57,14 @@ test("Dashboard width preset normalization accepts sm and falls back to md for u
   const dashboard = new Dashboard();
   dashboard.deserialize({
     _id: "dashboard-2",
-    title: "Mobile Board",
-    columns: 3,
-    width: "sm",
-    settings: {},
-    datasources: [],
-    panes: [],
+    document: {
+      title: "Mobile Board",
+      columns: 3,
+      width: "sm",
+      settings: {},
+      datasources: [],
+      panes: [],
+    },
   });
 
   assert.equal(dashboard.width, "sm");
@@ -68,12 +72,14 @@ test("Dashboard width preset normalization accepts sm and falls back to md for u
 
   dashboard.deserialize({
     _id: "dashboard-3",
-    title: "Mobile Board 2",
-    columns: 3,
-    width: "sm",
-    settings: { allowMobileEdit: "true" },
-    datasources: [],
-    panes: [],
+    document: {
+      title: "Mobile Board 2",
+      columns: 3,
+      width: "sm",
+      settings: { allowMobileEdit: "true" },
+      datasources: [],
+      panes: [],
+    },
   });
 
   assert.equal(dashboard.settings.allowMobileEdit, true);
@@ -108,23 +114,27 @@ test("Dashboard theme normalization accepts curated presets and falls back to au
   const dashboard = new Dashboard();
   dashboard.deserialize({
     _id: "dashboard-theme-1",
-    title: "Theme Board",
-    columns: 3,
-    width: "md",
-    settings: { theme: "amber-night" },
-    datasources: [],
-    panes: [],
+    document: {
+      title: "Theme Board",
+      columns: 3,
+      width: "md",
+      settings: { theme: "amber-night" },
+      datasources: [],
+      panes: [],
+    },
   });
   assert.equal(dashboard.settings.theme, "amber-night");
 
   dashboard.deserialize({
     _id: "dashboard-theme-2",
-    title: "Theme Board 2",
-    columns: 3,
-    width: "md",
-    settings: { theme: "not-real" },
-    datasources: [],
-    panes: [],
+    document: {
+      title: "Theme Board 2",
+      columns: 3,
+      width: "md",
+      settings: { theme: "not-real" },
+      datasources: [],
+      panes: [],
+    },
   });
   assert.equal(dashboard.settings.theme, "auto");
 });

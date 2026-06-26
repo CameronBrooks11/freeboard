@@ -30,17 +30,10 @@ export default `
   """Represents a saved dashboard configuration."""
   type Dashboard {
     _id: ID!
-    title: String!
-    version: String!
     visibility: DashboardVisibility!
     shareToken: String
     shareTokenVersion: Int!
-    image: String
-    datasources: [Object]
-    columns: Int
-    width: String
-    panes: [Object]
-    settings: Object
+    document: Object
     user: String
     acl: [DashboardAclEntry!]!
     isOwner: Boolean!
@@ -101,27 +94,13 @@ export default `
 
   """Input type for creating a new dashboard."""
   input CreateDashboardInput {
-    title: String!
-    version: String!
     visibility: DashboardVisibility
-    image: String
-    datasources: [Object]
-    columns: Int
-    width: String
-    panes: [Object]
-    settings: Object
+    document: Object!
   }
 
   """Input type for updating an existing dashboard."""
   input UpdateDashboardInput {
-    title: String
-    version: String
     visibility: DashboardVisibility
-    image: String
-    datasources: [Object]
-    columns: Int
-    width: String
-    panes: [Object]
-    settings: Object
+    document: Object
   }
 `;

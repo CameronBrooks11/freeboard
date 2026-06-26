@@ -130,28 +130,30 @@ test("public datasource mint limiter keys by trusted IP and rejects spoofed forw
       ? {
           _id: "dash-public-rate-limit",
           user: "owner-1",
-          version: "1",
-          title: "Rate-limit dashboard",
           visibility: "public",
           shareToken: "public-share-token",
           shareTokenVersion: 1,
           acl: [],
-          image: null,
-          datasources: [
-            {
-              id: "ds-public-1",
-              type: "http",
-              settings: {
-                url: "https://example.com/api/status",
-                method: "GET",
-                parser: "json",
+          document: {
+            schemaVersion: 1,
+            title: "Rate-limit dashboard",
+            image: null,
+            columns: 3,
+            width: "md",
+            settings: { theme: "auto" },
+            panes: [],
+            datasources: [
+              {
+                id: "ds-public-1",
+                type: "http",
+                settings: {
+                  url: "https://example.com/api/status",
+                  method: "GET",
+                  parser: "json",
+                },
               },
-            },
-          ],
-          columns: 3,
-          width: "md",
-          panes: [],
-          settings: {},
+            ],
+          },
           createdAt: new Date("2026-01-01T00:00:00.000Z"),
           updatedAt: new Date("2026-01-01T00:00:00.000Z"),
         }

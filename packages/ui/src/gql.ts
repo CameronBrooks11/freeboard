@@ -13,16 +13,10 @@ export const DASHBOARD_CREATE_MUTATION = gql`
   mutation DashboardCreate($dashboard: CreateDashboardInput!) {
     createDashboard(dashboard: $dashboard) {
       _id
-      title
       visibility
       shareToken
       shareTokenVersion
-      image
-      datasources
-      columns
-      width
-      panes
-      settings
+      document
       acl {
         userId
         accessLevel
@@ -42,16 +36,10 @@ export const DASHBOARD_UPDATE_MUTATION = gql`
   mutation DashboardUpdate($id: ID!, $dashboard: UpdateDashboardInput!) {
     updateDashboard(_id: $id, dashboard: $dashboard) {
       _id
-      title
       visibility
       shareToken
       shareTokenVersion
-      image
-      datasources
-      columns
-      width
-      panes
-      settings
+      document
       acl {
         userId
         accessLevel
@@ -71,16 +59,10 @@ export const DASHBOARD_READ_QUERY = gql`
   query DashboardRead($id: ID!) {
     dashboard(_id: $id) {
       _id
-      title
       visibility
       shareToken
       shareTokenVersion
-      image
-      datasources
-      columns
-      width
-      panes
-      settings
+      document
       user
       acl {
         userId
@@ -101,16 +83,10 @@ export const DASHBOARD_READ_BY_SHARE_TOKEN_QUERY = gql`
   query DashboardReadByShareToken($shareToken: String!) {
     dashboardByShareToken(shareToken: $shareToken) {
       _id
-      title
       visibility
       shareToken
       shareTokenVersion
-      image
-      datasources
-      columns
-      width
-      panes
-      settings
+      document
       user
       acl {
         userId
@@ -131,16 +107,10 @@ export const DASHBOARD_UPDATE_SUBSCRIPTION = gql`
   subscription onDashboardUpdated($id: ID!) {
     dashboard(_id: $id) {
       _id
-      title
       visibility
       shareToken
       shareTokenVersion
-      image
-      datasources
-      columns
-      width
-      panes
-      settings
+      document
       user
       acl {
         userId
@@ -817,7 +787,7 @@ export const DASHBOARDS_LIST_QUERY = gql`
   query Dashboards {
     dashboards {
       _id
-      title
+      document
       visibility
       isOwner
       canEdit

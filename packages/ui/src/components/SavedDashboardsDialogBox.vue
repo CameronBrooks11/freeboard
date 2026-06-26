@@ -92,7 +92,7 @@ const openDashboard = async (id: string) => {
     <ul v-else class="saved-dashboards">
       <li v-for="d in result?.dashboards || []" :key="d._id" class="saved-dashboards__item">
         <button class="saved-dashboards__button" :disabled="picking" @click="openDashboard(d._id)">
-          <span class="saved-dashboards__title">{{ d.title || d._id }}</span>
+          <span class="saved-dashboards__title">{{ d.document?.title || d._id }}</span>
           <span class="saved-dashboards__meta">
             {{ $t(visibilityLabelKey(d.visibility)) }}
           </span>

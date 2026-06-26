@@ -9,30 +9,42 @@ import {
   resolveGatewayIntrospection,
 } from "../src/datasourceGateway.js";
 
-const buildDashboard = (overrides = {}) => ({
-  _id: "dash-introspection-1",
-  user: "owner-1",
-  visibility: "public",
-  shareToken: "share-token-1",
-  shareTokenVersion: 3,
-  acl: [],
-  datasources: [
-    {
-      id: "ds-http-1",
-      type: "http",
-      settings: {
-        url: "https://example.com/api/health",
-        method: "GET",
-        parser: "json",
-        timeoutMs: 5000,
-        headers: {
-          Accept: "application/json",
+const buildDashboard = (overrides = {}) => {
+  const { datasources, ...envelope } = overrides;
+  return {
+    _id: "dash-introspection-1",
+    user: "owner-1",
+    visibility: "public",
+    shareToken: "share-token-1",
+    shareTokenVersion: 3,
+    acl: [],
+    document: {
+      schemaVersion: 1,
+      title: "Main",
+      image: null,
+      columns: 3,
+      width: "md",
+      settings: { theme: "auto" },
+      panes: [],
+      datasources: datasources ?? [
+        {
+          id: "ds-http-1",
+          type: "http",
+          settings: {
+            url: "https://example.com/api/health",
+            method: "GET",
+            parser: "json",
+            timeoutMs: 5000,
+            headers: {
+              Accept: "application/json",
+            },
+          },
         },
-      },
+      ],
     },
-  ],
-  ...overrides,
-});
+    ...envelope,
+  };
+};
 
 test("buildCanonicalDatasourceIntent normalizes parser/method/timeout and header JSON", async () => {
   const dashboard = buildDashboard({

@@ -22,8 +22,8 @@ const original = {
 const EDITOR = { user: { _id: "editor-1", role: "editor" } };
 
 const validContent = (overrides = {}) => ({
+  schemaVersion: 1,
   title: "Board",
-  version: "1",
   image: null,
   columns: 3,
   width: "md",
@@ -42,7 +42,7 @@ const storedRecord = (overrides = {}) => ({
   acl: [],
   createdAt: new Date("2026-01-01T00:00:00.000Z"),
   updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-  ...validContent(),
+  document: validContent(),
   ...overrides,
 });
 
@@ -77,13 +77,13 @@ afterEach(() => {
 });
 
 test("createDashboard accepts a valid v1 document", async () => {
-  const result = await createDashboard(validContent());
+  const result = await createDashboard({ document: validContent() });
   assert.equal(result._id, "created");
 });
 
 test("createDashboard rejects a sparse/invalid document with structured BAD_USER_INPUT", async () => {
   await assert.rejects(
-    () => createDashboard({ title: "X", version: "1" }),
+    () => createDashboard({ document: { title: "X" } }),
     (err) => {
       assert.match(String(err.message), /failed validation/);
       assert.equal(err.extensions?.code, "BAD_USER_INPUT");
@@ -97,7 +97,7 @@ test("createDashboard rejects a sparse/invalid document with structured BAD_USER
 
 test("createDashboard rejects an invalid theme enum", async () => {
   await assert.rejects(
-    () => createDashboard(validContent({ settings: { theme: "neon" } })),
+    () => createDashboard({ document: validContent({ settings: { theme: "neon" } }) }),
     (err) =>
       err.extensions?.code === "BAD_USER_INPUT" &&
       err.extensions.validationErrors.some((i) => i.code === "schema.enum"),
@@ -105,42 +105,32 @@ test("createDashboard rejects an invalid theme enum", async () => {
 });
 
 test("createDashboard treats a duplicate datasource title as a warning, not a rejection", async () => {
-  const result = await createDashboard(
-    validContent({
+  const result = await createDashboard({
+    document: validContent({
       datasources: [
         { id: "d1", title: "Temp", type: "http", settings: { url: "https://example.com" } },
         { id: "d2", title: "temp", type: "http", settings: { url: "https://example.com" } },
       ],
     }),
-  );
+  });
   assert.equal(result._id, "created");
 });
 
-test("updateDashboard rejects an edit that breaks an already-valid document", async () => {
+test("updateDashboard rejects an invalid replacement document", async () => {
   dashboards.findById = async () => storedRecord();
   await assert.rejects(
-    () => updateDashboard({ columns: 2 }),
+    () => updateDashboard({ document: validContent({ columns: 2 }) }),
     (err) => err.extensions?.code === "BAD_USER_INPUT",
   );
 });
 
-test("updateDashboard rejects any edit to an invalid stored document (no carve-out)", async () => {
-  dashboards.findById = async () => storedRecord({ settings: {} });
-  await assert.rejects(
-    () => updateDashboard({ title: "Renamed" }),
-    (err) => err.extensions?.code === "BAD_USER_INPUT",
-  );
+test("updateDashboard accepts a valid replacement document", async () => {
+  dashboards.findById = async () => storedRecord();
+  const result = await updateDashboard({ document: validContent({ title: "Renamed" }) });
+  assert.equal(result._id, "dash-1");
 });
 
-test("updateDashboard rejects even an envelope-only edit when the stored document is invalid", async () => {
-  dashboards.findById = async () => storedRecord({ settings: {} });
-  await assert.rejects(
-    () => updateDashboard({ visibility: "private" }),
-    (err) => err.extensions?.code === "BAD_USER_INPUT",
-  );
-});
-
-test("a visibility-only update on an already-valid dashboard is admitted (candidate equals stored content)", async () => {
+test("an envelope-only (visibility) update carries no document and is admitted", async () => {
   dashboards.findById = async () => storedRecord();
   const result = await updateDashboard({ visibility: "private" });
   assert.equal(result._id, "dash-1");
