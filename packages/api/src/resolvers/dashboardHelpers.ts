@@ -299,7 +299,7 @@ export const assembleDashboardDocumentCandidate = (
   patch: UnknownRecord,
   existing?: DashboardRecord | null,
 ): UnknownRecord => ({
-  ...(existing ? pickDocumentContent(existing as unknown as UnknownRecord) : {}),
+  ...(existing ? pickDocumentContent(existing) : {}),
   ...pickDocumentContent(patch),
 });
 
@@ -330,7 +330,7 @@ export const assertValidDashboardDocument = (candidate: UnknownRecord): void => 
  * @returns {boolean}
  */
 export const isStoredDashboardDocumentValid = (existing: DashboardRecord): boolean =>
-  validateDashboardDocument(pickDocumentContent(existing as unknown as UnknownRecord)).valid;
+  validateDashboardDocument(pickDocumentContent(existing)).valid;
 
 const createBadInputError = (message: string) =>
   createGraphQLError(message, {

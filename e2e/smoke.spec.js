@@ -202,7 +202,7 @@ test("small-layout dashboard renders stacked pane flow in authenticated and shar
   const dashboardPayload = {
     title: "E2E Small Layout Dashboard",
     version: "1",
-    columns: 1,
+    columns: 3,
     width: "sm",
     settings: { theme: "auto" },
     datasources: [
