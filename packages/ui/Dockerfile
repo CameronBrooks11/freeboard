@@ -19,6 +19,10 @@ RUN npm ci --workspace=packages/ui --include-workspace-root=true \
   && npm cache clean --force
 
 COPY packages/ui ./packages/ui
+# The dashboard validator imports the canonical schema from the repo-root
+# schema/ dir (single source of truth); the UI build bundles it, so it must be
+# present in the build context.
+COPY schema ./schema
 RUN npm run build --workspace=packages/ui
 
 FROM nginxinc/nginx-unprivileged:1.27-alpine AS production-stage
