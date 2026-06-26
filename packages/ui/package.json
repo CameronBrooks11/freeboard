@@ -15,9 +15,10 @@
   "dependencies": {
     "@apollo/client": "^4.2.3",
     "@guolao/vue-monaco-editor": "^1.6.0",
+    "@unhead/vue": "^3.1.4",
     "@vue/apollo-composable": "^4.2.1",
     "@vueuse/core": "^14.3.0",
-    "@unhead/vue": "^3.1.4",
+    "ajv": "^8.20.0",
     "graphql": "^16.14.2",
     "graphql-sse": "^2.5.3",
     "graphql-tag": "^2.12.6",

@@ -9,7 +9,19 @@ import type { Datasource } from "./Datasource.js";
 import type { Pane } from "./Pane.js";
 import type { Widget } from "./Widget.js";
 
-const RESERVED_DATASOURCE_TITLES = new Set(["datasources", "datasourcetitles"]);
+export const RESERVED_DATASOURCE_TITLES = new Set(["datasources", "datasourcetitles"]);
+
+/**
+ * Normalize a datasource title for conflict/reserved comparisons: trim and
+ * lowercase. Single source of truth shared by the runtime and the validator.
+ *
+ * @param {unknown} title
+ * @returns {string}
+ */
+export const normalizeDatasourceTitle = (title: unknown): string =>
+  String(title ?? "")
+    .trim()
+    .toLowerCase();
 
 type DatasourceSnapshot = Record<string, unknown> & {
   datasources: Record<string, unknown>;
@@ -92,9 +104,7 @@ export const hasDatasourceTitleConflict = (
   title: string,
   excludeId: string | null = null,
 ): boolean => {
-  const candidate = String(title || "")
-    .trim()
-    .toLowerCase();
+  const candidate = normalizeDatasourceTitle(title);
   if (!candidate) {
     return true;
   }
@@ -112,11 +122,7 @@ export const hasDatasourceTitleConflict = (
       return false;
     }
 
-    return (
-      String(datasource.title || "")
-        .trim()
-        .toLowerCase() === candidate
-    );
+    return normalizeDatasourceTitle(datasource.title) === candidate;
   });
 };
 

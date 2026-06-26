@@ -62,6 +62,7 @@ jobs:
             ui:
               - 'packages/ui/src/**'
               - 'packages/ui/test/**'
+              - 'schema/**'
               - 'packages/ui/tsconfig*.json'
               - 'packages/ui/package.json'
               - 'packages/ui/vite.config.mjs'

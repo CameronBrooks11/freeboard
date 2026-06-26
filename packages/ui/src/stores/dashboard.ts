@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { Dashboard, normalizeDashboardTheme } from "../models/Dashboard.js";
-import { migrateDashboardDocument } from "../models/dashboardDocument.js";
+import type { ValidationResult } from "../models/dashboardValidation.js";
 import { disposeDashboardAssets } from "../dashboardAssets.js";
 import { normalizeCreateDashboardPayload } from "../auth/publishPolicy.js";
 import { useAuthStore } from "./auth.js";
@@ -268,20 +268,29 @@ export const useDashboardStore = defineStore("dashboard", {
       this.showLoadingIndicator = false;
     },
 
-    // Portable-document load path: migrate then hydrate content only. The result
-    // is always unsaved (no server identity), independent of any envelope-ish
-    // fields a legacy file might still contain.
-    loadDashboardDocument(rawDocument: Record<string, unknown>) {
-      this.showLoadingIndicator = true;
+    // Portable-document load path: validate (migrate + structural + semantic) at
+    // the trust boundary, then hydrate content only. Atomic — on invalid input no
+    // store/dashboard state is touched. The result is always unsaved (no server
+    // identity), independent of any envelope-ish fields a legacy file may carry.
+    // Validation is reached via dynamic import so Ajv stays in a lazy chunk off
+    // the player path.
+    async loadDashboardDocument(rawDocument: unknown): Promise<ValidationResult> {
+      const { validateDashboardDocument } = await import("../models/dashboardValidation.js");
+      const result = validateDashboardDocument(rawDocument);
+      if (!result.valid || !result.document) {
+        return result;
+      }
 
+      this.showLoadingIndicator = true;
       this.dashboard.clearDashboard();
       this.dashboard = new Dashboard();
-      this.dashboard.loadDocument(migrateDashboardDocument(rawDocument));
+      this.dashboard.loadDocument(result.document);
       this.isSaved = false;
       this.loadDashboardAssets();
       this.loadDashboardTheme();
       this.syncEditingPermissions();
       this.showLoadingIndicator = false;
+      return result;
     },
 
     loadDashboardFromLocalFile() {
@@ -298,15 +307,35 @@ export const useDashboardStore = defineStore("dashboard", {
             }
             const reader = new FileReader();
 
-            reader.addEventListener("load", (fileReaderEvent: ProgressEvent<FileReader>) => {
+            reader.addEventListener("load", async (fileReaderEvent: ProgressEvent<FileReader>) => {
               const textFile = fileReaderEvent.target;
-              const result = textFile?.result;
-              if (typeof result !== "string") {
+              const fileText = textFile?.result;
+              if (typeof fileText !== "string") {
                 return;
               }
-              const jsonObject = JSON.parse(result);
 
-              this.loadDashboardDocument(jsonObject);
+              let parsed: unknown;
+              try {
+                parsed = JSON.parse(fileText);
+              } catch {
+                alert("Import failed: the selected file is not valid JSON.");
+                return;
+              }
+
+              const result = await this.loadDashboardDocument(parsed);
+              const formatIssues = (issues: ValidationResult["errors"]) =>
+                issues
+                  .map((issue) => `• ${issue.message}${issue.path ? ` (${issue.path})` : ""}`)
+                  .join("\n");
+
+              if (!result.valid) {
+                alert(`Import failed:\n${formatIssues(result.errors)}`);
+                return;
+              }
+              if (result.warnings.length > 0) {
+                alert(`Imported with warnings:\n${formatIssues(result.warnings)}`);
+              }
+
               this.isEditing = true;
               this.syncEditingPermissions();
             });
