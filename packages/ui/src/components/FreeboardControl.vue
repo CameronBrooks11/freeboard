@@ -70,12 +70,13 @@ const openSavedDashboards = () => {
 
 <template>
   <div class="freeboard-control">
-    <ul class="freeboard-control__board-toolbar freeboard-control__board-toolbar">
+    <ul class="freeboard-control__board-toolbar freeboard-control__board-toolbar" role="none">
       <!-- Open saved dashboards dialog (server-only; absent in static builds) -->
       <li
         v-if="!isStaticBuild"
         @click="openSavedDashboards"
         class="freeboard-control__board-toolbar__item"
+        v-a11y-button
       >
         <i class="freeboard-control__board-toolbar__item__icon">
           <v-icon name="hi-collection" />
@@ -85,7 +86,7 @@ const openSavedDashboards = () => {
         </label>
       </li>
       <!-- Save or Update button -->
-      <li @click="saveDashboard" class="freeboard-control__board-toolbar__item">
+      <li @click="saveDashboard" class="freeboard-control__board-toolbar__item" v-a11y-button>
         <i class="freeboard-control__board-toolbar__item__icon">
           <v-icon name="hi-cloud-upload" />
         </i>
@@ -97,6 +98,7 @@ const openSavedDashboards = () => {
       <li
         @click="dashboardStore.loadDashboardFromLocalFile()"
         class="freeboard-control__board-toolbar__item"
+        v-a11y-button
       >
         <i class="freeboard-control__board-toolbar__item__icon">
           <v-icon name="hi-download" />
@@ -106,7 +108,11 @@ const openSavedDashboards = () => {
         </label>
       </li>
       <!-- Export to local file -->
-      <li @click="dashboardStore.exportDashboard()" class="freeboard-control__board-toolbar__item">
+      <li
+        @click="dashboardStore.exportDashboard()"
+        class="freeboard-control__board-toolbar__item"
+        v-a11y-button
+      >
         <i class="freeboard-control__board-toolbar__item__icon">
           <v-icon name="hi-upload" />
         </i>

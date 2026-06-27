@@ -265,7 +265,9 @@ showLoadingIndicator.value = false;
     <Preloader v-if="showLoadingIndicator" />
     <!-- Main UI when loaded -->
     <Header v-else />
-    <Board v-if="!showLoadingIndicator" />
+    <main v-if="!showLoadingIndicator" class="freeboard__main">
+      <Board />
+    </main>
   </div>
 </template>
 

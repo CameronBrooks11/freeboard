@@ -8,6 +8,20 @@
  * @constant {Object.<string, any>}
  */
 export const en = {
+  // Accessible names for icon-only controls (aria-label).
+  a11y: {
+    toggleEditMode: "Toggle edit mode",
+    increaseBoardWidth: "Increase board width",
+    decreaseBoardWidth: "Decrease board width",
+    addWidget: "Add widget",
+    editPane: "Edit pane",
+    deletePane: "Delete pane",
+    toggleWidgetVisibility: "Toggle widget visibility",
+    moveWidgetUp: "Move widget up",
+    moveWidgetDown: "Move widget down",
+    editWidget: "Edit widget",
+    deleteWidget: "Delete widget",
+  },
   // Translations for array form elements
   arrayFormElement: {
     buttonAdd: "Add",

@@ -158,14 +158,22 @@ const onChange = (s: unknown) => {
 
 <template>
   <div class="dashboard-control">
-    <ul class="dashboard-control__board-toolbar dashboard-control__board-toolbar">
-      <li @click="() => openSettingsDialogBox()" class="dashboard-control__board-toolbar__item">
+    <ul class="dashboard-control__board-toolbar dashboard-control__board-toolbar" role="none">
+      <li
+        @click="() => openSettingsDialogBox()"
+        class="dashboard-control__board-toolbar__item"
+        v-a11y-button
+      >
         <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-solid-cog" /></i
         ><label class="dashboard-control__board-toolbar__item__label">{{
           $t("dashboardControl.labelSettings")
         }}</label>
       </li>
-      <li @click="() => openDatasourcesDialogBox()" class="dashboard-control__board-toolbar__item">
+      <li
+        @click="() => openDatasourcesDialogBox()"
+        class="dashboard-control__board-toolbar__item"
+        v-a11y-button
+      >
         <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-database" /></i
         ><label class="dashboard-control__board-toolbar__item__label">{{
           $t("dashboardControl.labelDatasources")
@@ -175,20 +183,25 @@ const onChange = (s: unknown) => {
         v-if="!isStaticBuild"
         @click="() => openShareDialogBox()"
         class="dashboard-control__board-toolbar__item"
+        v-a11y-button
       >
         <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-collection" /></i
         ><label class="dashboard-control__board-toolbar__item__label">{{
           $t("dashboardControl.labelShare")
         }}</label>
       </li>
-      <li @click="onReportBug" class="dashboard-control__board-toolbar__item">
+      <li @click="onReportBug" class="dashboard-control__board-toolbar__item" v-a11y-button>
         <i class="dashboard-control__board-toolbar__item__icon"
           ><v-icon name="hi-clipboard-list" /></i
         ><label class="dashboard-control__board-toolbar__item__label">{{
           $t("dashboardControl.labelReportBug")
         }}</label>
       </li>
-      <li @click="() => dashboard.createPane()" class="dashboard-control__board-toolbar__item">
+      <li
+        @click="() => dashboard.createPane()"
+        class="dashboard-control__board-toolbar__item"
+        v-a11y-button
+      >
         <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-plus-circle" /></i
         ><label class="dashboard-control__board-toolbar__item__label">{{
           $t("dashboardControl.labelAddPane")
