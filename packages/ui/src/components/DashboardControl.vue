@@ -23,10 +23,15 @@ import {
   copyBugReportContext,
 } from "../ui/issueReport.js";
 import { useI18n } from "vue-i18n";
+import { runtimeConfig } from "../runtime/config.js";
 
 const authStore = useAuthStore();
 const dashboardStore = useDashboardStore();
 const { dashboard } = storeToRefs(dashboardStore);
+
+// Local-first (Lite): sharing/share-token/collaborator management is server-only,
+// so the Share control is absent in a static build.
+const isStaticBuild = runtimeConfig.isStaticBuild;
 const instance = getCurrentInstance();
 const appContext: AppContext | null = instance?.appContext ?? null;
 const { t } = useI18n();
@@ -166,7 +171,11 @@ const onChange = (s: unknown) => {
           $t("dashboardControl.labelDatasources")
         }}</label>
       </li>
-      <li @click="() => openShareDialogBox()" class="dashboard-control__board-toolbar__item">
+      <li
+        v-if="!isStaticBuild"
+        @click="() => openShareDialogBox()"
+        class="dashboard-control__board-toolbar__item"
+      >
         <i class="dashboard-control__board-toolbar__item__icon"><v-icon name="hi-collection" /></i
         ><label class="dashboard-control__board-toolbar__item__label">{{
           $t("dashboardControl.labelShare")
