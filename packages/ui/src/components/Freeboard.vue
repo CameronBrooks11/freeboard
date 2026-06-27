@@ -171,11 +171,19 @@ onUnmounted(() => {
   disposeAllStreamingManagers();
 });
 
-// Local-first (Lite): a static build has no server route to load from, so
-// hydrate the dashboard from localStorage when this root component mounts.
+// Local-first (Lite): a static build has no server route to load from, so on
+// mount hydrate from localStorage and start listening for a cross-origin
+// document injected by an embedder via postMessage.
+const onEmbedMessage = (event: MessageEvent) => {
+  void dashboardStore.loadEmbeddedDocument(event.origin, event.data);
+};
 if (runtimeConfig.isStaticBuild) {
   onMounted(() => {
     void dashboardStore.loadLocalDashboard();
+    window.addEventListener("message", onEmbedMessage);
+  });
+  onUnmounted(() => {
+    window.removeEventListener("message", onEmbedMessage);
   });
 }
 
