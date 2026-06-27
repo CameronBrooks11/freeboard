@@ -18,6 +18,11 @@ import { runtimeConfig } from "../runtime/config.js";
 const dashboardStore = useDashboardStore();
 const { dashboard, isSaved } = storeToRefs(dashboardStore);
 
+// Local-first (Lite): the saved-dashboards picker is server-only (it lists
+// dashboards via GraphQL), so it is absent in a static build. Local Save,
+// Import, and Export stay.
+const isStaticBuild = runtimeConfig.isStaticBuild;
+
 // GraphQL mutations for creating or updating a dashboard
 const { mutate: createDashboard } = useMutation(DASHBOARD_CREATE_MUTATION);
 const { mutate: updateDashboard } = useMutation(DASHBOARD_UPDATE_MUTATION);
@@ -66,8 +71,12 @@ const openSavedDashboards = () => {
 <template>
   <div class="freeboard-control">
     <ul class="freeboard-control__board-toolbar freeboard-control__board-toolbar">
-      <!-- Open saved dashboards dialog -->
-      <li @click="openSavedDashboards" class="freeboard-control__board-toolbar__item">
+      <!-- Open saved dashboards dialog (server-only; absent in static builds) -->
+      <li
+        v-if="!isStaticBuild"
+        @click="openSavedDashboards"
+        class="freeboard-control__board-toolbar__item"
+      >
         <i class="freeboard-control__board-toolbar__item__icon">
           <v-icon name="hi-collection" />
         </i>

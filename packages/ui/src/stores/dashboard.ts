@@ -103,6 +103,8 @@ export const useDashboardStore = defineStore("dashboard", {
   getters: {
     allowEdit(state) {
       const authStore = useAuthStore();
+      // Local-first (Lite): a static build is editable and persists locally (Save
+      // writes to localStorage), so it grants edit without server auth.
       const roleCanEdit = runtimeConfig.isStaticBuild || authStore.canEditDashboards();
       const dashboardCanEdit = !state.isSaved || state.dashboard?.canEdit !== false;
       return roleCanEdit && dashboardCanEdit;

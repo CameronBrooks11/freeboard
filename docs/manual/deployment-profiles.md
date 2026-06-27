@@ -19,19 +19,20 @@ Recommended defaults:
 - `AUTH_REGISTRATION_MODE=invite` (or `disabled`)
 - `AUTH_EDITOR_CAN_PUBLISH=false` unless explicitly needed
 
-## Profile 2: Static Build (View-Only)
+## Profile 2: Local-First (Lite)
 
-Use for docs/demo or immutable displays.
+A single static build (`FREEBOARD_STATIC=true`) that runs with **no server**: it persists the dashboard locally and is editable in the browser. Use for a lightweight self-hosted/offline/embeddable dashboard, docs/demos, or an embed target.
 
-- Built with `FREEBOARD_STATIC=true`
-- No authenticated edit/admin workflow
-- No runtime save/publish/collaborator management
-- Route-level viewing only
+- Built with `FREEBOARD_STATIC=true`; no server, no `/graphql` traffic.
+- The dashboard is **locally editable** and persisted to `localStorage` as a single portable v1 `DashboardDocument`. Import/Export to a file also work.
+- No login/admin, no sharing/share-tokens/collaborators, and no server saved-dashboards picker — those affordances are absent, not merely hidden.
+- Datasource support is bounded by the matrix below (Clock/Static/direct-HTTP; streaming types require the server).
 
 Contract:
 
-- Treat static output as read-only content.
-- Do not rely on static mode for protected private dashboards.
+- Persistence is local to the browser/origin; it is not a shared or backed-up store.
+- Do not rely on static mode for protected private dashboards or server-enforced access control.
+- Immutable-display variant (read-only kiosk/embed, Save unwired) is a deferred sub-profile, tracked separately.
 
 ### Datasource feasibility (static build)
 
