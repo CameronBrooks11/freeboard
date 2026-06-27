@@ -15,15 +15,15 @@
 
 .freeboard-control .freeboard-control__board-toolbar__item {
   display: flex;
-  color: var(--color-shade-7);
+  color: var(--text-secondary);
   cursor: pointer;
   margin: 0px 0px 0px 5px;
   padding: 4px;
 }
 
 .freeboard-control .freeboard-control__board-toolbar__item:hover {
-  background-color: var(--color-shade-5);
-  color: var(--color-primary);
+  background-color: var(--color-shade-2);
+  color: var(--text-link);
   transition: 250ms linear;
 }
 

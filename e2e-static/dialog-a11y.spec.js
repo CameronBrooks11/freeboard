@@ -136,16 +136,13 @@ test("Escape closes the dialog", async ({ page }) => {
   await expect(modal).toHaveCount(0);
 });
 
-test("an open dialog has no serious/critical WCAG violations (color-contrast tracked separately)", async ({
-  page,
-}) => {
+test("an open dialog has no serious/critical WCAG violations", async ({ page }) => {
+  // openDatasourcesDialog already waits for the fade-in transition to settle, so
+  // axe sees final colors (not mid-animation composites).
   await openDatasourcesDialog(page);
 
-  // color-contrast is excluded here pending #186 (primary blue used as text on
-  // light surfaces fails AA); all other A/AA rules are gated.
   const { violations } = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-    .disableRules(["color-contrast"])
     .analyze();
   const blocking = violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   const report = blocking

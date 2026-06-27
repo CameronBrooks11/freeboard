@@ -31,6 +31,29 @@ const criticalPairs = [
     backdropToken: "--bg-surface-2",
     minContrast: 4.5,
   },
+  // Semantic text tokens must stay AA-legible as text. They are checked against
+  // the worst-case surface (surface-3 is the darkest light-surface / lightest
+  // dark-surface, i.e. lowest text contrast in either polarity), so passing here
+  // implies passing on surface-1/2. These back the dialog/table/toolbar text that
+  // previously used non-AA ramp/brand tokens (#186).
+  {
+    id: "surface-muted-text",
+    backgroundToken: "--bg-surface-3",
+    foregroundToken: "--text-muted",
+    minContrast: 4.5,
+  },
+  {
+    id: "surface-secondary-text",
+    backgroundToken: "--bg-surface-3",
+    foregroundToken: "--text-secondary",
+    minContrast: 4.5,
+  },
+  {
+    id: "surface-link-text",
+    backgroundToken: "--bg-surface-3",
+    foregroundToken: "--text-link",
+    minContrast: 4.5,
+  },
 ];
 
 const parseTokens = (content) => {

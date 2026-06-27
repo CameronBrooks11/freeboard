@@ -7,6 +7,7 @@
   --text-primary: #f8e7c7;
   --text-secondary: #eed7b1;
   --text-muted: #d4b88c;
+  --text-link: var(--color-primary);
   --text-on-primary: #1b1207;
   --text-on-accent: #1b1207;
 

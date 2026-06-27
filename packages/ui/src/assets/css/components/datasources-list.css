@@ -17,7 +17,7 @@
 
 .datasources-list .datasources-list__table__head__row__cell {
   font-weight: bold;
-  color: var(--color-shade-6);
+  color: var(--text-muted);
 }
 
 .datasources-list .datasources-list__table__body__row__cell__board-toolbar {
@@ -53,7 +53,7 @@
 }
 
 .datasources-list .datasources-list__status--connected {
-  color: var(--color-primary);
+  color: var(--text-link);
   border-color: var(--color-primary);
 }
 
@@ -63,6 +63,6 @@
 }
 
 .datasources-list .datasources-list__status--stale {
-  color: var(--color-accent);
+  color: var(--text-muted);
   border-color: var(--color-accent);
 }
