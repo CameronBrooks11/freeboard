@@ -29,7 +29,9 @@ packages/*/dist/
 packages/*/coverage/
 packages/*/.vite/
 playwright-report/
+playwright-report-static/
 test-results/
+test-results-static/
 *.log
 .codex
 

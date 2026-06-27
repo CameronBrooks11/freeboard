@@ -56,6 +56,8 @@
     "test:e2e:smoke": "node scripts/e2e-smoke.mjs",
     "smoke:docker": "node scripts/docker-image-smoke.mjs",
     "test:e2e": "playwright test --config playwright.e2e.config.mjs",
+    "build:ui:static": "cross-env FREEBOARD_STATIC=1 FREEBOARD_BASE_PATH=/ npm run build --workspace=packages/ui",
+    "test:e2e:static": "npm run build:ui:static && playwright test --config playwright.static.config.mjs",
     "check:ui:store-boundaries": "node scripts/check-ui-store-boundaries.mjs",
     "check:ui:lazy-validation": "node scripts/check-ui-lazy-validation.mjs",
     "check:core:headless": "node scripts/check-core-headless.mjs",
