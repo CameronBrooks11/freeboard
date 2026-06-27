@@ -56,7 +56,7 @@ const serverRecord = () => {
   };
 };
 
-test("migrate strips envelope fields, folds version into generator, stamps schemaVersion", () => {
+test("migrate strips envelope fields, drops the legacy version, stamps schemaVersion", () => {
   const doc = migrateDashboardDocument(legacyExport());
 
   for (const key of ENVELOPE_KEYS) {
@@ -64,7 +64,8 @@ test("migrate strips envelope fields, folds version into generator, stamps schem
   }
   assert.equal(doc.schemaVersion, 1);
   assert.equal(doc.version, undefined);
-  assert.deepEqual(doc.generator, { name: "freeboard", version: "2.9.0" });
+  // No legacy version->generator upgrade.
+  assert.equal(doc.generator, undefined);
 });
 
 test("migrate derives a stable pane.id from the grid layout.i", () => {

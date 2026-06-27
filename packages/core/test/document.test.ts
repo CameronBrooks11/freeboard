@@ -21,14 +21,15 @@ const legacy = () => ({
   panes: [{ title: "Pane", layout: { x: 0, y: 0, w: 1, h: 1, i: "pane-abc" }, widgets: [] }],
 });
 
-test("migrate strips envelope keys and folds version into generator", () => {
+test("migrate strips envelope keys and drops the legacy top-level version", () => {
   const doc = migrateDashboardDocument(legacy());
   for (const key of ENVELOPE_KEYS) {
     assert.ok(!(key in doc), `envelope key '${key}' must not survive migration`);
   }
   assert.equal(doc.version, undefined);
   assert.equal(doc.schemaVersion, DASHBOARD_DOCUMENT_SCHEMA_VERSION);
-  assert.deepEqual(doc.generator, { name: "freeboard", version: "2.9.0" });
+  // No legacy version->generator upgrade: a doc without a generator stays without one.
+  assert.equal(doc.generator, undefined);
 });
 
 test("migrate derives a stable pane.id from layout.i", () => {

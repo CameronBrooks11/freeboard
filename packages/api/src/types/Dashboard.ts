@@ -30,6 +30,8 @@ export default `
   """Represents a saved dashboard configuration."""
   type Dashboard {
     _id: ID!
+    """Read-only convenience projection of the document title, for list/summary views."""
+    title: String
     visibility: DashboardVisibility!
     shareToken: String
     shareTokenVersion: Int!

@@ -787,7 +787,7 @@ export const DASHBOARDS_LIST_QUERY = gql`
   query Dashboards {
     dashboards {
       _id
-      document
+      title
       visibility
       isOwner
       canEdit

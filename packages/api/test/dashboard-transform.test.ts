@@ -30,6 +30,12 @@ test("transformDashboard includes owner user id", () => {
   assert.equal(transformed.user, "owner-1");
 });
 
+test("transformDashboard exposes a derived title from the document", () => {
+  assert.equal(transformDashboard(buildDoc(), "owner-1").title, "Main");
+  // Falls back to null when the document carries no string title.
+  assert.equal(transformDashboard(buildDoc({ document: {} }), "owner-1").title, null);
+});
+
 test("transformDashboard derives isOwner from viewer context", () => {
   const ownerView = transformDashboard(buildDoc(), "owner-1", {
     canEdit: true,
