@@ -50,6 +50,7 @@ import { createHead } from "@unhead/vue/client";
 import { i18n } from "./i18n/index.js";
 import { shouldForceLogoutOnGraphQLErrors } from "./apolloAuthError.js";
 import { subscribeToSystemThemeChanges } from "./ui/themeRuntime.js";
+import { a11yButton } from "./directives/a11yButton.js";
 
 // Register icon set for use throughout the app
 addIcons(
@@ -190,4 +191,5 @@ if (typeof window !== "undefined") {
   window.addEventListener("beforeunload", stopSystemThemeListener, { once: true });
 }
 
+app.directive("a11y-button", a11yButton);
 app.use(routerTyped).use(i18n).use(head).component("v-icon", OhVueIcon).mount("#app");

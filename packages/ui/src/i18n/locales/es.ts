@@ -7,6 +7,20 @@ import { en } from "./en.js";
 
 export const es = {
   ...en,
+  a11y: {
+    ...en.a11y,
+    toggleEditMode: "Alternar modo de edicion",
+    increaseBoardWidth: "Aumentar ancho del tablero",
+    decreaseBoardWidth: "Reducir ancho del tablero",
+    addWidget: "Agregar widget",
+    editPane: "Editar panel",
+    deletePane: "Eliminar panel",
+    toggleWidgetVisibility: "Alternar visibilidad del widget",
+    moveWidgetUp: "Mover widget hacia arriba",
+    moveWidgetDown: "Mover widget hacia abajo",
+    editWidget: "Editar widget",
+    deleteWidget: "Eliminar widget",
+  },
   arrayFormElement: {
     ...en.arrayFormElement,
     buttonAdd: "Agregar",

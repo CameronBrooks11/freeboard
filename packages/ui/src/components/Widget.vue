@@ -162,13 +162,15 @@ const instance = getCurrentInstance() as { appContext: AppContext } | null;
         {{ widgetErrorMessage }}
       </div>
       <Transition>
-        <ul class="widget__sub-section__board-toolbar" v-if="isEditing">
+        <ul class="widget__sub-section__board-toolbar" v-if="isEditing" role="none">
           <li class="widget__sub-section__board-toolbar__item">
             {{ widget.title }}
           </li>
           <li
             @click="() => (widget.enabled = !widget.enabled)"
             class="widget__sub-section__board-toolbar__item"
+            v-a11y-button
+            :aria-label="$t('a11y.toggleWidgetVisibility')"
           >
             <i class="widget__sub-section__board-toolbar__item__icon">
               <v-icon :name="widget.enabled ? 'hi-pause' : 'hi-play'"></v-icon>
@@ -177,6 +179,8 @@ const instance = getCurrentInstance() as { appContext: AppContext } | null;
           <li
             @click="() => widget.pane?.moveWidgetUp(widget)"
             class="widget__sub-section__board-toolbar__item"
+            v-a11y-button
+            :aria-label="$t('a11y.moveWidgetUp')"
           >
             <i class="widget__sub-section__board-toolbar__item__icon">
               <v-icon name="hi-solid-chevron-up"></v-icon>
@@ -185,6 +189,8 @@ const instance = getCurrentInstance() as { appContext: AppContext } | null;
           <li
             @click="() => widget.pane?.moveWidgetDown(widget)"
             class="widget__sub-section__board-toolbar__item"
+            v-a11y-button
+            :aria-label="$t('a11y.moveWidgetDown')"
           >
             <i class="widget__sub-section__board-toolbar__item__icon">
               <v-icon name="hi-solid-chevron-down"></v-icon>
@@ -193,6 +199,8 @@ const instance = getCurrentInstance() as { appContext: AppContext } | null;
           <li
             @click="() => openWidgetEditDialogBox()"
             class="widget__sub-section__board-toolbar__item"
+            v-a11y-button
+            :aria-label="$t('a11y.editWidget')"
           >
             <i class="widget__sub-section__board-toolbar__item__icon">
               <v-icon name="hi-solid-cog"></v-icon>
@@ -201,6 +209,8 @@ const instance = getCurrentInstance() as { appContext: AppContext } | null;
           <li
             @click="() => openWidgetDeleteDialogBox()"
             class="widget__sub-section__board-toolbar__item"
+            v-a11y-button
+            :aria-label="$t('a11y.deleteWidget')"
           >
             <i class="widget__sub-section__board-toolbar__item__icon">
               <v-icon name="hi-trash"></v-icon>

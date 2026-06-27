@@ -4,3 +4,10 @@
   height: 100%;
   background-color: var(--color-background);
 }
+
+/* The board is the page's main landmark. display:contents keeps the layout
+   identical (the board stays the flex child of .freeboard) while exposing the
+   <main> region to assistive tech. */
+.freeboard__main {
+  display: contents;
+}

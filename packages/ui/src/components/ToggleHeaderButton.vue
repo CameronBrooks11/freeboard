@@ -15,7 +15,12 @@ const { isEditing } = storeToRefs(dashboardStore);
 
 <template>
   <!-- Toggle between edit and view modes by clicking -->
-  <div class="toggle-header-button" @click="() => dashboardStore.toggleEditing()">
+  <div
+    class="toggle-header-button"
+    @click="() => dashboardStore.toggleEditing()"
+    v-a11y-button
+    :aria-label="$t('a11y.toggleEditMode')"
+  >
     <i class="toggle-header-button__icon">
       <v-icon
         class="toggle-header-button__icon__svg"

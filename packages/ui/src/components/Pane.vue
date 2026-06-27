@@ -97,13 +97,23 @@ const { pane } = defineProps<{ pane: PaneModel }>();
       <h1>{{ pane.title }}</h1>
       <Transition>
         <!-- Pane action toolbar visible in edit mode -->
-        <ul v-if="isEditing" class="pane__header__board-toolbar">
-          <li @click="() => openWidgetAddDialogBox(pane)" class="pane__header__board-toolbar__item">
+        <ul v-if="isEditing" class="pane__header__board-toolbar" role="none">
+          <li
+            @click="() => openWidgetAddDialogBox(pane)"
+            class="pane__header__board-toolbar__item"
+            v-a11y-button
+            :aria-label="$t('a11y.addWidget')"
+          >
             <i class="pane__header__board-toolbar__item__icon">
               <v-icon name="hi-plus" />
             </i>
           </li>
-          <li @click="() => openPaneEditDialogBox(pane)" class="pane__header__board-toolbar__item">
+          <li
+            @click="() => openPaneEditDialogBox(pane)"
+            class="pane__header__board-toolbar__item"
+            v-a11y-button
+            :aria-label="$t('a11y.editPane')"
+          >
             <i class="pane__header__board-toolbar__item__icon">
               <v-icon name="hi-clipboard-list" />
             </i>
@@ -111,6 +121,8 @@ const { pane } = defineProps<{ pane: PaneModel }>();
           <li
             @click="() => openPaneDeleteDialogBox(pane)"
             class="pane__header__board-toolbar__item"
+            v-a11y-button
+            :aria-label="$t('a11y.deletePane')"
           >
             <i class="pane__header__board-toolbar__item__icon">
               <v-icon name="hi-trash" />

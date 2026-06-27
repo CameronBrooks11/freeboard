@@ -16,13 +16,23 @@ const { dashboard } = storeToRefs(dashboardStore);
 <template>
   <div class="column-toolbar" :class="`column-toolbar--${dashboard.width}`">
     <!-- Left controls: increase/decrease width -->
-    <ul class="column-toolbar__board-toolbar column-toolbar__board-toolbar--left">
-      <li class="column-toolbar__board-toolbar__item" @click="() => dashboard.increaseMaxWidth()">
+    <ul class="column-toolbar__board-toolbar column-toolbar__board-toolbar--left" role="none">
+      <li
+        class="column-toolbar__board-toolbar__item"
+        @click="() => dashboard.increaseMaxWidth()"
+        v-a11y-button
+        :aria-label="$t('a11y.increaseBoardWidth')"
+      >
         <i class="column-toolbar__board-toolbar__item__icon">
           <v-icon name="hi-solid-chevron-double-left"></v-icon>
         </i>
       </li>
-      <li class="column-toolbar__board-toolbar__item" @click="() => dashboard.decreaseMaxWidth()">
+      <li
+        class="column-toolbar__board-toolbar__item"
+        @click="() => dashboard.decreaseMaxWidth()"
+        v-a11y-button
+        :aria-label="$t('a11y.decreaseBoardWidth')"
+      >
         <i class="column-toolbar__board-toolbar__item__icon">
           <v-icon name="hi-solid-chevron-double-right"></v-icon>
         </i>
@@ -30,13 +40,23 @@ const { dashboard } = storeToRefs(dashboardStore);
     </ul>
 
     <!-- Right controls: decrease/increase width -->
-    <ul class="column-toolbar__board-toolbar column-toolbar__board-toolbar--right">
-      <li class="column-toolbar__board-toolbar__item" @click="() => dashboard.decreaseMaxWidth()">
+    <ul class="column-toolbar__board-toolbar column-toolbar__board-toolbar--right" role="none">
+      <li
+        class="column-toolbar__board-toolbar__item"
+        @click="() => dashboard.decreaseMaxWidth()"
+        v-a11y-button
+        :aria-label="$t('a11y.decreaseBoardWidth')"
+      >
         <i class="column-toolbar__board-toolbar__item__icon">
           <v-icon name="hi-solid-chevron-double-left"></v-icon>
         </i>
       </li>
-      <li class="column-toolbar__board-toolbar__item" @click="() => dashboard.increaseMaxWidth()">
+      <li
+        class="column-toolbar__board-toolbar__item"
+        @click="() => dashboard.increaseMaxWidth()"
+        v-a11y-button
+        :aria-label="$t('a11y.increaseBoardWidth')"
+      >
         <i class="column-toolbar__board-toolbar__item__icon">
           <v-icon name="hi-solid-chevron-double-right"></v-icon>
         </i>

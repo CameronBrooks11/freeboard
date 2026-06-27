@@ -26,3 +26,24 @@ body {
 #app {
   height: 100%;
 }
+
+/* Accessibility: a visible keyboard focus indicator. :focus-visible matches
+   keyboard/programmatic focus (not mouse), so pointer users see no extra ring.
+   Low specificity, so components with their own focus styling still win. */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Accessibility: honour the user's reduced-motion preference by collapsing
+   transitions and animations to near-instant (keeps end states, drops motion). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
