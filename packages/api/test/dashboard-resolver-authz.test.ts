@@ -725,91 +725,99 @@ const flushEventLoop = async () => {
   }
 };
 
-test("dashboard subscription re-projects per subscriber and never relays the actor's view", { timeout: 5000 }, async () => {
-  let dashboardState = buildDashboardDoc({
-    _id: "dash-1",
-    user: "owner-1",
-    visibility: "public",
-    shareToken: "owner-secret-token",
-    shareTokenVersion: 1,
-    acl: [{ userId: "collab-1", accessLevel: "viewer" }],
-  });
-  dashboardRepository.findById = async ({ dashboardId }) =>
-    dashboardId === "dash-1" ? dashboardState : null;
-  dashboardRepository.updateById = async ({ patch }) => {
-    dashboardState = { ...dashboardState, ...patch };
-    return dashboardState;
-  };
+test(
+  "dashboard subscription re-projects per subscriber and never relays the actor's view",
+  { timeout: 5000 },
+  async () => {
+    let dashboardState = buildDashboardDoc({
+      _id: "dash-1",
+      user: "owner-1",
+      visibility: "public",
+      shareToken: "owner-secret-token",
+      shareTokenVersion: 1,
+      acl: [{ userId: "collab-1", accessLevel: "viewer" }],
+    });
+    dashboardRepository.findById = async ({ dashboardId }) =>
+      dashboardId === "dash-1" ? dashboardState : null;
+    dashboardRepository.updateById = async ({ patch }) => {
+      dashboardState = { ...dashboardState, ...patch };
+      return dashboardState;
+    };
 
-  const iterator = await DashboardResolvers.Subscription.dashboard.subscribe(
-    null,
-    { _id: "dash-1" },
-    { user: { _id: "viewer-9", role: "viewer" } },
-  );
-  try {
-    const nextEvent = iterator.next();
-    await flushEventLoop();
-
-    // The OWNER rotates the share token; the mutation publishes a change event.
-    await DashboardResolvers.Mutation.rotateDashboardShareToken(
+    const iterator = await DashboardResolvers.Subscription.dashboard.subscribe(
       null,
       { _id: "dash-1" },
-      { user: { _id: "owner-1", role: "editor" } },
+      { user: { _id: "viewer-9", role: "viewer" } },
     );
+    try {
+      const nextEvent = iterator.next();
+      await flushEventLoop();
 
-    const { value, done } = await nextEvent;
-    assert.equal(done, false);
-    const projected = value.dashboard;
-    assert.equal(projected._id, "dash-1");
-    // The viewer receives THEIR projection, not the owner's: no share token,
-    // no ACL, no ownership/sharing flags.
-    assert.equal(projected.isOwner, false);
-    assert.equal(projected.canEdit, false);
-    assert.equal(projected.canManageSharing, false);
-    assert.equal(projected.shareToken, null);
-    assert.deepEqual(projected.acl, []);
-  } finally {
-    await iterator.return?.();
-  }
-});
+      // The OWNER rotates the share token; the mutation publishes a change event.
+      await DashboardResolvers.Mutation.rotateDashboardShareToken(
+        null,
+        { _id: "dash-1" },
+        { user: { _id: "owner-1", role: "editor" } },
+      );
 
-test("dashboard subscription closes when the subscriber's access is revoked mid-stream", { timeout: 5000 }, async () => {
-  let dashboardState = buildDashboardDoc({
-    _id: "dash-1",
-    user: "owner-1",
-    visibility: "private",
-    acl: [{ userId: "collab-7", accessLevel: "viewer" }],
-  });
-  dashboardRepository.findById = async ({ dashboardId }) =>
-    dashboardId === "dash-1" ? dashboardState : null;
-  dashboardRepository.updateById = async ({ patch }) => {
-    dashboardState = { ...dashboardState, ...patch };
-    return dashboardState;
-  };
+      const { value, done } = await nextEvent;
+      assert.equal(done, false);
+      const projected = value.dashboard;
+      assert.equal(projected._id, "dash-1");
+      // The viewer receives THEIR projection, not the owner's: no share token,
+      // no ACL, no ownership/sharing flags.
+      assert.equal(projected.isOwner, false);
+      assert.equal(projected.canEdit, false);
+      assert.equal(projected.canManageSharing, false);
+      assert.equal(projected.shareToken, null);
+      assert.deepEqual(projected.acl, []);
+    } finally {
+      await iterator.return?.();
+    }
+  },
+);
 
-  const iterator = await DashboardResolvers.Subscription.dashboard.subscribe(
-    null,
-    { _id: "dash-1" },
-    { user: { _id: "collab-7", role: "viewer" } },
-  );
-  try {
-    const nextEvent = iterator.next();
-    await flushEventLoop();
+test(
+  "dashboard subscription closes when the subscriber's access is revoked mid-stream",
+  { timeout: 5000 },
+  async () => {
+    let dashboardState = buildDashboardDoc({
+      _id: "dash-1",
+      user: "owner-1",
+      visibility: "private",
+      acl: [{ userId: "collab-7", accessLevel: "viewer" }],
+    });
+    dashboardRepository.findById = async ({ dashboardId }) =>
+      dashboardId === "dash-1" ? dashboardState : null;
+    dashboardRepository.updateById = async ({ patch }) => {
+      dashboardState = { ...dashboardState, ...patch };
+      return dashboardState;
+    };
 
-    // The owner revokes the collaborator, then the change event fires.
-    await DashboardResolvers.Mutation.revokeDashboardAccess(
+    const iterator = await DashboardResolvers.Subscription.dashboard.subscribe(
       null,
-      { _id: "dash-1", userId: "collab-7" },
-      { user: { _id: "owner-1", role: "editor" } },
+      { _id: "dash-1" },
+      { user: { _id: "collab-7", role: "viewer" } },
     );
+    try {
+      const nextEvent = iterator.next();
+      await flushEventLoop();
 
-    // The now-unauthorized subscriber's stream ends instead of delivering it.
-    const { done } = await nextEvent;
-    assert.equal(done, true);
-  } finally {
-    await iterator.return?.();
-  }
-});
+      // The owner revokes the collaborator, then the change event fires.
+      await DashboardResolvers.Mutation.revokeDashboardAccess(
+        null,
+        { _id: "dash-1", userId: "collab-7" },
+        { user: { _id: "owner-1", role: "editor" } },
+      );
+
+      // The now-unauthorized subscriber's stream ends instead of delivering it.
+      const { done } = await nextEvent;
+      assert.equal(done, true);
+    } finally {
+      await iterator.return?.();
+    }
+  },
+);
 
 test("dashboard subscription closes when the dashboard is deleted", { timeout: 5000 }, async () => {
   let deleted = false;
