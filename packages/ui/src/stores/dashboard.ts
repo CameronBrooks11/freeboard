@@ -41,6 +41,10 @@ const getMutationData = (value: unknown): UnknownRecord => {
 
 const MOBILE_EDIT_MAX_WIDTH_PX = 640;
 
+// Local-first (Lite): the single localStorage key a static build round-trips the
+// dashboard through, as a portable v1 DashboardDocument.
+const LOCAL_DASHBOARD_KEY = "freeboard:dashboard";
+
 const isMobileViewport = () => {
   if (typeof window === "undefined") {
     return false;
@@ -291,6 +295,42 @@ export const useDashboardStore = defineStore("dashboard", {
       this.syncEditingPermissions();
       this.showLoadingIndicator = false;
       return result;
+    },
+
+    // Local-first (Lite) load: hydrate from the single localStorage key, reusing
+    // the same validate+migrate seam as file import. Empty/unavailable storage
+    // leaves the empty editable dashboard; invalid/corrupt data mutates nothing.
+    async loadLocalDashboard(): Promise<void> {
+      let raw: string | null;
+      try {
+        raw = localStorage.getItem(LOCAL_DASHBOARD_KEY);
+      } catch {
+        return; // storage unavailable — boot the empty editable dashboard
+      }
+      if (!raw) {
+        return; // nothing saved yet — keep the empty editable dashboard
+      }
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        alert("Could not load your saved dashboard: the stored data is not valid JSON.");
+        return;
+      }
+      const result = await this.loadDashboardDocument(parsed);
+      if (!result.valid) {
+        alert("Could not load your saved dashboard: it failed validation.");
+      }
+    },
+
+    // Local-first (Lite) save: write the portable document to the same key on
+    // every save (overwrite, not accumulate). Quota failures surface, not lose.
+    saveLocalDashboard(): void {
+      try {
+        localStorage.setItem(LOCAL_DASHBOARD_KEY, JSON.stringify(this.dashboard.toDocument()));
+      } catch {
+        alert("Could not save the dashboard to local storage (it may be full).");
+      }
     },
 
     loadDashboardFromLocalFile() {
