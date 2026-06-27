@@ -35,6 +35,12 @@ const cloneMutableObject = (value: unknown, fallback: PaneLayout): PaneLayout =>
  * @class Pane
  */
 export class Pane {
+  /**
+   * @type {string|null} Stable, document-unique pane identity (canonical). The
+   * grid `layout.i` mirrors it; {@link Dashboard.ensurePaneId} keeps them in sync.
+   */
+  id: string | null = null;
+
   /** @type {string|null} Pane title. */
   title: string | null = null;
 
@@ -107,6 +113,7 @@ export class Pane {
    */
   serialize() {
     return {
+      id: this.id,
       title: this.title,
       layout: this.layout,
       widgets: this.widgets.map((widget) => widget.serialize()),
@@ -119,10 +126,12 @@ export class Pane {
    * @param {{ title: string, layout?: Object, widgets?: Object[] }} object - Serialized pane data.
    */
   deserialize(object: {
+    id?: string | null;
     title?: string | null;
     layout?: unknown;
     widgets?: Array<Record<string, unknown>>;
   }): void {
+    this.id = typeof object.id === "string" && object.id.length > 0 ? object.id : null;
     this.title = object.title ?? null;
     this.layout = cloneMutableObject(object.layout, {});
     this.widgets = [];

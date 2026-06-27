@@ -113,6 +113,31 @@ test("loadDocument hydrates content but leaves the dashboard unsaved (no envelop
   assert.deepEqual(dashboard.acl, []);
 });
 
+test("pane.id is real runtime state, preserved across the load round-trip", () => {
+  const record = serverRecord();
+  // A document whose pane carries the canonical id (layout.i mirrors it).
+  record.document.panes = [
+    {
+      id: "P-canonical",
+      title: "Pane",
+      layout: { x: 0, y: 0, w: 1, h: 1, i: "P-canonical" },
+      widgets: [],
+    },
+  ];
+
+  const dashboard = new Dashboard();
+  dashboard.deserialize(record);
+
+  // The runtime now stores the canonical id; it used to drop it on load and
+  // rebuild a (possibly different) id from layout.i.
+  assert.equal(dashboard.panes[0].id, "P-canonical");
+
+  const doc = dashboard.toDocument();
+  const panes = doc.panes as Array<Record<string, unknown>>;
+  assert.equal(panes[0].id, "P-canonical");
+  assert.equal((panes[0].layout as Record<string, unknown>).i, "P-canonical");
+});
+
 test("document round-trips: toDocument -> migrate -> loadDocument -> toDocument is stable", () => {
   const source = new Dashboard();
   source.deserialize(serverRecord());

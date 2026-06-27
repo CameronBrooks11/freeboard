@@ -180,6 +180,12 @@ export class Dashboard {
         return;
       }
       pane.layout = layout;
+      // The grid replaces `layout` wholesale; keep its item key mirroring the
+      // canonical pane id so id/layout.i can't diverge (a save now rejects on
+      // any mismatch, not just warns).
+      if (typeof pane.id === "string" && pane.id.length > 0) {
+        pane.layout.i = pane.id;
+      }
     });
     this.clampPaneLayoutHeights();
   }
@@ -352,15 +358,9 @@ export class Dashboard {
       width: this.width,
       settings: { ...this.settings },
       datasources: this.datasources.map((datasource) => datasource.serialize()),
-      panes: this.panes.map((pane) => {
-        const serialized = pane.serialize();
-        const layout =
-          serialized.layout && typeof serialized.layout === "object"
-            ? (serialized.layout as UnknownRecord)
-            : undefined;
-        const id = layout && typeof layout.i === "string" ? layout.i : undefined;
-        return { id, ...serialized };
-      }),
+      // `pane.serialize()` now emits the canonical `id` (with `layout.i`
+      // mirroring it), so the round-trip preserves pane identity.
+      panes: this.panes.map((pane) => pane.serialize()),
     };
   }
 
@@ -405,7 +405,7 @@ export class Dashboard {
    */
   addPane(pane: Pane): void {
     this.ensurePaneWidgetIds(pane);
-    this.ensurePaneLayoutId(pane);
+    this.ensurePaneId(pane);
     this.panes = [...this.panes, pane];
     this.clampPaneLayoutHeights();
   }
@@ -586,31 +586,32 @@ export class Dashboard {
    *
    * @param {Pane} pane
    */
-  ensurePaneLayoutId(pane: Pane): void {
+  ensurePaneId(pane: Pane): void {
     if (!pane.layout || typeof pane.layout !== "object") {
       pane.layout = {};
     }
 
     const existingIds = new Set(
       this.panes
-        .map((item) => item?.layout?.i)
-        .filter((value) => value !== undefined && value !== null)
-        .map((value) => String(value)),
+        .map((item) => item?.id)
+        .filter((value): value is string => typeof value === "string" && value.length > 0),
     );
 
-    const currentId = pane.layout.i;
-    if (currentId === undefined || currentId === null) {
-      pane.layout.i = generateModelId("pane");
-      return;
+    // Fall back to a legacy `layout.i` so documents written before `pane.id`
+    // became canonical keep their identity on first load.
+    let id =
+      typeof pane.id === "string" && pane.id.length > 0
+        ? pane.id
+        : typeof pane.layout.i === "string" && pane.layout.i.length > 0
+          ? pane.layout.i
+          : null;
+    if (id === null || existingIds.has(id)) {
+      id = generateModelId("pane");
     }
 
-    const normalizedCurrentId = String(currentId);
-    if (existingIds.has(normalizedCurrentId)) {
-      pane.layout.i = generateModelId("pane");
-      return;
-    }
-
-    pane.layout.i = normalizedCurrentId;
+    pane.id = id;
+    // The grid library keys items on `layout.i`; mirror the canonical pane id.
+    pane.layout.i = id;
   }
 
   /**
