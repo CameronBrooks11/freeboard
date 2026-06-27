@@ -17,6 +17,7 @@ import { URL } from "url";
 import schema from "./gql.js";
 import { setContext } from "./context.js";
 import { config } from "./config.js";
+import { applyPendingMigrations } from "./db/postgres/migrate.js";
 import {
   resolveGatewayIntrospection,
   validateDatasourceSessionToken,
@@ -450,6 +451,11 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
 const startServer = async () => {
   try {
     await connectToConfiguredDataBackend();
+    // Provision/upgrade the schema before anything queries it, so a fresh
+    // deployment works out of the box instead of crashing on a missing table.
+    if (config.runMigrationsOnStartup) {
+      await applyPendingMigrations();
+    }
     await ensureAdminUser();
 
     // Start HTTP server on configured host and port

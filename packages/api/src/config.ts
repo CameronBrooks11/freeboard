@@ -280,6 +280,7 @@ export const config = Object.freeze({
   adminEmail: normalizeEmail(process.env.ADMIN_EMAIL || ""),
   adminPassword: process.env.ADMIN_PASSWORD || "",
   createAdmin: bool(process.env.CREATE_ADMIN, false),
+  runMigrationsOnStartup: bool(process.env.RUN_DB_MIGRATIONS, true),
   registrationMode: String(process.env.AUTH_REGISTRATION_MODE || "disabled")
     .trim()
     .toLowerCase(),
