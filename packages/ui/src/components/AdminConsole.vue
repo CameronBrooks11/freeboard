@@ -911,6 +911,7 @@ const {
                   v-model="credentialProfileDrafts[profile._id]!.type"
                   class="admin-console__select"
                   :disabled="isBusy"
+                  :aria-label="$t('form.labelType')"
                 >
                   <option
                     v-for="type in CREDENTIAL_PROFILE_TYPE_OPTIONS"
@@ -928,6 +929,7 @@ const {
                   type="checkbox"
                   v-model="credentialProfileDrafts[profile._id]!.allowPublicUse"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.allowPublicUse')"
                 />
               </td>
               <td>
