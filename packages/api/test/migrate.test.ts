@@ -27,8 +27,11 @@ if (isPostgresTestRun) {
   });
 
   after(async () => {
-    // Leave the schema applied so sibling postgres tests (which TRUNCATE) work
-    // regardless of file order, then release the pool.
+    // Wipe any verification-test pollution (tampered checksums, ghost rows) then
+    // leave a clean, fully-applied schema so sibling postgres tests (which
+    // TRUNCATE) work regardless of file order, then release the pool.
+    const pool = await getPostgresPool();
+    await pool.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
     await applyPendingMigrations();
     await closePostgresPool();
   });
@@ -67,5 +70,30 @@ if (isPostgresTestRun) {
 
     assert.ok((firstCount ?? 0) >= 1, "at least one migration is recorded");
     assert.equal(secondCount, firstCount, "re-applying records no new migrations");
+  });
+
+  test("applyPendingMigrations refuses to start when an applied migration's checksum drifted", async () => {
+    await applyPendingMigrations();
+    const pool = await getPostgresPool();
+    // Simulate a migration file that was edited after being applied.
+    await pool.query("UPDATE schema_migrations SET checksum = $1 WHERE version = '0001'", [
+      "tampered-checksum",
+    ]);
+
+    await assert.rejects(() => applyPendingMigrations(), /Checksum mismatch/);
+  });
+
+  test("applyPendingMigrations refuses to start when an applied migration file is missing", async () => {
+    await applyPendingMigrations();
+    const pool = await getPostgresPool();
+    // Simulate a row recorded by a newer deployment that this image doesn't ship.
+    await pool.query(
+      "INSERT INTO schema_migrations (version, name, checksum, applied_at) VALUES ('9999', 'ghost', 'x', NOW())",
+    );
+
+    await assert.rejects(
+      () => applyPendingMigrations(),
+      /missing from the packaged migration files/,
+    );
   });
 }

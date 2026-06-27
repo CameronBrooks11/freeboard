@@ -10,7 +10,11 @@ import { getPostgresPool } from "./client.js";
  * (e.g. `docker compose up`) provisions its own schema instead of crashing on a
  * missing table. Intentionally compatible with `npm run db:schema:apply`: same
  * `schema_migrations` table, version string, and checksum, so either may run
- * first and the other simply skips already-applied migrations.
+ * first and the other simply skips already-applied migrations. Matching the CLI,
+ * it also verifies that every already-applied migration still corresponds to a
+ * packaged file with the same checksum, and aborts startup on drift (missing
+ * file, changed checksum, or duplicate version) rather than booting against a
+ * database that disagrees with the deployed code.
  *
  * The migration `.sql` files are shipped next to the compiled output — the api
  * build copies `src/db/postgres/migrations/` into `dist/db/postgres/migrations/`.
@@ -25,7 +29,12 @@ const computeChecksum = (content: string): string =>
 
 const loadMigrations = (): Migration[] => {
   if (!fs.existsSync(migrationsDir)) {
-    return [];
+    // The build copies the .sql files next to the compiled output; their absence
+    // means a broken image, not "nothing to do" — fail loudly rather than boot
+    // against an unmigrated database.
+    throw new Error(
+      `Migrations directory not found at ${migrationsDir}. The packaged migration files are missing.`,
+    );
   }
   const migrations: Migration[] = [];
   for (const filename of fs.readdirSync(migrationsDir)) {
@@ -41,7 +50,17 @@ const loadMigrations = (): Migration[] => {
     const sql = fs.readFileSync(path.join(migrationsDir, filename), "utf8").trim();
     migrations.push({ version, name, sql, checksum: computeChecksum(sql) });
   }
-  return migrations.sort((a, b) => a.version.localeCompare(b.version));
+  migrations.sort((a, b) => a.version.localeCompare(b.version));
+
+  const seenVersions = new Set<string>();
+  for (const migration of migrations) {
+    if (seenVersions.has(migration.version)) {
+      throw new Error(`Duplicate migration version '${migration.version}' detected.`);
+    }
+    seenVersions.add(migration.version);
+  }
+
+  return migrations;
 };
 
 // Fixed key for the session advisory lock that serializes migrators, so several
@@ -57,7 +76,7 @@ const MIGRATION_ADVISORY_LOCK_KEY = 4771001;
 export const applyPendingMigrations = async (): Promise<void> => {
   const migrations = loadMigrations();
   if (migrations.length === 0) {
-    return;
+    throw new Error("No migration files found; refusing to start against an unmigrated database.");
   }
 
   const pool = await getPostgresPool();
@@ -74,9 +93,35 @@ export const applyPendingMigrations = async (): Promise<void> => {
       );
     `);
 
-    const applied = await client.query<{ version: string }>(
-      "SELECT version FROM schema_migrations",
+    const applied = await client.query<{ version: string; name: string; checksum: string }>(
+      "SELECT version, name, checksum FROM schema_migrations",
     );
+
+    // Verify every already-applied migration still matches a packaged file with
+    // the same checksum (parity with `db:schema:apply`): a missing file or a
+    // changed migration means the deployed code and the database disagree, which
+    // must abort startup rather than apply a divergent schema. Migrations are
+    // forward-only: an older image booting against a database that already has a
+    // newer migration applied will refuse to start (run the newer image, or roll
+    // the schema back with the `.down.sql` first).
+    const migrationsByVersion = new Map(
+      migrations.map((migration) => [migration.version, migration]),
+    );
+    for (const row of applied.rows) {
+      const version = String(row.version);
+      const file = migrationsByVersion.get(version);
+      if (!file) {
+        throw new Error(
+          `Applied migration ${version}_${row.name} is missing from the packaged migration files. Refusing to start.`,
+        );
+      }
+      if (file.checksum !== String(row.checksum)) {
+        throw new Error(
+          `Checksum mismatch for applied migration ${version}_${file.name}: the migration file changed after it was applied. Refusing to start.`,
+        );
+      }
+    }
+
     const appliedVersions = new Set(applied.rows.map((row) => String(row.version)));
     const pending = migrations.filter((migration) => !appliedVersions.has(migration.version));
 
