@@ -61,6 +61,19 @@ const injectViaPostMessage = async (page, document) => {
   }, document);
 };
 
+// Ensure the edit toolbar (with Save) is shown and settled. Loading a document
+// runs syncEditingPermissions, so edit mode may already be on; toggle only if
+// needed, then wait for the slide-fade enter transition to finish so a click
+// doesn't race the animation.
+const ensureEditToolbar = async (page) => {
+  const saveButton = page.getByText("Save Freeboard");
+  if (!(await saveButton.isVisible())) {
+    await page.locator(".toggle-header-button").click();
+  }
+  await expect(saveButton).toBeVisible();
+  return saveButton;
+};
+
 test("boots serverless and renders a postMessage-injected document with zero /graphql", async ({
   page,
 }) => {
@@ -74,8 +87,7 @@ test("boots serverless and renders a postMessage-injected document with zero /gr
   await expect(page.getByText("42")).toBeVisible();
 
   // Server-only affordances are absent in the static profile (enter edit mode first).
-  await page.locator(".toggle-header-button").click();
-  await expect(page.getByText("Save Freeboard")).toBeVisible();
+  await ensureEditToolbar(page);
   await expect(page.getByText("Open Saved", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Share", { exact: true })).toHaveCount(0);
 
@@ -92,8 +104,8 @@ test("local Save persists to localStorage and survives reload with zero /graphql
   await expect(page.getByText("Lite Value")).toBeVisible();
 
   // Save writes the portable document to the single localStorage key.
-  await page.locator(".toggle-header-button").click();
-  await page.getByText("Save Freeboard").click();
+  const saveButton = await ensureEditToolbar(page);
+  await saveButton.click();
 
   const stored = await page.evaluate((key) => localStorage.getItem(key), LOCAL_DASHBOARD_KEY);
   expect(stored, "expected the dashboard saved to localStorage").toBeTruthy();

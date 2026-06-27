@@ -21,6 +21,8 @@ const props = defineProps([
   "placeholder",
   "disabled",
   "placeholderDisabled",
+  "id",
+  "ariaLabel",
 ]);
 const emit = defineEmits(["update:modelValue"]);
 
@@ -54,7 +56,13 @@ defineExpose({
 
 <template>
   <div class="select-form-element">
-    <select @change="onChange" :disabled="props.disabled" class="select-form-element__select">
+    <select
+      @change="onChange"
+      :disabled="props.disabled"
+      :id="props.id"
+      :aria-label="props.ariaLabel"
+      class="select-form-element__select"
+    >
       <option
         value=""
         :selected="modelValue === ''"
