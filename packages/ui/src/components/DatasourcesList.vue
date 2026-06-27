@@ -136,10 +136,12 @@ const openDatasourceAddDialogBox = () => {
             </span>
           </td>
           <td class="datasources-list__table__body__row__cell">
-            <ul class="datasources-list__table__body__row__cell__board-toolbar">
+            <ul class="datasources-list__table__body__row__cell__board-toolbar" role="none">
               <li
                 @click="() => datasource.updateNow()"
                 class="datasources-list__table__body__row__cell__board-toolbar__item"
+                v-a11y-button
+                :aria-label="$t('a11y.refreshDatasource')"
               >
                 <i class="datasources-list__table__body__row__cell__board-toolbar__item__icon"
                   ><v-icon name="hi-refresh"></v-icon
@@ -148,6 +150,8 @@ const openDatasourceAddDialogBox = () => {
               <li
                 @click="() => openDatasourceDeleteDialogBox(datasource)"
                 class="datasources-list__table__body__row__cell__board-toolbar__item"
+                v-a11y-button
+                :aria-label="$t('a11y.deleteDatasource')"
               >
                 <i class="datasources-list__table__body__row__cell__board-toolbar__item__icon"
                   ><v-icon name="hi-trash"></v-icon

@@ -20,6 +20,9 @@ export const es = {
     moveWidgetDown: "Mover widget hacia abajo",
     editWidget: "Editar widget",
     deleteWidget: "Eliminar widget",
+    refreshDatasource: "Actualizar fuente de datos",
+    deleteDatasource: "Eliminar fuente de datos",
+    removeItem: "Quitar elemento",
   },
   arrayFormElement: {
     ...en.arrayFormElement,

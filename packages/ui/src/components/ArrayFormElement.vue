@@ -100,6 +100,8 @@ defineExpose({
                 <i
                   class="array-form-element__table__body__row__cell__board-toolbar__item__icon"
                   @click="onSettingRemove(index)"
+                  v-a11y-button
+                  :aria-label="$t('a11y.removeItem')"
                 >
                   <v-icon name="hi-trash"></v-icon>
                 </i>

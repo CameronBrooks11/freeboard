@@ -150,3 +150,30 @@ test("an open dialog has no serious/critical WCAG violations", async ({ page }) 
     .join("\n");
   expect(blocking, report).toEqual([]);
 });
+
+test("datasource edit dialog (tabs) is axe-clean with keyboard-operable tabs", async ({ page }) => {
+  await openDatasourcesDialog(page);
+
+  // Click the datasource title to open the edit dialog, which renders the
+  // TabNavigator (its tabs are made keyboard-operable by v-a11y-button).
+  await page.getByText("DialogSource").click();
+  await expect(page.locator(".tab-navigator")).toBeVisible();
+  await page.waitForFunction(() => {
+    const els = document.querySelectorAll(".dialog-box");
+    const last = els[els.length - 1];
+    return last && getComputedStyle(last).opacity === "1";
+  });
+
+  const tab = page.locator(".tab-navigator__menu__board-toolbar__item").first();
+  await expect(tab).toHaveAttribute("role", "button");
+  await expect(tab).toHaveAttribute("tabindex", "0");
+
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  const blocking = violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+  const report = blocking
+    .map((v) => `[${v.impact}] ${v.id} (${v.nodes.length}) — ${v.help}`)
+    .join("\n");
+  expect(blocking, report).toEqual([]);
+});
