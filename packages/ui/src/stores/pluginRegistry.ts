@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { runtimeConfig } from "../runtime/config.js";
 import { validateWidgetPlugin } from "../widgets/runtime/plugin.js";
 import { ClockDatasource } from "../datasources/ClockDatasource.js";
 import { HTTPDatasource } from "../datasources/HTTPDatasource.js";
@@ -44,14 +45,22 @@ export const usePluginRegistryStore = defineStore("pluginRegistry", {
     },
 
     registerCorePlugins() {
-      [
-        HTTPDatasource,
-        ClockDatasource,
-        StaticDatasource,
-        SSEDatasource,
-        WebSocketDatasource,
-        MQTTDatasource,
-      ].forEach((plugin) => {
+      // Local-first (Lite): a static build has no server gateway, so the
+      // gateway-only streaming datasources (SSE/WebSocket/MQTT) are not
+      // registered — they cannot be added, and existing documents referencing
+      // them load inert. HTTP stays (forced to direct mode); Clock/Static are
+      // pure client-side.
+      const datasourcePlugins = runtimeConfig.isStaticBuild
+        ? [HTTPDatasource, ClockDatasource, StaticDatasource]
+        : [
+            HTTPDatasource,
+            ClockDatasource,
+            StaticDatasource,
+            SSEDatasource,
+            WebSocketDatasource,
+            MQTTDatasource,
+          ];
+      datasourcePlugins.forEach((plugin) => {
         this.registerDatasourcePlugin(plugin);
       });
 
