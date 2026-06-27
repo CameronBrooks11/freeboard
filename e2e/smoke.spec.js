@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || "admin@example.local";
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || "LocalDevAdmin123!";
@@ -373,4 +374,45 @@ test("login throttle is spoof-resistant through proxy path when X-Forwarded-For 
 
   const bypassMessage = String(bypassAttempt?.errors?.[0]?.message || "");
   expect(bypassMessage).toMatch(/Too many login attempts/i);
+});
+
+const scanBlockingViolations = async (page) => {
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  const blocking = violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+  const report = blocking
+    .map(
+      (v) =>
+        `[${v.impact}] ${v.id} (${v.nodes.length}) — ${v.help} :: ${JSON.stringify(v.nodes[0]?.target)}`,
+    )
+    .join("\n");
+  return { blocking, report };
+};
+
+test("a11y: server-gated views (login, board, admin) have no serious/critical WCAG violations", async ({
+  page,
+}) => {
+  // Login page (a modal dialog with a fade-in — let it settle so axe doesn't
+  // composite mid-animation colours).
+  await page.goto("/login");
+  await expect(page.locator(".login__dialog-box .login__footer-action")).toBeVisible();
+  await page.waitForFunction(() => {
+    const el = document.querySelector(".dialog-box, .login__dialog-box");
+    return !el || getComputedStyle(el).opacity === "1";
+  });
+  const login = await scanBlockingViolations(page);
+  expect(login.blocking, `login page:\n${login.report}`).toEqual([]);
+
+  // Authenticated board.
+  await loginViaUi(page);
+  await expect(page).not.toHaveURL(/\/login$/);
+  const board = await scanBlockingViolations(page);
+  expect(board.blocking, `authenticated board:\n${board.report}`).toEqual([]);
+
+  // Admin console.
+  await page.goto("/admin");
+  await expect(page.getByRole("button", { name: "Save Policy" })).toBeVisible();
+  const admin = await scanBlockingViolations(page);
+  expect(admin.blocking, `admin console:\n${admin.report}`).toEqual([]);
 });
