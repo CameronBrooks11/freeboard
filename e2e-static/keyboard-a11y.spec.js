@@ -86,6 +86,18 @@ test("toolbar buttons are keyboard-operable (focus + Enter activates)", async ({
   await expect(page.locator(".dialog-box__modal")).toBeVisible();
 });
 
+test("Space also activates a control (keyup)", async ({ page }) => {
+  await page.goto("/", { waitUntil: "networkidle" });
+  await renderEditing(page);
+
+  // The board is in edit mode; Space on the focused edit toggle exits it.
+  const toggle = page.locator(".toggle-header-button");
+  await toggle.focus();
+  await expect(toggle).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(page.getByText("Save Freeboard")).toHaveCount(0);
+});
+
 test("icon-only controls have accessible names", async ({ page }) => {
   await page.goto("/", { waitUntil: "networkidle" });
   await renderEditing(page);
