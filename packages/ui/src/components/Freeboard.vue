@@ -174,10 +174,14 @@ onUnmounted(() => {
 
 // Local-first (Lite): a static build has no server route to load from, so on
 // mount hydrate from localStorage and start listening for a cross-origin
-// document injected by an embedder via postMessage. The sender origin is
-// verified at this boundary (the allowlist is empty/`*` = accept any, since the
-// document is validated and runs in safe execution mode).
+// document injected by an embedder via postMessage. Two checks gate the sender:
+// it must be the direct parent frame (not an arbitrary nested/sibling frame or
+// other window), and its origin must be allowed (the allowlist is empty/`*` =
+// accept any, since the document is validated and runs in safe execution mode).
 const onEmbedMessage = (event: MessageEvent) => {
+  if (event.source !== window.parent) {
+    return;
+  }
   if (!isEmbedOriginAllowed(event.origin)) {
     return;
   }

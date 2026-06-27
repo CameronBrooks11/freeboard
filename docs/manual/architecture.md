@@ -11,7 +11,7 @@ Freeboard is a monorepo with three runtime services and one shared data store.
 
 ## Runtime Data Flow
 
-1. UI authenticates with API (`/graphql`) and stores JWT token in local storage.
+1. UI authenticates with API (`/graphql`) and stores the JWT in session storage (legacy localStorage entries are migrated).
 2. UI queries/mutates dashboards through GraphQL.
 3. API persists dashboards/users in PostgreSQL.
 4. UI mints short-lived datasource session tokens from API.
@@ -133,6 +133,9 @@ Security control deployment/rollback workflow is centralized in [Security Contro
   - Jobs: `changes` -> conditional `format`, `lint`, `test-api`, `test-shared`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `docker-sanity`, `typecheck` -> always-run `Required CI`.
   - Concurrency: cancels superseded PR runs using PR-number/ref keyed group.
   - Required check target for branch protection: `Required CI`.
+- Lite static E2E workflow: `.github/workflows/e2e-static.yml`
+  - Trigger: `pull_request` and `merge_group` (runs on PRs alongside `ci.yml`; also `workflow_dispatch`).
+  - Purpose: serverless static-profile ("Lite") browser flow plus accessibility (axe) checks against a `vite preview` of the static build — no API/gateway/DB.
 - Manual E2E rerun workflow: `.github/workflows/e2e-smoke.yml`
   - Trigger: `workflow_dispatch`
   - Purpose: ad-hoc Playwright smoke reruns and artifact collection outside required PR gating.
