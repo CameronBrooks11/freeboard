@@ -24,7 +24,12 @@ const readReadonlyFlag = (isStaticBuild: boolean): boolean => {
   }
   try {
     const value = new URLSearchParams(window.location.search).get("readonly");
-    return value !== null && value !== "0" && value !== "false";
+    if (value === null) {
+      return false;
+    }
+    // Present and not an explicit off-token enables read-only (errs toward locked).
+    const normalized = value.toLowerCase();
+    return normalized !== "0" && normalized !== "false";
   } catch {
     return false;
   }

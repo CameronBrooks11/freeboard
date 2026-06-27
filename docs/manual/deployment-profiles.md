@@ -42,6 +42,7 @@ The same static build serves a **view-only** board by loading it with the `?read
 - Datasources still run per the matrix below — the board is **live but immutable**.
 - Honoured only in a static build (`FREEBOARD_STATIC=true`); in the full app, edit rights come from authentication, not the URL.
 - This is a display convenience, not an access control: a viewer who edits the URL can drop `?readonly`. For an embed, the embedder controls the iframe `src`; for true private/protected dashboards use the full app's auth and visibility.
+- Read-only locks **editing**, not **what is shown**: a read-only board still accepts an injected document (see Embedding), so an embedder permitted by the origin allowlist can replace the displayed content. Read-only removes the edit/persist surface; it does not pin the document.
 
 ### Datasource feasibility (static build)
 

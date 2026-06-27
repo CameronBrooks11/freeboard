@@ -70,8 +70,27 @@ test("read-only renders an injected document with no edit surface", async ({ pag
   await expect(page.locator(".vue-grid-item.vue-resizable")).toHaveCount(0);
 });
 
+test("read-only renders a localStorage-seeded document with no edit surface", async ({ page }) => {
+  // Seed the dashboard before load (the same-origin / kiosk seeding path), then
+  // open the read-only URL: loadLocalDashboard hydrates it on mount.
+  await page.addInitScript((d) => {
+    window.localStorage.setItem("freeboard:dashboard", JSON.stringify(d));
+  }, doc);
+  await page.goto("/?readonly=1", { waitUntil: "networkidle" });
+
+  await expect(page.getByText("ReadonlyValue")).toBeVisible();
+  await expect(page.getByText("42")).toBeVisible();
+  await expect(page.locator("header.header")).toHaveCount(0);
+  await expect(page.locator(".toggle-header-button")).toHaveCount(0);
+  await expect(page.locator(".vue-grid-item.vue-resizable")).toHaveCount(0);
+});
+
 test("editable Lite is unaffected without ?readonly", async ({ page }) => {
   await page.goto("/", { waitUntil: "networkidle" });
-  // The edit toggle is present in the editable static profile.
+  await injectUntilRendered(page, "ReadonlyValue");
+  // The edit toggle is present in the editable static profile...
   await expect(page.locator(".toggle-header-button")).toBeVisible();
+  // ...and grid items are draggable/resizable (positive control: this is exactly
+  // the class the read-only test asserts is absent).
+  await expect(page.locator(".vue-grid-item.vue-resizable")).not.toHaveCount(0);
 });
