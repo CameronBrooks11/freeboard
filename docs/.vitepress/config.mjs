@@ -264,6 +264,7 @@ const rootManualSidebar = [
       { text: "Gateway", link: "/manual/gateway" },
       { text: "Realtime Operations", link: "/manual/realtime-operations" },
       { text: "Security Controls Rollout", link: "/manual/security-controls-rollout" },
+      { text: "Releasing & Versioning", link: "/manual/releasing" },
       { text: "Postgres Release Readiness", link: "/manual/release-readiness-postgres" },
       { text: "Credential Key Rotation", link: "/manual/credential-key-rotation" },
       { text: "Ansible", link: "/manual/ansible" },
