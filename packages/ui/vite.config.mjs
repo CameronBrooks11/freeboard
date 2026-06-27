@@ -72,36 +72,47 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 7000,
       rolldownOptions: {
         output: {
-          manualChunks(id) {
-            const normalizedId = id.replace(/\\/g, "/");
-            if (!normalizedId.includes("/node_modules/")) {
-              return;
-            }
-            if (
-              normalizedId.includes("/monaco-editor/") ||
-              normalizedId.includes("/@guolao/vue-monaco-editor/")
-            ) {
-              return "editor-monaco";
-            }
-            if (
-              normalizedId.includes("/@apollo/") ||
-              normalizedId.includes("/graphql") ||
-              normalizedId.includes("/@vue/apollo-composable/")
-            ) {
-              return "data-graphql";
-            }
-            if (
-              normalizedId.includes("/vue/") ||
-              normalizedId.includes("/pinia/") ||
-              normalizedId.includes("/vue-router/") ||
-              normalizedId.includes("/vue-i18n/") ||
-              normalizedId.includes("/@unhead/")
-            ) {
-              return "core-vue";
-            }
-            if (normalizedId.includes("/oh-vue-icons/")) {
-              return "visual-icons";
-            }
+          // Rolldown's native chunking. A single group whose `name` is a
+          // function preserves the previous (deprecated) function-form
+          // `manualChunks` behavior exactly: it returns the chunk name for a
+          // module id, or null to leave it unassigned.
+          codeSplitting: {
+            groups: [
+              {
+                name(id) {
+                  const normalizedId = id.replace(/\\/g, "/");
+                  if (!normalizedId.includes("/node_modules/")) {
+                    return null;
+                  }
+                  if (
+                    normalizedId.includes("/monaco-editor/") ||
+                    normalizedId.includes("/@guolao/vue-monaco-editor/")
+                  ) {
+                    return "editor-monaco";
+                  }
+                  if (
+                    normalizedId.includes("/@apollo/") ||
+                    normalizedId.includes("/graphql") ||
+                    normalizedId.includes("/@vue/apollo-composable/")
+                  ) {
+                    return "data-graphql";
+                  }
+                  if (
+                    normalizedId.includes("/vue/") ||
+                    normalizedId.includes("/pinia/") ||
+                    normalizedId.includes("/vue-router/") ||
+                    normalizedId.includes("/vue-i18n/") ||
+                    normalizedId.includes("/@unhead/")
+                  ) {
+                    return "core-vue";
+                  }
+                  if (normalizedId.includes("/oh-vue-icons/")) {
+                    return "visual-icons";
+                  }
+                  return null;
+                },
+              },
+            ],
           },
         },
       },
