@@ -48,6 +48,35 @@ A static build has no Freeboard server/gateway, so datasource support falls into
 
 CORS is a real limitation of direct HTTP, not a bug — point HTTP datasources at endpoints that permit cross-origin requests.
 
+### Embedding (Lite)
+
+A static build is an embed target. Host it (the docs site already ships the static build via `site:copy-demo`) and inject a portable v1 `DashboardDocument` through one of two channels:
+
+- **Cross-origin — `postMessage` (recommended for iframes).** The embedder posts a `{ type: "freeboard:load-document", document }` message to the iframe; the document is validated and migrated before it loads, and rejected without side effects if invalid. Restrict who may inject with the build-time `VITE_FREEBOARD_EMBED_ALLOWED_ORIGINS` (comma-separated origins; empty or `*` accepts any — the document is still validated and runs in `safe` execution mode).
+- **Same-origin — `localStorage`.** When the host serves the build from the same origin, seed the `freeboard:dashboard` key with the document JSON before load. This is subject to browser storage partitioning across origins, which is why `postMessage` is the cross-origin channel.
+
+The local-edit contract (above) and the datasource matrix apply to embedded instances too.
+
+Minimal iframe example (any portable v1 document works; `packages/core/test/fixtures/full.json` is a ready sample):
+
+```html
+<iframe
+  id="board"
+  src="https://your-host/freeboard/"
+  style="width: 100%; height: 600px; border: 0"
+></iframe>
+<script type="module">
+  const board = document.getElementById("board");
+  const dashboard = await fetch("./full.json").then((r) => r.json());
+  board.addEventListener("load", () => {
+    board.contentWindow.postMessage(
+      { type: "freeboard:load-document", document: dashboard },
+      "https://your-host",
+    );
+  });
+</script>
+```
+
 ## Profile 3: Kiosk Appliance (Viewer-Only Runtime)
 
 Use for wallboards, signage, and IoT/device interfaces.
