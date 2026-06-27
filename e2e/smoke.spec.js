@@ -402,17 +402,24 @@ test("a11y: server-gated views (login, board, admin) have no serious/critical WC
     return !el || getComputedStyle(el).opacity === "1";
   });
   const login = await scanBlockingViolations(page);
-  expect(login.blocking, `login page:\n${login.report}`).toEqual([]);
 
   // Authenticated board.
   await loginViaUi(page);
   await expect(page).not.toHaveURL(/\/login$/);
   const board = await scanBlockingViolations(page);
-  expect(board.blocking, `authenticated board:\n${board.report}`).toEqual([]);
 
   // Admin console.
   await page.goto("/admin");
   await expect(page.getByRole("button", { name: "Save Policy" })).toBeVisible();
   const admin = await scanBlockingViolations(page);
-  expect(admin.blocking, `admin console:\n${admin.report}`).toEqual([]);
+
+  // Report every view's violations together (don't short-circuit at the first),
+  // so a single run surfaces the full picture.
+  const sections = [
+    ["login page", login],
+    ["authenticated board", board],
+    ["admin console", admin],
+  ].filter(([, r]) => r.blocking.length > 0);
+  const combined = sections.map(([name, r]) => `== ${name} ==\n${r.report}`).join("\n\n");
+  expect(sections.length, `\n${combined}`).toBe(0);
 });
