@@ -466,6 +466,10 @@ const startServer = async () => {
     });
   } catch (error) {
     console.error("API startup failed", error);
+    // Exit non-zero so the failure is visible and container restart policies
+    // retry it (e.g. a transient DB/migration hiccup), instead of the process
+    // exiting 0 and masking a server that never started serving.
+    process.exit(1);
   }
 };
 

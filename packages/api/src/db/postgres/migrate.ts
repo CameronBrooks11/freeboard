@@ -44,9 +44,15 @@ const loadMigrations = (): Migration[] => {
   return migrations.sort((a, b) => a.version.localeCompare(b.version));
 };
 
+// Fixed key for the session advisory lock that serializes migrators, so several
+// replicas booting at once don't race to apply the same migration.
+const MIGRATION_ADVISORY_LOCK_KEY = 4771001;
+
 /**
  * Apply every migration not yet recorded in `schema_migrations`, each in its own
- * transaction. Idempotent: a fully-migrated database is a no-op.
+ * transaction. Idempotent: a fully-migrated database is a no-op. A session-level
+ * advisory lock serializes concurrent callers (the others wait, then see the
+ * migrations already applied and skip them).
  */
 export const applyPendingMigrations = async (): Promise<void> => {
   const migrations = loadMigrations();
@@ -55,39 +61,45 @@ export const applyPendingMigrations = async (): Promise<void> => {
   }
 
   const pool = await getPostgresPool();
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS schema_migrations (
-      version TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      checksum TEXT NOT NULL,
-      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-  `);
+  const client = await pool.connect();
+  try {
+    await client.query("SELECT pg_advisory_lock($1)", [MIGRATION_ADVISORY_LOCK_KEY]);
 
-  const applied = await pool.query<{ version: string }>("SELECT version FROM schema_migrations");
-  const appliedVersions = new Set(applied.rows.map((row) => String(row.version)));
-  const pending = migrations.filter((migration) => !appliedVersions.has(migration.version));
-  if (pending.length === 0) {
-    return;
-  }
-
-  for (const migration of pending) {
-    const client = await pool.connect();
-    try {
-      await client.query("BEGIN");
-      await client.query(migration.sql);
-      await client.query(
-        `INSERT INTO schema_migrations (version, name, checksum, applied_at)
-         VALUES ($1, $2, $3, NOW())`,
-        [migration.version, migration.name, migration.checksum],
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        version TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        checksum TEXT NOT NULL,
+        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
-      await client.query("COMMIT");
-      console.info(`Applied database migration ${migration.version}_${migration.name}`);
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
+    `);
+
+    const applied = await client.query<{ version: string }>(
+      "SELECT version FROM schema_migrations",
+    );
+    const appliedVersions = new Set(applied.rows.map((row) => String(row.version)));
+    const pending = migrations.filter((migration) => !appliedVersions.has(migration.version));
+
+    for (const migration of pending) {
+      try {
+        await client.query("BEGIN");
+        await client.query(migration.sql);
+        await client.query(
+          `INSERT INTO schema_migrations (version, name, checksum, applied_at)
+           VALUES ($1, $2, $3, NOW())`,
+          [migration.version, migration.name, migration.checksum],
+        );
+        await client.query("COMMIT");
+        console.info(`Applied database migration ${migration.version}_${migration.name}`);
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      }
     }
+  } finally {
+    await client.query("SELECT pg_advisory_unlock($1)", [MIGRATION_ADVISORY_LOCK_KEY]).catch(() => {
+      // Best-effort unlock; the lock is released anyway when the session ends.
+    });
+    client.release();
   }
 };
