@@ -1,0 +1,130 @@
+import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+
+// Accessibility of the modal dialog pattern. Every dialog in the app routes
+// through the single DialogBox.vue, so the Datasources dialog (reachable in the
+// static profile) exercises the shared focus-management + ARIA semantics.
+
+const doc = {
+  schemaVersion: 1,
+  title: "Dialog A11y",
+  columns: 3,
+  width: "md",
+  settings: { theme: "auto" },
+  datasources: [
+    {
+      id: "dlgds",
+      title: "DialogSource",
+      type: "static",
+      enabled: true,
+      settings: { value: '{"value":1}', refresh: 0 },
+    },
+  ],
+  panes: [
+    {
+      title: "Pane",
+      layout: { x: 0, y: 0, w: 1, h: 2, i: "dlg-pane" },
+      widgets: [
+        {
+          id: "dlgw",
+          title: "W",
+          type: "text",
+          enabled: true,
+          settings: { headerText: "DialogWidgetHeader", valuePath: "datasources.dlgds.value" },
+        },
+      ],
+    },
+  ],
+};
+
+const openDatasourcesDialog = async (page) => {
+  await page.goto("/", { waitUntil: "networkidle" });
+  await expect(page.locator(".toggle-header-button")).toBeVisible();
+  await page.evaluate(
+    (d) => window.postMessage({ type: "freeboard:load-document", document: d }, "*"),
+    doc,
+  );
+  await expect(page.getByText("DialogWidgetHeader")).toBeVisible();
+
+  const save = page.getByText("Save Freeboard");
+  if (!(await save.isVisible())) {
+    await page.locator(".toggle-header-button").click();
+  }
+  await expect(save).toBeVisible();
+
+  await page.locator(".dashboard-control__board-toolbar__item", { hasText: "Datasources" }).click();
+  const modal = page.locator(".dialog-box__modal");
+  await expect(modal).toBeVisible();
+  // Let the fade-in transition settle before asserting.
+  await page.waitForFunction(() => {
+    const el = document.querySelector(".dialog-box");
+    return el && getComputedStyle(el).opacity === "1";
+  });
+  return modal;
+};
+
+test("dialog exposes modal semantics and moves focus inside on open", async ({ page }) => {
+  const modal = await openDatasourcesDialog(page);
+
+  await expect(modal).toHaveAttribute("role", "dialog");
+  await expect(modal).toHaveAttribute("aria-modal", "true");
+  const labelledby = await modal.getAttribute("aria-labelledby");
+  expect(labelledby).toBeTruthy();
+  // aria-labelledby points at the dialog's title element (attribute selector is
+  // robust to whatever id format useId() produces).
+  await expect(page.locator(`[id="${labelledby}"]`)).toBeVisible();
+
+  const focusInside = await page.evaluate(() => {
+    const m = document.querySelector(".dialog-box__modal");
+    return m ? m.contains(document.activeElement) : null;
+  });
+  expect(focusInside).toBe(true);
+});
+
+test("Tab is trapped within the dialog", async ({ page }) => {
+  await openDatasourcesDialog(page);
+
+  // Tab through the dialog many times; focus must never leave the modal.
+  for (let i = 0; i < 12; i += 1) {
+    await page.keyboard.press("Tab");
+    const inside = await page.evaluate(() => {
+      const m = document.querySelector(".dialog-box__modal");
+      return m ? m.contains(document.activeElement) : null;
+    });
+    expect(inside, `focus left the modal after ${i + 1} Tab(s)`).toBe(true);
+  }
+
+  // Shift+Tab as well.
+  for (let i = 0; i < 12; i += 1) {
+    await page.keyboard.press("Shift+Tab");
+    const inside = await page.evaluate(() => {
+      const m = document.querySelector(".dialog-box__modal");
+      return m ? m.contains(document.activeElement) : null;
+    });
+    expect(inside, `focus left the modal after ${i + 1} Shift+Tab(s)`).toBe(true);
+  }
+});
+
+test("Escape closes the dialog", async ({ page }) => {
+  const modal = await openDatasourcesDialog(page);
+  await page.keyboard.press("Escape");
+  await expect(modal).toHaveCount(0);
+});
+
+test("an open dialog has no serious/critical WCAG violations (color-contrast tracked separately)", async ({
+  page,
+}) => {
+  await openDatasourcesDialog(page);
+
+  // color-contrast is excluded here pending #186 (primary blue used as text on
+  // light surfaces fails AA); all other A/AA rules are gated.
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .disableRules(["color-contrast"])
+    .analyze();
+  const blocking = violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+  const report = blocking
+    .map((v) => `[${v.impact}] ${v.id} (${v.nodes.length}) — ${v.help}`)
+    .join("\n");
+  expect(blocking, report).toEqual([]);
+});
