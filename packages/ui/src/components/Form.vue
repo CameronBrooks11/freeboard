@@ -348,6 +348,7 @@ watch(
             :disabled="field.disabled"
             v-model="field.model"
             :id="field.id"
+            :aria-label="field.label"
             :options="field.options || field.settings"
             :placeholder="field.placeholder"
             :secret="field.type === 'password'"

@@ -44,6 +44,7 @@ watch(
           :options="props.options"
           :placeholder="$t('typeSelect.placeholderType')"
           :placeholderDisabled="true"
+          :aria-label="$t('typeSelect.labelType')"
         />
       </div>
     </div>
