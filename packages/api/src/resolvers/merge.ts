@@ -30,8 +30,16 @@ export const transformDashboard = (
   const canEdit = permissions.canEdit === true;
   const canManageSharing = permissions.canManageSharing === true;
 
+  const documentRecord =
+    dashboard.document && typeof dashboard.document === "object"
+      ? (dashboard.document as Record<string, unknown>)
+      : {};
+
   return {
     _id: dashboardId,
+    // Derived convenience projection for list/summary views, so the picker need
+    // not fetch the whole document just to render a name.
+    title: typeof documentRecord.title === "string" ? documentRecord.title : null,
     visibility: dashboard.visibility || "private",
     shareToken: canManageSharing ? dashboard.shareToken || null : null,
     shareTokenVersion: Number.isFinite(Number(dashboard.shareTokenVersion))

@@ -46,17 +46,18 @@ const cloneRecord = (value: unknown): UnknownRecord => {
 };
 
 /**
- * Normalize a raw dashboard payload (a legacy export or a current document)
- * into a v1 DashboardDocument. Pure, non-mutating, and idempotent on documents
- * that are already current.
+ * Normalize a raw dashboard payload into a v1 DashboardDocument. Pure,
+ * non-mutating, and idempotent on documents that are already current.
  *
  * - strips server-owned envelope fields,
- * - folds the pre-v1 top-level `version` string into `generator` (provenance),
+ * - drops any stray top-level `version` (provenance lives in `generator`),
  * - stamps `schemaVersion`,
  * - ensures every pane carries a stable `id` (mirrors the grid `layout.i`).
  *
- * Structural/semantic validation is layered on top of this in a later phase;
- * `migrate` only normalizes shape.
+ * `migrate` only normalizes shape; structural/semantic validation is layered on
+ * top. The producer (`Dashboard.toDocument`) emits `generator` directly, so there
+ * is no legacy `version`→`generator` upgrade — a stray top-level `version` is just
+ * dropped.
  *
  * @param {unknown} raw
  * @returns {UnknownRecord} A v1 DashboardDocument-shaped object.
@@ -68,21 +69,6 @@ export const migrateDashboardDocument = (raw: unknown): UnknownRecord => {
     delete doc[key];
   }
 
-  // The pre-v1 top-level `version` was the producing app's version, not a schema
-  // version. Preserve it as provenance under `generator`, then drop the field.
-  if (typeof doc.version === "string") {
-    const generator =
-      doc.generator && typeof doc.generator === "object"
-        ? (doc.generator as UnknownRecord)
-        : ({} as UnknownRecord);
-    if (generator.name === undefined) {
-      generator.name = "freeboard";
-    }
-    if (generator.version === undefined) {
-      generator.version = doc.version;
-    }
-    doc.generator = generator;
-  }
   delete doc.version;
 
   doc.schemaVersion = DASHBOARD_DOCUMENT_SCHEMA_VERSION;
