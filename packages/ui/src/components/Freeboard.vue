@@ -8,7 +8,7 @@
  */
 defineOptions({ name: "Freeboard" });
 
-import { computed, onUnmounted, watch } from "vue";
+import { computed, onMounted, onUnmounted, watch } from "vue";
 import Header from "./Header.vue";
 import Board from "./Board.vue";
 import { useAuthStore } from "../stores/auth.js";
@@ -24,6 +24,7 @@ import {
   PUBLIC_AUTH_POLICY_QUERY,
 } from "../gql.js";
 import router from "../router";
+import { runtimeConfig } from "../runtime/config.js";
 import { storeToRefs } from "pinia";
 import Preloader from "./Preloader.vue";
 import {
@@ -91,6 +92,9 @@ const { result: publicPolicyResult } = useQuery(
   {},
   {
     fetchPolicy: "network-only",
+    // Local-first (Lite): a static build has no server; the auth store keeps its
+    // safe default policy, so this is the one boot query to disable.
+    enabled: !runtimeConfig.isStaticBuild,
   },
 );
 
@@ -166,6 +170,14 @@ watch(
 onUnmounted(() => {
   disposeAllStreamingManagers();
 });
+
+// Local-first (Lite): a static build has no server route to load from, so
+// hydrate the dashboard from localStorage when this root component mounts.
+if (runtimeConfig.isStaticBuild) {
+  onMounted(() => {
+    void dashboardStore.loadLocalDashboard();
+  });
+}
 
 // Redirect to home on query error (e.g., not found/unauthorized)
 watch([errorById, errorByShareToken], ([idError, shareError]) => {

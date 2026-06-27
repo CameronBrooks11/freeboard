@@ -13,6 +13,7 @@ import { getCurrentInstance } from "vue";
 import { useRouter } from "vue-router";
 import SavedDashboardsDialogBox from "./SavedDashboardsDialogBox.vue";
 import { openModal } from "../ui/modalHost.js";
+import { runtimeConfig } from "../runtime/config.js";
 
 const dashboardStore = useDashboardStore();
 const { dashboard, isSaved } = storeToRefs(dashboardStore);
@@ -27,6 +28,13 @@ const router = useRouter();
  * Serialize current dashboard and invoke save or update mutation via store action.
  */
 const saveDashboard = async () => {
+  // Local-first (Lite): persist to localStorage, not the server mutations; the
+  // static profile has no `/:id` route to navigate to either.
+  if (runtimeConfig.isStaticBuild) {
+    dashboardStore.saveLocalDashboard();
+    return;
+  }
+
   const wasSaved = isSaved.value;
   const id = typeof dashboard.value._id === "string" ? dashboard.value._id : null;
   // The write payload is a portable document plus the envelope visibility; the
