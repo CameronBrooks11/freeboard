@@ -150,12 +150,15 @@ const collectSemanticIssues = (
       }
       const layout = isPlainObject(pane.layout) ? pane.layout : undefined;
       const layoutId = layout && typeof layout.i === "string" ? layout.i : undefined;
+      // `pane.id` is the canonical identity and `layout.i` must mirror it. A
+      // mismatch is rejected (not merely warned) so identity can't silently
+      // change across an import→export round-trip — the document must pick one.
       if (layoutId !== undefined && layoutId !== pane.id) {
-        warnings.push({
+        errors.push({
           code: "semantic.paneIdLayoutMismatch",
           path: `/panes/${paneIndex}/id`,
           message: `Pane id "${pane.id}" does not match layout.i "${layoutId}".`,
-          severity: "warning",
+          severity: "error",
         });
       }
     }

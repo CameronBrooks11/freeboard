@@ -133,19 +133,27 @@ test("semantic errors: duplicate ids and reserved datasource title", () => {
   assert.ok(reserved.errors.some((e) => e.code === "semantic.datasourceTitleReserved"));
 });
 
-test("semantic warnings do not block import (duplicate title, pane.id != layout.i)", () => {
+test("semantic warnings do not block import (duplicate title)", () => {
   const result = validateDashboardDocument({
     ...validDoc(),
     datasources: [
       { id: "d1", title: "Temp", type: "http", settings: {} },
       { id: "d2", title: "temp", type: "http", settings: {} },
     ],
-    panes: [{ id: "PANE", layout: { i: "other" }, widgets: [] }],
+    panes: [{ id: "PANE", layout: { i: "PANE" }, widgets: [] }],
   });
   assert.equal(result.valid, true, JSON.stringify(result.errors));
   assert.ok(result.document, "valid-with-warnings still returns the document");
   assert.ok(codes(result.warnings).includes("semantic.datasourceTitleDuplicate"));
-  assert.ok(codes(result.warnings).includes("semantic.paneIdLayoutMismatch"));
+});
+
+test("pane.id != layout.i is rejected as an error (identity must be unambiguous)", () => {
+  const result = validateDashboardDocument({
+    ...validDoc(),
+    panes: [{ id: "PANE", layout: { i: "other" }, widgets: [] }],
+  });
+  assert.equal(result.valid, false);
+  assert.ok(codes(result.errors).includes("semantic.paneIdLayoutMismatch"));
 });
 
 test("non-object input is rejected as input.notObject", () => {
