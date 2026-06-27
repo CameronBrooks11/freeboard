@@ -103,6 +103,13 @@ export const useDashboardStore = defineStore("dashboard", {
 
   getters: {
     allowEdit(state) {
+      // Immutable-display (Lite read-only): no editing at all. allowEdit is the
+      // single gate the edit Header, edit mode, and pane/widget drag/resize all
+      // hang off, so returning false here makes read-only enforced (the controls
+      // are not rendered and the grid is not draggable), not merely CSS-hidden.
+      if (runtimeConfig.isReadonly) {
+        return false;
+      }
       const authStore = useAuthStore();
       // Local-first (Lite): a static build is editable and persists locally (Save
       // writes to localStorage), so it grants edit without server auth.
@@ -329,6 +336,9 @@ export const useDashboardStore = defineStore("dashboard", {
     // Local-first (Lite) save: write the portable document to the same key on
     // every save (overwrite, not accumulate). Quota failures surface, not lose.
     saveLocalDashboard(): void {
+      if (runtimeConfig.isReadonly) {
+        return; // immutable-display: Save is unwired
+      }
       try {
         localStorage.setItem(LOCAL_DASHBOARD_KEY, JSON.stringify(this.dashboard.toDocument()));
       } catch {

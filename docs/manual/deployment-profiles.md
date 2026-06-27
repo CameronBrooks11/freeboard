@@ -32,7 +32,17 @@ Contract:
 
 - Persistence is local to the browser/origin; it is not a shared or backed-up store.
 - Do not rely on static mode for protected private dashboards or server-enforced access control.
-- Immutable-display variant (read-only kiosk/embed, Save unwired) is a deferred sub-profile, tracked separately.
+
+### Immutable display (read-only)
+
+The same static build serves a **view-only** board by loading it with the `?readonly` query parameter (`?readonly`, `?readonly=1`, or `?readonly=true`). Use it for a kiosk/wallboard URL or a read-only embed.
+
+- Load `https://your-host/?readonly=1` (or set it as the iframe `src`). A document injected by either channel below renders, but the **entire edit surface is absent** — no edit toolbar, no edit/add/delete/drag/resize, no Save. This is enforced (the controls are not rendered and the grid is not interactive), not merely hidden.
+- It is a **runtime switch on the same static build** — there is no separate artifact, so one deployment can serve both editable (`/`) and read-only (`/?readonly=1`) URLs.
+- Datasources still run per the matrix below — the board is **live but immutable**.
+- Honoured only in a static build (`FREEBOARD_STATIC=true`); in the full app, edit rights come from authentication, not the URL.
+- This is a display convenience, not an access control: a viewer who edits the URL can drop `?readonly`. For an embed, the embedder controls the iframe `src`; for true private/protected dashboards use the full app's auth and visibility.
+- Read-only locks **editing**, not **what is shown**: a read-only board still accepts an injected document (see Embedding), so an embedder permitted by the origin allowlist can replace the displayed content. Read-only removes the edit/persist surface; it does not pin the document.
 
 ### Datasource feasibility (static build)
 
