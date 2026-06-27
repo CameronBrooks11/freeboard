@@ -363,6 +363,7 @@ const {
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
+                  :aria-label="$t('form.labelName')"
                 />
               </td>
               <td>
@@ -372,6 +373,7 @@ const {
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.description')"
                 />
               </td>
               <td>
@@ -399,6 +401,7 @@ const {
                   type="checkbox"
                   v-model="serviceAccountDrafts[serviceAccount._id]!.active"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.active')"
                 />
               </td>
               <td>{{ serviceAccount.tokenCount }}</td>
@@ -903,6 +906,7 @@ const {
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
+                  :aria-label="$t('form.labelName')"
                 />
               </td>
               <td>
@@ -911,6 +915,7 @@ const {
                   v-model="credentialProfileDrafts[profile._id]!.type"
                   class="admin-console__select"
                   :disabled="isBusy"
+                  :aria-label="$t('form.labelType')"
                 >
                   <option
                     v-for="type in CREDENTIAL_PROFILE_TYPE_OPTIONS"
@@ -928,6 +933,7 @@ const {
                   type="checkbox"
                   v-model="credentialProfileDrafts[profile._id]!.allowPublicUse"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.allowPublicUse')"
                 />
               </td>
               <td>
@@ -1093,6 +1099,7 @@ const {
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
+                  :aria-label="$t('form.labelName')"
                 />
               </td>
               <td>
@@ -1102,6 +1109,7 @@ const {
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
+                  :aria-label="$t('form.labelBrokerUrl')"
                 />
               </td>
               <td>
@@ -1110,6 +1118,7 @@ const {
                   v-model="brokerProfileDrafts[profile._id]!.credentialProfileId"
                   class="admin-console__select"
                   :disabled="isBusy"
+                  :aria-label="$t('form.labelCredentialProfile')"
                 >
                   <option value="">{{ $t("form.optionCredentialProfileNone") }}</option>
                   <option
@@ -1128,6 +1137,7 @@ const {
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.topicAllowlist')"
                 />
               </td>
               <td>
@@ -1137,6 +1147,7 @@ const {
                   type="checkbox"
                   v-model="brokerProfileDrafts[profile._id]!.tlsRejectUnauthorized"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.tlsRejectUnauthorized')"
                 />
               </td>
               <td>
@@ -1146,6 +1157,7 @@ const {
                   type="checkbox"
                   v-model="brokerProfileDrafts[profile._id]!.allowPublicUse"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.allowPublicUse')"
                 />
               </td>
               <td class="admin-console__actions">
@@ -1252,6 +1264,7 @@ const {
                   v-model="userDrafts[user._id]!.role"
                   class="admin-console__select"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.role')"
                 >
                   <option v-for="role in ROLE_OPTIONS" :key="`${user._id}-${role}`" :value="role">
                     {{ role }}
@@ -1266,6 +1279,7 @@ const {
                   type="checkbox"
                   v-model="userDrafts[user._id]!.active"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.active')"
                 />
                 <span v-else>{{ user.active ? "yes" : "no" }}</span>
               </td>

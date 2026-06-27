@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || "admin@example.local";
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || "LocalDevAdmin123!";
@@ -320,6 +321,42 @@ test("small-layout dashboard renders stacked pane flow in authenticated and shar
   await sharedContext.close();
 });
 
+test("a11y: server-gated views (login, board, admin) have no serious/critical WCAG violations", async ({
+  page,
+}) => {
+  // Login page (a modal dialog with a fade-in — let it settle so axe doesn't
+  // composite mid-animation colours).
+  await page.goto("/login");
+  await expect(page.locator(".login__dialog-box .login__footer-action")).toBeVisible();
+  await page.waitForFunction(() => {
+    const el = document.querySelector(".dialog-box, .login__dialog-box");
+    return !el || getComputedStyle(el).opacity === "1";
+  });
+  const login = await scanBlockingViolations(page);
+
+  // Authenticated board.
+  await loginViaUi(page);
+  await expect(page).not.toHaveURL(/\/login$/);
+  const board = await scanBlockingViolations(page);
+
+  // Admin console.
+  await page.goto("/admin");
+  await expect(page.getByRole("button", { name: "Save Policy" })).toBeVisible();
+  const admin = await scanBlockingViolations(page);
+
+  // Report every view's violations together (don't short-circuit at the first),
+  // so a single run surfaces the full picture.
+  const sections = [
+    ["login page", login],
+    ["authenticated board", board],
+    ["admin console", admin],
+  ].filter(([, r]) => r.blocking.length > 0);
+  const combined = sections.map(([name, r]) => `== ${name} ==\n${r.report}`).join("\n\n");
+  expect(sections.length, `\n${combined}`).toBe(0);
+});
+
+// NOTE: this throttle test exhausts login attempts for the admin, so it must run
+// last — any test that logs in afterwards would be rate-limited.
 test("login throttle is spoof-resistant through proxy path when X-Forwarded-For is manipulated", async ({
   request,
 }) => {
@@ -374,3 +411,17 @@ test("login throttle is spoof-resistant through proxy path when X-Forwarded-For 
   const bypassMessage = String(bypassAttempt?.errors?.[0]?.message || "");
   expect(bypassMessage).toMatch(/Too many login attempts/i);
 });
+
+const scanBlockingViolations = async (page) => {
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  const blocking = violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+  const report = blocking
+    .map(
+      (v) =>
+        `[${v.impact}] ${v.id} (${v.nodes.length}) — ${v.help} :: ${JSON.stringify(v.nodes[0]?.target)}`,
+    )
+    .join("\n");
+  return { blocking, report };
+};
