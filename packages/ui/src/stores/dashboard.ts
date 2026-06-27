@@ -5,7 +5,7 @@ import { disposeDashboardAssets } from "../dashboardAssets.js";
 import { normalizeCreateDashboardPayload } from "../auth/publishPolicy.js";
 import { useAuthStore } from "./auth.js";
 import { runtimeConfig } from "../runtime/config.js";
-import { isEmbedOriginAllowed, parseEmbedDocumentMessage } from "../runtime/embed.js";
+import { parseEmbedDocumentMessage } from "../runtime/embed.js";
 import type { UnknownRecord } from "../types/runtime.js";
 import type { Dashboard as DashboardModel } from "../models/Dashboard.js";
 import { applyDashboardThemeSelection } from "../ui/themeRuntime.js";
@@ -336,13 +336,13 @@ export const useDashboardStore = defineStore("dashboard", {
       }
     },
 
-    // Local-first (Lite) embedding: hydrate from a postMessage-injected document
-    // when the sender origin is allowed and the envelope is well-formed. The
-    // document still flows through loadDashboardDocument, so an invalid one is
-    // rejected without mutating state.
-    async loadEmbeddedDocument(origin: string, data: unknown): Promise<void> {
+    // Local-first (Lite) embedding: hydrate from a postMessage-injected document.
+    // The sender origin is gated at the message boundary (Freeboard.vue); here the
+    // envelope is parsed and the document flows through loadDashboardDocument, so an
+    // invalid one is rejected without mutating state.
+    async loadEmbeddedDocument(data: unknown): Promise<void> {
       const parsed = parseEmbedDocumentMessage(data);
-      if (!parsed || !isEmbedOriginAllowed(origin)) {
+      if (!parsed) {
         return;
       }
       await this.loadDashboardDocument(parsed.document);

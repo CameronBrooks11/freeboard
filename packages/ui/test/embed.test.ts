@@ -104,7 +104,7 @@ test("loadEmbeddedDocument hydrates a valid injected document", async () => {
   const { useDashboardStore } = await import("../src/stores/dashboard.js");
   const store = useDashboardStore();
 
-  await store.loadEmbeddedDocument("https://embedder.example", {
+  await store.loadEmbeddedDocument({
     type: EMBED_DOCUMENT_MESSAGE_TYPE,
     document: validDoc({ title: "Injected" }),
   });
@@ -120,7 +120,7 @@ test("loadEmbeddedDocument ignores a non-embed message without mutating state", 
   await store.loadDashboardDocument(validDoc({ title: "KEEP" }));
   const kept = store.dashboard;
 
-  await store.loadEmbeddedDocument("https://embedder.example", {
+  await store.loadEmbeddedDocument({
     type: "something-else",
     document: validDoc({ title: "Nope" }),
   });
@@ -136,7 +136,7 @@ test("loadEmbeddedDocument rejects an invalid injected document without mutating
   await store.loadDashboardDocument(validDoc({ title: "KEEP" }));
   const kept = store.dashboard;
 
-  await store.loadEmbeddedDocument("https://embedder.example", {
+  await store.loadEmbeddedDocument({
     type: EMBED_DOCUMENT_MESSAGE_TYPE,
     document: validDoc({ columns: 1 }), // columns < 3 => invalid
   });

@@ -181,7 +181,7 @@ const onEmbedMessage = (event: MessageEvent) => {
   if (!isEmbedOriginAllowed(event.origin)) {
     return;
   }
-  void dashboardStore.loadEmbeddedDocument(event.origin, event.data);
+  void dashboardStore.loadEmbeddedDocument(event.data);
 };
 if (runtimeConfig.isStaticBuild) {
   onMounted(() => {
