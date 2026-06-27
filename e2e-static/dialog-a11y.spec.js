@@ -105,6 +105,31 @@ test("Tab is trapped within the dialog", async ({ page }) => {
   }
 });
 
+test("focus is recaptured into the dialog if it escapes (e.g. backdrop blur)", async ({ page }) => {
+  await openDatasourcesDialog(page);
+
+  // Simulate focus escaping to <body> (clicking the dimmed backdrop blurs the
+  // focused control). A trap bound to the overlay would never see the next Tab.
+  await page.evaluate(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) {
+      active.blur();
+    }
+  });
+  const escaped = await page.evaluate(() => {
+    const m = document.querySelector(".dialog-box__modal");
+    return m ? m.contains(document.activeElement) : null;
+  });
+  expect(escaped, "precondition: focus should be outside the modal after blur").toBe(false);
+
+  await page.keyboard.press("Tab");
+  const recaptured = await page.evaluate(() => {
+    const m = document.querySelector(".dialog-box__modal");
+    return m ? m.contains(document.activeElement) : null;
+  });
+  expect(recaptured, "Tab should pull focus back into the modal").toBe(true);
+});
+
 test("Escape closes the dialog", async ({ page }) => {
   const modal = await openDatasourcesDialog(page);
   await page.keyboard.press("Escape");

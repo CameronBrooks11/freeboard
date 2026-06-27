@@ -96,10 +96,21 @@ const onCancel = (event: Event) => {
 
 let unbindEscapeListener = () => {};
 
+// The Tab trap listens on `document`, not the overlay, so it still fires when
+// focus has escaped the modal (e.g. clicking the backdrop blurs to <body>) and
+// can pull focus back in — an overlay-scoped listener would never see those keys.
+const bindTrapListener = () => {
+  document.addEventListener("keydown", onModalKeydown);
+};
+const unbindTrapListener = () => {
+  document.removeEventListener("keydown", onModalKeydown);
+};
+
 onMounted(() => {
   previouslyFocused = (document.activeElement as HTMLElement) ?? null;
   show.value = true;
   unbindEscapeListener = bindEscapeKeyListener(onCancel, window);
+  bindTrapListener();
   // Move focus into the dialog once it has rendered (first field, or the dialog
   // itself as a fallback), so keyboard and screen-reader users start inside it.
   void nextTick(() => {
@@ -115,11 +126,13 @@ const restoreFocus = () => {
 
 onBeforeUnmount(() => {
   unbindEscapeListener();
+  unbindTrapListener();
   restoreFocus();
 });
 
 onDeactivated(() => {
   unbindEscapeListener();
+  unbindTrapListener();
 });
 
 const { header, ok, cancel, okDisabled } = defineProps({
@@ -136,7 +149,7 @@ defineExpose({
 
 <template>
   <Transition>
-    <div v-if="show" class="dialog-box" @keydown="onModalKeydown">
+    <div v-if="show" class="dialog-box">
       <div
         ref="modalRef"
         class="dialog-box__modal"
