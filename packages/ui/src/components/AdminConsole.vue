@@ -399,6 +399,7 @@ const {
                   type="checkbox"
                   v-model="serviceAccountDrafts[serviceAccount._id]!.active"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.active')"
                 />
               </td>
               <td>{{ serviceAccount.tokenCount }}</td>
@@ -1112,6 +1113,7 @@ const {
                   v-model="brokerProfileDrafts[profile._id]!.credentialProfileId"
                   class="admin-console__select"
                   :disabled="isBusy"
+                  :aria-label="$t('form.labelCredentialProfile')"
                 >
                   <option value="">{{ $t("form.optionCredentialProfileNone") }}</option>
                   <option
@@ -1254,6 +1256,7 @@ const {
                   v-model="userDrafts[user._id]!.role"
                   class="admin-console__select"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.role')"
                 >
                   <option v-for="role in ROLE_OPTIONS" :key="`${user._id}-${role}`" :value="role">
                     {{ role }}
@@ -1268,6 +1271,7 @@ const {
                   type="checkbox"
                   v-model="userDrafts[user._id]!.active"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.active')"
                 />
                 <span v-else>{{ user.active ? "yes" : "no" }}</span>
               </td>
