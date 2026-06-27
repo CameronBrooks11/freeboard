@@ -190,7 +190,7 @@ const main = async () => {
     "test:api:smoke",
     "test:ui",
     "test:gateway",
-    ...(skipE2E ? [] : ["test:e2e:smoke"]),
+    ...(skipE2E ? [] : ["test:e2e:smoke", "test:e2e:static"]),
     "build:verify",
     "typecheck",
     "db:schema:status",

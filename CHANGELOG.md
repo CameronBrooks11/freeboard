@@ -6,17 +6,59 @@ The first formal public release will appear as the first official release entry 
 
 ## Unreleased
 
-The first public release has not been cut yet. The notes below capture current pre-release stabilization work that is expected to feed into that first formal release entry once version, date, and scope are locked.
+_No changes yet._
 
-- Stabilized Apollo Client v4 compatibility in the UI by updating error handling and SSE `operationName` behavior.
-- Aligned Vue dependency resolution and related UI dependencies to clear large typecheck regressions during the client dependency transition.
-- Fixed demo/build correctness for the pre-release path and completed Vite 8 toolchain cleanup, including the move to `rolldownOptions` and tighter build and lint guardrails.
-- Resolved targeted audit-driven dependency issues needed for the pre-release dependency baseline.
-- Added CodeQL, dependency review, and `CODEOWNERS` guardrails, then cleaned up verified API, UI, and script code-scanning findings and hardened script execution paths used by development and release workflows.
+## 3.0.0 — 2026-06-27
 
-## First Public Release (TBD)
+First formal public release. The version reflects the lineage carried in the
+package metadata (the internal `3.0.0` PostgreSQL-cutover milestone below); this
+is the first time that line is cut and tagged publicly.
 
-This section will be finalized when the first public release version, date, and scope are locked. At that point, the `Unreleased` notes above should be reviewed and moved here as the first official release entry.
+### Portable dashboard document foundation
+
+- Introduced the canonical, versioned **`DashboardDocument` v1** contract (JSON
+  Schema 2020-12) with `migrate()` + Ajv validation, extracted into a headless
+  **`@freeboard/core`** package cleanly separated from the server record envelope.
+- Made the portable document the **single source of truth** for both storage and
+  the GraphQL wire: dashboards are persisted and transported as one nested
+  `document`, with no parallel flat representation and no second document model.
+- Enforced the contract at every write boundary — the UI validates on import and
+  the API hard-rejects invalid documents on create and update, persisting only the
+  canonical (migrated) document.
+
+### Local-First ("Lite") deployment profile
+
+- Turned the static build into a genuine **server-less profile**: it boots with
+  zero `/graphql` traffic and round-trips a dashboard through `localStorage` as a
+  portable v1 document.
+- Bounded datasources to those that work without a server (Clock, Static, and
+  direct HTTP), and surfaced an honest per-type feasibility matrix; gateway-only
+  streaming types are not offered.
+- Hid server-only affordances (saved-dashboards picker, sharing/collaborators,
+  login/admin) in the static profile, and documented it as the **Local-First
+  (Lite)** deployment profile.
+- Added a cross-origin **embedding contract**: an origin-validated `postMessage`
+  receiver loads an injected document, with a copy-pasteable iframe example.
+
+### Quality, accessibility, and CI
+
+- Added a **serverless static (Lite) E2E** that verifies the local-first loop in a
+  real browser (zero-`/graphql` boot, embed, and `localStorage` round-trip).
+- Added an automated **WCAG 2.1 AA accessibility gate** (axe-core) over the
+  rendered app, and fixed the accessible-name issues it surfaced across form
+  controls; complements the existing theme-contrast guard.
+- Cleared all `npm audit` advisories for the release dependency baseline, and added
+  CodeQL, dependency-review, and `CODEOWNERS` guardrails with verified findings
+  resolved.
+
+### Platform and toolchain
+
+- Stabilized **Apollo Client v4** compatibility in the UI (error handling and SSE
+  `operationName` behavior) and aligned Vue/UI dependency resolution.
+- Completed the **Vite 8** toolchain cleanup (move to `rolldownOptions`) with
+  tighter build and lint guardrails.
+- Published versioning and release process docs (this milestone formalizes
+  [Releasing &amp; Versioning](./docs/manual/releasing.md)).
 
 ## Historical Internal Milestones
 
