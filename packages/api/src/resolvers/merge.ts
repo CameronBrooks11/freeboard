@@ -46,6 +46,9 @@ export const transformDashboard = (
       ? Math.max(0, Math.floor(Number(dashboard.shareTokenVersion)))
       : 0,
     document: dashboard.document,
+    documentRevision: Number.isFinite(Number(dashboard.documentRevision))
+      ? Math.max(1, Math.floor(Number(dashboard.documentRevision)))
+      : 1,
     user: ownerId,
     // ACL membership (collaborator user ids) is only for those who can manage
     // sharing. Readers — including anonymous viewers of a public board — must not

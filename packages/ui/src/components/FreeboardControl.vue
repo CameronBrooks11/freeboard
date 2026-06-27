@@ -49,15 +49,37 @@ const saveDashboard = async () => {
     visibility: dashboard.value.visibility,
   };
 
-  const savedDashboardId = await dashboardStore.saveDashboard(
-    id,
-    payload,
-    createDashboard,
-    updateDashboard,
-  );
-  if (!wasSaved && savedDashboardId) {
-    await router.push(`/${savedDashboardId}`);
+  try {
+    const savedDashboardId = await dashboardStore.saveDashboard(
+      id,
+      payload,
+      createDashboard,
+      updateDashboard,
+    );
+    if (!wasSaved && savedDashboardId) {
+      await router.push(`/${savedDashboardId}`);
+    }
+  } catch (error) {
+    if (isDashboardConflictError(error)) {
+      // Optimistic-concurrency conflict: the document advanced elsewhere since
+      // it was loaded. Surface it instead of silently overwriting their change.
+      window.alert(
+        "This dashboard was changed elsewhere since you opened it. Reload to get the latest version before saving again.",
+      );
+      return;
+    }
+    throw error;
   }
+};
+
+/** True when a save failed because the server rejected a stale document revision. */
+const isDashboardConflictError = (error: unknown): boolean => {
+  const graphQLErrors = (error as { graphQLErrors?: Array<{ extensions?: { code?: unknown } }> })
+    ?.graphQLErrors;
+  return (
+    Array.isArray(graphQLErrors) &&
+    graphQLErrors.some((entry) => entry?.extensions?.code === "CONFLICT")
+  );
 };
 
 const openSavedDashboards = () => {

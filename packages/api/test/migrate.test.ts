@@ -47,20 +47,25 @@ if (isPostgresTestRun) {
     const recorded = await pool.query<{ version: string }>(
       "SELECT version FROM schema_migrations ORDER BY version",
     );
-    assert.deepEqual(
-      recorded.rows.map((row) => row.version),
-      ["0001"],
-    );
+    const versions = recorded.rows.map((row) => row.version);
+    // Don't hard-code the full set (it grows with every migration); just prove
+    // the baseline schema and the document_revision migration both applied.
+    assert.ok(versions.includes("0001"), "0001 should be applied");
+    assert.ok(versions.includes("0002"), "0002 should be applied");
   });
 
   test("applyPendingMigrations is idempotent", async () => {
     await applyPendingMigrations();
-    await applyPendingMigrations();
-
     const pool = await getPostgresPool();
-    const count = await pool.query<{ c: number }>(
-      "SELECT count(*)::int AS c FROM schema_migrations",
-    );
-    assert.equal(count.rows[0]?.c, 1);
+    const countOf = async () =>
+      (await pool.query<{ c: number }>("SELECT count(*)::int AS c FROM schema_migrations")).rows[0]
+        ?.c;
+
+    const firstCount = await countOf();
+    await applyPendingMigrations();
+    const secondCount = await countOf();
+
+    assert.ok((firstCount ?? 0) >= 1, "at least one migration is recorded");
+    assert.equal(secondCount, firstCount, "re-applying records no new migrations");
   });
 }

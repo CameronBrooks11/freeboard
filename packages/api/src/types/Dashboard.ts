@@ -36,6 +36,8 @@ export default `
     shareToken: String
     shareTokenVersion: Int!
     document: Object
+    """Optimistic-concurrency counter; bumped only when the document changes."""
+    documentRevision: Int!
     user: String
     acl: [DashboardAclEntry!]!
     isOwner: Boolean!
@@ -104,5 +106,10 @@ export default `
   input UpdateDashboardInput {
     visibility: DashboardVisibility
     document: Object
+    """
+    When updating the document, the revision the client last loaded. The update
+    is rejected with a CONFLICT error if the stored document has advanced since.
+    """
+    expectedDocumentRevision: Int
   }
 `;

@@ -8,6 +8,7 @@ const buildDoc = (overrides = {}) => ({
   visibility: "private",
   shareToken: "share-token-1",
   shareTokenVersion: 0,
+  documentRevision: 4,
   acl: [],
   document: {
     schemaVersion: 1,
@@ -58,6 +59,14 @@ test("transformDashboard derives isOwner from viewer context", () => {
   assert.equal(otherView.canEdit, false);
   assert.equal(otherView.shareToken, null);
   assert.equal(anonymousView.isOwner, false);
+});
+
+test("transformDashboard projects documentRevision (defaults to 1)", () => {
+  assert.equal(transformDashboard(buildDoc(), "owner-1").documentRevision, 4);
+  assert.equal(
+    transformDashboard(buildDoc({ documentRevision: undefined }), "owner-1").documentRevision,
+    1,
+  );
 });
 
 test("transformDashboard exposes ACL only to sharing managers", () => {

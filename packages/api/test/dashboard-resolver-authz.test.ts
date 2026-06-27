@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, test } from "node:test";
 
 import { dataStore } from "../src/data/index.js";
+import { DashboardRevisionConflictError } from "../src/data/contracts.js";
 import DashboardResolvers from "../src/resolvers/Dashboard.js";
 
 const dashboardRepository = dataStore.repositories.dashboards;
@@ -193,6 +194,51 @@ test("updateDashboard allows acl editor and strips immutable fields", async () =
   assert.equal(result.document.title, "Updated");
   assert.equal(result.canEdit, true);
   assert.equal(result.isOwner, false);
+});
+
+test("updateDashboard forwards expectedDocumentRevision to the repository", async () => {
+  let receivedExpected;
+  dashboardRepository.findById = async () => buildDashboardDoc({ user: "owner-1" });
+  dashboardRepository.updateById = async ({ expectedDocumentRevision }) => {
+    receivedExpected = expectedDocumentRevision;
+    return buildDashboardDoc({ user: "owner-1" });
+  };
+
+  await DashboardResolvers.Mutation.updateDashboard(
+    null,
+    {
+      _id: "dash-1",
+      dashboard: { document: buildContent({ title: "Edited" }), expectedDocumentRevision: 7 },
+    },
+    { user: { _id: "owner-1", role: "editor" } },
+  );
+
+  assert.equal(receivedExpected, 7);
+});
+
+test("updateDashboard surfaces a stale revision as a CONFLICT error", async () => {
+  dashboardRepository.findById = async () => buildDashboardDoc({ user: "owner-1" });
+  dashboardRepository.updateById = async () => {
+    throw new DashboardRevisionConflictError(5);
+  };
+
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Mutation.updateDashboard(
+        null,
+        {
+          _id: "dash-1",
+          dashboard: { document: buildContent({ title: "Edited" }), expectedDocumentRevision: 1 },
+        },
+        { user: { _id: "owner-1", role: "editor" } },
+      ),
+    (error) => {
+      assert.match(String(error.message), /changed since you loaded it/);
+      assert.equal(error.extensions?.code, "CONFLICT");
+      assert.equal(error.extensions?.currentRevision, 5);
+      return true;
+    },
+  );
 });
 
 test("createDashboard rejects legacy json datasource type", async () => {

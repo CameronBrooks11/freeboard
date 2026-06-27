@@ -135,6 +135,8 @@ export class Dashboard {
   shareToken: string | null = null;
   /** @type {number} Monotonic share token version for public/link revoke semantics. */
   shareTokenVersion = 0;
+  /** @type {number} Document revision last loaded from the server, sent back on save for optimistic-concurrency. */
+  documentRevision = 1;
   /** @type {Array<{userId: string, accessLevel: string}>} Dashboard ACL entries. */
   acl: Array<{ userId: string; accessLevel: string }> = [];
   /** @type {string|null} Optional image URL. */
@@ -270,6 +272,7 @@ export class Dashboard {
     this.visibility = "private";
     this.shareToken = null;
     this.shareTokenVersion = 0;
+    this.documentRevision = 1;
     this.acl = [];
     this.isOwner = true;
     this.canEdit = true;
@@ -324,6 +327,9 @@ export class Dashboard {
     this.shareTokenVersion = Number.isFinite(Number(object.shareTokenVersion))
       ? Math.max(0, Math.floor(Number(object.shareTokenVersion)))
       : 0;
+    this.documentRevision = Number.isFinite(Number(object.documentRevision))
+      ? Math.max(1, Math.floor(Number(object.documentRevision)))
+      : 1;
     this.acl = Array.isArray(object.acl)
       ? object.acl
           .filter((entry: unknown) => Boolean(entry) && typeof entry === "object")
