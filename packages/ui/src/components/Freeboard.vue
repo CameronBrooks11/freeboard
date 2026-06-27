@@ -25,6 +25,7 @@ import {
 } from "../gql.js";
 import router from "../router";
 import { runtimeConfig } from "../runtime/config.js";
+import { isEmbedOriginAllowed } from "../runtime/embed.js";
 import { storeToRefs } from "pinia";
 import Preloader from "./Preloader.vue";
 import {
@@ -173,8 +174,13 @@ onUnmounted(() => {
 
 // Local-first (Lite): a static build has no server route to load from, so on
 // mount hydrate from localStorage and start listening for a cross-origin
-// document injected by an embedder via postMessage.
+// document injected by an embedder via postMessage. The sender origin is
+// verified at this boundary (the allowlist is empty/`*` = accept any, since the
+// document is validated and runs in safe execution mode).
 const onEmbedMessage = (event: MessageEvent) => {
+  if (!isEmbedOriginAllowed(event.origin)) {
+    return;
+  }
   void dashboardStore.loadEmbeddedDocument(event.origin, event.data);
 };
 if (runtimeConfig.isStaticBuild) {
