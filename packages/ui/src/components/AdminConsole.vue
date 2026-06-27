@@ -363,6 +363,7 @@ const {
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
+                  :aria-label="$t('form.labelName')"
                 />
               </td>
               <td>
@@ -372,6 +373,7 @@ const {
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.description')"
                 />
               </td>
               <td>
@@ -904,6 +906,7 @@ const {
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
+                  :aria-label="$t('form.labelName')"
                 />
               </td>
               <td>
@@ -1096,6 +1099,7 @@ const {
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
+                  :aria-label="$t('form.labelName')"
                 />
               </td>
               <td>
@@ -1105,6 +1109,7 @@ const {
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
+                  :aria-label="$t('form.labelBrokerUrl')"
                 />
               </td>
               <td>
@@ -1132,6 +1137,7 @@ const {
                   class="admin-console__input"
                   type="text"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.topicAllowlist')"
                 />
               </td>
               <td>
@@ -1141,6 +1147,7 @@ const {
                   type="checkbox"
                   v-model="brokerProfileDrafts[profile._id]!.tlsRejectUnauthorized"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.tlsRejectUnauthorized')"
                 />
               </td>
               <td>
@@ -1150,6 +1157,7 @@ const {
                   type="checkbox"
                   v-model="brokerProfileDrafts[profile._id]!.allowPublicUse"
                   :disabled="isBusy"
+                  :aria-label="$t('admin.allowPublicUse')"
                 />
               </td>
               <td class="admin-console__actions">
