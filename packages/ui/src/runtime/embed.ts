@@ -2,10 +2,11 @@
  * @module runtime/embed
  * @description Local-first (Lite) embedding contract: the cross-origin
  * document-injection channel. An embedder posts a portable DashboardDocument to
- * the iframe via `postMessage`; the receiver validates the message envelope and
- * the sender origin before the document is funnelled through the normal
- * validate+migrate load path. Same-origin embedders may instead seed
- * `localStorage` (see the Lite local-persistence path).
+ * the iframe via `postMessage`; the receiver requires the message to come from
+ * the direct parent frame and validates the sender origin and the message
+ * envelope before the document is funnelled through the normal validate+migrate
+ * load path. Same-origin embedders may instead seed `localStorage` (see the Lite
+ * local-persistence path).
  */
 
 const importMetaEnv: Record<string, unknown> =
