@@ -60,6 +60,22 @@ test("transformDashboard derives isOwner from viewer context", () => {
   assert.equal(anonymousView.isOwner, false);
 });
 
+test("transformDashboard exposes ACL only to sharing managers", () => {
+  const acl = [{ userId: "collab-1", accessLevel: "viewer" }];
+  const managerView = transformDashboard(buildDoc({ acl }), "owner-1", {
+    canEdit: true,
+    canManageSharing: true,
+  });
+  const readerView = transformDashboard(buildDoc({ acl }), "someone-else", {
+    canEdit: false,
+    canManageSharing: false,
+  });
+
+  assert.deepEqual(managerView.acl, acl);
+  // A reader (incl. anonymous public viewers) must not receive collaborator ids.
+  assert.deepEqual(readerView.acl, []);
+});
+
 test("transformDashboard handles populated user object", () => {
   const transformed = transformDashboard(
     buildDoc({ user: { _id: { toString: () => "owner-1" } } }),
