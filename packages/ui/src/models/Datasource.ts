@@ -136,6 +136,11 @@ export class Datasource {
     const datasourceType = getDatasourcePlugin(this._type);
 
     if (!datasourceType || typeof datasourceType.newInstance !== "function") {
+      // The type is not registered in this deployment (e.g. a gateway-only
+      // streaming datasource in a static build). Stay inert and visible, not
+      // crashed.
+      this.status = "error";
+      this.errorCode = "datasource_type_unavailable";
       return;
     }
 

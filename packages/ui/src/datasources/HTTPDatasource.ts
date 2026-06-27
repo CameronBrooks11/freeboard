@@ -9,6 +9,7 @@ import {
 } from "./datasourceSessionToken.js";
 import { DatasourceRuntimeBase } from "./runtime/DatasourceRuntimeBase.js";
 import { getAuthToken, getDashboardId, getRuntimeShareToken } from "../runtime/runtimeContext.js";
+import { runtimeConfig } from "../runtime/config.js";
 import type { DatasourceStatusPayload, UnknownRecord } from "../types/runtime.js";
 type DatasourceFieldModel = { settings?: UnknownRecord } | null | undefined;
 
@@ -19,6 +20,9 @@ const importMetaEnv: Record<string, unknown> =
   typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
 const DIRECT_HTTP_ENABLED =
   Boolean(importMetaEnv.DEV) ||
+  // Local-first (Lite): a static build has no gateway, so direct HTTP is an
+  // intrinsic invariant of the profile, not an optional toggle.
+  runtimeConfig.isStaticBuild ||
   TRUTHY_ENV_VALUES.has(
     String(importMetaEnv.VITE_ALLOW_DIRECT_HTTP_DATASOURCE || "")
       .trim()
@@ -137,7 +141,9 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
         type: "text",
         required: true,
       },
-      ...(DIRECT_HTTP_ENABLED
+      // The gateway toggle is hidden in a static build: there is no gateway, so
+      // HTTP is always direct (no choice to offer).
+      ...(DIRECT_HTTP_ENABLED && !runtimeConfig.isStaticBuild
         ? [
             {
               name: "useGateway",
@@ -425,7 +431,11 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
 
     this.requestInFlight = true;
     const parser = normalizeParser(this.currentSettings.parser);
-    const useGateway = !DIRECT_HTTP_ENABLED || this.currentSettings.useGateway !== false;
+    // Static builds force direct fetch (the gateway is unreachable), so the
+    // gateway path — and its /graphql token mint — is never taken server-less.
+    const useGateway = runtimeConfig.isStaticBuild
+      ? false
+      : !DIRECT_HTTP_ENABLED || this.currentSettings.useGateway !== false;
 
     this.setStatus(this.lastUpdatedAt ? "updating" : "connecting");
 

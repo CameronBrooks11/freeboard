@@ -33,6 +33,20 @@ Contract:
 - Treat static output as read-only content.
 - Do not rely on static mode for protected private dashboards.
 
+### Datasource feasibility (static build)
+
+A static build has no Freeboard server/gateway, so datasource support falls into three tiers:
+
+| Datasource                 | Static build | Why                                                                                                                                                                           |
+| -------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Clock**                  | Works        | Pure client-side; no network.                                                                                                                                                 |
+| **Static**                 | Works        | Inline value; no network.                                                                                                                                                     |
+| **HTTP**                   | Direct only  | Fetches directly from the browser. Subject to the target endpoint's **CORS** policy, and **credential profiles are unavailable** (the secret-holding gateway is server-only). |
+| **SSE / WebSocket / MQTT** | Unavailable  | Gateway-only streaming; require the Freeboard server. Not registered in a static build (cannot be added); existing documents referencing them load inert.                     |
+| **HTTP via gateway**       | Unavailable  | The gateway is server-only; static HTTP is always direct (no gateway toggle, no session-token mint).                                                                          |
+
+CORS is a real limitation of direct HTTP, not a bug — point HTTP datasources at endpoints that permit cross-origin requests.
+
 ## Profile 3: Kiosk Appliance (Viewer-Only Runtime)
 
 Use for wallboards, signage, and IoT/device interfaces.
