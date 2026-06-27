@@ -47,12 +47,16 @@ export const transformDashboard = (
       : 0,
     document: dashboard.document,
     user: ownerId,
-    acl: Array.isArray(dashboard.acl)
-      ? dashboard.acl.map((entry) => ({
-          userId: entry.userId,
-          accessLevel: entry.accessLevel,
-        }))
-      : [],
+    // ACL membership (collaborator user ids) is only for those who can manage
+    // sharing. Readers — including anonymous viewers of a public board — must not
+    // receive it; detailed collaborator info is served by `dashboardCollaborators`.
+    acl:
+      canManageSharing && Array.isArray(dashboard.acl)
+        ? dashboard.acl.map((entry) => ({
+            userId: entry.userId,
+            accessLevel: entry.accessLevel,
+          }))
+        : [],
     isOwner,
     canEdit,
     canManageSharing,

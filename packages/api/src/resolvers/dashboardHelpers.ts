@@ -491,7 +491,10 @@ export const resolveDashboardPermissions = (
 
   const canEdit = isAdmin || isOwner || aclAccessLevel === "editor";
   const canManageSharing = isAdmin || isOwner || aclAccessLevel === "editor";
-  const canDelete = isAdmin || isOwner || aclAccessLevel === "editor";
+  // Deletion is destructive and stays with the owner (or an admin). An ACL
+  // "editor" can edit and manage sharing, but must not delete a board they
+  // don't own.
+  const canDelete = isAdmin || isOwner;
 
   return {
     canRead,

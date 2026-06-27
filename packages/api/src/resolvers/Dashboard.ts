@@ -40,6 +40,20 @@ const EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES = new Set(["link", "public"]);
 const userRepository = dataStore.repositories.users;
 const dashboardRepository = dataStore.repositories.dashboards;
 
+const dashboardTopic = (dashboardId: unknown) => `dashboard:${String(dashboardId)}`;
+
+/**
+ * Notify subscribers that a dashboard changed. The event carries ONLY the id —
+ * never a per-actor projection. Each subscriber's stream re-fetches and
+ * re-authorizes against its own context (see the Subscription resolver), so the
+ * mutating actor's shareToken/ACL/ownership flags can never leak to other
+ * subscribers.
+ */
+const publishDashboardChanged = (dashboardId: unknown) => {
+  const id = String(dashboardId);
+  pubSub.publish(dashboardTopic(id), { dashboardId: id });
+};
+
 const resolvers: IResolvers = {
   DashboardVisibility: {
     PRIVATE: "private",
@@ -212,7 +226,7 @@ const resolvers: IResolvers = {
 
       const permissions = resolveDashboardPermissions(updated, context);
       const transformed = transformDashboardForContext(updated, context, permissions);
-      pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
+      publishDashboardChanged(updated._id);
       return transformed;
     },
 
@@ -235,6 +249,10 @@ const resolvers: IResolvers = {
         targetId: deleted._id,
         metadata: { visibility: getDashboardVisibility(deleted) },
       });
+
+      // Notify subscribers so their streams re-fetch, find the dashboard gone,
+      // and close cleanly instead of blocking forever on a deleted board.
+      publishDashboardChanged(deleted._id);
 
       const permissions = resolveDashboardPermissions(deleted, context);
       return transformDashboardForContext(deleted, context, permissions);
@@ -298,7 +316,7 @@ const resolvers: IResolvers = {
 
       const permissions = resolveDashboardPermissions(updated, context);
       const transformed = transformDashboardForContext(updated, context, permissions);
-      pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
+      publishDashboardChanged(updated._id);
       return transformed;
     },
 
@@ -334,7 +352,7 @@ const resolvers: IResolvers = {
 
       const permissions = resolveDashboardPermissions(updated, context);
       const transformed = transformDashboardForContext(updated, context, permissions);
-      pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
+      publishDashboardChanged(updated._id);
       return transformed;
     },
 
@@ -397,7 +415,7 @@ const resolvers: IResolvers = {
 
       const permissions = resolveDashboardPermissions(updated, context);
       const transformed = transformDashboardForContext(updated, context, permissions);
-      pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
+      publishDashboardChanged(updated._id);
       return transformed;
     },
 
@@ -441,7 +459,7 @@ const resolvers: IResolvers = {
 
       const permissions = resolveDashboardPermissions(updated, context);
       const transformed = transformDashboardForContext(updated, context, permissions);
-      pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
+      publishDashboardChanged(updated._id);
       return transformed;
     },
 
@@ -501,7 +519,7 @@ const resolvers: IResolvers = {
 
       const permissions = resolveDashboardPermissions(updated, context);
       const transformed = transformDashboardForContext(updated, context, permissions);
-      pubSub.publish(`dashboard:${transformed._id}`, { dashboard: transformed });
+      publishDashboardChanged(updated._id);
       return transformed;
     },
   },
@@ -511,19 +529,37 @@ const resolvers: IResolvers = {
       subscribe: async (_, args, context) => {
         ensureThatUserIsLogged(context);
 
-        const dashboard = await dashboardRepository.findById({
-          dashboardId: String(args._id || "").trim(),
-        });
+        const dashboardId = String(args._id || "").trim();
+        const dashboard = await dashboardRepository.findById({ dashboardId });
         if (!dashboard) {
           throw createGraphQLError("Dashboard not found");
         }
 
-        const permissions = resolveDashboardPermissions(dashboard, context);
-        if (!permissions.canRead) {
+        if (!resolveDashboardPermissions(dashboard, context).canRead) {
           throw createGraphQLError("Dashboard not found");
         }
 
-        return pubSub.subscribe(`dashboard:${args._id}`);
+        // Re-fetch, re-authorize, and re-project on EVERY event against this
+        // subscriber's own context — never relay the mutating actor's
+        // projection. Close the stream if the dashboard is gone or this
+        // subscriber's read access was revoked mid-subscription.
+        const source = pubSub.subscribe(dashboardTopic(dashboardId));
+        return (async function* () {
+          for await (const event of source) {
+            // The event is a bare change signal; authoritative state comes from
+            // the re-fetch below, never from the (untrusted) payload.
+            void event;
+            const current = await dashboardRepository.findById({ dashboardId });
+            if (!current) {
+              return;
+            }
+            const permissions = resolveDashboardPermissions(current, context);
+            if (!permissions.canRead) {
+              return;
+            }
+            yield { dashboard: transformDashboardForContext(current, context, permissions) };
+          }
+        })();
       },
     },
   },
