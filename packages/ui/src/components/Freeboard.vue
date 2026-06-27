@@ -228,7 +228,16 @@ const applyResult = (
         dashboardByShareToken?: Record<string, unknown> | null;
       }
     | undefined,
+  { fromSubscription = false }: { fromSubscription?: boolean } = {},
 ) => {
+  // Never let a live update overwrite UNSAVED local edits — but a clean editor
+  // (board open, nothing changed) still gets live updates. When the editor has
+  // pending edits we keep their in-progress document; on save the server rejects
+  // with a CONFLICT if the document advanced remotely, so nothing is lost.
+  if (fromSubscription && dashboardStore.hasUnsavedChanges) {
+    return;
+  }
+
   const dash = data?.dashboard || data?.dashboardByShareToken;
   showLoadingIndicator.value = false;
 
@@ -253,7 +262,7 @@ const applyResult = (
 watch(resultById, (value) => applyResult(value));
 watch(resultByShareToken, (value) => applyResult(value));
 // React to subscription updates
-onSubResult(({ data }) => applyResult(data));
+onSubResult(({ data }) => applyResult(data, { fromSubscription: true }));
 
 // Hide loader after baseline setup (query watcher will override as needed)
 showLoadingIndicator.value = false;

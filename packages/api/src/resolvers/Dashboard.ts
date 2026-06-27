@@ -9,6 +9,7 @@ import { ensureThatUserHasRole, ensureThatUserIsLogged } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
 import { getAuthPolicyState } from "../policyStore.js";
 import { dataStore } from "../data/index.js";
+import { DashboardRevisionConflictError } from "../data/contracts.js";
 import {
   assertValidDashboardDocument,
   buildCollaboratorView,
@@ -52,6 +53,37 @@ const dashboardTopic = (dashboardId: unknown) => `dashboard:${String(dashboardId
 const publishDashboardChanged = (dashboardId: unknown) => {
   const id = String(dashboardId);
   pubSub.publish(dashboardTopic(id), { dashboardId: id });
+};
+
+/** Read a positive integer `expectedDocumentRevision` off a raw update input. */
+const readExpectedDocumentRevision = (input: unknown): number | undefined => {
+  if (!input || typeof input !== "object") {
+    return undefined;
+  }
+  const raw = (input as Record<string, unknown>).expectedDocumentRevision;
+  return Number.isFinite(Number(raw)) ? Math.max(1, Math.floor(Number(raw))) : undefined;
+};
+
+/**
+ * Run a dashboard update, translating an optimistic-concurrency conflict into a
+ * GraphQL CONFLICT error (carrying the current revision) the client can act on.
+ */
+const updateDashboardOrConflict = async (params: {
+  dashboardId: string;
+  patch: Parameters<typeof dashboardRepository.updateById>[0]["patch"];
+  expectedDocumentRevision?: number | undefined;
+}) => {
+  try {
+    return await dashboardRepository.updateById(params);
+  } catch (error) {
+    if (error instanceof DashboardRevisionConflictError) {
+      throw createGraphQLError(
+        "Dashboard was changed since you loaded it. Reload to get the latest version.",
+        { extensions: { code: "CONFLICT", currentRevision: error.currentRevision } },
+      );
+    }
+    throw error;
+  }
 };
 
 const resolvers: IResolvers = {
@@ -201,9 +233,10 @@ const resolvers: IResolvers = {
         }
       }
 
-      const updated = await dashboardRepository.updateById({
+      const updated = await updateDashboardOrConflict({
         dashboardId: String(_id || "").trim(),
         patch: updatePayload,
+        expectedDocumentRevision: readExpectedDocumentRevision(dashboard),
       });
       if (!updated) {
         throw createGraphQLError("Dashboard not found");

@@ -1,11 +1,12 @@
 import crypto from "node:crypto";
 import { nanoid } from "nanoid";
 import { getPostgresPool } from "../../../db/postgres/client.js";
-import type {
-  DashboardAclEntryRecord,
-  DashboardDatasourceRecord,
-  DashboardRecord,
-  DashboardRepository,
+import {
+  DashboardRevisionConflictError,
+  type DashboardAclEntryRecord,
+  type DashboardDatasourceRecord,
+  type DashboardRecord,
+  type DashboardRepository,
 } from "../../contracts.js";
 
 type Queryable = {
@@ -104,6 +105,7 @@ const toRecord = (row: {
   share_token_version?: unknown;
   acl?: unknown;
   document?: unknown;
+  document_revision?: unknown;
   created_at?: unknown;
   updated_at?: unknown;
 }): DashboardRecord => ({
@@ -114,6 +116,7 @@ const toRecord = (row: {
   shareTokenVersion: Math.max(0, Math.floor(Number(row.share_token_version) || 0)),
   acl: toAclEntries(row.acl),
   document: toObjectRecord(row.document),
+  documentRevision: Math.max(1, Math.floor(Number(row.document_revision) || 1)),
   createdAt: toDate(row.created_at),
   updatedAt: toDate(row.updated_at, toDate(row.created_at)),
 });
@@ -125,6 +128,7 @@ const DASHBOARD_SELECT_FIELDS = `
   d.share_token,
   d.share_token_version,
   d.document,
+  d.document_revision,
   d.created_at,
   d.updated_at,
   COALESCE(
@@ -341,7 +345,7 @@ export const createPostgresDashboardRepository = (): DashboardRepository => ({
     }
   },
 
-  updateById: async ({ dashboardId, patch }) => {
+  updateById: async ({ dashboardId, patch, expectedDocumentRevision }) => {
     const pool = await getPostgresPool();
     const client = await pool.connect();
 
@@ -367,25 +371,52 @@ export const createPostgresDashboardRepository = (): DashboardRepository => ({
       if (Object.prototype.hasOwnProperty.call(patch, "shareTokenVersion")) {
         add("share_token_version", Math.max(0, Math.floor(Number(patch.shareTokenVersion) || 0)));
       }
-      if (Object.prototype.hasOwnProperty.call(patch, "document")) {
+      const updatesDocument = Object.prototype.hasOwnProperty.call(patch, "document");
+      if (updatesDocument) {
         add("document", JSON.stringify(toObjectRecord(patch.document)), "::jsonb");
+        // The revision advances only when the document itself changes.
+        sets.push("document_revision = document_revision + 1");
       }
 
       if (sets.length) {
         values.push(dashboardId);
+        let whereClause = `WHERE id = $${values.length}`;
+        // Optimistic-concurrency guard: a document write only applies if the
+        // stored revision still matches the one the writer loaded.
+        const guardRevision =
+          updatesDocument && typeof expectedDocumentRevision === "number"
+            ? Math.max(1, Math.floor(expectedDocumentRevision))
+            : null;
+        if (guardRevision !== null) {
+          values.push(guardRevision);
+          whereClause += ` AND document_revision = $${values.length}`;
+        }
+
         const updated = await client.query(
           `
           UPDATE dashboards
           SET
             ${sets.join(",\n            ")},
             updated_at = NOW()
-          WHERE id = $${values.length}
+          ${whereClause}
           RETURNING id
           `,
           values,
         );
 
         if (!updated.rows[0]) {
+          // Distinguish a stale-revision conflict from a missing dashboard so
+          // the caller can report the right error.
+          const existing = await client.query<{ document_revision?: unknown }>(
+            `SELECT document_revision FROM dashboards WHERE id = $1 LIMIT 1`,
+            [dashboardId],
+          );
+          if (guardRevision !== null && existing.rows[0]) {
+            // Let the catch block roll back the open transaction.
+            throw new DashboardRevisionConflictError(
+              Math.max(1, Math.floor(Number(existing.rows[0].document_revision) || 1)),
+            );
+          }
           await client.query("ROLLBACK");
           return null;
         }

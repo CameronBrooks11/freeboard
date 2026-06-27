@@ -170,9 +170,26 @@ export type DashboardRecord = {
   shareTokenVersion: number;
   acl: DashboardAclEntryRecord[];
   document: Record<string, unknown>;
+  /** Optimistic-concurrency counter, bumped only when `document` changes. */
+  documentRevision: number;
   createdAt: Date;
   updatedAt: Date;
 };
+
+/**
+ * Thrown by `updateById` when a document write carries an `expectedDocumentRevision`
+ * that no longer matches the stored revision — i.e. the dashboard was changed by
+ * someone else since it was loaded. The current revision is attached so callers
+ * can surface it.
+ */
+export class DashboardRevisionConflictError extends Error {
+  readonly currentRevision: number;
+  constructor(currentRevision: number) {
+    super("Dashboard was modified by another writer");
+    this.name = "DashboardRevisionConflictError";
+    this.currentRevision = currentRevision;
+  }
+}
 
 export type DashboardRepository = {
   findById(params: { dashboardId: string }): Promise<DashboardRecord | null>;
@@ -206,6 +223,13 @@ export type DashboardRepository = {
       acl?: DashboardAclEntryRecord[];
       document?: unknown;
     };
+    /**
+     * When the patch updates `document`, guard the write with this expected
+     * revision: the update only applies if the stored revision still matches,
+     * otherwise {@link DashboardRevisionConflictError} is thrown. Ignored for
+     * envelope-only updates (no `document`).
+     */
+    expectedDocumentRevision?: number | undefined;
   }): Promise<DashboardRecord | null>;
   deleteById(params: { dashboardId: string }): Promise<DashboardRecord | null>;
 };

@@ -15,6 +15,7 @@ type DashboardMutationPayload = {
   visibility?: string;
   shareToken?: string | null;
   shareTokenVersion?: number | string | null;
+  documentRevision?: number | string | null;
   canEdit?: boolean;
   canManageSharing?: boolean;
 };
@@ -30,6 +31,9 @@ type DashboardStoreState = {
   showLoadingIndicator: boolean;
   dashboard: DashboardModel;
   assets: Record<string, DashboardAsset>;
+  // Serialized document as last loaded/saved, so we can tell whether the local
+  // model has unsaved edits (a live update must not overwrite those).
+  syncedDocumentSnapshot: string | null;
 };
 
 const asRecord = (value: unknown): UnknownRecord =>
@@ -99,9 +103,19 @@ export const useDashboardStore = defineStore("dashboard", {
     showLoadingIndicator: true,
     dashboard: new Dashboard(),
     assets: {},
+    syncedDocumentSnapshot: null,
   }),
 
   getters: {
+    // True when the local document differs from the last loaded/saved state.
+    // Used to gate live updates so they can't discard in-progress edits.
+    hasUnsavedChanges(state): boolean {
+      if (state.syncedDocumentSnapshot === null) {
+        return false;
+      }
+      return JSON.stringify(state.dashboard.toDocument()) !== state.syncedDocumentSnapshot;
+    },
+
     allowEdit(state) {
       // Immutable-display (Lite read-only): no editing at all. allowEdit is the
       // single gate the edit Header, edit mode, and pane/widget drag/resize all
@@ -173,7 +187,13 @@ export const useDashboardStore = defineStore("dashboard", {
         if (!this.dashboard?.canEdit) {
           throw new Error("You do not have permission to edit this dashboard.");
         }
-        const result = await updateDashboard({ id, dashboard });
+        // Send the revision we loaded so the server can reject a write that
+        // would silently overwrite a change made since (optimistic concurrency).
+        const updateInput = {
+          ...dashboard,
+          expectedDocumentRevision: this.dashboard.documentRevision,
+        };
+        const result = await updateDashboard({ id, dashboard: updateInput });
         const updated = getMutationData(result).updateDashboard as
           | DashboardMutationPayload
           | undefined;
@@ -183,6 +203,9 @@ export const useDashboardStore = defineStore("dashboard", {
           this.dashboard.shareTokenVersion = Number.isFinite(Number(updated.shareTokenVersion))
             ? Math.max(0, Math.floor(Number(updated.shareTokenVersion)))
             : this.dashboard.shareTokenVersion;
+          this.dashboard.documentRevision = Number.isFinite(Number(updated.documentRevision))
+            ? Math.max(1, Math.floor(Number(updated.documentRevision)))
+            : this.dashboard.documentRevision;
           this.dashboard.canEdit = updated.canEdit !== false;
           this.dashboard.canManageSharing = updated.canManageSharing === true;
         }
@@ -213,7 +236,15 @@ export const useDashboardStore = defineStore("dashboard", {
       }
 
       this.syncEditingPermissions();
+      // The just-saved document is now the clean baseline.
+      this.markDashboardSynced();
       return nextDashboardId;
+    },
+
+    // Record the current document as the clean baseline for unsaved-change
+    // detection (see {@link hasUnsavedChanges}).
+    markDashboardSynced() {
+      this.syncedDocumentSnapshot = JSON.stringify(this.dashboard.toDocument());
     },
 
     loadDashboardAssets() {
@@ -279,6 +310,8 @@ export const useDashboardStore = defineStore("dashboard", {
       this.loadDashboardAssets();
       this.loadDashboardTheme();
       this.syncEditingPermissions();
+      // Freshly loaded server state is the clean baseline for change detection.
+      this.markDashboardSynced();
       this.showLoadingIndicator = false;
     },
 

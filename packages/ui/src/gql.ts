@@ -17,6 +17,7 @@ export const DASHBOARD_CREATE_MUTATION = gql`
       shareToken
       shareTokenVersion
       document
+      documentRevision
       acl {
         userId
         accessLevel
@@ -40,6 +41,7 @@ export const DASHBOARD_UPDATE_MUTATION = gql`
       shareToken
       shareTokenVersion
       document
+      documentRevision
       acl {
         userId
         accessLevel
@@ -63,6 +65,7 @@ export const DASHBOARD_READ_QUERY = gql`
       shareToken
       shareTokenVersion
       document
+      documentRevision
       user
       acl {
         userId
@@ -87,6 +90,7 @@ export const DASHBOARD_READ_BY_SHARE_TOKEN_QUERY = gql`
       shareToken
       shareTokenVersion
       document
+      documentRevision
       user
       acl {
         userId
@@ -111,6 +115,7 @@ export const DASHBOARD_UPDATE_SUBSCRIPTION = gql`
       shareToken
       shareTokenVersion
       document
+      documentRevision
       user
       acl {
         userId

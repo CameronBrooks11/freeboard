@@ -100,6 +100,17 @@ test("toDocument produces a clean v1 document with no server metadata", () => {
   assert.equal(panes[0].id, "pane-abc", "pane.id mirrors layout.i");
 });
 
+test("deserialize reads documentRevision from the record; loadDocument resets it to 1", () => {
+  const saved = new Dashboard();
+  saved.deserialize({ ...serverRecord(), documentRevision: 6 });
+  assert.equal(saved.documentRevision, 6);
+
+  // A portable document is unsaved and carries no server revision.
+  const portable = new Dashboard();
+  portable.loadDocument(migrateDashboardDocument(legacyExport()));
+  assert.equal(portable.documentRevision, 1);
+});
+
 test("loadDocument hydrates content but leaves the dashboard unsaved (no envelope)", () => {
   const dashboard = new Dashboard();
   dashboard.loadDocument(migrateDashboardDocument(legacyExport()));

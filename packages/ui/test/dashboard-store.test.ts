@@ -223,6 +223,84 @@ test("dashboard store saveDashboard enforces publish policy on create", async ()
   assert.equal(savedDashboardId, "dash-1");
 });
 
+test("dashboard store saveDashboard sends expectedDocumentRevision and applies the returned one", async () => {
+  const { useDashboardStore } = await import("../src/stores/dashboard.js");
+
+  const authStore = useAuthStore();
+  const dashboardStore = useDashboardStore();
+  authStore.login(
+    encodeToken({ _id: "owner-1", email: "owner@example.com", role: "editor", active: true }),
+  );
+
+  // A loaded, saved dashboard sitting at revision 3.
+  dashboardStore.isSaved = true;
+  dashboardStore.dashboard._id = "dash-1";
+  dashboardStore.dashboard.canEdit = true;
+  dashboardStore.dashboard.documentRevision = 3;
+
+  let receivedUpdatePayload = null;
+  const createDashboard = async () => {
+    throw new Error("createDashboard should not be called for a saved dashboard");
+  };
+  const updateDashboard = async ({ dashboard }) => {
+    receivedUpdatePayload = dashboard;
+    return {
+      data: {
+        updateDashboard: {
+          _id: "dash-1",
+          visibility: "private",
+          shareToken: null,
+          shareTokenVersion: 0,
+          documentRevision: 4,
+          canEdit: true,
+          canManageSharing: false,
+        },
+      },
+    };
+  };
+
+  await dashboardStore.saveDashboard(
+    "dash-1",
+    { document: {}, visibility: "private" },
+    createDashboard,
+    updateDashboard,
+  );
+
+  assert.equal(receivedUpdatePayload?.expectedDocumentRevision, 3);
+  // The model tracks the server's new revision so the next save guards correctly.
+  assert.equal(dashboardStore.dashboard.documentRevision, 4);
+});
+
+test("dashboard store hasUnsavedChanges tracks edits since the last load/save", async () => {
+  const { useDashboardStore } = await import("../src/stores/dashboard.js");
+  const dashboardStore = useDashboardStore();
+
+  dashboardStore.loadDashboard({
+    _id: "dash-1",
+    document: {
+      schemaVersion: 1,
+      title: "Original",
+      image: null,
+      columns: 3,
+      width: "md",
+      datasources: [],
+      panes: [],
+      settings: { theme: "auto" },
+    },
+  });
+
+  // Freshly loaded server state is clean, so live updates are allowed to apply.
+  assert.equal(dashboardStore.hasUnsavedChanges, false);
+
+  // A local edit marks the document dirty, so a live update must not clobber it.
+  dashboardStore.dashboard.title = "Edited locally";
+  assert.equal(dashboardStore.hasUnsavedChanges, true);
+
+  // Re-syncing (as a successful save does) clears the dirty state.
+  dashboardStore.markDashboardSynced();
+  assert.equal(dashboardStore.hasUnsavedChanges, false);
+});
+
 test("dashboard store blocks mobile editing for sm width unless allowMobileEdit is enabled", async () => {
   const { useDashboardStore } = await import("../src/stores/dashboard.js");
 
