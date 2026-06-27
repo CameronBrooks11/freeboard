@@ -87,6 +87,11 @@ API env precedence:
 docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
 ```
 
+The API applies any pending database migrations on startup, so a fresh database
+is provisioned automatically before the admin bootstrap and first login — no
+separate schema step is required. To manage the schema externally instead, set
+`RUN_DB_MIGRATIONS=false` and apply migrations yourself with `npm run db:schema:apply`.
+
 Pinning examples:
 
 ```bash

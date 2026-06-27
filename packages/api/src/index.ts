@@ -17,6 +17,7 @@ import { URL } from "url";
 import schema from "./gql.js";
 import { setContext } from "./context.js";
 import { config } from "./config.js";
+import { applyPendingMigrations } from "./db/postgres/migrate.js";
 import {
   resolveGatewayIntrospection,
   validateDatasourceSessionToken,
@@ -450,6 +451,11 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
 const startServer = async () => {
   try {
     await connectToConfiguredDataBackend();
+    // Provision/upgrade the schema before anything queries it, so a fresh
+    // deployment works out of the box instead of crashing on a missing table.
+    if (config.runMigrationsOnStartup) {
+      await applyPendingMigrations();
+    }
     await ensureAdminUser();
 
     // Start HTTP server on configured host and port
@@ -460,6 +466,10 @@ const startServer = async () => {
     });
   } catch (error) {
     console.error("API startup failed", error);
+    // Exit non-zero so the failure is visible and container restart policies
+    // retry it (e.g. a transient DB/migration hiccup), instead of the process
+    // exiting 0 and masking a server that never started serving.
+    process.exit(1);
   }
 };
 

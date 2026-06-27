@@ -6,11 +6,11 @@
   "scripts": {
     "dev": "tsc -p ../core/tsconfig.build.json && tsc -p ../shared/tsconfig.build.json && tsx watch src/index.ts",
     "dev:raw": "tsx watch src/index.ts",
-    "build": "tsc -p ../core/tsconfig.build.json && tsc -p ../shared/tsconfig.build.json && tsc -p tsconfig.build.json",
+    "build": "tsc -p ../core/tsconfig.build.json && tsc -p ../shared/tsconfig.build.json && tsc -p tsconfig.build.json && shx mkdir -p dist/db/postgres/migrations && shx cp src/db/postgres/migrations/*.sql dist/db/postgres/migrations/",
     "start": "npm run build && node dist/index.js",
     "test": "tsc -p ../core/tsconfig.build.json && cross-env NODE_ENV=test DB_BACKEND= FREEBOARD_POSTGRES_URL= SECURITY_LIMITER_BACKEND=memory DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/freeboard tsc -p ../shared/tsconfig.build.json && cross-env NODE_ENV=test DB_BACKEND= FREEBOARD_POSTGRES_URL= SECURITY_LIMITER_BACKEND=memory DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/freeboard tsx --test --test-concurrency=1",
     "test:ci": "tsc -p ../core/tsconfig.build.json && cross-env NODE_ENV=test DB_BACKEND= FREEBOARD_POSTGRES_URL= SECURITY_LIMITER_BACKEND=memory DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/freeboard tsc -p ../shared/tsconfig.build.json && cross-env NODE_ENV=test DB_BACKEND= FREEBOARD_POSTGRES_URL= SECURITY_LIMITER_BACKEND=memory DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/freeboard tsx --test --test-concurrency=1",
-    "test:ci:postgres-smoke": "tsc -p ../core/tsconfig.build.json && cross-env NODE_ENV=test RUN_POSTGRES_RELEASE_READINESS=1 DB_BACKEND=postgres SECURITY_LIMITER_BACKEND=postgres tsc -p ../shared/tsconfig.build.json && cross-env NODE_ENV=test RUN_POSTGRES_RELEASE_READINESS=1 DB_BACKEND=postgres SECURITY_LIMITER_BACKEND=postgres tsx --test --test-concurrency=1 test/postgres-release-readiness.test.ts"
+    "test:ci:postgres-smoke": "tsc -p ../core/tsconfig.build.json && cross-env NODE_ENV=test RUN_POSTGRES_RELEASE_READINESS=1 DB_BACKEND=postgres SECURITY_LIMITER_BACKEND=postgres tsc -p ../shared/tsconfig.build.json && cross-env NODE_ENV=test RUN_POSTGRES_RELEASE_READINESS=1 DB_BACKEND=postgres SECURITY_LIMITER_BACKEND=postgres tsx --test --test-concurrency=1 test/migrate.test.ts test/postgres-release-readiness.test.ts"
   },
   "private": true,
   "dependencies": {
