@@ -22,8 +22,8 @@
 }
 
 .dashboard-control .dashboard-control__board-toolbar__item:hover {
-  background-color: var(--color-shade-5);
-  color: var(--color-primary);
+  background-color: var(--color-shade-2);
+  color: var(--text-link);
   transition: 250ms linear;
 }
 

@@ -63,6 +63,6 @@
 }
 
 .datasources-list .datasources-list__status--stale {
-  color: var(--color-accent);
+  color: var(--text-muted);
   border-color: var(--color-accent);
 }
