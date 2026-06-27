@@ -30,13 +30,16 @@ onMounted(() => {
   <div class="tab-navigator">
     <!-- Tab menu -->
     <div class="tab-navigator__menu">
-      <ul class="tab-navigator__menu__board-toolbar">
+      <ul class="tab-navigator__menu__board-toolbar" role="none">
         <li
           v-for="(field, i) in fields"
           :key="field.name || i"
           @click="() => (index = i)"
           class="tab-navigator__menu__board-toolbar__item"
           :class="{ 'tab-navigator__menu__board-toolbar__item--active': index === i }"
+          v-a11y-button
+          :aria-pressed="index === i"
+          :aria-label="$t(field.label || '') || field.name"
         >
           <i class="tab-navigator__menu__board-toolbar__item__icon">
             <v-icon :name="field.icon || 'hi-cog'" />

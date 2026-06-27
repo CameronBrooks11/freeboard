@@ -21,6 +21,9 @@ export const en = {
     moveWidgetDown: "Move widget down",
     editWidget: "Edit widget",
     deleteWidget: "Delete widget",
+    refreshDatasource: "Refresh datasource",
+    deleteDatasource: "Delete datasource",
+    removeItem: "Remove item",
   },
   // Translations for array form elements
   arrayFormElement: {
