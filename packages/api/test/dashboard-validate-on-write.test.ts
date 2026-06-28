@@ -118,16 +118,45 @@ test("createDashboard treats a duplicate datasource title as a warning, not a re
 
 test("updateDashboard rejects an invalid replacement document", async () => {
   dashboards.findById = async () => storedRecord();
+  // Pass a valid revision so document validation is the only possible failure
+  // (keeps this asserting the validation path even if check order changes).
   await assert.rejects(
-    () => updateDashboard({ document: validContent({ columns: 2 }) }),
-    (err) => err.extensions?.code === "BAD_USER_INPUT",
+    () => updateDashboard({ document: validContent({ columns: 2 }), expectedDocumentRevision: 1 }),
+    (err) =>
+      err.extensions?.code === "BAD_USER_INPUT" && Array.isArray(err.extensions?.validationErrors),
   );
 });
 
 test("updateDashboard accepts a valid replacement document", async () => {
   dashboards.findById = async () => storedRecord();
-  const result = await updateDashboard({ document: validContent({ title: "Renamed" }) });
+  const result = await updateDashboard({
+    document: validContent({ title: "Renamed" }),
+    expectedDocumentRevision: 1,
+  });
   assert.equal(result._id, "dash-1");
+});
+
+test("updateDashboard rejects a document write without expectedDocumentRevision", async () => {
+  dashboards.findById = async () => storedRecord();
+  await assert.rejects(
+    () => updateDashboard({ document: validContent({ title: "NoRev" }) }),
+    (err) =>
+      err.extensions?.code === "BAD_USER_INPUT" && /expectedDocumentRevision/.test(err.message),
+  );
+});
+
+test("updateDashboard rejects a document write with a non-positive-integer revision", async () => {
+  dashboards.findById = async () => storedRecord();
+  for (const bad of [0, -1, 1.5, "1"]) {
+    await assert.rejects(
+      () =>
+        updateDashboard({
+          document: validContent({ title: "BadRev" }),
+          expectedDocumentRevision: bad,
+        }),
+      (err) => err.extensions?.code === "BAD_USER_INPUT",
+    );
+  }
 });
 
 test("an envelope-only (visibility) update carries no document and is admitted", async () => {

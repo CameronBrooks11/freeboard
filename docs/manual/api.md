@@ -61,7 +61,7 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
 - **Dashboard** (`models/Dashboard.ts`):
   - Uses `nanoid` for string `_id`
   - Fields include: `user`, `version`, `title`, `visibility`, `shareToken`, `shareTokenVersion`, `documentRevision`, `acl`, `image`, `datasources`, `columns`, `width`, `panes`, `settings`
-  - `documentRevision` is an optimistic-concurrency counter, bumped only when the document changes; an update may pass `expectedDocumentRevision` and is rejected with a `CONFLICT` error if it is stale
+  - `documentRevision` is an optimistic-concurrency counter, bumped only when the document changes; a document update must pass `expectedDocumentRevision` (a positive integer; omitting it is `BAD_USER_INPUT`) and is rejected with a `CONFLICT` error if it is stale. Envelope-only updates (e.g. visibility) don't require it.
   - Timestamps enabled
 - **CredentialProfile** (`models/CredentialProfile.ts`):
   - Server-managed datasource credential profile metadata + encrypted secret payload

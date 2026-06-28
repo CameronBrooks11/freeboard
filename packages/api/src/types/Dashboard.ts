@@ -107,8 +107,10 @@ export default `
     visibility: DashboardVisibility
     document: Object
     """
-    When updating the document, the revision the client last loaded. The update
-    is rejected with a CONFLICT error if the stored document has advanced since.
+    The document revision the client last loaded. REQUIRED whenever the document
+    field is set (omitting it is a BAD_USER_INPUT error); ignored for
+    envelope-only updates. The update is rejected with a CONFLICT error if the
+    stored document has advanced past this revision.
     """
     expectedDocumentRevision: Int
   }
