@@ -15,6 +15,7 @@ import User from "./User.js";
 import Policy from "./Policy.js";
 import CredentialProfile from "./CredentialProfile.js";
 import BrokerProfile from "./BrokerProfile.js";
+import DashboardUsableProfiles from "./DashboardUsableProfiles.js";
 import Datasource from "./Datasource.js";
 import DatasourceDiagnostics from "./DatasourceDiagnostics.js";
 import ServiceAccount from "./ServiceAccount.js";
@@ -30,6 +31,7 @@ const typeDefs = [
   Policy,
   CredentialProfile,
   BrokerProfile,
+  DashboardUsableProfiles,
   Datasource,
   DatasourceDiagnostics,
   ServiceAccount,

@@ -117,7 +117,7 @@ const ensureMqttCredentialProfile = async (
   return String(credentialProfile._id);
 };
 
-const toBrokerProfileResponse = (profile: Record<string, unknown>) => ({
+export const toBrokerProfileResponse = (profile: Record<string, unknown>) => ({
   _id: profile._id,
   name: profile.name,
   description: profile.description || "",
