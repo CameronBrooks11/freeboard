@@ -605,7 +605,7 @@ const ensureTokenScopeMatchesDatasource = ({
   return expectedScope;
 };
 
-const enforcePublicCredentialPolicy = ({
+export const enforcePublicCredentialPolicy = ({
   tokenClaims,
   credentialProfile,
   brokerProfile,
@@ -620,7 +620,12 @@ const enforcePublicCredentialPolicy = ({
     return;
   }
 
-  if ((protocol === "sse" || protocol === "websocket") && credentialProfile) {
+  // HTTP shares the streaming credential rule: a public flow may only inject an
+  // `allowPublicUse` credential (the authenticated flow is gated at authoring time).
+  if (
+    (protocol === "http" || protocol === "sse" || protocol === "websocket") &&
+    credentialProfile
+  ) {
     if (credentialProfile.allowPublicUse !== true) {
       throw createClientError(
         403,
