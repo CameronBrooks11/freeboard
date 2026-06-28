@@ -13,6 +13,7 @@ import type { IncomingMessage, ServerResponse } from "http";
 import { createYoga } from "graphql-yoga";
 import { useGraphQLSSE } from "@graphql-yoga/plugin-graphql-sse";
 import { useOperationLimits } from "./security/operationLimits.js";
+import { MAX_REQUEST_BODY_BYTES, enforceRequestBodyLimit } from "./security/requestBodyLimit.js";
 import { URL } from "url";
 
 import schema from "./gql.js";
@@ -115,11 +116,6 @@ const ALLOWED_GATEWAY_LIMITER_SCOPES = new Set([
   "realtime-public-subscribe-share",
 ]);
 const GATEWAY_LIMITER_MAX_PER_MINUTE = 10_000;
-
-// Outer request-body ceiling (covers /graphql), so a direct API deployment has
-// its own bound and doesn't rely solely on the packaged nginx cap. Generous;
-// internal endpoints enforce a much tighter readJsonBody limit.
-const MAX_REQUEST_BODY_BYTES = 5 * 1024 * 1024;
 
 type JsonObject = Record<string, unknown>;
 
@@ -438,9 +434,9 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     });
   });
 
-  // Reject oversized bodies up front. Header-based, so a chunked request without
-  // content-length slips past here — acceptable as defense-in-depth: the packaged
-  // nginx caps the same 5MB and internal endpoints enforce a tighter readJsonBody.
+  // Fast pre-reject on the declared size. A chunked request omits content-length
+  // and slips past this; the streamed cap below (enforceRequestBodyLimit) catches
+  // it for real before Yoga reads the body.
   const declaredBodyBytes = Number(req.headers["content-length"]);
   if (Number.isFinite(declaredBodyBytes) && declaredBodyBytes > MAX_REQUEST_BODY_BYTES) {
     res.statusCode = 413;
@@ -462,7 +458,19 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     handleGatewayRateLimitConsume(req, res);
     return;
   }
-  yoga(req, res);
+  // Enforce the streamed body cap, then hand the (buffered) request to Yoga.
+  void enforceRequestBodyLimit(req, res)
+    .then((mayProceed) => {
+      if (mayProceed) {
+        yoga(req, res);
+      }
+    })
+    .catch(() => {
+      if (!res.headersSent) {
+        res.statusCode = 500;
+        res.end();
+      }
+    });
 });
 
 const startServer = async () => {
