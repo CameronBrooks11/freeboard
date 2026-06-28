@@ -320,6 +320,45 @@ test("allowEdit follows the server canEdit for a saved dashboard, regardless of 
   assert.equal(dashboardStore.allowEdit, false);
 });
 
+test("dashboard store surfaces remote changes and clears them on load", async () => {
+  const { useDashboardStore } = await import("../src/stores/dashboard.js");
+  const dashboardStore = useDashboardStore();
+
+  // A remote document change while dirty is flagged, not applied.
+  dashboardStore.noteRemoteUpdatePending();
+  assert.equal(dashboardStore.remoteUpdatePending, true);
+
+  // Losing edit access remotely flags it and drops the user out of edit mode.
+  dashboardStore.isSaved = true;
+  dashboardStore.dashboard.canEdit = true;
+  dashboardStore.setEditing(true);
+  assert.equal(dashboardStore.isEditing, true);
+  dashboardStore.noteRemoteEditAccessLost();
+  assert.equal(dashboardStore.remoteEditAccessLost, true);
+  assert.equal(dashboardStore.isEditing, false);
+  // Reflected in the model so a later syncEditingPermissions can't re-enable it.
+  assert.equal(dashboardStore.dashboard.canEdit, false);
+  assert.equal(dashboardStore.allowEdit, false);
+
+  // Reloading fresh server state clears the prompts.
+  dashboardStore.loadDashboard({
+    _id: "dash-1",
+    canEdit: true,
+    document: {
+      schemaVersion: 1,
+      title: "Fresh",
+      image: null,
+      columns: 3,
+      width: "md",
+      datasources: [],
+      panes: [],
+      settings: { theme: "auto" },
+    },
+  });
+  assert.equal(dashboardStore.remoteUpdatePending, false);
+  assert.equal(dashboardStore.remoteEditAccessLost, false);
+});
+
 test("dashboard store blocks mobile editing for sm width unless allowMobileEdit is enabled", async () => {
   const { useDashboardStore } = await import("../src/stores/dashboard.js");
 

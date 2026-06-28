@@ -234,15 +234,22 @@ const applyResult = (
     | undefined,
   { fromSubscription = false }: { fromSubscription?: boolean } = {},
 ) => {
+  const dash = data?.dashboard || data?.dashboardByShareToken;
+
   // Never let a live update overwrite UNSAVED local edits — but a clean editor
   // (board open, nothing changed) still gets live updates. When the editor has
-  // pending edits we keep their in-progress document; on save the server rejects
-  // with a CONFLICT if the document advanced remotely, so nothing is lost.
+  // pending edits we keep their in-progress document and instead surface the
+  // remote change so they can reload: a save would CONFLICT if the document
+  // advanced, and if their edit access was revoked we leave edit mode.
   if (fromSubscription && dashboardStore.hasUnsavedChanges) {
+    if (dash && (dash as Record<string, unknown>).canEdit === false) {
+      dashboardStore.noteRemoteEditAccessLost();
+    } else {
+      dashboardStore.noteRemoteUpdatePending();
+    }
     return;
   }
 
-  const dash = data?.dashboard || data?.dashboardByShareToken;
   showLoadingIndicator.value = false;
 
   if (!dash && (routeId.value || routeShareToken.value)) {
@@ -268,6 +275,12 @@ watch(resultByShareToken, (value) => applyResult(value));
 // React to subscription updates
 onSubResult(({ data }) => applyResult(data, { fromSubscription: true }));
 
+// Reload to pull the latest server state (discarding local edits) when the user
+// acts on the remote-change banner.
+const reloadDashboard = () => {
+  window.location.reload();
+};
+
 // Hide loader after baseline setup (query watcher will override as needed)
 showLoadingIndicator.value = false;
 </script>
@@ -278,6 +291,24 @@ showLoadingIndicator.value = false;
     <Preloader v-if="showLoadingIndicator" />
     <!-- Main UI when loaded -->
     <Header v-else />
+    <div
+      v-if="
+        !showLoadingIndicator &&
+        (dashboardStore.remoteEditAccessLost || dashboardStore.remoteUpdatePending)
+      "
+      class="freeboard__remote-banner"
+      :role="dashboardStore.remoteEditAccessLost ? 'alert' : 'status'"
+      :aria-live="dashboardStore.remoteEditAccessLost ? 'assertive' : 'polite'"
+    >
+      <span>{{
+        dashboardStore.remoteEditAccessLost
+          ? $t("dashboard.remoteEditAccessLost")
+          : $t("dashboard.remoteUpdatePending")
+      }}</span>
+      <button type="button" class="freeboard__remote-banner__action" @click="reloadDashboard">
+        {{ $t("dashboard.reload") }}
+      </button>
+    </div>
     <main v-if="!showLoadingIndicator" class="freeboard__main">
       <Board />
     </main>
@@ -286,4 +317,26 @@ showLoadingIndicator.value = false;
 
 <style lang="css" scoped>
 @import url("../assets/css/components/freeboard.css");
+
+.freeboard__remote-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-surface-3);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--color-shade-3);
+  font-size: 0.9rem;
+}
+
+.freeboard__remote-banner__action {
+  color: var(--text-link);
+  background: none;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+}
 </style>

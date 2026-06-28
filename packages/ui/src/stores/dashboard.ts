@@ -34,6 +34,11 @@ type DashboardStoreState = {
   // Serialized document as last loaded/saved, so we can tell whether the local
   // model has unsaved edits (a live update must not overwrite those).
   syncedDocumentSnapshot: string | null;
+  // A live update arrived while the local document was dirty; surfaced so the
+  // user knows their save will conflict and they should reload.
+  remoteUpdatePending: boolean;
+  // The user's edit access was revoked remotely while they had unsaved edits.
+  remoteEditAccessLost: boolean;
 };
 
 const asRecord = (value: unknown): UnknownRecord =>
@@ -104,6 +109,8 @@ export const useDashboardStore = defineStore("dashboard", {
     dashboard: new Dashboard(),
     assets: {},
     syncedDocumentSnapshot: null,
+    remoteUpdatePending: false,
+    remoteEditAccessLost: false,
   }),
 
   getters: {
@@ -243,9 +250,35 @@ export const useDashboardStore = defineStore("dashboard", {
       }
 
       this.syncEditingPermissions();
-      // The just-saved document is now the clean baseline.
+      // The just-saved document is now the clean baseline; any prior
+      // remote-change flags are resolved by saving the latest revision.
       this.markDashboardSynced();
+      this.clearRemoteChangeFlags();
       return nextDashboardId;
+    },
+
+    // A live update arrived while the local document was dirty. We don't
+    // overwrite the in-progress edits; instead flag it so the UI can prompt a
+    // reload (a save would CONFLICT against the advanced remote revision).
+    noteRemoteUpdatePending() {
+      this.remoteUpdatePending = true;
+    },
+
+    // The user's edit access was revoked remotely while editing. Reflect the
+    // lost capability in the model so allowEdit turns off durably (a later
+    // syncEditingPermissions on resize can't re-enable editing), leave edit
+    // mode, and flag it so the UI can explain why editing stopped. The
+    // in-progress document is preserved; the user reloads to recover.
+    noteRemoteEditAccessLost() {
+      this.remoteEditAccessLost = true;
+      this.dashboard.canEdit = false;
+      this.dashboard.canManageSharing = false;
+      this.setEditing(false);
+    },
+
+    clearRemoteChangeFlags() {
+      this.remoteUpdatePending = false;
+      this.remoteEditAccessLost = false;
     },
 
     // Record the current document as the clean baseline for unsaved-change
@@ -317,8 +350,10 @@ export const useDashboardStore = defineStore("dashboard", {
       this.loadDashboardAssets();
       this.loadDashboardTheme();
       this.syncEditingPermissions();
-      // Freshly loaded server state is the clean baseline for change detection.
+      // Freshly loaded server state is the clean baseline for change detection,
+      // and resolves any pending remote-change prompts.
       this.markDashboardSynced();
+      this.clearRemoteChangeFlags();
       this.showLoadingIndicator = false;
     },
 

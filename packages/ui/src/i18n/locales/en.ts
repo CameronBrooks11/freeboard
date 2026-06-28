@@ -41,6 +41,18 @@ export const en = {
   },
 
   // Controls for dashboard header and settings
+  dashboard: {
+    remoteUpdatePending:
+      "This dashboard changed elsewhere. Your unsaved edits will conflict on save — reload to get the latest.",
+    remoteEditAccessLost:
+      "Your edit access to this dashboard was changed. You can no longer save your edits — reload to continue.",
+    reload: "Reload",
+    saveConflict:
+      "This dashboard was changed elsewhere since you opened it. Reload to get the latest version before saving again.",
+    saveAccessLost:
+      "Couldn't save. You may no longer have edit access, or the dashboard was changed or removed. Reload to check.",
+  },
+
   dashboardControl: {
     labelSettings: "Settings",
     labelShare: "Share",
