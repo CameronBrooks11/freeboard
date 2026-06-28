@@ -221,8 +221,8 @@ export const useAuthStore = defineStore("auth", {
       if (this.getUserRole() === "admin") {
         return true;
       }
-      // Mirror the server: any non-admin may publish iff the policy allows it
-      // (not gated on the global "editor" role — an ACL editor/manager qualifies).
+      // Mirror the server — a non-admin may publish when the policy allows it,
+      // regardless of the global "editor" role (an ACL editor/manager qualifies).
       return this.publicAuthPolicy.nonAdminCanPublish;
     },
 
