@@ -55,13 +55,24 @@ const publishDashboardChanged = (dashboardId: unknown) => {
   pubSub.publish(dashboardTopic(id), { dashboardId: id });
 };
 
-/** Read a positive integer `expectedDocumentRevision` off a raw update input. */
-const readExpectedDocumentRevision = (input: unknown): number | undefined => {
-  if (!input || typeof input !== "object") {
-    return undefined;
+/**
+ * Read a required `expectedDocumentRevision` (positive integer) off a raw update
+ * input. A document write must carry it so the optimistic-concurrency guard
+ * can't be skipped by a non-UI client; GraphQL can't express conditional
+ * requiredness, so it's enforced here.
+ */
+const readRequiredExpectedDocumentRevision = (input: unknown): number => {
+  const raw =
+    input && typeof input === "object"
+      ? (input as Record<string, unknown>).expectedDocumentRevision
+      : undefined;
+  if (typeof raw !== "number" || !Number.isInteger(raw) || raw < 1) {
+    throw createGraphQLError(
+      "expectedDocumentRevision (a positive integer) is required when updating the document.",
+      { extensions: { code: "BAD_USER_INPUT" } },
+    );
   }
-  const raw = (input as Record<string, unknown>).expectedDocumentRevision;
-  return Number.isFinite(Number(raw)) ? Math.max(1, Math.floor(Number(raw))) : undefined;
+  return raw;
 };
 
 /**
@@ -233,10 +244,17 @@ const resolvers: IResolvers = {
         }
       }
 
+      // A document write must guard against a stale revision; envelope-only
+      // edits (visibility, etc.) don't touch the document and don't require it.
+      // `expectedDocumentRevision` is read from the raw input because
+      // sanitizeDashboardInput strips it from `updatePayload`.
+      const isDocumentWrite = Object.prototype.hasOwnProperty.call(updatePayload, "document");
       const updated = await updateDashboardOrConflict({
         dashboardId: String(_id || "").trim(),
         patch: updatePayload,
-        expectedDocumentRevision: readExpectedDocumentRevision(dashboard),
+        expectedDocumentRevision: isDocumentWrite
+          ? readRequiredExpectedDocumentRevision(dashboard)
+          : undefined,
       });
       if (!updated) {
         throw createGraphQLError("Dashboard not found");

@@ -182,6 +182,7 @@ test("updateDashboard allows acl editor and strips immutable fields", async () =
       _id: "dash-1",
       dashboard: {
         document: replacementDocument,
+        expectedDocumentRevision: 1,
         user: "hijack-attempt",
       },
     },
