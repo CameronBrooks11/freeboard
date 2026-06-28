@@ -7,20 +7,11 @@ import crypto from "node:crypto";
 import { config } from "./config.js";
 import { SERVICE_ACCOUNT_SCOPES } from "./serviceAccountScopes.js";
 import { dataStore } from "./data/index.js";
+import { toComparableId } from "./util.js";
 
 const SERVICE_ACCOUNT_SCOPE_SET = new Set(SERVICE_ACCOUNT_SCOPES);
 const serviceAccountRepository = dataStore.repositories.serviceAccounts;
 const serviceAccountTokenRepository = dataStore.repositories.serviceAccountTokens;
-
-const toComparableId = (value: unknown): string | null => {
-  if (!value) {
-    return null;
-  }
-  if (typeof value?.toString === "function") {
-    return value.toString();
-  }
-  return String(value);
-};
 
 export const normalizeServiceAccountScopes = (scopes: unknown[] = []): string[] => {
   if (!Array.isArray(scopes)) {

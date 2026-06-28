@@ -1,17 +1,7 @@
 import { config } from "../../../config.js";
 import { getPostgresPool } from "../../../db/postgres/client.js";
 import type { AuditEventRecord, AuditRepository } from "../../contracts.js";
-
-const toDate = (value: unknown, fallback = new Date()): Date => {
-  if (value instanceof Date && Number.isFinite(value.getTime())) {
-    return value;
-  }
-  const normalized = new Date(value as Date | string | number);
-  if (!Number.isFinite(normalized.getTime())) {
-    return fallback;
-  }
-  return normalized;
-};
+import { toDate } from "../../../util.js";
 
 const toRecord = (row: {
   id?: unknown;

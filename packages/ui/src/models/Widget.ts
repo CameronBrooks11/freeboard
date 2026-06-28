@@ -4,6 +4,7 @@
  */
 
 import { generateModelId } from "./id.js";
+import { cloneMutable } from "./clone.js";
 import { getWidgetPlugin } from "../runtime/runtimeContext.js";
 import type {
   UnknownRecord,
@@ -18,22 +19,6 @@ const toPositiveInteger = (value: unknown, fallback = 1): number => {
     return fallback;
   }
   return Math.max(1, Math.ceil(parsed));
-};
-
-const cloneMutableSettings = (value: unknown): Record<string, unknown> => {
-  if (!value || typeof value !== "object") {
-    return {};
-  }
-
-  if (typeof structuredClone === "function") {
-    try {
-      return structuredClone(value) as Record<string, unknown>;
-    } catch {
-      // Fallback below.
-    }
-  }
-
-  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
 };
 
 /**
@@ -257,7 +242,7 @@ export class Widget {
     this.id = typeof object.id === "string" ? object.id : generateModelId("w");
     this.title = typeof object.title === "string" ? object.title : null;
     this.enabled = object.enabled !== undefined ? !!object.enabled : true;
-    this.settings = cloneMutableSettings(object.settings);
+    this.settings = cloneMutable<Record<string, unknown>>(object.settings, {});
     this.type = typeof object.type === "string" ? object.type : null;
     this.shouldRender = true;
   }

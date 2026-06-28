@@ -11,6 +11,7 @@ import { config } from "../config.js";
 import { dataStore } from "../data/index.js";
 import { getApiRuntimeMetricsSnapshot } from "../runtimeMetrics.js";
 import { issueServiceAccountToken, normalizeServiceAccountScopes } from "../serviceAccountAuth.js";
+import { toComparableId } from "../util.js";
 
 const DEFAULT_AUDIT_LIMIT = 100;
 const MAX_AUDIT_LIMIT = 500;
@@ -32,16 +33,6 @@ const SCOPE_ENUM_MAP = Object.freeze({
   DATASOURCE_DIAGNOSTICS_READ: "datasource:diagnostics:read",
   OPS_READ: "ops:read",
 });
-
-const toComparableId = (value: unknown): string | null => {
-  if (!value) {
-    return null;
-  }
-  if (typeof value?.toString === "function") {
-    return value.toString();
-  }
-  return String(value);
-};
 
 const toScopeValues = (scopes: unknown[] = []): string[] =>
   normalizeServiceAccountScopes(
