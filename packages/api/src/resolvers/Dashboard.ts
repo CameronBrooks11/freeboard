@@ -601,8 +601,10 @@ const resolvers: IResolvers = {
 
         // Re-fetch, re-authorize, and re-project on EVERY event against this
         // subscriber's own context — never relay the mutating actor's
-        // projection. Close the stream if the dashboard is gone or this
-        // subscriber's read access was revoked mid-subscription.
+        // projection. When the dashboard is gone or this subscriber's read
+        // access was revoked mid-subscription, emit a terminal `null` (the
+        // field is nullable) so the client learns the stream ended because of
+        // access loss — not just a silent completion — then close.
         const source = pubSub.subscribe(dashboardTopic(dashboardId));
         return (async function* () {
           for await (const event of source) {
@@ -611,10 +613,12 @@ const resolvers: IResolvers = {
             void event;
             const current = await dashboardRepository.findById({ dashboardId });
             if (!current) {
+              yield { dashboard: null };
               return;
             }
             const permissions = resolveDashboardPermissions(current, context);
             if (!permissions.canRead) {
+              yield { dashboard: null };
               return;
             }
             yield { dashboard: transformDashboardForContext(current, context, permissions) };

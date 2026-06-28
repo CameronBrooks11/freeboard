@@ -236,18 +236,27 @@ const applyResult = (
 ) => {
   const dash = data?.dashboard || data?.dashboardByShareToken;
 
-  // Never let a live update overwrite UNSAVED local edits — but a clean editor
-  // (board open, nothing changed) still gets live updates. When the editor has
-  // pending edits we keep their in-progress document and instead surface the
-  // remote change so they can reload: a save would CONFLICT if the document
-  // advanced, and if their edit access was revoked we leave edit mode.
-  if (fromSubscription && dashboardStore.hasUnsavedChanges) {
-    if (dash && (dash as Record<string, unknown>).canEdit === false) {
+  if (fromSubscription) {
+    // A terminal null on the live stream means the server ended our access
+    // (revoked, or the dashboard was deleted). Surface it and leave edit mode;
+    // unsaved edits are preserved for the user to reload or export.
+    if (dash == null) {
       dashboardStore.noteRemoteEditAccessLost();
-    } else {
-      dashboardStore.noteRemoteUpdatePending();
+      return;
     }
-    return;
+    // Never let a live update overwrite UNSAVED local edits — but a clean editor
+    // (board open, nothing changed) still gets live updates. With pending edits
+    // we keep the in-progress document and surface the remote change instead: a
+    // save would CONFLICT if the document advanced, and a downgraded canEdit
+    // means edit access was revoked.
+    if (dashboardStore.hasUnsavedChanges) {
+      if ((dash as Record<string, unknown>).canEdit === false) {
+        dashboardStore.noteRemoteEditAccessLost();
+      } else {
+        dashboardStore.noteRemoteUpdatePending();
+      }
+      return;
+    }
   }
 
   showLoadingIndicator.value = false;
