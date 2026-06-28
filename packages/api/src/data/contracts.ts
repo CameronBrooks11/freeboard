@@ -231,6 +231,17 @@ export type DashboardRepository = {
      */
     expectedDocumentRevision?: number | undefined;
   }): Promise<DashboardRecord | null>;
+  /**
+   * Grant or update a single ACL entry atomically (INSERT ... ON CONFLICT), so
+   * concurrent grants/revokes don't clobber one another the way a full-array
+   * replacement does. Returns the updated dashboard, or null if it's gone.
+   */
+  upsertAclEntry(params: {
+    dashboardId: string;
+    entry: DashboardAclEntryRecord;
+  }): Promise<DashboardRecord | null>;
+  /** Revoke a single ACL entry atomically (keyed DELETE). */
+  deleteAclEntry(params: { dashboardId: string; userId: string }): Promise<DashboardRecord | null>;
   deleteById(params: { dashboardId: string }): Promise<DashboardRecord | null>;
 };
 

@@ -15,6 +15,8 @@ const originalMethods = {
   dashboardFindById: dashboardRepository.findById,
   dashboardFindByShareToken: dashboardRepository.findByShareToken,
   dashboardUpdateById: dashboardRepository.updateById,
+  dashboardUpsertAclEntry: dashboardRepository.upsertAclEntry,
+  dashboardDeleteAclEntry: dashboardRepository.deleteAclEntry,
   dashboardDeleteById: dashboardRepository.deleteById,
   dashboardCreate: dashboardRepository.create,
   dashboardListAccessible: dashboardRepository.listAccessible,
@@ -94,6 +96,8 @@ afterEach(() => {
   dashboardRepository.findById = originalMethods.dashboardFindById;
   dashboardRepository.findByShareToken = originalMethods.dashboardFindByShareToken;
   dashboardRepository.updateById = originalMethods.dashboardUpdateById;
+  dashboardRepository.upsertAclEntry = originalMethods.dashboardUpsertAclEntry;
+  dashboardRepository.deleteAclEntry = originalMethods.dashboardDeleteAclEntry;
   dashboardRepository.deleteById = originalMethods.dashboardDeleteById;
   dashboardRepository.create = originalMethods.dashboardCreate;
   dashboardRepository.listAccessible = originalMethods.dashboardListAccessible;
@@ -494,14 +498,13 @@ test("upsertDashboardAccess allows an acl manager (even a global viewer) to gran
           active: true,
         })
       : null;
-  dashboardRepository.updateById = async ({ dashboardId, patch }) => {
+  dashboardRepository.upsertAclEntry = async ({ dashboardId, entry }) => {
     assert.equal(dashboardId, "dash-1");
-    assert.ok(
-      patch.acl.some((entry) => entry.userId === "viewer-2" && entry.accessLevel === "viewer"),
-    );
+    assert.equal(entry.userId, "viewer-2");
+    assert.equal(entry.accessLevel, "viewer");
     dashboardState = {
       ...dashboardState,
-      ...patch,
+      acl: [...dashboardState.acl.filter((e) => e.userId !== entry.userId), entry],
     };
     return dashboardState;
   };
@@ -521,8 +524,8 @@ test("upsertDashboardAccess allows an acl manager (even a global viewer) to gran
 test("upsertDashboardAccess denies an acl editor (sharing management is manager-only)", async () => {
   dashboardRepository.findById = async () =>
     buildDashboardDoc({ user: "owner-1", acl: [{ userId: "editor-1", accessLevel: "editor" }] });
-  dashboardRepository.updateById = async () => {
-    throw new Error("updateById must not be reached for an editor managing sharing");
+  dashboardRepository.upsertAclEntry = async () => {
+    throw new Error("upsertAclEntry must not be reached for an editor managing sharing");
   };
 
   await assert.rejects(
@@ -896,8 +899,11 @@ test(
     });
     dashboardRepository.findById = async ({ dashboardId }) =>
       dashboardId === "dash-1" ? dashboardState : null;
-    dashboardRepository.updateById = async ({ patch }) => {
-      dashboardState = { ...dashboardState, ...patch };
+    dashboardRepository.deleteAclEntry = async ({ userId }) => {
+      dashboardState = {
+        ...dashboardState,
+        acl: dashboardState.acl.filter((entry) => entry.userId !== userId),
+      };
       return dashboardState;
     };
 
