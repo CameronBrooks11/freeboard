@@ -41,6 +41,12 @@ type DashboardPermissions = {
 };
 const dashboardRepository = dataStore.repositories.dashboards;
 const userRepository = dataStore.repositories.users;
+const credentialProfileRepository = dataStore.repositories.credentialProfiles;
+const brokerProfileRepository = dataStore.repositories.brokerProfiles;
+
+// Using a stored credential/broker profile is a trusted-author privilege, gated
+// on the same global tier the profile catalog itself is gated on.
+const TRUSTED_PROFILE_AUTHOR_ROLES = new Set(["editor", "admin"]);
 
 const EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES = new Set(["link", "public"]);
 
@@ -298,6 +304,155 @@ export const validateDashboardDatasources = (datasources: unknown): void => {
       throw createBadInputError(first.message);
     }
   });
+};
+
+/** Stable (key-sorted, deep) serialization so benign key reordering is not seen as a change. */
+const stableSerialize = (value: unknown): string => {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value) ?? "null";
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(stableSerialize).join(",")}]`;
+  }
+  const record = value as UnknownRecord;
+  return `{${Object.keys(record)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableSerialize(record[key])}`)
+    .join(",")}}`;
+};
+
+/** The credential/broker profile ids a datasource references (trimmed, non-empty). */
+const referencedProfileIds = (datasource: unknown): string[] => {
+  const settings = asRecord(asRecord(datasource).settings);
+  const ids: string[] = [];
+  for (const key of ["credentialProfileId", "brokerProfileId"]) {
+    const value = settings[key];
+    if (typeof value === "string" && value.trim()) {
+      ids.push(value.trim());
+    }
+  }
+  return ids;
+};
+
+/**
+ * Author-trust gate for credential/broker references (issue #213).
+ *
+ * Using a stored credential/broker profile is a *trusted-author* privilege — the
+ * same tier the profile catalog is gated on (global `editor`/`admin`). An ACL-only
+ * editor (a global viewer holding a per-dashboard edit grant) is NOT trusted to
+ * attach a secret to settings they control: the authenticated datasource gateway
+ * flow injects the referenced secret into the author-controlled URL without an
+ * `allowPublicUse` check, so adding or redirecting such a datasource would let an
+ * untrusted author exfiltrate the secret. An untrusted author may therefore only
+ * add/modify datasources that reference `allowPublicUse` (public) profiles; a
+ * pre-existing datasource left byte-identical is allowed, so a non-editor can still
+ * edit a shared board that already uses the owner's key without being able to
+ * re-target it.
+ *
+ * Pure: the caller resolves `isNonPublicProfileId` from the profile store and only
+ * invokes this for untrusted authors (trusted authors skip it entirely).
+ */
+export const collectUntrustedCredentialAuthorIssues = ({
+  nextDatasources,
+  priorDatasources,
+  isNonPublicProfileId,
+}: {
+  nextDatasources: unknown;
+  priorDatasources: unknown;
+  isNonPublicProfileId: (profileId: string) => boolean;
+}): string[] => {
+  if (!Array.isArray(nextDatasources)) {
+    return [];
+  }
+  const priorById = new Map<string, string>();
+  if (Array.isArray(priorDatasources)) {
+    for (const datasource of priorDatasources) {
+      const id = toComparableId(asRecord(datasource).id);
+      if (id) {
+        priorById.set(id, stableSerialize(datasource));
+      }
+    }
+  }
+
+  const issues: string[] = [];
+  nextDatasources.forEach((datasource, index) => {
+    const usesNonPublicProfile = referencedProfileIds(datasource).some(isNonPublicProfileId);
+    if (!usesNonPublicProfile) {
+      return;
+    }
+    const id = toComparableId(asRecord(datasource).id);
+    const unchanged = id !== null && priorById.get(id) === stableSerialize(datasource);
+    if (!unchanged) {
+      issues.push(
+        `Datasource at index ${index} references a credential or broker profile you are not permitted to use; only profiles marked for public use can be added by a non-editor.`,
+      );
+    }
+  });
+  return issues;
+};
+
+/** Distinct, trimmed ids referenced under a settings key across all datasources. */
+const collectReferencedSettingIds = (datasources: unknown, key: string): string[] => {
+  if (!Array.isArray(datasources)) {
+    return [];
+  }
+  const ids = new Set<string>();
+  for (const datasource of datasources) {
+    const value = asRecord(asRecord(datasource).settings)[key];
+    if (typeof value === "string" && value.trim()) {
+      ids.add(value.trim());
+    }
+  }
+  return [...ids];
+};
+
+/**
+ * Enforce the author-trust gate (issue #213) on a dashboard write. Trusted authors
+ * (global `editor`/`admin`) may use any profile and skip the check (and its lookups).
+ * For an untrusted author (an ACL-only editor — a global viewer with a per-dashboard
+ * grant), resolve which referenced profiles are non-public and reject any datasource
+ * that newly adds or modifies a reference to one. Throws `FORBIDDEN` on the first.
+ */
+export const assertCredentialAuthorAuthorized = async ({
+  nextDatasources,
+  priorDatasources,
+  context,
+}: {
+  nextDatasources: unknown;
+  priorDatasources: unknown;
+  context: ApiContext;
+}): Promise<void> => {
+  if (TRUSTED_PROFILE_AUTHOR_ROLES.has(String(context.user?.role || ""))) {
+    return;
+  }
+  if (!Array.isArray(nextDatasources)) {
+    return;
+  }
+
+  // An id resolves to "public" only when its stored record exists and is flagged
+  // `allowPublicUse`; missing/unknown ids stay non-public (fail closed).
+  const publicById = new Map<string, boolean>();
+  await Promise.all([
+    ...collectReferencedSettingIds(nextDatasources, "credentialProfileId").map(
+      async (profileId) => {
+        const profile = await credentialProfileRepository.findById({ profileId });
+        publicById.set(profileId, profile?.allowPublicUse === true);
+      },
+    ),
+    ...collectReferencedSettingIds(nextDatasources, "brokerProfileId").map(async (profileId) => {
+      const profile = await brokerProfileRepository.findById({ profileId });
+      publicById.set(profileId, profile?.allowPublicUse === true);
+    }),
+  ]);
+
+  const [issue] = collectUntrustedCredentialAuthorIssues({
+    nextDatasources,
+    priorDatasources,
+    isNonPublicProfileId: (profileId) => publicById.get(profileId) !== true,
+  });
+  if (issue) {
+    throw createGraphQLError(issue, { extensions: { code: "FORBIDDEN" } });
+  }
 };
 
 const getAclEntry = (dashboard: DashboardLike, userId: unknown) => {
