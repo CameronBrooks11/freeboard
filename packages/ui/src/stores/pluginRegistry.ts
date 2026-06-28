@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { PLUGIN_MANIFEST } from "@freeboard/core";
 import { runtimeConfig } from "../runtime/config.js";
 import { validateWidgetPlugin } from "../widgets/runtime/plugin.js";
 import { ClockDatasource } from "../datasources/ClockDatasource.js";
@@ -20,6 +21,18 @@ import { StatusListWidget } from "../widgets/StatusListWidget.js";
 import { TableWidget } from "../widgets/TableWidget.js";
 import { TextWidget } from "../widgets/TextWidget.js";
 import type { DatasourcePlugin, WidgetPlugin } from "../types/runtime.js";
+
+// The UI owns the datasource IMPLEMENTATIONS (classes are code); the manifest
+// owns WHICH types exist and in WHICH build profile. Keyed by `typeName` so the
+// manifest walk in `registerCorePlugins` resolves each entry to its class.
+const DATASOURCE_PLUGINS_BY_TYPE: Record<string, DatasourcePlugin> = {
+  [HTTPDatasource.typeName]: HTTPDatasource,
+  [ClockDatasource.typeName]: ClockDatasource,
+  [StaticDatasource.typeName]: StaticDatasource,
+  [SSEDatasource.typeName]: SSEDatasource,
+  [WebSocketDatasource.typeName]: WebSocketDatasource,
+  [MQTTDatasource.typeName]: MQTTDatasource,
+};
 
 export const usePluginRegistryStore = defineStore("pluginRegistry", {
   state: () => ({
@@ -49,19 +62,16 @@ export const usePluginRegistryStore = defineStore("pluginRegistry", {
       // gateway-only streaming datasources (SSE/WebSocket/MQTT) are not
       // registered — they cannot be added, and existing documents referencing
       // them load inert. HTTP stays (forced to direct mode); Clock/Static are
-      // pure client-side.
-      const datasourcePlugins = runtimeConfig.isStaticBuild
-        ? [HTTPDatasource, ClockDatasource, StaticDatasource]
-        : [
-            HTTPDatasource,
-            ClockDatasource,
-            StaticDatasource,
-            SSEDatasource,
-            WebSocketDatasource,
-            MQTTDatasource,
-          ];
-      datasourcePlugins.forEach((plugin) => {
-        this.registerDatasourcePlugin(plugin);
+      // pure client-side. The lite/server split is sourced from the manifest's
+      // `profiles[]` (the single source of truth) rather than hardcoded here.
+      const activeProfile = runtimeConfig.isStaticBuild ? "lite" : "server";
+      PLUGIN_MANIFEST.filter(
+        (entry) => entry.kind === "datasource" && entry.profiles.includes(activeProfile),
+      ).forEach((entry) => {
+        const plugin = DATASOURCE_PLUGINS_BY_TYPE[entry.typeName];
+        if (plugin) {
+          this.registerDatasourcePlugin(plugin);
+        }
       });
 
       [

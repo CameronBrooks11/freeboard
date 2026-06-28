@@ -3,11 +3,16 @@
  * Admin-only datasource diagnostics rollup resolver.
  */
 
+import { PLUGIN_MANIFEST } from "@freeboard/core";
 import { ensureThatPrincipalHasServiceScope } from "../auth.js";
 import type { IResolvers } from "@graphql-tools/utils";
 import { dataStore } from "../data/index.js";
 
-const ALLOWED_DATASOURCE_TYPES = new Set(["http", "clock", "static", "sse", "websocket", "mqtt"]);
+// Sourced from the manifest (the single source of truth for datasource types)
+// rather than a hardcoded copy of the six type names.
+const ALLOWED_DATASOURCE_TYPES = new Set(
+  PLUGIN_MANIFEST.filter((entry) => entry.kind === "datasource").map((entry) => entry.typeName),
+);
 const EXTERNAL_VISIBILITIES = new Set(["link", "public"]);
 const brokerProfileRepository = dataStore.repositories.brokerProfiles;
 const dashboardRepository = dataStore.repositories.dashboards;
