@@ -326,18 +326,6 @@ const clearStatePersistent = async (
 
 const isPersistentRepositoryBackend = (): boolean => limiterBackend !== "memory";
 
-const assertPersistentBackendCompatible = (): void => {
-  if (!isPersistentRepositoryBackend()) {
-    return;
-  }
-  if (limiterBackend === dataStore.backend) {
-    return;
-  }
-  throw new Error(
-    `SECURITY_LIMITER_BACKEND='${limiterBackend}' is incompatible with DB_BACKEND='${dataStore.backend}'.`,
-  );
-};
-
 /**
  * Build a stable key from untrusted/high-cardinality parts before storage hashing.
  */
@@ -373,7 +361,6 @@ export const consumeSecurityLimiterFixedWindow = async ({
   const documentId = buildCounterDocumentId(normalizedScope, keyHash, bucketId);
 
   if (isPersistentRepositoryBackend()) {
-    assertPersistentBackendCompatible();
     return consumeFixedWindowPersistent({
       documentId,
       limit: normalizedLimit,
@@ -408,7 +395,6 @@ export const getSecurityLimiterLockState = async ({
   );
 
   if (isPersistentRepositoryBackend()) {
-    assertPersistentBackendCompatible();
     return readLockPersistent(lockDocumentId, nowMs);
   }
 
@@ -434,7 +420,6 @@ export const setSecurityLimiterLock = async ({
   );
 
   if (isPersistentRepositoryBackend()) {
-    assertPersistentBackendCompatible();
     await setLockPersistent(lockDocumentId, lockUntilMs);
     return;
   }
@@ -457,7 +442,6 @@ export const clearSecurityLimiterState = async ({
   const lockDocumentId = buildLockDocumentId(normalizedScope, keyHash);
 
   if (isPersistentRepositoryBackend()) {
-    assertPersistentBackendCompatible();
     await clearStatePersistent(counterPrefix, lockDocumentId);
     return;
   }
