@@ -23,7 +23,8 @@ import {
   migrateDashboardDocument,
 } from "./dashboardDocument.js";
 import { RESERVED_DATASOURCE_TITLES, normalizeDatasourceTitle } from "./datasourceTitles.js";
-import { RESOURCE_LIMITS } from "./manifest.js";
+import { RESOURCE_LIMITS, getManifestEntry } from "./manifest.js";
+import type { ManifestField, PluginManifestEntry } from "./manifest.js";
 import type { UnknownRecord } from "./types.js";
 
 export type ValidationSeverity = "error" | "warning";
@@ -140,6 +141,145 @@ const collectResourceLimitIssues = (document: UnknownRecord, errors: ValidationI
       severity: "error",
     });
   }
+};
+
+/** Trim + optional compare-only case fold (mirrors the server's comparison semantics). */
+const coerceForCompare = (value: unknown, coerce?: "upper" | "lower"): string => {
+  const trimmed = String(value).trim();
+  if (coerce === "upper") return trimmed.toUpperCase();
+  if (coerce === "lower") return trimmed.toLowerCase();
+  return trimmed;
+};
+
+const matchesDataType = (value: unknown, dataType: ManifestField["dataType"]): boolean => {
+  const types = Array.isArray(dataType) ? dataType : [dataType];
+  return types.some((type) => {
+    switch (type) {
+      case "string":
+        return typeof value === "string";
+      case "number":
+        return typeof value === "number";
+      case "integer":
+        return typeof value === "number" && Number.isInteger(value);
+      case "boolean":
+        return typeof value === "boolean";
+      case "array":
+        return Array.isArray(value);
+      case "object":
+        return value !== null && typeof value === "object" && !Array.isArray(value);
+      default:
+        return false;
+    }
+  });
+};
+
+/**
+ * Validate one settings field against its manifest constraints, matching the
+ * server's `validateDashboardDatasources` semantics exactly (including the
+ * fields' check order, so the first collected issue equals the server's
+ * first-thrown one). Collects into `errors`; never throws.
+ */
+const collectFieldIssues = (
+  entry: PluginManifestEntry,
+  field: ManifestField,
+  settings: UnknownRecord,
+  basePath: string,
+  errors: ValidationIssue[],
+): void => {
+  const value = settings[field.name];
+  const path = `${basePath}/settings/${field.name}`;
+  const isAbsent = value === undefined || value === null;
+  const push = (code: string, message: string) =>
+    errors.push({ code, path, message, severity: "error" });
+
+  // typeCheck gates on `!== undefined` (the server rejects an explicit null too).
+  if (field.typeCheck && value !== undefined && !matchesDataType(value, field.dataType)) {
+    push("manifest.settings.type", `${entry.typeName} ${field.name} has an invalid type.`);
+  }
+
+  // required: trimmed value must be non-empty (server: String(v || "").trim()).
+  if (field.required && String(value || "").trim() === "") {
+    push("manifest.settings.required", `${entry.typeName} requires a non-empty ${field.name}.`);
+    return;
+  }
+
+  // requiredWhen: required-non-empty when a sibling field (compared after ITS
+  // coerce) equals the trigger value.
+  if (field.requiredWhen) {
+    const sibling = entry.fields.find((f) => f.name === field.requiredWhen?.field);
+    const siblingValue = coerceForCompare(settings[field.requiredWhen.field], sibling?.coerce);
+    if (siblingValue === String(field.requiredWhen.equals) && String(value || "").trim() === "") {
+      push(
+        "manifest.settings.requiredWhen",
+        `${entry.typeName} requires ${field.name} when ${field.requiredWhen.field} is ${field.requiredWhen.equals}.`,
+      );
+      return;
+    }
+  }
+
+  // nonEmpty: present-but-blank string is rejected (e.g. an empty credentialProfileId).
+  if (field.nonEmpty && !isAbsent && String(value).trim() === "") {
+    push("manifest.settings.nonEmpty", `${entry.typeName} ${field.name} must not be empty.`);
+    return;
+  }
+
+  if (isAbsent) {
+    return;
+  }
+
+  if (field.enum && !field.enum.map(String).includes(coerceForCompare(value, field.coerce))) {
+    push(
+      "manifest.settings.enum",
+      `${entry.typeName} ${field.name} must be one of: ${field.enum.join(", ")}.`,
+    );
+  }
+
+  if (field.min !== undefined || field.max !== undefined) {
+    const num = Number(value);
+    if (
+      !Number.isFinite(num) ||
+      (field.min !== undefined && num < field.min) ||
+      (field.max !== undefined && num > field.max)
+    ) {
+      push(
+        "manifest.settings.range",
+        `${entry.typeName} ${field.name} must be between ${field.min ?? "-∞"} and ${field.max ?? "∞"}.`,
+      );
+    }
+  }
+};
+
+/**
+ * Manifest-driven plugin validation (datasources). Replaces the server's
+ * hardcoded per-type rules with the declarative manifest, so core is the single
+ * settings-validation chokepoint. Unknown datasource type is an error
+ * (closed-world, matching the server). Widget validation is a later slice.
+ * Runs on structurally-valid documents (Ajv has already guaranteed shape).
+ */
+const collectManifestIssues = (document: UnknownRecord, errors: ValidationIssue[]): void => {
+  const datasources = Array.isArray(document.datasources) ? document.datasources : [];
+  datasources.forEach((datasource, index) => {
+    if (!isPlainObject(datasource)) {
+      return;
+    }
+    const type = String(datasource.type || "")
+      .trim()
+      .toLowerCase();
+    const entry = getManifestEntry("datasource", type);
+    if (!entry) {
+      errors.push({
+        code: "manifest.unknownType",
+        path: `/datasources/${index}/type`,
+        message: `Datasource type '${type || "unknown"}' is not supported.`,
+        severity: "error",
+      });
+      return;
+    }
+    const settings = isPlainObject(datasource.settings) ? datasource.settings : {};
+    for (const field of entry.fields) {
+      collectFieldIssues(entry, field, settings, `/datasources/${index}`, errors);
+    }
+  });
 };
 
 const collectSemanticIssues = (
@@ -296,6 +436,7 @@ export const validateDashboardDocument = (input: unknown): ValidationResult => {
 
   collectSemanticIssues(migrated, errors, warnings);
   collectResourceLimitIssues(migrated, errors);
+  collectManifestIssues(migrated, errors);
 
   if (errors.length > 0) {
     return { valid: false, errors, warnings };
