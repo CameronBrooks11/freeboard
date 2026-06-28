@@ -506,7 +506,7 @@ export const useAdminConsoleController = () => {
       const result = await setAuthPolicy({
         registrationMode: registrationModeToEnum(policyDraft.value.registrationMode),
         registrationDefaultRole: roleToEnum(policyDraft.value.registrationDefaultRole),
-        editorCanPublish: Boolean(policyDraft.value.editorCanPublish),
+        nonAdminCanPublish: Boolean(policyDraft.value.nonAdminCanPublish),
         dashboardDefaultVisibility: dashboardVisibilityToEnum(
           policyDraft.value.dashboardDefaultVisibility,
         ),

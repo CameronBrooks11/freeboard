@@ -18,7 +18,7 @@ const CONFIG_ENV_KEYS = [
   "PORT",
   "AUTH_REGISTRATION_MODE",
   "AUTH_REGISTRATION_DEFAULT_ROLE",
-  "AUTH_EDITOR_CAN_PUBLISH",
+  "AUTH_NONADMIN_CAN_PUBLISH",
   "DASHBOARD_DEFAULT_VISIBILITY",
   "DASHBOARD_PUBLIC_LISTING_ENABLED",
   "EXECUTION_MODE",
@@ -336,7 +336,7 @@ test("config accepts valid auth policy environment overrides", async () => {
       DATABASE_URL: TEST_DATABASE_URL,
       AUTH_REGISTRATION_MODE: "open",
       AUTH_REGISTRATION_DEFAULT_ROLE: "editor",
-      AUTH_EDITOR_CAN_PUBLISH: "true",
+      AUTH_NONADMIN_CAN_PUBLISH: "true",
       DASHBOARD_DEFAULT_VISIBILITY: "public",
       DASHBOARD_PUBLIC_LISTING_ENABLED: "true",
       EXECUTION_MODE: "trusted",
@@ -349,7 +349,7 @@ test("config accepts valid auth policy environment overrides", async () => {
       const { config } = await importConfigFresh();
       assert.equal(config.registrationMode, "open");
       assert.equal(config.registrationDefaultRole, "editor");
-      assert.equal(config.editorCanPublish, true);
+      assert.equal(config.nonAdminCanPublish, true);
       assert.equal(config.dashboardDefaultVisibility, "public");
       assert.equal(config.dashboardPublicListingEnabled, true);
       assert.equal(config.executionMode, "trusted");

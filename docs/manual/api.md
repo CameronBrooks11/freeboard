@@ -18,7 +18,7 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with repository-dr
   - `jwtSecret`, `jwtTimeExpiration`
   - `jwtGatewaySecret`, `gatewayServiceToken`, `credentialEncryptionKey`
   - `userLimit`, `adminEmail`, `adminPassword`, `createAdmin`
-  - auth/runtime policy defaults (`registrationMode`, `editorCanPublish`, `executionMode`, etc.)
+  - auth/runtime policy defaults (`registrationMode`, `nonAdminCanPublish`, `executionMode`, etc.)
   - login abuse controls (`authLoginMaxAttempts`, `authLoginWindowSeconds`, `authLoginLockSeconds`)
   - trusted proxy controls (`apiTrustProxyHops`)
   - shared security limiter controls (`securityLimiterBackend`, `securityLimiterFailureMode`, `securityLimiterNamespace`, `securityLimiter*`)

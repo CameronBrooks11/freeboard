@@ -180,7 +180,7 @@ test("dashboard store saveDashboard enforces publish policy on create", async ()
       active: true,
     }),
   );
-  authStore.setPublicAuthPolicy({ editorCanPublish: false });
+  authStore.setPublicAuthPolicy({ nonAdminCanPublish: false });
 
   dashboardStore.isSaved = false;
 

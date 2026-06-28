@@ -64,7 +64,7 @@ test("auth store hydrates session and enforces role/publish policy gating", () =
   assert.equal(store.canCurrentUserPublish(), false);
 
   const executionModeChanged = store.setPublicAuthPolicy({
-    editorCanPublish: true,
+    nonAdminCanPublish: true,
     executionMode: "trusted",
   });
 

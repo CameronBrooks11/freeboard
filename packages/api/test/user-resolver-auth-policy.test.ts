@@ -41,7 +41,7 @@ const stubPolicyValues = (overrides = {}) => {
   const defaults = {
     "auth.registration.mode": "disabled",
     "auth.registration.defaultRole": "viewer",
-    "auth.publish.editorCanPublish": false,
+    "auth.publish.nonAdminCanPublish": false,
     "app.execution.mode": "safe",
     "dashboard.visibility.default": "private",
     "dashboard.listing.public.enabled": false,
