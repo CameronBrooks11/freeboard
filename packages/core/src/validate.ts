@@ -23,6 +23,7 @@ import {
   migrateDashboardDocument,
 } from "./dashboardDocument.js";
 import { RESERVED_DATASOURCE_TITLES, normalizeDatasourceTitle } from "./datasourceTitles.js";
+import { RESOURCE_LIMITS } from "./manifest.js";
 import type { UnknownRecord } from "./types.js";
 
 export type ValidationSeverity = "error" | "warning";
@@ -83,14 +84,6 @@ const mapStructuralError = (error: ErrorObject): ValidationIssue => {
   return { code: `schema.${error.keyword}`, path, message, severity: "error" };
 };
 
-// Generous trust-boundary resource ceilings — DoS/abuse bounds, not product
-// limits. A document past these is rejected at every write/import boundary. No
-// real dashboard approaches them; they only stop pathological/hostile payloads.
-const MAX_DATASOURCES = 200;
-const MAX_PANES = 200;
-const MAX_WIDGETS = 1000;
-const MAX_NESTING_DEPTH = 32;
-
 /** Depth of the deepest nested object/array, short-circuiting once over `limit`. */
 const nestingDepth = (value: unknown, limit: number, depth = 1): number => {
   if (depth > limit || value === null || typeof value !== "object") {
@@ -130,20 +123,20 @@ const collectResourceLimitIssues = (document: UnknownRecord, errors: ValidationI
   };
   overLimit(
     datasources.length,
-    MAX_DATASOURCES,
+    RESOURCE_LIMITS.maxDatasources,
     "limit.datasources",
     "/datasources",
     "datasources",
   );
-  overLimit(panes.length, MAX_PANES, "limit.panes", "/panes", "panes");
-  overLimit(widgetCount, MAX_WIDGETS, "limit.widgets", "/panes", "widgets");
+  overLimit(panes.length, RESOURCE_LIMITS.maxPanes, "limit.panes", "/panes", "panes");
+  overLimit(widgetCount, RESOURCE_LIMITS.maxWidgets, "limit.widgets", "/panes", "widgets");
 
   // Bound nesting depth to protect recursive consumers (settings/layout are open).
-  if (nestingDepth(document, MAX_NESTING_DEPTH) > MAX_NESTING_DEPTH) {
+  if (nestingDepth(document, RESOURCE_LIMITS.maxNestingDepth) > RESOURCE_LIMITS.maxNestingDepth) {
     errors.push({
       code: "limit.depth",
       path: "",
-      message: `Document nesting is too deep (max ${MAX_NESTING_DEPTH} levels).`,
+      message: `Document nesting is too deep (max ${RESOURCE_LIMITS.maxNestingDepth} levels).`,
       severity: "error",
     });
   }
