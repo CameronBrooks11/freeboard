@@ -4,6 +4,7 @@
  */
 
 import { Widget } from "../models/Widget.js";
+import { cloneMutable } from "./clone.js";
 
 type PaneLayout = {
   x?: number;
@@ -12,22 +13,6 @@ type PaneLayout = {
   h?: number;
   i?: string;
 } & Record<string, unknown>;
-
-const cloneMutableObject = (value: unknown, fallback: PaneLayout): PaneLayout => {
-  if (!value || typeof value !== "object") {
-    return fallback;
-  }
-
-  if (typeof structuredClone === "function") {
-    try {
-      return structuredClone(value) as PaneLayout;
-    } catch {
-      // Fallback below.
-    }
-  }
-
-  return JSON.parse(JSON.stringify(value)) as PaneLayout;
-};
 
 /**
  * Represents a dashboard pane containing widgets and layout configuration.
@@ -133,7 +118,7 @@ export class Pane {
   }): void {
     this.id = typeof object.id === "string" && object.id.length > 0 ? object.id : null;
     this.title = object.title ?? null;
-    this.layout = cloneMutableObject(object.layout, {});
+    this.layout = cloneMutable<PaneLayout>(object.layout, {});
     this.widgets = [];
 
     object.widgets?.forEach((widgetConfig: Record<string, unknown>) => {

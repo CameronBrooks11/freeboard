@@ -4,6 +4,7 @@
  */
 
 import { generateModelId } from "./id.js";
+import { cloneMutable } from "./clone.js";
 import {
   getDashboardId,
   getDatasourcePlugin,
@@ -14,22 +15,6 @@ import type {
   DatasourceStatusPayload,
   UnknownRecord,
 } from "../types/runtime.js";
-
-const cloneMutableSettings = (value: unknown): UnknownRecord => {
-  if (!value || typeof value !== "object") {
-    return {};
-  }
-
-  if (typeof structuredClone === "function") {
-    try {
-      return structuredClone(value) as UnknownRecord;
-    } catch {
-      // Fallback below.
-    }
-  }
-
-  return JSON.parse(JSON.stringify(value)) as UnknownRecord;
-};
 
 /**
  * Wrapper around a datasource plugin instance, managing settings, type, and data flow.
@@ -275,7 +260,7 @@ export class Datasource {
     this.id = typeof object.id === "string" ? object.id : generateModelId("ds");
     this.title = typeof object.title === "string" ? object.title : null;
     this.enabled = object.enabled !== undefined ? !!object.enabled : true;
-    this.settings = cloneMutableSettings(object.settings);
+    this.settings = cloneMutable<UnknownRecord>(object.settings, {});
     this.type = typeof object.type === "string" ? object.type : null;
   }
 
