@@ -1,4 +1,4 @@
-import type { ApiModelConstants, DataBackend, RuntimeModelStore } from "./types.js";
+import type { ApiModelConstants, DataBackend } from "./types.js";
 
 export type SecurityLimiterRepository = {
   incrementCounter(params: { documentId: string; expiresAt: Date }): Promise<number>;
@@ -450,7 +450,6 @@ export type DataStoreRepositories = {
 
 export type DataStore = {
   backend: DataBackend;
-  models: RuntimeModelStore;
   constants: ApiModelConstants;
   repositories: DataStoreRepositories;
 };
