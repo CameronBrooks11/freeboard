@@ -137,4 +137,69 @@ if (isPostgresTestRun) {
     assert.equal(saved?.documentRevision, 2);
     assert.equal(saved?.visibility, "public");
   });
+
+  test("ACL upsert/delete are atomic per-entry and preserve other collaborators", async () => {
+    const dashboards = dataStore.repositories.dashboards;
+    const users = dataStore.repositories.users;
+    const stamp = Date.now();
+    const owner = await users.create({
+      email: `o3-${stamp}@example.com`,
+      password: "StrongPass123!",
+      role: "editor",
+      active: true,
+    });
+    const x = await users.create({
+      email: `x-${stamp}@example.com`,
+      password: "StrongPass123!",
+      role: "viewer",
+      active: true,
+    });
+    const y = await users.create({
+      email: `y-${stamp}@example.com`,
+      password: "StrongPass123!",
+      role: "viewer",
+      active: true,
+    });
+    const created = await dashboards.create({
+      user: owner._id,
+      visibility: "private",
+      document: buildDocument("v1"),
+    });
+    const entry = (userId: string, accessLevel: string) => ({
+      userId,
+      accessLevel,
+      grantedBy: owner._id,
+      grantedAt: new Date(),
+    });
+    const levels = (record: { acl: Array<{ userId: string; accessLevel: string }> }) =>
+      new Map(record.acl.map((e) => [e.userId, e.accessLevel]));
+
+    // Two grants to different users issued CONCURRENTLY. Each call runs in its
+    // own transaction, so they genuinely interleave at the DB; with the per-entry
+    // upsert both land. The old full-array path (read whole ACL → replace) would
+    // have let the second commit clobber the first.
+    await Promise.all([
+      dashboards.upsertAclEntry({ dashboardId: created._id, entry: entry(x._id, "viewer") }),
+      dashboards.upsertAclEntry({ dashboardId: created._id, entry: entry(y._id, "editor") }),
+    ]);
+    const afterConcurrent = await dashboards.findById({ dashboardId: created._id });
+    assert.equal(levels(afterConcurrent!).get(x._id), "viewer");
+    assert.equal(levels(afterConcurrent!).get(y._id), "editor");
+
+    // Re-upserting X updates its level in place (ON CONFLICT); Y is untouched.
+    const afterUpdate = await dashboards.upsertAclEntry({
+      dashboardId: created._id,
+      entry: entry(x._id, "manager"),
+    });
+    assert.equal(levels(afterUpdate!).get(x._id), "manager");
+    assert.equal(levels(afterUpdate!).get(y._id), "editor");
+
+    // Keyed delete removes only X.
+    const afterDelete = await dashboards.deleteAclEntry({
+      dashboardId: created._id,
+      userId: x._id,
+    });
+    assert.equal(levels(afterDelete!).has(x._id), false);
+    assert.equal(levels(afterDelete!).get(y._id), "editor");
+  });
 }

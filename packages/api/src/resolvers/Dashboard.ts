@@ -449,20 +449,15 @@ const resolvers: IResolvers = {
       }
 
       const normalizedAccessLevel = normalizeDashboardAccessLevel(accessLevel);
-      const nextAcl = uniqueAclEntries([
-        ...(existing.acl || []).filter((entry) => toComparableId(entry.userId) !== targetUserId),
-        {
-          userId: targetUserId,
-          accessLevel: normalizedAccessLevel,
-          grantedBy: context.user._id,
-          grantedAt: new Date(),
-        },
-      ]);
-
-      const updated = await dashboardRepository.updateById({
+      // Atomic single-entry upsert so a concurrent grant/revoke isn't lost to a
+      // full-array last-writer-wins replacement.
+      const updated = await dashboardRepository.upsertAclEntry({
         dashboardId: String(_id || "").trim(),
-        patch: {
-          acl: nextAcl,
+        entry: {
+          userId: String(targetUserId || ""),
+          accessLevel: normalizedAccessLevel,
+          grantedBy: toComparableId(context.user._id),
+          grantedAt: new Date(),
         },
       });
       if (!updated) {
@@ -499,22 +494,20 @@ const resolvers: IResolvers = {
         });
       }
 
-      const previousCount = Array.isArray(existing.acl) ? existing.acl.length : 0;
-      const nextAcl = (existing.acl || []).filter(
-        (entry) => toComparableId(entry.userId) !== targetUserId,
+      const wasPresent = (existing.acl || []).some(
+        (entry) => toComparableId(entry.userId) === targetUserId,
       );
 
-      const updated = await dashboardRepository.updateById({
+      // Atomic keyed delete so a concurrent grant to another user isn't undone.
+      const updated = await dashboardRepository.deleteAclEntry({
         dashboardId: String(_id || "").trim(),
-        patch: {
-          acl: nextAcl,
-        },
+        userId: String(targetUserId || ""),
       });
       if (!updated) {
         throw createGraphQLError("Dashboard not found");
       }
 
-      if (nextAcl.length !== previousCount) {
+      if (wasPresent) {
         await recordAuditEvent({
           actorUserId: context.user._id,
           action: "dashboard.acl.revoked",

@@ -460,6 +460,79 @@ export const createPostgresDashboardRepository = (): DashboardRepository => ({
     }
   },
 
+  upsertAclEntry: async ({ dashboardId, entry }) => {
+    const normalized = normalizeAclEntries([entry])[0];
+    if (!normalized) {
+      return null;
+    }
+    const pool = await getPostgresPool();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const existing = await client.query("SELECT id FROM dashboards WHERE id = $1 LIMIT 1", [
+        dashboardId,
+      ]);
+      if (!existing.rows[0]) {
+        await client.query("ROLLBACK");
+        return null;
+      }
+      await client.query(
+        `
+        INSERT INTO dashboard_acl (dashboard_id, user_id, access_level, granted_by, granted_at)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (dashboard_id, user_id)
+        DO UPDATE SET
+          access_level = EXCLUDED.access_level,
+          granted_by = EXCLUDED.granted_by,
+          granted_at = EXCLUDED.granted_at
+        `,
+        [
+          dashboardId,
+          normalized.userId,
+          normalized.accessLevel,
+          normalized.grantedBy,
+          normalized.grantedAt,
+        ],
+      );
+      const updated = await queryDashboardById(client, dashboardId);
+      await client.query("COMMIT");
+      return updated;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  deleteAclEntry: async ({ dashboardId, userId }) => {
+    const normalizedUserId = String(userId || "").trim();
+    const pool = await getPostgresPool();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const existing = await client.query("SELECT id FROM dashboards WHERE id = $1 LIMIT 1", [
+        dashboardId,
+      ]);
+      if (!existing.rows[0]) {
+        await client.query("ROLLBACK");
+        return null;
+      }
+      await client.query("DELETE FROM dashboard_acl WHERE dashboard_id = $1 AND user_id = $2", [
+        dashboardId,
+        normalizedUserId,
+      ]);
+      const updated = await queryDashboardById(client, dashboardId);
+      await client.query("COMMIT");
+      return updated;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
   deleteById: async ({ dashboardId }) => {
     const pool = await getPostgresPool();
     const client = await pool.connect();
