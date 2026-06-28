@@ -57,10 +57,30 @@ export interface PluginManifestEntry {
 const LITE_AND_SERVER: ("lite" | "server")[] = ["lite", "server"];
 const SERVER_ONLY: ("lite" | "server")[] = ["server"];
 
+// The 12 core widgets, in registry order (see the UI's `registerCorePlugins`).
+// All are profile-agnostic (available in both builds) and carry no centrally
+// validated settings yet, so their manifest entries are generated uniformly.
+const WIDGET_TYPE_NAMES = [
+  "base",
+  "text",
+  "indicator",
+  "gauge",
+  "pointer",
+  "picture",
+  "html",
+  "sparkline",
+  "bar-chart",
+  "status-list",
+  "table",
+  "map",
+] as const;
+
 /**
  * The plugin manifest. Datasource entries are 1:1 with the server rules in
  * `validateDashboardDatasources` (authored to the server's leniency, not the
- * stricter UI form). Widget entries are added in a later slice.
+ * stricter UI form). Widget entries are discovery-only for now: every core
+ * widget exists in both profiles with no validated settings (`fields: []`); an
+ * unknown widget type is a warning (renders inert), never a hard error.
  */
 export const PLUGIN_MANIFEST: PluginManifestEntry[] = [
   {
@@ -126,6 +146,14 @@ export const PLUGIN_MANIFEST: PluginManifestEntry[] = [
       { name: "keepaliveSeconds", dataType: "number", min: 5, max: 3600 },
     ],
   },
+  ...WIDGET_TYPE_NAMES.map(
+    (typeName): PluginManifestEntry => ({
+      kind: "widget",
+      typeName,
+      profiles: LITE_AND_SERVER,
+      fields: [],
+    }),
+  ),
 ];
 
 /** Look up a manifest entry by kind + type, or `undefined` if unknown. */

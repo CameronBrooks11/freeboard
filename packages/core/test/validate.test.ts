@@ -147,6 +147,54 @@ test("semantic warnings do not block import (duplicate title)", () => {
   assert.ok(codes(result.warnings).includes("semantic.datasourceTitleDuplicate"));
 });
 
+test("an unknown widget type warns (renders inert) but does not block import", () => {
+  const result = validateDashboardDocument({
+    ...validDoc(),
+    panes: [
+      {
+        id: "p1",
+        layout: { i: "p1" },
+        widgets: [
+          { id: "w1", type: "gauge" },
+          { id: "w2", type: "totally-made-up" },
+        ],
+      },
+    ],
+  });
+  assert.equal(result.valid, true, JSON.stringify(result.errors));
+  assert.ok(result.document, "valid-with-warnings still returns the document");
+  const unknown = result.warnings.filter((w) => w.code === "manifest.unknownWidgetType");
+  assert.equal(unknown.length, 1, "exactly the made-up widget warns");
+  assert.equal(unknown[0].path, "/panes/0/widgets/1/type");
+  assert.equal(unknown[0].severity, "warning");
+});
+
+test("recognized widget types and untyped widgets produce no unknown-type warning", () => {
+  const result = validateDashboardDocument({
+    ...validDoc(),
+    panes: [
+      {
+        id: "p1",
+        layout: { i: "p1" },
+        // Every core widget type, plus a typeless and a null-typed widget.
+        widgets: [
+          { id: "w-base", type: "base" },
+          { id: "w-table", type: "table" },
+          { id: "w-bar", type: "bar-chart" },
+          { id: "w-untyped" },
+          { id: "w-null", type: null },
+        ],
+      },
+    ],
+  });
+  assert.equal(result.valid, true, JSON.stringify(result.errors));
+  assert.equal(
+    codes(result.warnings).includes("manifest.unknownWidgetType"),
+    false,
+    "known and untyped widgets never warn",
+  );
+});
+
 test("pane.id != layout.i is rejected as an error (identity must be unambiguous)", () => {
   const result = validateDashboardDocument({
     ...validDoc(),
