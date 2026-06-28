@@ -6,7 +6,6 @@
 import "dotenv/config";
 import crypto from "node:crypto";
 import * as http from "http";
-import * as https from "https";
 import dns from "dns";
 import express from "express";
 import type { NextFunction, Request, Response } from "express";
@@ -29,12 +28,7 @@ import {
   parseTargetUrl,
   type ResolvedDestination,
 } from "./networkPolicy.js";
-import {
-  createGatewayFetchHandler,
-  createUpstreamRequestOptions,
-  normalizeRequestHeaders,
-  parseStreamPayload,
-} from "./gatewayHttp.js";
+import { createGatewayFetchHandler } from "./gatewayHttp.js";
 import {
   consumeGatewayLimiter,
   fetchIntrospection,
@@ -58,24 +52,16 @@ import {
   REALTIME_MAX_MESSAGE_BYTES,
   REALTIME_MAX_SUBSCRIPTIONS_PER_CONNECTION,
   REALTIME_MQTT_ALLOWED_TOPICS,
-  REALTIME_MQTT_ENABLED,
   REALTIME_MQTT_IDLE_DISCONNECT_MS,
   REALTIME_MQTT_KEEPALIVE_SECONDS,
   REALTIME_MQTT_MAX_CONNECTIONS_PER_BROKER,
-  REALTIME_MQTT_MAX_MESSAGE_BYTES,
-  REALTIME_MQTT_MAX_QOS,
   REALTIME_PUBLIC_FULL_REVALIDATE_INTERVAL_MS,
   REALTIME_PUBLIC_REVALIDATE_INTERVAL_MS,
   REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_IP_PER_MIN,
   REALTIME_PUBLIC_SUBSCRIBE_RATE_LIMIT_SHARE_TOKEN_PER_MIN,
   REALTIME_RECONNECT_MAX_MS,
   REALTIME_RECONNECT_MIN_MS,
-  REALTIME_SSE_ENABLED,
-  REALTIME_SSE_IDLE_TIMEOUT_MS,
   REALTIME_TRUST_PROXY_HOPS,
-  REALTIME_WS_ENABLED,
-  REALTIME_WS_IDLE_TIMEOUT_MS,
-  REALTIME_WS_PING_INTERVAL_MS,
   REVOKED_TOKENS_MAX_BATCH,
   STREAM_ERROR_CODES,
 } from "./runtimeConfig.js";
@@ -752,31 +738,11 @@ export const createRealtimeGateway = ({
 
   const createProtocolAdapter = createProtocolAdapterFactory({
     parseRealtimeTargetUrl,
-    ensureResolvedDestinationIsAllowed,
     lookup,
-    REALTIME_SSE_IDLE_TIMEOUT_MS,
-    REALTIME_MAX_MESSAGE_BYTES,
-    STREAM_ERROR_CODES,
-    parseStreamPayload,
-    REALTIME_CONNECT_TIMEOUT_MS,
-    createUpstreamRequestOptions,
-    httpRequest: http.request,
-    httpsRequest: https.request,
     wsClientFactory,
-    normalizeRequestHeaders,
-    REALTIME_WS_IDLE_TIMEOUT_MS,
-    REALTIME_WS_PING_INTERVAL_MS,
-    websocketOpenState: WebSocket.OPEN,
-    ALLOW_INSECURE_TLS,
-    REALTIME_MQTT_MAX_QOS,
-    REALTIME_MQTT_MAX_MESSAGE_BYTES,
-    createClientError,
     acquireMqttPoolEntry,
     releaseMqttPoolEntry,
     ensureMqttTopicPolicy,
-    REALTIME_SSE_ENABLED,
-    REALTIME_WS_ENABLED,
-    REALTIME_MQTT_ENABLED,
   });
 
   const removeSubscription = async ({
