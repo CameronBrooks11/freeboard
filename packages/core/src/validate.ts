@@ -295,9 +295,50 @@ export const collectDatasourceManifestIssues = (datasources: unknown): Validatio
   return issues;
 };
 
-/** Widget validation is a later slice; runs on structurally-valid documents. */
-const collectManifestIssues = (document: UnknownRecord, errors: ValidationIssue[]): void => {
+/**
+ * Warning-first widget discovery: a widget whose `type` is a non-empty string
+ * not present in the manifest is flagged as a WARNING (it renders inert in this
+ * build) rather than rejected — widgets are open/extensible, so an unknown type
+ * must never block a portable document from importing. Matching is exact (the UI
+ * registry looks up widgets by exact key; it does not trim or case-fold). Empty
+ * or null types are untyped widgets, not "unknown types", and are left alone.
+ *
+ * @param {unknown} panes - the document's `panes` array (migrated).
+ * @returns {ValidationIssue[]} warnings only.
+ */
+const collectWidgetManifestIssues = (panes: unknown): ValidationIssue[] => {
+  const warnings: ValidationIssue[] = [];
+  const list = Array.isArray(panes) ? panes : [];
+  list.forEach((pane, paneIndex) => {
+    if (!isPlainObject(pane)) {
+      return;
+    }
+    const widgets = Array.isArray(pane.widgets) ? pane.widgets : [];
+    widgets.forEach((widget, widgetIndex) => {
+      if (!isPlainObject(widget) || typeof widget.type !== "string" || widget.type === "") {
+        return;
+      }
+      if (!getManifestEntry("widget", widget.type)) {
+        warnings.push({
+          code: "manifest.unknownWidgetType",
+          path: `/panes/${paneIndex}/widgets/${widgetIndex}/type`,
+          message: `Widget type '${widget.type}' is not recognized; it will render inert.`,
+          severity: "warning",
+        });
+      }
+    });
+  });
+  return warnings;
+};
+
+/** Manifest-driven checks: datasource settings (errors) + widget discovery (warnings). */
+const collectManifestIssues = (
+  document: UnknownRecord,
+  errors: ValidationIssue[],
+  warnings: ValidationIssue[],
+): void => {
   errors.push(...collectDatasourceManifestIssues(document.datasources));
+  warnings.push(...collectWidgetManifestIssues(document.panes));
 };
 
 const collectSemanticIssues = (
@@ -454,7 +495,7 @@ export const validateDashboardDocument = (input: unknown): ValidationResult => {
 
   collectSemanticIssues(migrated, errors, warnings);
   collectResourceLimitIssues(migrated, errors);
-  collectManifestIssues(migrated, errors);
+  collectManifestIssues(migrated, errors, warnings);
 
   if (errors.length > 0) {
     return { valid: false, errors, warnings };

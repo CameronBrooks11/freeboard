@@ -19,11 +19,29 @@ test("manifest covers exactly the six allowed datasource types", () => {
     .map((e) => e.typeName)
     .sort();
   assert.deepEqual(types, ["clock", "http", "mqtt", "sse", "static", "websocket"]);
-  // Slice 1 ships datasources only; widgets land later.
-  assert.equal(
-    PLUGIN_MANIFEST.some((e) => e.kind === "widget"),
-    false,
-  );
+});
+
+test("manifest covers the twelve core widgets (discovery-only: profile-agnostic, no fields)", () => {
+  const widgets = PLUGIN_MANIFEST.filter((e) => e.kind === "widget");
+  assert.deepEqual(widgets.map((e) => e.typeName).sort(), [
+    "bar-chart",
+    "base",
+    "gauge",
+    "html",
+    "indicator",
+    "map",
+    "picture",
+    "pointer",
+    "sparkline",
+    "status-list",
+    "table",
+    "text",
+  ]);
+  // Every widget is available in both builds and carries no validated settings yet.
+  for (const widget of widgets) {
+    assert.deepEqual(widget.profiles, ["lite", "server"], `${widget.typeName} is profile-agnostic`);
+    assert.deepEqual(widget.fields, [], `${widget.typeName} has no field rules yet`);
+  }
 });
 
 test("build-profile availability matches the runtime (gateway-only types are server-only)", () => {
