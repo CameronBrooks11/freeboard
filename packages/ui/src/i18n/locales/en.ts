@@ -121,6 +121,7 @@ export const en = {
     labelAccessLevel: "Access Level",
     labelAccessViewer: "Viewer",
     labelAccessEditor: "Editor",
+    labelAccessManager: "Manager",
     labelStyle: "Style",
     labelScript: "Script",
     labelStylesheet: "Stylesheet",

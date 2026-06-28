@@ -385,6 +385,7 @@ const transferOwnership = async () => {
           <select v-model="collaboratorAccessLevel" :disabled="isBusy">
             <option value="viewer">{{ $t("form.labelAccessViewer") }}</option>
             <option value="editor">{{ $t("form.labelAccessEditor") }}</option>
+            <option value="manager">{{ $t("form.labelAccessManager") }}</option>
           </select>
           <button type="button" :disabled="isBusy" @click="addCollaborator">
             {{ $t("share.addCollaborator") }}
@@ -407,9 +408,11 @@ const transferOwnership = async () => {
                 {{
                   entry.isOwner
                     ? $t("form.labelOwner")
-                    : entry.accessLevel === "editor"
-                      ? $t("form.labelAccessEditor")
-                      : $t("form.labelAccessViewer")
+                    : entry.accessLevel === "manager"
+                      ? $t("form.labelAccessManager")
+                      : entry.accessLevel === "editor"
+                        ? $t("form.labelAccessEditor")
+                        : $t("form.labelAccessViewer")
                 }}
               </td>
               <td>

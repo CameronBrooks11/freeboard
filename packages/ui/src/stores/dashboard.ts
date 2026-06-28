@@ -124,12 +124,19 @@ export const useDashboardStore = defineStore("dashboard", {
       if (runtimeConfig.isReadonly) {
         return false;
       }
-      const authStore = useAuthStore();
       // Local-first (Lite): a static build is editable and persists locally (Save
       // writes to localStorage), so it grants edit without server auth.
-      const roleCanEdit = runtimeConfig.isStaticBuild || authStore.canEditDashboards();
-      const dashboardCanEdit = !state.isSaved || state.dashboard?.canEdit !== false;
-      return roleCanEdit && dashboardCanEdit;
+      if (runtimeConfig.isStaticBuild) {
+        return true;
+      }
+      // A SAVED dashboard's editability is authoritative from the server's
+      // per-dashboard canEdit (owner/admin/ACL editor or manager), independent
+      // of the user's global role.
+      if (state.isSaved) {
+        return state.dashboard?.canEdit !== false;
+      }
+      // Creating a NEW (unsaved) dashboard requires the global editor/admin role.
+      return useAuthStore().canEditDashboards();
     },
   },
 

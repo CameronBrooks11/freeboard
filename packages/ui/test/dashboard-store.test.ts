@@ -301,6 +301,25 @@ test("dashboard store hasUnsavedChanges tracks edits since the last load/save", 
   assert.equal(dashboardStore.hasUnsavedChanges, false);
 });
 
+test("allowEdit follows the server canEdit for a saved dashboard, regardless of global role", async () => {
+  const { useDashboardStore } = await import("../src/stores/dashboard.js");
+
+  // A global viewer (no dashboard-creation rights) still edits a saved
+  // dashboard the server says they can edit (e.g. an ACL editor/manager grant).
+  const authStore = useAuthStore();
+  authStore.login(
+    encodeToken({ _id: "viewer-1", email: "viewer@example.com", role: "viewer", active: true }),
+  );
+
+  const dashboardStore = useDashboardStore();
+  dashboardStore.isSaved = true;
+  dashboardStore.dashboard.canEdit = true;
+  assert.equal(dashboardStore.allowEdit, true);
+
+  dashboardStore.dashboard.canEdit = false;
+  assert.equal(dashboardStore.allowEdit, false);
+});
+
 test("dashboard store blocks mobile editing for sm width unless allowMobileEdit is enabled", async () => {
   const { useDashboardStore } = await import("../src/stores/dashboard.js");
 

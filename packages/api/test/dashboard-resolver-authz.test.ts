@@ -476,11 +476,13 @@ test("setDashboardVisibility to private immediately revokes share-token access",
   );
 });
 
-test("upsertDashboardAccess allows acl editor collaborator to grant viewer access", async () => {
+// An ACL manager who is only a GLOBAL viewer can still manage sharing — proves
+// both the manager capability and the ACL-authoritative model in one test.
+test("upsertDashboardAccess allows an acl manager (even a global viewer) to grant access", async () => {
   let dashboardState = buildDashboardDoc({
     _id: "dash-1",
     user: "owner-1",
-    acl: [{ userId: "editor-1", accessLevel: "editor" }],
+    acl: [{ userId: "manager-1", accessLevel: "manager" }],
   });
   dashboardRepository.findById = async ({ dashboardId }) =>
     dashboardId === "dash-1" ? dashboardState : null;
@@ -507,7 +509,7 @@ test("upsertDashboardAccess allows acl editor collaborator to grant viewer acces
   const result = await DashboardResolvers.Mutation.upsertDashboardAccess(
     null,
     { _id: "dash-1", email: "viewer@example.com", accessLevel: "viewer" },
-    { user: { _id: "editor-1", role: "editor" } },
+    { user: { _id: "manager-1", role: "viewer" } },
   );
 
   assert.ok(
@@ -516,31 +518,89 @@ test("upsertDashboardAccess allows acl editor collaborator to grant viewer acces
   assert.equal(result.canManageSharing, true);
 });
 
-test("dashboardCollaborators allows acl editor collaborator", async () => {
+test("upsertDashboardAccess denies an acl editor (sharing management is manager-only)", async () => {
+  dashboardRepository.findById = async () =>
+    buildDashboardDoc({ user: "owner-1", acl: [{ userId: "editor-1", accessLevel: "editor" }] });
+  dashboardRepository.updateById = async () => {
+    throw new Error("updateById must not be reached for an editor managing sharing");
+  };
+
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Mutation.upsertDashboardAccess(
+        null,
+        { _id: "dash-1", email: "viewer@example.com", accessLevel: "viewer" },
+        { user: { _id: "editor-1", role: "editor" } },
+      ),
+    /Dashboard not found/,
+  );
+});
+
+test("updateDashboard allows a global viewer holding an acl editor grant (ACL is authoritative)", async () => {
+  dashboardRepository.findById = async () =>
+    buildDashboardDoc({ user: "owner-1", acl: [{ userId: "viewer-9", accessLevel: "editor" }] });
+  dashboardRepository.updateById = async () =>
+    buildDashboardDoc({ user: "owner-1", acl: [{ userId: "viewer-9", accessLevel: "editor" }] });
+
+  const result = await DashboardResolvers.Mutation.updateDashboard(
+    null,
+    {
+      _id: "dash-1",
+      dashboard: { document: buildContent({ title: "Edited" }), expectedDocumentRevision: 1 },
+    },
+    { user: { _id: "viewer-9", role: "viewer" } },
+  );
+
+  assert.equal(result._id, "dash-1");
+  assert.equal(result.canEdit, true);
+});
+
+test("updateDashboard denies a user with no ACL grant (per-dashboard gate is the sole protection)", async () => {
+  dashboardRepository.findById = async () =>
+    buildDashboardDoc({ user: "owner-1", visibility: "private", acl: [] });
+  dashboardRepository.updateById = async () => {
+    throw new Error("updateById must not be reached for a user without edit access");
+  };
+
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Mutation.updateDashboard(
+        null,
+        {
+          _id: "dash-1",
+          dashboard: { document: buildContent({ title: "Nope" }), expectedDocumentRevision: 1 },
+        },
+        { user: { _id: "stranger-1", role: "editor" } },
+      ),
+    /Dashboard not found/,
+  );
+});
+
+test("dashboardCollaborators allows an acl manager (even a global viewer)", async () => {
   dashboardRepository.findById = async ({ dashboardId }) =>
     dashboardId === "dash-1"
       ? buildDashboardDoc({
           _id: "dash-1",
           user: "owner-1",
-          acl: [{ userId: "editor-1", accessLevel: "editor" }],
+          acl: [{ userId: "manager-1", accessLevel: "manager" }],
         })
       : null;
   userRepository.findByIds = async () => [
     buildUser({ _id: "owner-1", email: "owner@example.com" }),
-    buildUser({ _id: "editor-1", email: "editor@example.com" }),
+    buildUser({ _id: "manager-1", email: "manager@example.com" }),
   ];
 
   const result = await DashboardResolvers.Query.dashboardCollaborators(
     null,
     { _id: "dash-1" },
-    { user: { _id: "editor-1", role: "editor" } },
+    { user: { _id: "manager-1", role: "viewer" } },
   );
 
   assert.equal(result.length, 2);
   assert.ok(result.some((entry) => entry.isOwner && entry.userId === "owner-1"));
   assert.ok(
     result.some(
-      (entry) => !entry.isOwner && entry.userId === "editor-1" && entry.accessLevel === "editor",
+      (entry) => !entry.isOwner && entry.userId === "manager-1" && entry.accessLevel === "manager",
     ),
   );
 });

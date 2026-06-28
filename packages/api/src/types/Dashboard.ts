@@ -7,10 +7,11 @@ export default `
   """Custom scalar for arbitrary JSON-like objects."""
   scalar Object
 
-  """Dashboard ACL access level."""
+  """Dashboard ACL access level (viewer reads, editor edits, manager also manages sharing)."""
   enum DashboardAccessLevel {
     VIEWER
     EDITOR
+    MANAGER
   }
 
   """Per-dashboard ACL entry."""

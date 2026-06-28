@@ -489,11 +489,12 @@ export const resolveDashboardPermissions = (
     visibility === "public" ||
     (visibility === "link" && shareTokenMatched);
 
-  const canEdit = isAdmin || isOwner || aclAccessLevel === "editor";
-  const canManageSharing = isAdmin || isOwner || aclAccessLevel === "editor";
-  // Deletion is destructive and stays with the owner (or an admin). An ACL
-  // "editor" can edit and manage sharing, but must not delete a board they
-  // don't own.
+  // Per-dashboard ACL capabilities (independent of the user's global role,
+  // which only gates creating new dashboards): editor and manager can edit the
+  // document; only manager can manage sharing/ACL. Deletion and ownership
+  // transfer stay with the owner (or an admin).
+  const canEdit = isAdmin || isOwner || aclAccessLevel === "editor" || aclAccessLevel === "manager";
+  const canManageSharing = isAdmin || isOwner || aclAccessLevel === "manager";
   const canDelete = isAdmin || isOwner;
 
   return {
