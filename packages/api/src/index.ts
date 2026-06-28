@@ -115,6 +115,11 @@ const ALLOWED_GATEWAY_LIMITER_SCOPES = new Set([
 ]);
 const GATEWAY_LIMITER_MAX_PER_MINUTE = 10_000;
 
+// Outer request-body ceiling (covers /graphql), so a direct API deployment has
+// its own bound and doesn't rely solely on the packaged nginx cap. Generous;
+// internal endpoints enforce a much tighter readJsonBody limit.
+const MAX_REQUEST_BODY_BYTES = 5 * 1024 * 1024;
+
 type JsonObject = Record<string, unknown>;
 
 const readJsonBody = async (req: IncomingMessage, maxBytes = 256 * 1024): Promise<JsonObject> => {
@@ -431,6 +436,17 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
       durationMs: Date.now() - requestStartedAt,
     });
   });
+
+  // Reject oversized bodies up front. Header-based, so a chunked request without
+  // content-length slips past here — acceptable as defense-in-depth: the packaged
+  // nginx caps the same 5MB and internal endpoints enforce a tighter readJsonBody.
+  const declaredBodyBytes = Number(req.headers["content-length"]);
+  if (Number.isFinite(declaredBodyBytes) && declaredBodyBytes > MAX_REQUEST_BODY_BYTES) {
+    res.statusCode = 413;
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify({ errors: [{ message: "Request body too large" }] }));
+    return;
+  }
 
   const requestUrl = new URL(req.url || "/", "http://localhost");
   if (requestUrl.pathname === INTERNAL_GATEWAY_INTROSPECTION_PATH) {

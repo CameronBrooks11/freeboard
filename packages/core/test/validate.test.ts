@@ -156,6 +156,60 @@ test("pane.id != layout.i is rejected as an error (identity must be unambiguous)
   assert.ok(codes(result.errors).includes("semantic.paneIdLayoutMismatch"));
 });
 
+test("rejects a document over the pane/datasource/widget resource limits", () => {
+  const tooManyPanes = validateDashboardDocument({
+    ...validDoc(),
+    panes: Array.from({ length: 201 }, (_, i) => ({
+      id: `p${i}`,
+      layout: { i: `p${i}` },
+      widgets: [],
+    })),
+  });
+  assert.equal(tooManyPanes.valid, false);
+  assert.ok(codes(tooManyPanes.errors).includes("limit.panes"));
+
+  const tooManyDatasources = validateDashboardDocument({
+    ...validDoc(),
+    datasources: Array.from({ length: 201 }, (_, i) => ({
+      id: `d${i}`,
+      type: "http",
+      settings: { url: "https://example.com" },
+    })),
+  });
+  assert.equal(tooManyDatasources.valid, false);
+  assert.ok(codes(tooManyDatasources.errors).includes("limit.datasources"));
+
+  const tooManyWidgets = validateDashboardDocument({
+    ...validDoc(),
+    panes: Array.from({ length: 3 }, (_, p) => ({
+      id: `p${p}`,
+      layout: { i: `p${p}` },
+      widgets: Array.from({ length: 400 }, (_, w) => ({
+        id: `w${p}-${w}`,
+        type: "text",
+        settings: {},
+      })),
+    })),
+  });
+  assert.equal(tooManyWidgets.valid, false);
+  assert.ok(codes(tooManyWidgets.errors).includes("limit.widgets"));
+});
+
+test("rejects a document nested beyond the depth limit", () => {
+  let deep = {};
+  let cursor = deep;
+  for (let i = 0; i < 40; i += 1) {
+    cursor.child = {};
+    cursor = cursor.child;
+  }
+  const result = validateDashboardDocument({
+    ...validDoc(),
+    settings: { theme: "auto", deep },
+  });
+  assert.equal(result.valid, false);
+  assert.ok(codes(result.errors).includes("limit.depth"));
+});
+
 test("non-object input is rejected as input.notObject", () => {
   for (const bad of [null, undefined, 42, "x", [], true]) {
     const result = validateDashboardDocument(bad);
