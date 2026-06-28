@@ -173,3 +173,36 @@ test("updateDashboard rejects a combined document + visibility write", async () 
       err.extensions?.code === "BAD_USER_INPUT" && /setDashboardVisibility/.test(err.message),
   );
 });
+
+// The datasource shim delegates per-type settings validation to @freeboard/core
+// but keeps its own structural guards (it runs on raw input, pre-Ajv).
+test("updateDashboard rejects a non-array datasources value (shim structural guard)", async () => {
+  dashboards.findById = async () => storedRecord();
+  await assert.rejects(
+    () => updateDashboard({ document: validContent({ datasources: "nope" }) }),
+    (err) => err.extensions?.code === "BAD_USER_INPUT" && /must be an array/.test(err.message),
+  );
+});
+
+test("updateDashboard rejects a non-object datasource entry (shim structural guard)", async () => {
+  dashboards.findById = async () => storedRecord();
+  await assert.rejects(
+    () => updateDashboard({ document: validContent({ datasources: ["nope"] }) }),
+    (err) => err.extensions?.code === "BAD_USER_INPUT" && /must be an object/.test(err.message),
+  );
+});
+
+test("datasource validation is in-order fail-fast (index-0 settings error precedes a later bad entry)", async () => {
+  dashboards.findById = async () => storedRecord();
+  await assert.rejects(
+    () =>
+      updateDashboard({
+        document: validContent({
+          datasources: [{ id: "d1", type: "http", settings: {} }, "nope"],
+        }),
+      }),
+    // The index-0 url error surfaces first, not the index-1 "must be an object".
+    (err) =>
+      err.extensions?.code === "BAD_USER_INPUT" && /requires a non-empty url/.test(err.message),
+  );
+});

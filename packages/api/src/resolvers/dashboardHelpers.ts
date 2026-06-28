@@ -5,7 +5,10 @@
 
 import crypto from "node:crypto";
 import { createGraphQLError } from "graphql-yoga";
-import { validateDashboardDocument } from "@freeboard/core/validate.js";
+import {
+  collectDatasourceManifestIssues,
+  validateDashboardDocument,
+} from "@freeboard/core/validate.js";
 import { dataStore } from "../data/index.js";
 import type { DashboardAclEntryRecord, DashboardRecord } from "../data/contracts.js";
 import type { ValidationResult } from "@freeboard/core";
@@ -40,11 +43,6 @@ const dashboardRepository = dataStore.repositories.dashboards;
 const userRepository = dataStore.repositories.users;
 
 const EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES = new Set(["link", "public"]);
-const ALLOWED_DATASOURCE_TYPES = new Set(["http", "clock", "static", "sse", "websocket", "mqtt"]);
-const ALLOWED_HTTP_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
-const ALLOWED_HTTP_PARSERS = new Set(["json", "text", "csv"]);
-const ALLOWED_STREAM_PARSERS = new Set(["json", "text"]);
-const ALLOWED_STREAM_AUTH_PLACEMENTS = new Set(["header", "query"]);
 
 export type SanitizedDashboardInput = {
   document?: unknown;
@@ -283,170 +281,22 @@ export const validateDashboardDatasources = (datasources: unknown): void => {
   if (datasources === undefined) {
     return;
   }
-
   if (!Array.isArray(datasources)) {
     throw createBadInputError("Dashboard datasources must be an array");
   }
-
+  // Per-type settings validation is owned by @freeboard/core's manifest (the
+  // single source of truth). Validate each datasource fully (structural guard,
+  // then settings) before the next, so the first thrown message matches the old
+  // in-order fail-fast contract. The structural guard stays here because this
+  // shim runs on RAW input, before the core document validator's Ajv pass.
   datasources.forEach((datasource, index) => {
     if (!datasource || typeof datasource !== "object" || Array.isArray(datasource)) {
       throw createBadInputError(`Dashboard datasource at index ${index} must be an object`);
     }
-
-    const type = String(datasource.type || "")
-      .trim()
-      .toLowerCase();
-    if (!ALLOWED_DATASOURCE_TYPES.has(type)) {
-      throw createBadInputError(
-        `Datasource type '${type || "unknown"}' is not supported. Allowed: http, clock, static, sse, websocket, mqtt.`,
-      );
+    const [first] = collectDatasourceManifestIssues([datasource]);
+    if (first) {
+      throw createBadInputError(first.message);
     }
-
-    const settings =
-      datasource.settings &&
-      typeof datasource.settings === "object" &&
-      !Array.isArray(datasource.settings)
-        ? datasource.settings
-        : {};
-
-    if (type === "http") {
-      const targetUrl = String(settings.url || "").trim();
-      if (!targetUrl) {
-        throw createBadInputError(
-          `HTTP datasource at index ${index} requires a non-empty settings.url`,
-        );
-      }
-
-      if (
-        settings.method !== undefined &&
-        settings.method !== null &&
-        !ALLOWED_HTTP_METHODS.has(String(settings.method).trim().toUpperCase())
-      ) {
-        throw createBadInputError(`HTTP datasource at index ${index} uses an unsupported method`);
-      }
-
-      if (
-        settings.parser !== undefined &&
-        settings.parser !== null &&
-        !ALLOWED_HTTP_PARSERS.has(String(settings.parser).trim().toLowerCase())
-      ) {
-        throw createBadInputError(`HTTP datasource at index ${index} uses an unsupported parser`);
-      }
-
-      if (
-        settings.credentialProfileId !== undefined &&
-        settings.credentialProfileId !== null &&
-        String(settings.credentialProfileId).trim() === ""
-      ) {
-        throw createBadInputError(
-          `HTTP datasource at index ${index} has an invalid credentialProfileId`,
-        );
-      }
-      return;
-    }
-
-    if (type === "sse" || type === "websocket") {
-      const targetUrl = String(settings.url || "").trim();
-      if (!targetUrl) {
-        throw createBadInputError(
-          `${type.toUpperCase()} datasource at index ${index} requires a non-empty settings.url`,
-        );
-      }
-
-      if (
-        settings.parser !== undefined &&
-        settings.parser !== null &&
-        !ALLOWED_STREAM_PARSERS.has(String(settings.parser).trim().toLowerCase())
-      ) {
-        throw createBadInputError(
-          `${type.toUpperCase()} datasource at index ${index} uses an unsupported parser`,
-        );
-      }
-
-      if (
-        settings.authPlacement !== undefined &&
-        settings.authPlacement !== null &&
-        !ALLOWED_STREAM_AUTH_PLACEMENTS.has(String(settings.authPlacement).trim().toLowerCase())
-      ) {
-        throw createBadInputError(
-          `${type.toUpperCase()} datasource at index ${index} uses an unsupported authPlacement`,
-        );
-      }
-
-      if (
-        String(settings.authPlacement || "header")
-          .trim()
-          .toLowerCase() === "query" &&
-        String(settings.queryParamName || "").trim() === ""
-      ) {
-        throw createBadInputError(
-          `${type.toUpperCase()} datasource at index ${index} requires settings.queryParamName for query auth placement`,
-        );
-      }
-
-      if (
-        settings.credentialProfileId !== undefined &&
-        settings.credentialProfileId !== null &&
-        String(settings.credentialProfileId).trim() === ""
-      ) {
-        throw createBadInputError(
-          `${type.toUpperCase()} datasource at index ${index} has an invalid credentialProfileId`,
-        );
-      }
-
-      if (type === "websocket" && settings.protocols !== undefined) {
-        const isStringProtocols = typeof settings.protocols === "string";
-        const isArrayProtocols = Array.isArray(settings.protocols);
-        if (!isStringProtocols && !isArrayProtocols) {
-          throw createBadInputError(
-            `WEBSOCKET datasource at index ${index} requires settings.protocols to be a comma-separated string or string array`,
-          );
-        }
-      }
-      return;
-    }
-
-    if (type === "mqtt") {
-      if (String(settings.brokerProfileId || "").trim() === "") {
-        throw createBadInputError(
-          `MQTT datasource at index ${index} requires a non-empty settings.brokerProfileId`,
-        );
-      }
-      if (String(settings.topic || "").trim() === "") {
-        throw createBadInputError(
-          `MQTT datasource at index ${index} requires a non-empty settings.topic`,
-        );
-      }
-
-      if (
-        settings.parser !== undefined &&
-        settings.parser !== null &&
-        !ALLOWED_STREAM_PARSERS.has(String(settings.parser).trim().toLowerCase())
-      ) {
-        throw createBadInputError(`MQTT datasource at index ${index} uses an unsupported parser`);
-      }
-
-      if (settings.qos !== undefined && settings.qos !== null) {
-        const qos = Number(settings.qos);
-        if (!Number.isFinite(qos) || qos < 0 || qos > 1) {
-          throw createBadInputError(
-            `MQTT datasource at index ${index} requires settings.qos between 0 and 1`,
-          );
-        }
-      }
-
-      if (settings.keepaliveSeconds !== undefined && settings.keepaliveSeconds !== null) {
-        const keepaliveSeconds = Number(settings.keepaliveSeconds);
-        if (!Number.isFinite(keepaliveSeconds) || keepaliveSeconds < 5 || keepaliveSeconds > 3600) {
-          throw createBadInputError(
-            `MQTT datasource at index ${index} requires settings.keepaliveSeconds between 5 and 3600`,
-          );
-        }
-      }
-      return;
-    }
-
-    // clock/static are validated by plugin/runtime contracts only.
   });
 };
 
