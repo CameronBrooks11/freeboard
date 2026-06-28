@@ -923,9 +923,13 @@ test(
         { user: { _id: "owner-1", role: "editor" } },
       );
 
-      // The now-unauthorized subscriber's stream ends instead of delivering it.
-      const { done } = await nextEvent;
-      assert.equal(done, true);
+      // The now-unauthorized subscriber gets a terminal null (not the actor's
+      // projection), then the stream ends.
+      const terminal = await nextEvent;
+      assert.equal(terminal.done, false);
+      assert.equal(terminal.value.dashboard, null);
+      const closed = await iterator.next();
+      assert.equal(closed.done, true);
     } finally {
       await iterator.return?.();
     }
@@ -961,8 +965,12 @@ test("dashboard subscription closes when the dashboard is deleted", { timeout: 5
       { user: { _id: "owner-1", role: "editor" } },
     );
 
-    const { done } = await nextEvent;
-    assert.equal(done, true);
+    // The subscriber gets a terminal null for the deleted dashboard, then close.
+    const terminal = await nextEvent;
+    assert.equal(terminal.done, false);
+    assert.equal(terminal.value.dashboard, null);
+    const closed = await iterator.next();
+    assert.equal(closed.done, true);
   } finally {
     await iterator.return?.();
   }
