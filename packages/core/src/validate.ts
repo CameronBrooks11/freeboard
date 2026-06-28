@@ -83,6 +83,72 @@ const mapStructuralError = (error: ErrorObject): ValidationIssue => {
   return { code: `schema.${error.keyword}`, path, message, severity: "error" };
 };
 
+// Generous trust-boundary resource ceilings — DoS/abuse bounds, not product
+// limits. A document past these is rejected at every write/import boundary. No
+// real dashboard approaches them; they only stop pathological/hostile payloads.
+const MAX_DATASOURCES = 200;
+const MAX_PANES = 200;
+const MAX_WIDGETS = 1000;
+const MAX_NESTING_DEPTH = 32;
+
+/** Depth of the deepest nested object/array, short-circuiting once over `limit`. */
+const nestingDepth = (value: unknown, limit: number, depth = 1): number => {
+  if (depth > limit || value === null || typeof value !== "object") {
+    return depth;
+  }
+  let max = depth;
+  for (const child of Object.values(value as Record<string, unknown>)) {
+    const childDepth = nestingDepth(child, limit, depth + 1);
+    if (childDepth > max) {
+      max = childDepth;
+    }
+    if (max > limit) {
+      return max;
+    }
+  }
+  return max;
+};
+
+const collectResourceLimitIssues = (document: UnknownRecord, errors: ValidationIssue[]): void => {
+  const datasources = Array.isArray(document.datasources) ? document.datasources : [];
+  const panes = Array.isArray(document.panes) ? document.panes : [];
+  const widgetCount = panes.reduce(
+    (sum, pane) =>
+      sum + (isPlainObject(pane) && Array.isArray(pane.widgets) ? pane.widgets.length : 0),
+    0,
+  );
+
+  const overLimit = (count: number, max: number, code: string, path: string, label: string) => {
+    if (count > max) {
+      errors.push({
+        code,
+        path,
+        message: `Too many ${label}: ${count} (max ${max}).`,
+        severity: "error",
+      });
+    }
+  };
+  overLimit(
+    datasources.length,
+    MAX_DATASOURCES,
+    "limit.datasources",
+    "/datasources",
+    "datasources",
+  );
+  overLimit(panes.length, MAX_PANES, "limit.panes", "/panes", "panes");
+  overLimit(widgetCount, MAX_WIDGETS, "limit.widgets", "/panes", "widgets");
+
+  // Bound nesting depth to protect recursive consumers (settings/layout are open).
+  if (nestingDepth(document, MAX_NESTING_DEPTH) > MAX_NESTING_DEPTH) {
+    errors.push({
+      code: "limit.depth",
+      path: "",
+      message: `Document nesting is too deep (max ${MAX_NESTING_DEPTH} levels).`,
+      severity: "error",
+    });
+  }
+};
+
 const collectSemanticIssues = (
   document: UnknownRecord,
   errors: ValidationIssue[],
@@ -236,6 +302,7 @@ export const validateDashboardDocument = (input: unknown): ValidationResult => {
   }
 
   collectSemanticIssues(migrated, errors, warnings);
+  collectResourceLimitIssues(migrated, errors);
 
   if (errors.length > 0) {
     return { valid: false, errors, warnings };
