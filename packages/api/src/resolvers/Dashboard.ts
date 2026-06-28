@@ -212,6 +212,18 @@ const resolvers: IResolvers = {
       ensureDashboardEditable(existing, context);
 
       const sanitizedInput = sanitizeDashboardInput(dashboard);
+      // Visibility is envelope state with its own mutation; bundling it with a
+      // document write would dodge the document-revision guard and let a stale
+      // save silently revert (or re-expose) a concurrent visibility change.
+      if (
+        Object.prototype.hasOwnProperty.call(sanitizedInput, "document") &&
+        Object.prototype.hasOwnProperty.call(sanitizedInput, "visibility")
+      ) {
+        throw createGraphQLError(
+          "Change visibility with setDashboardVisibility, not in a document update.",
+          { extensions: { code: "BAD_USER_INPUT" } },
+        );
+      }
       validateDashboardDatasources(inputDatasources(sanitizedInput));
       await ensureDashboardPayloadAllowedByExecutionMode({
         inputDashboard: sanitizedInput,

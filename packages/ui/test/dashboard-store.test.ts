@@ -259,14 +259,11 @@ test("dashboard store saveDashboard sends expectedDocumentRevision and applies t
     };
   };
 
-  await dashboardStore.saveDashboard(
-    "dash-1",
-    { document: {}, visibility: "private" },
-    createDashboard,
-    updateDashboard,
-  );
+  // An update sends a document-only payload (visibility is its own mutation).
+  await dashboardStore.saveDashboard("dash-1", { document: {} }, createDashboard, updateDashboard);
 
   assert.equal(receivedUpdatePayload?.expectedDocumentRevision, 3);
+  assert.equal("visibility" in receivedUpdatePayload, false);
   // The model tracks the server's new revision so the next save guards correctly.
   assert.equal(dashboardStore.dashboard.documentRevision, 4);
 });
