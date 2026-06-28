@@ -618,8 +618,8 @@ export const ensureVisibilityTransitionAllowed = async ({
   }
 
   const authPolicy = await getAuthPolicyState();
-  if (!authPolicy.editorCanPublish) {
-    throw createGraphQLError("Editors are not allowed to publish dashboards", {
+  if (!authPolicy.nonAdminCanPublish) {
+    throw createGraphQLError("Only administrators can publish dashboards", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -639,10 +639,10 @@ export const resolveCreateVisibility = async (
   if (
     context.user?.role !== "admin" &&
     EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES.has(visibility) &&
-    !authPolicy.editorCanPublish
+    !authPolicy.nonAdminCanPublish
   ) {
     if (hasVisibility) {
-      throw createGraphQLError("Editors are not allowed to publish dashboards", {
+      throw createGraphQLError("Only administrators can publish dashboards", {
         extensions: { code: "FORBIDDEN" },
       });
     }

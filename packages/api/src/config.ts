@@ -247,7 +247,7 @@ const credentialEncryptionKey =
  * @property {boolean} createAdmin      - Whether to create an admin user on startup.
  * @property {string} registrationMode  - Registration mode (`disabled|invite|open`).
  * @property {string} registrationDefaultRole - Default role for self-registration (`viewer|editor`).
- * @property {boolean} editorCanPublish - Whether editors can publish dashboards.
+ * @property {boolean} nonAdminCanPublish - Whether non-admins can publish dashboards.
  * @property {string} dashboardDefaultVisibility - Default dashboard visibility (`private|link|public`).
  * @property {boolean} dashboardPublicListingEnabled - Whether public dashboards can appear in listings.
  * @property {string} executionMode   - Runtime execution mode (`safe|trusted`).
@@ -287,7 +287,7 @@ export const config = Object.freeze({
   registrationDefaultRole: String(process.env.AUTH_REGISTRATION_DEFAULT_ROLE || "viewer")
     .trim()
     .toLowerCase(),
-  editorCanPublish: bool(process.env.AUTH_EDITOR_CAN_PUBLISH, false),
+  nonAdminCanPublish: bool(process.env.AUTH_NONADMIN_CAN_PUBLISH, false),
   dashboardDefaultVisibility: String(process.env.DASHBOARD_DEFAULT_VISIBILITY || "private")
     .trim()
     .toLowerCase(),

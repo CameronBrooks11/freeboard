@@ -227,10 +227,10 @@ const {
           <input
             class="admin-console__checkbox-input"
             type="checkbox"
-            v-model="policyDraft.editorCanPublish"
+            v-model="policyDraft.nonAdminCanPublish"
             :disabled="isPolicyLocked || isBusy"
           />
-          <span>{{ $t("admin.editorCanPublish") }}</span>
+          <span>{{ $t("admin.nonAdminCanPublish") }}</span>
         </label>
         <label class="admin-console__field">
           {{ $t("admin.dashboardDefaultVisibility") }}

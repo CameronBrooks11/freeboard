@@ -15,7 +15,7 @@ import { dataStore } from "./data/index.js";
 const POLICY_KEYS = Object.freeze({
   registrationMode: "auth.registration.mode",
   registrationDefaultRole: "auth.registration.defaultRole",
-  editorCanPublish: "auth.publish.editorCanPublish",
+  nonAdminCanPublish: "auth.publish.nonAdminCanPublish",
   dashboardDefaultVisibility: "dashboard.visibility.default",
   dashboardPublicListingEnabled: "dashboard.listing.public.enabled",
   executionMode: "app.execution.mode",
@@ -24,7 +24,7 @@ const POLICY_KEYS = Object.freeze({
 type PolicyInput = Partial<{
   registrationMode: string;
   registrationDefaultRole: string;
-  editorCanPublish: boolean;
+  nonAdminCanPublish: boolean;
   dashboardDefaultVisibility: string;
   dashboardPublicListingEnabled: boolean;
   executionMode: string;
@@ -33,7 +33,7 @@ type PolicyInput = Partial<{
 type PolicyState = {
   registrationMode: string;
   registrationDefaultRole: string;
-  editorCanPublish: boolean;
+  nonAdminCanPublish: boolean;
   dashboardDefaultVisibility: string;
   dashboardPublicListingEnabled: boolean;
   executionMode: string;
@@ -58,7 +58,7 @@ const writeStoredPolicy = async (
  * @returns {Promise<{
  *  registrationMode: string,
  *  registrationDefaultRole: string,
- *  editorCanPublish: boolean,
+ *  nonAdminCanPublish: boolean,
  *  dashboardDefaultVisibility: string,
  *  dashboardPublicListingEnabled: boolean,
  *  executionMode: string,
@@ -70,8 +70,8 @@ export const getAuthPolicyState = async (): Promise<PolicyState> => {
     (await readStoredPolicy(POLICY_KEYS.registrationMode)) ?? config.registrationMode;
   const registrationDefaultRoleRaw =
     (await readStoredPolicy(POLICY_KEYS.registrationDefaultRole)) ?? config.registrationDefaultRole;
-  const editorCanPublishRaw =
-    (await readStoredPolicy(POLICY_KEYS.editorCanPublish)) ?? config.editorCanPublish;
+  const nonAdminCanPublishRaw =
+    (await readStoredPolicy(POLICY_KEYS.nonAdminCanPublish)) ?? config.nonAdminCanPublish;
   const dashboardDefaultVisibilityRaw =
     (await readStoredPolicy(POLICY_KEYS.dashboardDefaultVisibility)) ??
     config.dashboardDefaultVisibility;
@@ -84,7 +84,7 @@ export const getAuthPolicyState = async (): Promise<PolicyState> => {
   return {
     registrationMode: normalizeRegistrationMode(registrationModeRaw),
     registrationDefaultRole: normalizeNonAdminRole(registrationDefaultRoleRaw),
-    editorCanPublish: Boolean(editorCanPublishRaw),
+    nonAdminCanPublish: Boolean(nonAdminCanPublishRaw),
     dashboardDefaultVisibility: normalizeDashboardVisibility(dashboardDefaultVisibilityRaw),
     dashboardPublicListingEnabled: Boolean(dashboardPublicListingEnabledRaw),
     executionMode: normalizeExecutionMode(executionModeRaw),
@@ -100,7 +100,7 @@ export const getAuthPolicyState = async (): Promise<PolicyState> => {
  * @returns {Promise<{
  *  registrationMode: string,
  *  registrationDefaultRole: string,
- *  editorCanPublish: boolean,
+ *  nonAdminCanPublish: boolean,
  *  dashboardDefaultVisibility: string,
  *  dashboardPublicListingEnabled: boolean,
  *  executionMode: string,
@@ -121,10 +121,10 @@ export const setAuthPolicyState = async (
     await writeStoredPolicy(POLICY_KEYS.registrationDefaultRole, value, actorUserId);
   }
 
-  if (Object.prototype.hasOwnProperty.call(input, "editorCanPublish")) {
+  if (Object.prototype.hasOwnProperty.call(input, "nonAdminCanPublish")) {
     await writeStoredPolicy(
-      POLICY_KEYS.editorCanPublish,
-      Boolean(input.editorCanPublish),
+      POLICY_KEYS.nonAdminCanPublish,
+      Boolean(input.nonAdminCanPublish),
       actorUserId,
     );
   }

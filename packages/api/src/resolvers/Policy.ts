@@ -18,8 +18,8 @@ const toMutablePolicyInput = (args: Record<string, unknown> = {}) => {
   if (args.registrationDefaultRole !== undefined) {
     input.registrationDefaultRole = args.registrationDefaultRole;
   }
-  if (args.editorCanPublish !== undefined) {
-    input.editorCanPublish = Boolean(args.editorCanPublish);
+  if (args.nonAdminCanPublish !== undefined) {
+    input.nonAdminCanPublish = Boolean(args.nonAdminCanPublish);
   }
   if (args.dashboardDefaultVisibility !== undefined) {
     input.dashboardDefaultVisibility = args.dashboardDefaultVisibility;

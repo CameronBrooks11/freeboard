@@ -59,7 +59,7 @@ beforeEach(() => {
     ({
       "app.execution.mode": "safe",
       "dashboard.visibility.default": "private",
-      "auth.publish.editorCanPublish": false,
+      "auth.publish.nonAdminCanPublish": false,
     })[key] ?? null;
   dashboards.create = async (params) => storedRecord({ _id: "created", ...params });
   dashboards.findById = async () => storedRecord();

@@ -4,7 +4,7 @@ import { setRuntimeExecutionMode } from "../executionPolicy.js";
 type PublicAuthPolicy = {
   registrationMode: "disabled" | "invite" | "open";
   registrationDefaultRole: "viewer" | "editor";
-  editorCanPublish: boolean;
+  nonAdminCanPublish: boolean;
   dashboardDefaultVisibility: "private" | "link" | "public";
   dashboardPublicListingEnabled: boolean;
   executionMode: "safe" | "trusted";
@@ -14,7 +14,7 @@ type PublicAuthPolicy = {
 const DEFAULT_PUBLIC_AUTH_POLICY: PublicAuthPolicy = Object.freeze({
   registrationMode: "disabled",
   registrationDefaultRole: "viewer",
-  editorCanPublish: false,
+  nonAdminCanPublish: false,
   dashboardDefaultVisibility: "private",
   dashboardPublicListingEnabled: false,
   executionMode: "safe",
@@ -118,10 +118,10 @@ const normalizePublicAuthPolicy = (policy: Record<string, unknown> = {}): Public
     String(policy.registrationDefaultRole || "").toLowerCase() === "editor"
       ? "editor"
       : DEFAULT_PUBLIC_AUTH_POLICY.registrationDefaultRole,
-  editorCanPublish:
-    policy.editorCanPublish === undefined
-      ? DEFAULT_PUBLIC_AUTH_POLICY.editorCanPublish
-      : Boolean(policy.editorCanPublish),
+  nonAdminCanPublish:
+    policy.nonAdminCanPublish === undefined
+      ? DEFAULT_PUBLIC_AUTH_POLICY.nonAdminCanPublish
+      : Boolean(policy.nonAdminCanPublish),
   dashboardDefaultVisibility:
     String(policy.dashboardDefaultVisibility || "").toLowerCase() === "link"
       ? "link"
@@ -221,7 +221,9 @@ export const useAuthStore = defineStore("auth", {
       if (this.getUserRole() === "admin") {
         return true;
       }
-      return this.getUserRole() === "editor" && this.publicAuthPolicy.editorCanPublish;
+      // Mirror the server: any non-admin may publish iff the policy allows it
+      // (not gated on the global "editor" role — an ACL editor/manager qualifies).
+      return this.publicAuthPolicy.nonAdminCanPublish;
     },
 
     isTrustedExecutionMode() {

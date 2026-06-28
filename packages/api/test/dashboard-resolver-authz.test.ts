@@ -76,7 +76,7 @@ const stubPolicyValues = (overrides = {}) => {
   const defaults = {
     "auth.registration.mode": "disabled",
     "auth.registration.defaultRole": "viewer",
-    "auth.publish.editorCanPublish": false,
+    "auth.publish.nonAdminCanPublish": false,
     "dashboard.visibility.default": "private",
     "dashboard.listing.public.enabled": false,
     "app.execution.mode": "safe",
@@ -417,7 +417,7 @@ test("deleteDashboard allows an admin who is not the owner", async () => {
 
 test("setDashboardVisibility rejects external visibility when publish policy disabled", async () => {
   stubPolicyValues({
-    "auth.publish.editorCanPublish": false,
+    "auth.publish.nonAdminCanPublish": false,
   });
   dashboardRepository.findById = async () => buildDashboardDoc({ visibility: "private" });
 
@@ -428,13 +428,13 @@ test("setDashboardVisibility rejects external visibility when publish policy dis
         { _id: "dash-1", visibility: "public" },
         { user: { _id: "owner-1", role: "editor" } },
       ),
-    /Editors are not allowed to publish dashboards/,
+    /Only administrators can publish dashboards/,
   );
 });
 
 test("setDashboardVisibility allows reducing exposure to private even when publish policy disabled", async () => {
   stubPolicyValues({
-    "auth.publish.editorCanPublish": false,
+    "auth.publish.nonAdminCanPublish": false,
   });
   dashboardRepository.findById = async () => buildDashboardDoc({ visibility: "public" });
   dashboardRepository.updateById = async ({ patch }) => buildDashboardDoc({ ...patch });
@@ -611,7 +611,7 @@ test("dashboardCollaborators allows an acl manager (even a global viewer)", asyn
 test("createDashboard falls back to private when default visibility is external and editor cannot publish", async () => {
   stubPolicyValues({
     "dashboard.visibility.default": "public",
-    "auth.publish.editorCanPublish": false,
+    "auth.publish.nonAdminCanPublish": false,
   });
 
   dashboardRepository.create = async (params) =>
@@ -747,7 +747,7 @@ test("dashboards query includes public dashboards only when listing policy enabl
 
 test("setDashboardVisibility rotates existing share token when re-exposing from private", async () => {
   stubPolicyValues({
-    "auth.publish.editorCanPublish": true,
+    "auth.publish.nonAdminCanPublish": true,
   });
   let dashboardState = buildDashboardDoc({
     _id: "dash-1",

@@ -17,7 +17,7 @@ Recommended defaults:
 
 - `EXECUTION_MODE=safe`
 - `AUTH_REGISTRATION_MODE=invite` (or `disabled`)
-- `AUTH_EDITOR_CAN_PUBLISH=false` unless explicitly needed
+- `AUTH_NONADMIN_CAN_PUBLISH=false` unless explicitly needed
 
 ## Profile 2: Local-First (Lite)
 

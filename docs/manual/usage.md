@@ -30,7 +30,7 @@ In private -> external (`link/public`) transitions, share tokens are rotated.
 
 ## Publish behavior
 
-- Editors can publish only when policy `editorCanPublish=true`.
+- Non-admins can publish only when policy `nonAdminCanPublish=true`.
 - Admins can always publish.
 - If publishing is disabled for editors, create/save paths force private visibility.
 

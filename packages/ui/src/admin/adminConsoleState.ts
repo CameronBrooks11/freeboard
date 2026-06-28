@@ -60,7 +60,7 @@ export const toUserDraft = (user: Record<string, unknown> = {}) => ({
 export const toPolicyDraft = (policy: Record<string, unknown> = {}) => ({
   registrationMode: normalizeRegistrationModeValue(policy.registrationMode),
   registrationDefaultRole: normalizeRegistrationDefaultRoleValue(policy.registrationDefaultRole),
-  editorCanPublish: Boolean(policy.editorCanPublish),
+  nonAdminCanPublish: Boolean(policy.nonAdminCanPublish),
   dashboardDefaultVisibility: normalizeDashboardVisibilityValue(policy.dashboardDefaultVisibility),
   dashboardPublicListingEnabled: Boolean(policy.dashboardPublicListingEnabled),
   executionMode: normalizeExecutionModeValue(policy.executionMode),

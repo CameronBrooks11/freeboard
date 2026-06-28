@@ -11,7 +11,7 @@ test("toPolicyDraft normalizes uppercase enum payloads for UI select models", ()
   const draft = toPolicyDraft({
     registrationMode: "OPEN",
     registrationDefaultRole: "EDITOR",
-    editorCanPublish: true,
+    nonAdminCanPublish: true,
     dashboardDefaultVisibility: "PUBLIC",
     dashboardPublicListingEnabled: true,
     executionMode: "SAFE",
@@ -21,7 +21,7 @@ test("toPolicyDraft normalizes uppercase enum payloads for UI select models", ()
   assert.deepEqual(draft, {
     registrationMode: "open",
     registrationDefaultRole: "editor",
-    editorCanPublish: true,
+    nonAdminCanPublish: true,
     dashboardDefaultVisibility: "public",
     dashboardPublicListingEnabled: true,
     executionMode: "safe",

@@ -35,7 +35,7 @@ export default `
   type AuthPolicy {
     registrationMode: RegistrationMode!
     registrationDefaultRole: UserRole!
-    editorCanPublish: Boolean!
+    nonAdminCanPublish: Boolean!
     dashboardDefaultVisibility: DashboardVisibility!
     dashboardPublicListingEnabled: Boolean!
     executionMode: ExecutionMode!
@@ -55,7 +55,7 @@ export default `
     setAuthPolicy(
       registrationMode: RegistrationMode
       registrationDefaultRole: UserRole
-      editorCanPublish: Boolean
+      nonAdminCanPublish: Boolean
       dashboardDefaultVisibility: DashboardVisibility
       dashboardPublicListingEnabled: Boolean
       executionMode: ExecutionMode

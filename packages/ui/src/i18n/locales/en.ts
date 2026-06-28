@@ -248,7 +248,7 @@ export const en = {
     policyTitle: "Auth Policy",
     registrationMode: "Registration Mode",
     registrationDefaultRole: "Registration Default Role",
-    editorCanPublish: "Editors can publish dashboards",
+    nonAdminCanPublish: "Non-admins can publish dashboards",
     dashboardDefaultVisibility: "Default Dashboard Visibility",
     dashboardPublicListingEnabled: "Include public dashboards in user listings",
     executionMode: "Execution Mode",

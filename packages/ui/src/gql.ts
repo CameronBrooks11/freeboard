@@ -161,7 +161,7 @@ export const PUBLIC_AUTH_POLICY_QUERY = gql`
     publicAuthPolicy {
       registrationMode
       registrationDefaultRole
-      editorCanPublish
+      nonAdminCanPublish
       dashboardDefaultVisibility
       dashboardPublicListingEnabled
       executionMode
@@ -211,7 +211,7 @@ export const AUTH_POLICY_QUERY = gql`
     authPolicy {
       registrationMode
       registrationDefaultRole
-      editorCanPublish
+      nonAdminCanPublish
       dashboardDefaultVisibility
       dashboardPublicListingEnabled
       executionMode
@@ -588,7 +588,7 @@ export const SET_AUTH_POLICY_MUTATION = gql`
   mutation SetAuthPolicy(
     $registrationMode: RegistrationMode
     $registrationDefaultRole: UserRole
-    $editorCanPublish: Boolean
+    $nonAdminCanPublish: Boolean
     $dashboardDefaultVisibility: DashboardVisibility
     $dashboardPublicListingEnabled: Boolean
     $executionMode: ExecutionMode
@@ -596,14 +596,14 @@ export const SET_AUTH_POLICY_MUTATION = gql`
     setAuthPolicy(
       registrationMode: $registrationMode
       registrationDefaultRole: $registrationDefaultRole
-      editorCanPublish: $editorCanPublish
+      nonAdminCanPublish: $nonAdminCanPublish
       dashboardDefaultVisibility: $dashboardDefaultVisibility
       dashboardPublicListingEnabled: $dashboardPublicListingEnabled
       executionMode: $executionMode
     ) {
       registrationMode
       registrationDefaultRole
-      editorCanPublish
+      nonAdminCanPublish
       dashboardDefaultVisibility
       dashboardPublicListingEnabled
       executionMode
