@@ -27,6 +27,7 @@ export const ENVELOPE_KEYS = Object.freeze([
   "canEdit",
   "canManageSharing",
   "revision",
+  "documentRevision",
   "createdAt",
   "updatedAt",
 ]);
