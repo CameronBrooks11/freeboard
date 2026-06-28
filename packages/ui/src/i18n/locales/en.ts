@@ -193,6 +193,7 @@ export const en = {
     placeholderQueryParamName: "access_token",
     placeholderWebSocketProtocols: "json, telemetry-v1",
     optionCredentialProfileNone: "None",
+    optionProfileRestricted: "Restricted profile (in use, not selectable)",
     placeholderList: "Search...",
   },
 
