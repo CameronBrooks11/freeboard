@@ -21,7 +21,6 @@ export type PostgresModelStore = {
   User: PostgresModelPlaceholder;
 };
 
-export type ApiModelStore = PostgresModelStore;
 export type RuntimeModelStore = PostgresModelStore;
 
 export type ApiModelConstants = {

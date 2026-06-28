@@ -40,10 +40,6 @@ export const setRuntimeContext = (context: Partial<RuntimeContext> = {}): void =
   };
 };
 
-export const resetRuntimeContext = (): void => {
-  runtimeContext = { ...defaultContext };
-};
-
 export const getDashboardId = (): string | null =>
   invokeAccessor(runtimeContext.getDashboardId, null);
 
