@@ -9,6 +9,7 @@ import { getStreamingManager } from "./runtime/StreamingManager.js";
 import { getAuthToken, getDashboardId, getRuntimeShareToken } from "../runtime/runtimeContext.js";
 import type { DatasourceStatusPayload, UnknownRecord } from "../types/runtime.js";
 import type { StreamingManager } from "./runtime/StreamingManager.js";
+import { buildProfileSelectOptions } from "./profileOptions.js";
 type DatasourceFieldModel = { settings?: UnknownRecord } | null | undefined;
 
 const STREAM_PARSERS = ["json", "text"];
@@ -121,16 +122,11 @@ export class SSEDatasource extends DatasourceRuntimeBase {
             label: "form.labelCredentialProfile",
             type: "option",
             placeholder: "form.placeholderCredentialProfile",
-            options: [
-              {
-                value: "",
-                label: "form.optionCredentialProfileNone",
-              },
-              ...credentialProfiles.map((profile) => ({
-                value: profile._id,
-                label: profile.name,
-              })),
-            ],
+            options: buildProfileSelectOptions(
+              settings.credentialProfileId,
+              credentialProfiles,
+              "form.optionCredentialProfileNone",
+            ),
           },
           {
             name: "authPlacement",

@@ -11,6 +11,7 @@ import { DatasourceRuntimeBase } from "./runtime/DatasourceRuntimeBase.js";
 import { getAuthToken, getDashboardId, getRuntimeShareToken } from "../runtime/runtimeContext.js";
 import { runtimeConfig } from "../runtime/config.js";
 import type { DatasourceStatusPayload, UnknownRecord } from "../types/runtime.js";
+import { buildProfileSelectOptions } from "./profileOptions.js";
 type DatasourceFieldModel = { settings?: UnknownRecord } | null | undefined;
 
 const ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
@@ -249,16 +250,11 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
             label: "form.labelCredentialProfile",
             type: "option",
             placeholder: "form.placeholderCredentialProfile",
-            options: [
-              {
-                value: "",
-                label: "form.optionCredentialProfileNone",
-              },
-              ...credentialProfiles.map((profile) => ({
-                value: profile._id,
-                label: profile.name,
-              })),
-            ],
+            options: buildProfileSelectOptions(
+              settings.credentialProfileId,
+              credentialProfiles,
+              "form.optionCredentialProfileNone",
+            ),
           },
         ],
       },

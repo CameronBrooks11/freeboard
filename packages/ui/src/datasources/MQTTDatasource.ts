@@ -9,6 +9,7 @@ import { getStreamingManager } from "./runtime/StreamingManager.js";
 import { getAuthToken, getDashboardId, getRuntimeShareToken } from "../runtime/runtimeContext.js";
 import type { DatasourceStatusPayload, UnknownRecord } from "../types/runtime.js";
 import type { StreamingManager } from "./runtime/StreamingManager.js";
+import { buildProfileSelectOptions } from "./profileOptions.js";
 type DatasourceFieldModel = { settings?: UnknownRecord } | null | undefined;
 
 const STREAM_PARSERS = ["json", "text"];
@@ -72,16 +73,11 @@ export class MQTTDatasource extends DatasourceRuntimeBase {
             type: "option",
             required: true,
             placeholder: "form.placeholderBrokerProfile",
-            options: [
-              {
-                value: "",
-                label: "form.placeholderBrokerProfile",
-              },
-              ...brokerProfiles.map((profile) => ({
-                value: profile._id,
-                label: profile.name,
-              })),
-            ],
+            options: buildProfileSelectOptions(
+              settings.brokerProfileId,
+              brokerProfiles,
+              "form.placeholderBrokerProfile",
+            ),
           },
           {
             name: "topic",

@@ -76,6 +76,7 @@ defineExpose({
         v-for="option in options"
         :key="option.value"
         :selected="modelValue === option.value"
+        :disabled="option.disabled"
       >
         {{ option.label }}
       </option>
