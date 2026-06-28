@@ -20,5 +20,9 @@ export {
   hasDatasourceTitleConflict,
   ensureUniqueDatasourceTitle,
 } from "./datasourceTitles.js";
+// The manifest is plain data (no Ajv) so it is safe to value-export from the
+// barrel — unlike "./validate". This is the in-tree agent/SDK discovery surface.
+export { PLUGIN_MANIFEST, getManifestEntry, RESOURCE_LIMITS } from "./manifest.js";
+export type { ManifestDataType, ManifestField, PluginManifestEntry } from "./manifest.js";
 export type { UnknownRecord } from "./types.js";
 export type { ValidationIssue, ValidationResult, ValidationSeverity } from "./validate.js";
