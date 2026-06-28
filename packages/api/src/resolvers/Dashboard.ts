@@ -11,6 +11,7 @@ import { getAuthPolicyState } from "../policyStore.js";
 import { dataStore } from "../data/index.js";
 import { DashboardRevisionConflictError } from "../data/contracts.js";
 import {
+  assertCredentialAuthorAuthorized,
   assertValidDashboardDocument,
   buildCollaboratorView,
   ensureDashboardDeletable,
@@ -234,6 +235,15 @@ const resolvers: IResolvers = {
       // document untouched.
       if (sanitizedInput.document !== undefined) {
         sanitizedInput.document = assertValidDashboardDocument(sanitizedInput.document);
+        // Credential/broker *use* is a trusted-author privilege: an ACL-only editor
+        // (a global viewer) may not add or re-target a datasource that references a
+        // non-public profile, or the gateway would inject its secret into a URL they
+        // control. Compared canonical-vs-canonical against the stored document.
+        await assertCredentialAuthorAuthorized({
+          nextDatasources: inputDatasources(sanitizedInput),
+          priorDatasources: inputDatasources({ document: existing.document }),
+          context,
+        });
       }
       const updatePayload = { ...sanitizedInput };
       let nextShareTokenVersion = null;
