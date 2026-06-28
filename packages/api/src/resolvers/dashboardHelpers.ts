@@ -48,6 +48,15 @@ const brokerProfileRepository = dataStore.repositories.brokerProfiles;
 // on the same global tier the profile catalog itself is gated on.
 const TRUSTED_PROFILE_AUTHOR_ROLES = new Set(["editor", "admin"]);
 
+/**
+ * Whether the principal may use any credential/broker profile (a global
+ * `editor`/`admin`). The single source of truth shared by the write-time author
+ * gate (`assertCredentialAuthorAuthorized`) and the `dashboardUsableProfiles`
+ * picker, so the set offered for selection always matches the set a save permits.
+ */
+export const isTrustedProfileAuthor = (context: ApiContext): boolean =>
+  TRUSTED_PROFILE_AUTHOR_ROLES.has(String(context.user?.role || ""));
+
 const EXTERNALLY_VISIBLE_DASHBOARD_VISIBILITIES = new Set(["link", "public"]);
 
 export type SanitizedDashboardInput = {
@@ -422,7 +431,7 @@ export const assertCredentialAuthorAuthorized = async ({
   priorDatasources: unknown;
   context: ApiContext;
 }): Promise<void> => {
-  if (TRUSTED_PROFILE_AUTHOR_ROLES.has(String(context.user?.role || ""))) {
+  if (isTrustedProfileAuthor(context)) {
     return;
   }
   if (!Array.isArray(nextDatasources)) {

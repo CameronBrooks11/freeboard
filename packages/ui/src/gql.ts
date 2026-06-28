@@ -413,6 +413,44 @@ export const ADMIN_DELETE_CREDENTIAL_PROFILE_MUTATION = gql`
 `;
 
 /**
+ * Dashboard-scoped credential/broker profiles for the datasource config form.
+ * Authorized by ACL `canEdit` on the dashboard, so an ACL-only editor (a global
+ * viewer with a per-dashboard grant) receives the profiles they may use
+ * (allowPublicUse only); a global editor/admin receives the full catalog.
+ * @constant {import('graphql').DocumentNode} DASHBOARD_USABLE_PROFILES_QUERY
+ */
+export const DASHBOARD_USABLE_PROFILES_QUERY = gql`
+  query DashboardUsableProfiles($dashboardId: ID!) {
+    dashboardUsableProfiles(dashboardId: $dashboardId) {
+      credentialProfiles {
+        _id
+        name
+        description
+        type
+        allowPublicUse
+        metadata
+        secretShape
+        createdAt
+        updatedAt
+      }
+      brokerProfiles {
+        _id
+        name
+        description
+        protocol
+        brokerUrl
+        tls
+        credentialProfileId
+        allowPublicUse
+        topicAllowlist
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+/**
  * Broker profile list for MQTT datasource configuration.
  * @constant {import('graphql').DocumentNode} BROKER_PROFILES_QUERY
  */

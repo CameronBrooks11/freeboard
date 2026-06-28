@@ -94,7 +94,7 @@ const validateProfilePayload = ({
   }
 };
 
-const toCredentialProfileResponse = (profile: Record<string, unknown>) => {
+export const toCredentialProfileResponse = (profile: Record<string, unknown>) => {
   const decryptedSecret = (() => {
     try {
       return decryptCredentialSecret((profile.secret || null) as EncryptedSecretPayload | null);

@@ -19,8 +19,7 @@ import {
   DASHBOARD_READ_QUERY,
   DASHBOARD_READ_BY_SHARE_TOKEN_QUERY,
   DASHBOARD_UPDATE_SUBSCRIPTION,
-  BROKER_PROFILES_QUERY,
-  CREDENTIAL_PROFILES_QUERY,
+  DASHBOARD_USABLE_PROFILES_QUERY,
   PUBLIC_AUTH_POLICY_QUERY,
 } from "../gql.js";
 import router from "../router";
@@ -99,23 +98,20 @@ const { result: publicPolicyResult } = useQuery(
   },
 );
 
-const credentialProfilesQueryEnabled = computed(
-  () => authStore.isLoggedIn() && authStore.canEditDashboards(),
+// The datasource form's credential/broker pickers are sourced per-dashboard:
+// `dashboardUsableProfiles` is authorized by ACL `canEdit`, so an ACL-only editor
+// (a global viewer with a per-dashboard grant) gets the profiles they may use
+// (allowPublicUse only), while a global editor/admin gets the full catalog.
+const usableProfilesQueryEnabled = computed(
+  () =>
+    authStore.isLoggedIn() && Boolean(dashboard.value?._id) && dashboard.value?.canEdit === true,
 );
-const { result: credentialProfilesResult, error: credentialProfilesError } = useQuery(
-  CREDENTIAL_PROFILES_QUERY,
-  {},
+const { result: usableProfilesResult, error: usableProfilesError } = useQuery(
+  DASHBOARD_USABLE_PROFILES_QUERY,
+  () => ({ dashboardId: dashboard.value?._id }),
   {
     fetchPolicy: "network-only",
-    enabled: credentialProfilesQueryEnabled,
-  },
-);
-const { result: brokerProfilesResult, error: brokerProfilesError } = useQuery(
-  BROKER_PROFILES_QUERY,
-  {},
-  {
-    fetchPolicy: "network-only",
-    enabled: credentialProfilesQueryEnabled,
+    enabled: usableProfilesQueryEnabled,
   },
 );
 
@@ -130,29 +126,24 @@ watch(publicPolicyResult, () => {
   }
 });
 
-watch(credentialProfilesResult, () => {
-  const profiles = credentialProfilesResult.value?.credentialProfiles;
-  profileCatalogStore.setCredentialProfiles(Array.isArray(profiles) ? profiles : []);
+watch(usableProfilesResult, () => {
+  const usable = usableProfilesResult.value?.dashboardUsableProfiles;
+  profileCatalogStore.setCredentialProfiles(
+    Array.isArray(usable?.credentialProfiles) ? usable.credentialProfiles : [],
+  );
+  profileCatalogStore.setBrokerProfiles(
+    Array.isArray(usable?.brokerProfiles) ? usable.brokerProfiles : [],
+  );
 });
 
-watch(brokerProfilesResult, () => {
-  const profiles = brokerProfilesResult.value?.brokerProfiles;
-  profileCatalogStore.setBrokerProfiles(Array.isArray(profiles) ? profiles : []);
-});
-
-watch(credentialProfilesError, () => {
-  if (credentialProfilesError.value) {
+watch(usableProfilesError, () => {
+  if (usableProfilesError.value) {
     profileCatalogStore.clearCredentialProfiles();
-  }
-});
-
-watch(brokerProfilesError, () => {
-  if (brokerProfilesError.value) {
     profileCatalogStore.clearBrokerProfiles();
   }
 });
 
-watch(credentialProfilesQueryEnabled, (enabled) => {
+watch(usableProfilesQueryEnabled, (enabled) => {
   if (!enabled) {
     profileCatalogStore.clearCredentialProfiles();
     profileCatalogStore.clearBrokerProfiles();
