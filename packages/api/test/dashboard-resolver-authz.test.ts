@@ -299,7 +299,7 @@ test("updateDashboard rejects http datasource without URL", async () => {
         },
         { user: { _id: "owner-1", role: "editor" } },
       ),
-    /requires a non-empty settings\.url/,
+    /http requires a non-empty url/,
   );
 });
 
@@ -330,7 +330,7 @@ test("updateDashboard rejects websocket query auth without queryParamName", asyn
         },
         { user: { _id: "owner-1", role: "editor" } },
       ),
-    /requires settings\.queryParamName/,
+    /websocket requires queryParamName when authPlacement is query/,
   );
 });
 
@@ -360,7 +360,7 @@ test("updateDashboard rejects mqtt datasource without brokerProfileId", async ()
         },
         { user: { _id: "owner-1", role: "editor" } },
       ),
-    /requires a non-empty settings\.brokerProfileId/,
+    /mqtt requires a non-empty brokerProfileId/,
   );
 });
 

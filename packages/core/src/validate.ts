@@ -23,7 +23,7 @@ import {
   migrateDashboardDocument,
 } from "./dashboardDocument.js";
 import { RESERVED_DATASOURCE_TITLES, normalizeDatasourceTitle } from "./datasourceTitles.js";
-import { RESOURCE_LIMITS, getManifestEntry } from "./manifest.js";
+import { PLUGIN_MANIFEST, RESOURCE_LIMITS, getManifestEntry } from "./manifest.js";
 import type { ManifestField, PluginManifestEntry } from "./manifest.js";
 import type { UnknownRecord } from "./types.js";
 
@@ -250,15 +250,27 @@ const collectFieldIssues = (
 };
 
 /**
- * Manifest-driven plugin validation (datasources). Replaces the server's
+ * Manifest-driven datasource settings validation. Replaces the server's
  * hardcoded per-type rules with the declarative manifest, so core is the single
- * settings-validation chokepoint. Unknown datasource type is an error
- * (closed-world, matching the server). Widget validation is a later slice.
- * Runs on structurally-valid documents (Ajv has already guaranteed shape).
+ * settings-validation chokepoint (the server validator delegates here too).
+ * Unknown datasource type is an error (closed-world, matching the server).
+ *
+ * Non-object entries are skipped — structural shape is the schema's job (the
+ * core pipeline runs Ajv first; the server shim keeps its own object/array
+ * guards). Issues come out in field order, so the first one equals the server's
+ * (formerly) first-thrown rule.
+ *
+ * @param {unknown} datasources - the document's `datasources` array (raw or migrated).
+ * @returns {ValidationIssue[]}
  */
-const collectManifestIssues = (document: UnknownRecord, errors: ValidationIssue[]): void => {
-  const datasources = Array.isArray(document.datasources) ? document.datasources : [];
-  datasources.forEach((datasource, index) => {
+const ALLOWED_DATASOURCE_TYPE_NAMES = PLUGIN_MANIFEST.filter((entry) => entry.kind === "datasource")
+  .map((entry) => entry.typeName)
+  .join(", ");
+
+export const collectDatasourceManifestIssues = (datasources: unknown): ValidationIssue[] => {
+  const issues: ValidationIssue[] = [];
+  const list = Array.isArray(datasources) ? datasources : [];
+  list.forEach((datasource, index) => {
     if (!isPlainObject(datasource)) {
       return;
     }
@@ -267,19 +279,25 @@ const collectManifestIssues = (document: UnknownRecord, errors: ValidationIssue[
       .toLowerCase();
     const entry = getManifestEntry("datasource", type);
     if (!entry) {
-      errors.push({
+      issues.push({
         code: "manifest.unknownType",
         path: `/datasources/${index}/type`,
-        message: `Datasource type '${type || "unknown"}' is not supported.`,
+        message: `Datasource type '${type || "unknown"}' is not supported. Allowed: ${ALLOWED_DATASOURCE_TYPE_NAMES}.`,
         severity: "error",
       });
       return;
     }
     const settings = isPlainObject(datasource.settings) ? datasource.settings : {};
     for (const field of entry.fields) {
-      collectFieldIssues(entry, field, settings, `/datasources/${index}`, errors);
+      collectFieldIssues(entry, field, settings, `/datasources/${index}`, issues);
     }
   });
+  return issues;
+};
+
+/** Widget validation is a later slice; runs on structurally-valid documents. */
+const collectManifestIssues = (document: UnknownRecord, errors: ValidationIssue[]): void => {
+  errors.push(...collectDatasourceManifestIssues(document.datasources));
 };
 
 const collectSemanticIssues = (
