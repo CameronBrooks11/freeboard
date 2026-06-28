@@ -12,6 +12,7 @@ import { createServer } from "http";
 import type { IncomingMessage, ServerResponse } from "http";
 import { createYoga } from "graphql-yoga";
 import { useGraphQLSSE } from "@graphql-yoga/plugin-graphql-sse";
+import { useOperationLimits } from "./security/operationLimits.js";
 import { URL } from "url";
 
 import schema from "./gql.js";
@@ -102,7 +103,7 @@ const yoga = createYoga({
   landingPage: false,
   schema,
   context: setContext,
-  plugins: [useGraphQLSSE()],
+  plugins: [useGraphQLSSE(), useOperationLimits()],
 });
 
 const INTERNAL_GATEWAY_INTROSPECTION_PATH = "/internal/gateway/datasource-introspect";
