@@ -106,6 +106,7 @@ const resolvers: IResolvers = {
   DashboardAccessLevel: {
     VIEWER: "viewer",
     EDITOR: "editor",
+    MANAGER: "manager",
   },
   Query: {
     dashboard: async (parent, { _id }, context) => {
@@ -167,6 +168,9 @@ const resolvers: IResolvers = {
 
   Mutation: {
     createDashboard: async (parent, { dashboard }, context) => {
+      // Creating a NEW dashboard requires the global editor/admin role. Editing
+      // an existing one is governed per-dashboard by ACL/ownership (see the
+      // ensureDashboard* gates), independent of global role.
       ensureThatUserHasRole(context, ["editor", "admin"]);
 
       const sanitizedInput = sanitizeDashboardInput(dashboard);
@@ -202,7 +206,7 @@ const resolvers: IResolvers = {
     },
 
     updateDashboard: async (parent, { _id, dashboard }, context) => {
-      ensureThatUserHasRole(context, ["editor", "admin"]);
+      ensureThatUserIsLogged(context);
 
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardEditable(existing, context);
@@ -282,7 +286,7 @@ const resolvers: IResolvers = {
     },
 
     deleteDashboard: async (parent, { _id }, context) => {
-      ensureThatUserHasRole(context, ["editor", "admin"]);
+      ensureThatUserIsLogged(context);
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardDeletable(existing, context);
 
@@ -310,7 +314,7 @@ const resolvers: IResolvers = {
     },
 
     setDashboardVisibility: async (parent, { _id, visibility }, context) => {
-      ensureThatUserHasRole(context, ["editor", "admin"]);
+      ensureThatUserIsLogged(context);
 
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardShareManageable(existing, context);
@@ -372,7 +376,7 @@ const resolvers: IResolvers = {
     },
 
     rotateDashboardShareToken: async (parent, { _id }, context) => {
-      ensureThatUserHasRole(context, ["editor", "admin"]);
+      ensureThatUserIsLogged(context);
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardShareManageable(existing, context);
       const nextShareTokenVersion = Math.max(0, Number(existing.shareTokenVersion) || 0) + 1;
@@ -408,7 +412,7 @@ const resolvers: IResolvers = {
     },
 
     upsertDashboardAccess: async (parent, { _id, email, accessLevel }, context) => {
-      ensureThatUserHasRole(context, ["editor", "admin"]);
+      ensureThatUserIsLogged(context);
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardShareManageable(existing, context);
 
@@ -471,7 +475,7 @@ const resolvers: IResolvers = {
     },
 
     revokeDashboardAccess: async (parent, { _id, userId }, context) => {
-      ensureThatUserHasRole(context, ["editor", "admin"]);
+      ensureThatUserIsLogged(context);
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardShareManageable(existing, context);
 
@@ -515,7 +519,7 @@ const resolvers: IResolvers = {
     },
 
     transferDashboardOwnership: async (parent, { _id, newOwnerUserId }, context) => {
-      ensureThatUserHasRole(context, ["editor", "admin"]);
+      ensureThatUserIsLogged(context);
       const existing = await getDashboardOrNotFound(_id);
       ensureDashboardOwnershipTransferAllowed(existing, context);
 

@@ -18,8 +18,13 @@ export const EXECUTION_MODES = Object.freeze(["safe", "trusted"] as const);
 /** @type {string[]} */
 export const DASHBOARD_VISIBILITIES = Object.freeze(["private", "link", "public"] as const);
 
-/** @type {string[]} */
-export const DASHBOARD_ACCESS_LEVELS = Object.freeze(["viewer", "editor"] as const);
+/**
+ * Per-dashboard ACL capability levels (least → most): `viewer` reads, `editor`
+ * reads + edits the document, `manager` additionally manages sharing/ACL.
+ * Deletion and ownership transfer stay with the owner/admin (not an ACL level).
+ * @type {string[]}
+ */
+export const DASHBOARD_ACCESS_LEVELS = Object.freeze(["viewer", "editor", "manager"] as const);
 
 const USER_ROLE_SET = new Set<string>(USER_ROLES);
 const NON_ADMIN_USER_ROLE_SET = new Set<string>(NON_ADMIN_USER_ROLES);
