@@ -171,21 +171,6 @@ export const PUBLIC_AUTH_POLICY_QUERY = gql`
 `;
 
 /**
- * Query for currently authenticated user.
- * @constant {import('graphql').DocumentNode} CURRENT_USER_QUERY
- */
-export const CURRENT_USER_QUERY = gql`
-  query CurrentUser {
-    me {
-      _id
-      email
-      role
-      active
-    }
-  }
-`;
-
-/**
  * Admin query for user management.
  * @constant {import('graphql').DocumentNode} ADMIN_USERS_QUERY
  */

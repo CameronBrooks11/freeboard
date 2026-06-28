@@ -282,6 +282,8 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run lint
+      - name: Validate core headless purity
+        run: npm run check:core:headless
       - name: Validate UI store boundaries
         run: npm run check:ui:store-boundaries
       - name: Validate UI lazy validation import

@@ -108,10 +108,6 @@ export const setUiLocaleSelection = (nextSelection: unknown): UiLocale => {
   return applyResolvedUiLocale(resolveUiLocaleFromSelection(selection));
 };
 
-export const setUiLocale = (nextLocale: unknown): UiLocale => setUiLocaleSelection(nextLocale);
-
-export const clearUiLocaleOverride = (): UiLocale => setUiLocaleSelection(UI_LOCALE_AUTO);
-
 export const translateUiText = (
   key: string,
   values?: Record<string, unknown>,

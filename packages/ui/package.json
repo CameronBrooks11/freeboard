@@ -26,7 +26,6 @@
     "oh-vue-icons": "^1.0.0-rc3",
     "pinia": "^3.0.4",
     "rpg-awesome": "^0.2.0",
-    "talker.js": "^1.1.1",
     "vue": "^3.5.38",
     "vue-grid-layout-v3": "^3.1.1-rc.4",
     "vue-i18n": "^11.4.5",
@@ -34,7 +33,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.7",
-    "tinyglobby": "^0.2.17",
     "vite": "^8.0.16"
   }
 }

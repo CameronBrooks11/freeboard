@@ -17,12 +17,12 @@ repos:
         name: Prettier (check)
         entry: npx prettier --check
         language: system
-        files: \.(css|html|js|json|md|mjs|vue|yaml|yml)$
+        files: \.(css|html|js|json|md|mjs|ts|vue|yaml|yml)$
       - id: eslint
         name: ESLint
         entry: npx eslint
         language: system
-        files: \.(js|mjs|vue)$
+        files: \.(js|mjs|ts|vue)$
 
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v3.4.0

@@ -338,8 +338,6 @@ const assertPersistentBackendCompatible = (): void => {
   );
 };
 
-export const getSecurityLimiterBackend = (): SecurityLimiterBackend => limiterBackend;
-
 /**
  * Build a stable key from untrusted/high-cardinality parts before storage hashing.
  */
