@@ -202,4 +202,51 @@ if (isPostgresTestRun) {
     assert.equal(levels(afterDelete!).has(x._id), false);
     assert.equal(levels(afterDelete!).get(y._id), "editor");
   });
+
+  test("dashboard_acl constraint admits 'manager' (migration 0003) and rejects an invalid level", async () => {
+    const dashboards = dataStore.repositories.dashboards;
+    const users = dataStore.repositories.users;
+    const stamp = Date.now();
+    const owner = await users.create({
+      email: `cons-o-${stamp}@example.com`,
+      password: "StrongPass123!",
+      role: "editor",
+      active: true,
+    });
+    const target = await users.create({
+      email: `cons-t-${stamp}@example.com`,
+      password: "StrongPass123!",
+      role: "viewer",
+      active: true,
+    });
+    const created = await dashboards.create({
+      user: owner._id,
+      visibility: "private",
+      document: buildDocument("v1"),
+    });
+    const pool = await getPostgresPool();
+
+    // 'manager' was added by migration 0003 — the constraint accepts it.
+    await pool.query(
+      `INSERT INTO dashboard_acl (dashboard_id, user_id, access_level, granted_by, granted_at)
+       VALUES ($1, $2, 'manager', $3, NOW())`,
+      [created._id, target._id, owner._id],
+    );
+    const stored = await pool.query<{ access_level: string }>(
+      "SELECT access_level FROM dashboard_acl WHERE dashboard_id = $1 AND user_id = $2",
+      [created._id, target._id],
+    );
+    assert.equal(stored.rows[0]?.access_level, "manager");
+
+    // An out-of-range level violates the CHECK constraint.
+    await assert.rejects(
+      () =>
+        pool.query(
+          `INSERT INTO dashboard_acl (dashboard_id, user_id, access_level, granted_by, granted_at)
+           VALUES ($1, $2, 'superuser', $3, NOW())`,
+          [created._id, owner._id, owner._id],
+        ),
+      /check constraint/,
+    );
+  });
 }

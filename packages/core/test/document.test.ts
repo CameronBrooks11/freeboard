@@ -12,6 +12,8 @@ const legacy = () => ({
   _id: "653f1c2a9b1e4a0012345678",
   visibility: "private",
   shareToken: "secret",
+  shareTokenVersion: 2,
+  documentRevision: 7,
   acl: [{ userId: "u1", accessLevel: "editor" }],
   title: "Legacy",
   columns: 4,
