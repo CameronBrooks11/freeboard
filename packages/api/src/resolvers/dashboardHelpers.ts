@@ -3,7 +3,6 @@
  * Shared dashboard resolver helper logic for policy, ACL, and datasource validation.
  */
 
-import crypto from "node:crypto";
 import { createGraphQLError } from "graphql-yoga";
 import {
   collectDatasourceManifestIssues,
@@ -16,6 +15,7 @@ import { getAuthPolicyState } from "../policyStore.js";
 import { normalizeDashboardAccessLevel, normalizeDashboardVisibility } from "../policy.js";
 import { transformDashboard } from "./merge.js";
 import { recordShareTokenRevocationEvent } from "../shareTokenRevocationFeed.js";
+import { toComparableId, toDate } from "../util.js";
 import type { ApiContext } from "../context.js";
 
 type UnknownRecord = Record<string, unknown>;
@@ -64,29 +64,6 @@ export type SanitizedDashboardInput = {
   visibility?: unknown;
   shareToken?: unknown;
   shareTokenVersion?: unknown;
-};
-
-export const generateShareToken = () => crypto.randomBytes(24).toString("base64url");
-
-export const toComparableId = (value: unknown): string | null => {
-  if (!value) {
-    return null;
-  }
-  if (typeof value?.toString === "function") {
-    return value.toString();
-  }
-  return String(value);
-};
-
-const toDate = (value: unknown, fallback = new Date()): Date => {
-  if (value instanceof Date && Number.isFinite(value.getTime())) {
-    return value;
-  }
-  const normalized = new Date(value as Date | string | number);
-  if (!Number.isFinite(normalized.getTime())) {
-    return fallback;
-  }
-  return normalized;
 };
 
 export const getDashboardVisibility = (dashboard: DashboardLike): string => {
