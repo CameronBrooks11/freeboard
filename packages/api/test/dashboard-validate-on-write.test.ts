@@ -164,3 +164,12 @@ test("an envelope-only (visibility) update carries no document and is admitted",
   const result = await updateDashboard({ visibility: "private" });
   assert.equal(result._id, "dash-1");
 });
+
+test("updateDashboard rejects a combined document + visibility write", async () => {
+  dashboards.findById = async () => storedRecord();
+  await assert.rejects(
+    () => updateDashboard({ document: validContent({ title: "X" }), visibility: "public" }),
+    (err) =>
+      err.extensions?.code === "BAD_USER_INPUT" && /setDashboardVisibility/.test(err.message),
+  );
+});

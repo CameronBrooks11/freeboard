@@ -44,12 +44,15 @@ const saveDashboard = async () => {
 
   const wasSaved = isSaved.value;
   const id = typeof dashboard.value._id === "string" ? dashboard.value._id : null;
-  // The write payload is a portable document plus the envelope visibility; the
-  // server stores the document whole and owns the rest of the envelope.
-  const payload = {
-    document: dashboard.value.toDocument(),
-    visibility: dashboard.value.visibility,
-  };
+  // Updating an existing dashboard is document-only: visibility is server-owned
+  // envelope state changed via its own mutation (setDashboardVisibility). Sending
+  // a stale local visibility alongside the document would let a save silently
+  // revert a concurrent visibility change (it isn't covered by the
+  // document-revision guard). Creating a new dashboard still carries the initial
+  // visibility (there's no concurrent change to clobber).
+  const payload = wasSaved
+    ? { document: dashboard.value.toDocument() }
+    : { document: dashboard.value.toDocument(), visibility: dashboard.value.visibility };
 
   try {
     const savedDashboardId = await dashboardStore.saveDashboard(

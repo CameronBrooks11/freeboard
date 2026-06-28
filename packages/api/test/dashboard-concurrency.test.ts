@@ -102,4 +102,39 @@ if (isPostgresTestRun) {
     assert.equal(envelopeOnly?.documentRevision, 3);
     assert.equal(envelopeOnly?.visibility, "public");
   });
+
+  test("a document-only update preserves a concurrently changed visibility", async () => {
+    const dashboards = dataStore.repositories.dashboards;
+    const owner = await dataStore.repositories.users.create({
+      email: `owner2-${Date.now()}@example.com`,
+      password: "StrongPass123!",
+      role: "editor",
+      active: true,
+    });
+    const created = await dashboards.create({
+      user: owner._id,
+      visibility: "private",
+      document: buildDocument("v1"),
+    });
+    assert.equal(created.documentRevision, 1);
+
+    // A concurrent visibility change (its own mutation) does NOT bump the
+    // document revision — the root of the original race.
+    const published = await dashboards.updateById({
+      dashboardId: created._id,
+      patch: { visibility: "public" },
+    });
+    assert.equal(published?.visibility, "public");
+    assert.equal(published?.documentRevision, 1);
+
+    // A document-only save at the still-current revision succeeds and leaves the
+    // (concurrently changed) visibility untouched — no silent revert.
+    const saved = await dashboards.updateById({
+      dashboardId: created._id,
+      patch: { document: buildDocument("v2") },
+      expectedDocumentRevision: 1,
+    });
+    assert.equal(saved?.documentRevision, 2);
+    assert.equal(saved?.visibility, "public");
+  });
 }
