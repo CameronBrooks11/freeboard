@@ -29,7 +29,7 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with repository-dr
 
 - `setContext({ req })` returns a context object containing:
   - `pubsub` (created via `createPubSub`)
-  - `models` (`Dashboard`, `User`)
+  - `dataStore` (repository-backed PostgreSQL datastore; resolvers read/write through `dataStore.repositories.<name>`)
   - `clientIp` (for auth throttling/audit context)
   - `user` (if a valid JWT `Authorization: Bearer <token>` header is present)
   - `serviceAccount` (if a valid service account bearer token `fsa_<id>.<secret>` is present)
@@ -56,32 +56,32 @@ Token auth is validated against persisted user state (`active` + `sessionVersion
   - Resolvers in `resolvers/*`
 - Produces an executable schema via `makeExecutableSchema`
 
-## Models
+## Data model
 
-- **Dashboard** (`models/Dashboard.ts`):
-  - Uses `nanoid` for string `_id`
+Persistence is repository-driven over PostgreSQL — there is no ORM/model layer. Resolvers read and write through `context.dataStore.repositories.<name>`, each backed by `packages/api/src/data/postgres/repositories/<name>.ts`. String ids are generated with `nanoid`.
+
+- **Dashboard** (`repositories/dashboards.ts`):
   - Fields include: `user`, `version`, `title`, `visibility`, `shareToken`, `shareTokenVersion`, `documentRevision`, `acl`, `image`, `datasources`, `columns`, `width`, `panes`, `settings`
   - `documentRevision` is an optimistic-concurrency counter, bumped only when the document changes; a document update must pass `expectedDocumentRevision` (a positive integer; omitting it is `BAD_USER_INPUT`) and is rejected with a `CONFLICT` error if it is stale. Envelope-only updates (e.g. visibility) don't require it.
-  - Timestamps enabled
-- **CredentialProfile** (`models/CredentialProfile.ts`):
+- **CredentialProfile** (`repositories/credentialProfiles.ts`):
   - Server-managed datasource credential profile metadata + encrypted secret payload
   - Supports type-specific secret resolution for gateway execution
-- **BrokerProfile** (`models/BrokerProfile.ts`):
+- **BrokerProfile** (`repositories/brokerProfiles.ts`):
   - Admin-managed broker metadata for realtime transports (`mqtt`)
   - Holds broker endpoint/policy data and references optional credential profile
-- **ShareTokenRevocationEvent** (`models/ShareTokenRevocationEvent.ts`):
+- **ShareTokenRevocationEvent** (`repositories/shareTokenRevocationFeed.ts`):
   - Durable event feed used by gateway for public/link stream revocation polling
-- **User** (`models/User.ts`):
-  - `_id` via `nanoid`
-  - Fields: `email`, `password`, `role`, `active`, `sessionVersion`, `registrationDate`, `lastLogin`
-  - Pre-save hook hashes `password` with `bcrypt`
-  - Model-level validators enforce email and password policy (defense in depth)
-- **ServiceAccount** (`models/ServiceAccount.ts`):
+- **User** (`repositories/users.ts`):
+  - Fields: `email`, `password` (bcrypt hash), `role`, `active`, `sessionVersion`, `registrationDate`, `lastLogin`
+  - Passwords are bcrypt-hashed by the registration/admin flows before insert; email and password policy is enforced at the trust boundary (`validators.ts`)
+- **ServiceAccount** (`repositories/serviceAccounts.ts`):
   - Admin-managed machine principal with scoped permissions
   - Tracks active state and last-used timestamp
-- **ServiceAccountToken** (`models/ServiceAccountToken.ts`):
+- **ServiceAccountToken** (`repositories/serviceAccountTokens.ts`):
   - One-way hashed bearer token records for service accounts
   - Supports expiry, revocation, label metadata, and last-used timestamp
+
+Additional repositories back audit events, invite tokens, password-reset tokens, runtime policy, and the security limiter (`repositories/{audit,inviteTokens,passwordResetTokens,policy,securityLimiter}.ts`).
 
 ## Resolvers
 

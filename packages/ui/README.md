@@ -15,11 +15,11 @@ Vue 3 single-page application for dashboard editing, playback, sharing, and admi
 - Datasource runtime and streaming manager (`src/datasources`)
 - Widget runtime and built-in widgets (`src/widgets`)
 - Auth/admin state + stores (`src/stores`, `src/admin`)
-- Router and app bootstrap (`src/router`, `src/bootstrap`, `src/main.js`)
+- Router and app bootstrap (`src/router`, `src/bootstrap`, `src/main.ts`)
 
 ## API/Gateway Integration
 
-- GraphQL operations are defined in `src/gql.js`
+- GraphQL operations are defined in `src/gql.ts`
 - HTTP datasource sessions execute through gateway endpoints
 - Realtime datasource subscriptions use dashboard-level websocket transport
 

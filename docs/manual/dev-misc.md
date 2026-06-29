@@ -65,7 +65,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 
 ## CI Troubleshooting (Quick)
 
-- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `lint`, `test-api`, `test-api-smoke`, `test-shared`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `db-schema-gate`, `build-verify`, `docker-sanity`, `typecheck`).
+- If `Required CI` fails, open the `CI` workflow run and inspect the failing gated job (`format`, `docs-integrity`, `lint`, `test-api`, `test-api-smoke`, `test-shared`, `test-core`, `test-ui`, `test-gateway`, `db-schema-gate`, `build-verify`, `docker-sanity`, `typecheck`).
 - If lint fails on `Validate UI store boundaries`, remove `stores/freeboard` references and keep store imports out of `packages/ui/src/models/*` and `packages/ui/src/datasources/*`.
 - If format job fails on `Legacy datastore residue gate`, remove blocked legacy datastore terms from tracked files unless they belong in `/manual/legacy-datastore-architecture` or under `## Historical Internal Milestones` in `/CHANGELOG.md`.
 - If `Validate TS source debt` fails, remove unsafe TS patterns (`as any`, `as unknown as`, `: any`, `Record<string, any>`, `[key: string]: any`, `@ts-ignore`, `@ts-nocheck`) from `packages/*/src`.
@@ -86,7 +86,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 - `test-shared` job validates shared runtime policy/client-IP utility behavior for `packages/shared` and shared-surface changes.
 - `test-api-smoke` job validates Postgres datastore repository behavior against a real Postgres service after schema is applied.
 - `test-ui` job runs behavior-based UI regression tests (including layout policy behavior checks).
-- `test-e2e-smoke` job in `CI` runs cross-service browser assertions from `e2e/smoke.spec.js` on relevant API, UI, gateway, `packages/shared`, and e2e changes and is included in `Required CI`.
+- Cross-service browser assertions (`e2e/smoke.spec.js`) run in the separate `E2E smoke` (`e2e-smoke.yml`) and `E2E static (Lite)` (`e2e-static.yml`) workflows on pull requests to `main` (and manual dispatch); they are not part of the `CI` workflow's `Required CI` gate.
 - `docker-sanity` job validates API/gateway/UI Docker builds on Dockerfile/runtime dependency changes.
 - Standalone `E2E smoke` workflow remains available for manual reruns (`workflow_dispatch`) and artifact triage.
 

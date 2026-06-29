@@ -14,8 +14,8 @@ GraphQL API service for authentication, dashboard persistence, policy, and gatew
 - Auth, policy, and session enforcement
 - Dashboard/user/profile persistence via datastore repositories (Postgres release path)
 - Gateway trust bridge:
-  - datasource session token minting (`src/datasourceGateway.js`)
-  - gateway introspection/revocation feeds (`src/resolvers/Datasource.js` and related paths)
+  - datasource session token minting (`src/datasourceGateway.ts`)
+  - gateway introspection/revocation feeds (`src/resolvers/Datasource.ts` and related paths)
 
 ## Required Runtime Config
 

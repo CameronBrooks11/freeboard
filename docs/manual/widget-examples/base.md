@@ -26,8 +26,8 @@ body {
 
 ```js
 window.addEventListener("message", (event) => {
-  if (event.data?.type === "datasource:update" && event.data.datasource === "clockSource") {
-    const date = new Date(event.data.data);
+  if (event.data?.type === "datasource:update" && event.data.datasourceTitle === "clockSource") {
+    const date = new Date(event.data.value);
     const options = {
       timeZone: "America/New_York",
       hour: "2-digit",
@@ -119,7 +119,7 @@ body {
 ```js
 window.addEventListener("message", (event) => {
   if (event.data.type === "datasource:update") {
-    const currentTime = new Date(event.data.data);
+    const currentTime = new Date(event.data.value);
     const seconds = currentTime.getSeconds();
     const minutes = currentTime.getMinutes();
     const hours = currentTime.getHours();
@@ -150,7 +150,7 @@ window.addEventListener("message", (event) => {
 
 ### Datasource
 
-- Type: `JSON`
+- Type: `HTTP`
 - Title: `randomFact`
 - Enabled: `true`
 - URL: `https://uselessfacts.jsph.pl/api/v2/facts/random?language=en`
@@ -208,8 +208,8 @@ body {
 
 ```js
 window.addEventListener("message", (event) => {
-  if (event.data.type === "datasource:update" && event.data.datasource === "randomFact") {
-    const dto = event.data.data;
+  if (event.data.type === "datasource:update" && event.data.datasourceTitle === "randomFact") {
+    const dto = event.data.value;
     const text = dto.text || JSON.stringify(dto);
     document.getElementById("factText").textContent = text;
   }
@@ -228,7 +228,7 @@ window.addEventListener("message", (event) => {
 
 ### Datasource
 
-- Type: `JSON`
+- Type: `HTTP`
 - Title: `localTemp`
 - Enabled: `true`
 - URL:
@@ -299,8 +299,8 @@ function drawGauge(temp) {
 }
 
 window.addEventListener("message", (event) => {
-  if (event.data.type === "datasource:update" && event.data.datasource === "localTemp") {
-    const temp = event.data.data.current_weather.temperature;
+  if (event.data.type === "datasource:update" && event.data.datasourceTitle === "localTemp") {
+    const temp = event.data.value.current_weather.temperature;
     drawGauge(temp);
   }
 });

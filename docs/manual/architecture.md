@@ -130,7 +130,7 @@ Security control deployment/rollback workflow is centralized in [Security Contro
 ## CI Topology
 
 - Required PR workflow: `.github/workflows/ci.yml`
-  - Jobs: `changes` -> conditional `format`, `lint`, `test-api`, `test-shared`, `test-ui`, `test-gateway`, `test-e2e-smoke`, `build-verify`, `docker-sanity`, `typecheck` -> always-run `Required CI`.
+  - Jobs: `changes` -> conditional `format`, `docs-integrity`, `lint`, `test-api`, `test-api-smoke`, `test-shared`, `test-core`, `test-ui`, `test-gateway`, `db-schema-gate`, `build-verify`, `docker-sanity`, `typecheck` -> always-run `Required CI`. Browser e2e runs in the separate `E2E smoke` / `E2E static (Lite)` workflows, not in `Required CI`.
   - Concurrency: cancels superseded PR runs using PR-number/ref keyed group.
   - Required check target for branch protection: `Required CI`.
 - Lite static E2E workflow: `.github/workflows/e2e-static.yml`

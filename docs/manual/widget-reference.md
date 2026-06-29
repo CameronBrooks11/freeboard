@@ -94,7 +94,7 @@ This page is for dashboard users configuring built-in widgets.
 - Purpose: compact multi-item operational status list (label, value, status)
 - Required binding: `valuePath` (must resolve to an array of items)
 - Key settings: `labelField`, `valueField`, `statusField`, `statusColors`, `showIcons`, `compact`
-- Status colors: JSON map merged with defaults (`ok`, `warn`, `error`, `offline`, `unknown`)
+- Status colors: JSON map merged with defaults (`ok`, `warn`, `warning`, `error`, `offline`, `unknown`)
 - Preferred rows: `min(itemCount, 8) + 1`
 - Examples: [Status List Widget Examples](/manual/widget-examples/status-list)
 

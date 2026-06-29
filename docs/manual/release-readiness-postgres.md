@@ -20,7 +20,7 @@ Use this runbook for final release hardening when PostgreSQL is the active datas
 
 ## Full Validation Matrix
 
-Primary command (runs full Sprint 30.9 matrix):
+Primary command (runs the full release-readiness matrix):
 
 ```bash
 npm run check:release
