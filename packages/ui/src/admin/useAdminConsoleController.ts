@@ -769,9 +769,7 @@ export const useAdminConsoleController = () => {
         expiresInHours: 24,
       });
       const payload = result?.data?.adminIssuePasswordReset as
-        | { token?: string; expiresAt?: string }
-        | null
-        | undefined;
+        { token?: string; expiresAt?: string } | null | undefined;
       if (payload) {
         issuedResetByUser.value = {
           ...issuedResetByUser.value,
