@@ -1,5 +1,5 @@
 import type { DataStore } from "../contracts.js";
-import { postgresModelConstants, postgresModels } from "./models.js";
+import type { ApiModelConstants } from "../types.js";
 import { createPostgresAuditRepository } from "./repositories/audit.js";
 import { createPostgresBrokerProfileRepository } from "./repositories/brokerProfiles.js";
 import { createPostgresCredentialProfileRepository } from "./repositories/credentialProfiles.js";
@@ -13,10 +13,14 @@ import { createPostgresServiceAccountTokenRepository } from "./repositories/serv
 import { createPostgresShareTokenRevocationRepository } from "./repositories/shareTokenRevocationFeed.js";
 import { createPostgresUserRepository } from "./repositories/users.js";
 
+const postgresModelConstants: ApiModelConstants = Object.freeze({
+  BROKER_PROFILE_PROTOCOLS: Object.freeze(["mqtt"]),
+  CREDENTIAL_PROFILE_TYPES: Object.freeze(["none", "header", "bearer", "basic"]),
+});
+
 export const createPostgresDataStore = (): DataStore =>
   Object.freeze({
     backend: "postgres",
-    models: postgresModels,
     constants: postgresModelConstants,
     repositories: Object.freeze({
       securityLimiter: createPostgresSecurityLimiterRepository(),

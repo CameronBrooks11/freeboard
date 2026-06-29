@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { setRuntimeExecutionMode } from "../executionPolicy.js";
+import { parseJwtPayload } from "../jwt.js";
 
 type PublicAuthPolicy = {
   registrationMode: "disabled" | "invite" | "open";
@@ -52,42 +53,6 @@ const getLocalStorage = () => {
     // Ignore storage access failures.
   }
   return null;
-};
-
-const decodeBase64 = (value: string) => {
-  const runtimeGlobal = globalThis as typeof globalThis & {
-    Buffer?: { from(value: string, encoding?: string): { toString(encoding?: string): string } };
-  };
-  if (typeof globalThis.atob === "function") {
-    return globalThis.atob(value);
-  }
-  if (typeof runtimeGlobal.Buffer !== "undefined") {
-    return runtimeGlobal.Buffer.from(value, "base64").toString("utf8");
-  }
-  throw new Error("No base64 decoder available");
-};
-
-const parseJwtPayload = (token: string | null): Record<string, unknown> | null => {
-  if (!token || typeof token !== "string") {
-    return null;
-  }
-
-  const payloadSegment = token.split(".")[1];
-  if (!payloadSegment) {
-    return null;
-  }
-
-  const normalizedBase64 = payloadSegment
-    .replace(/-/g, "+")
-    .replace(/_/g, "/")
-    .padEnd(Math.ceil(payloadSegment.length / 4) * 4, "=");
-
-  try {
-    const payloadJson = decodeBase64(normalizedBase64);
-    return JSON.parse(payloadJson);
-  } catch {
-    return null;
-  }
 };
 
 const normalizeRole = (role: unknown): UserRole => {

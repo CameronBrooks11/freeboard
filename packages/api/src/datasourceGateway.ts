@@ -23,6 +23,7 @@ import {
   resolveQueryCredentialValue,
   sanitizeCustomHeaders,
 } from "./datasourceGatewayIntentUtils.js";
+import { toComparableId } from "./util.js";
 
 const EXTERNAL_VISIBILITIES = new Set(["link", "public"]);
 const HTTP_DATASOURCE_TYPES = new Set(["http"]);
@@ -70,16 +71,6 @@ export const DATASOURCE_SESSION_TTL_SECONDS = Math.max(
   60,
   Math.floor(Number(config.datasourceSessionTtlSeconds) || 300),
 );
-
-const toComparableId = (value: unknown): string | null => {
-  if (!value) {
-    return null;
-  }
-  if (typeof value?.toString === "function") {
-    return value.toString();
-  }
-  return String(value);
-};
 
 export const createClientError = (
   statusCode: number,

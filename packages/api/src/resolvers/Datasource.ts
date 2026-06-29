@@ -14,18 +14,9 @@ import { buildLimiterCompositeKey, hashLimiterKeyPart } from "../securityLimiter
 import { ensureThatPrincipalHasServiceScope } from "../auth.js";
 import { recordDatasourceMintMetric } from "../runtimeMetrics.js";
 import { dataStore } from "../data/index.js";
+import { toComparableId } from "../util.js";
 
 const dashboardRepository = dataStore.repositories.dashboards;
-
-const toComparableId = (value: unknown): string | null => {
-  if (!value) {
-    return null;
-  }
-  if (typeof value?.toString === "function") {
-    return value.toString();
-  }
-  return String(value);
-};
 
 const toGraphQLError = (
   error: unknown,

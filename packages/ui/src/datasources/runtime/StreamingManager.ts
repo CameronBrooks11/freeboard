@@ -3,6 +3,8 @@
  * @description Shared dashboard-level websocket transport manager for realtime datasources.
  */
 
+import { getTokenExpiryMs } from "../../jwt.js";
+
 const REALTIME_RECONNECT_MIN_MS = 1000;
 const REALTIME_RECONNECT_MAX_MS = 30000;
 const HEARTBEAT_INTERVAL_MS = 30000;
@@ -43,54 +45,6 @@ type StreamingSubscription = {
 };
 
 const managerByDashboardId = new Map<string, StreamingManager>();
-
-const decodeBase64 = (value: string): string => {
-  if (typeof globalThis.atob === "function") {
-    return globalThis.atob(value);
-  }
-  const maybeBuffer = (
-    globalThis as typeof globalThis & {
-      Buffer?: {
-        from: (input: string, encoding: string) => { toString: (encoding: string) => string };
-      };
-    }
-  ).Buffer;
-  if (typeof maybeBuffer !== "undefined") {
-    return maybeBuffer.from(value, "base64").toString("utf8");
-  }
-  return "";
-};
-
-const parseJwtPayload = (token: string | null | undefined): Record<string, unknown> | null => {
-  if (!token || typeof token !== "string") {
-    return null;
-  }
-
-  const payloadSegment = token.split(".")[1];
-  if (!payloadSegment) {
-    return null;
-  }
-
-  const normalizedBase64 = payloadSegment
-    .replace(/-/g, "+")
-    .replace(/_/g, "/")
-    .padEnd(Math.ceil(payloadSegment.length / 4) * 4, "=");
-
-  try {
-    return JSON.parse(decodeBase64(normalizedBase64));
-  } catch {
-    return null;
-  }
-};
-
-const getTokenExpiry = (token: string | null | undefined): number | null => {
-  const payload = parseJwtPayload(token);
-  const exp = Number(payload?.exp);
-  if (!Number.isFinite(exp)) {
-    return null;
-  }
-  return exp * 1000;
-};
 
 const buildRealtimeSocketUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
@@ -381,7 +335,7 @@ export class StreamingManager {
       dashboardId,
       sessionToken,
       callbacks: callbacks || {},
-      expiresAtMs: getTokenExpiry(sessionToken),
+      expiresAtMs: getTokenExpiryMs(sessionToken),
       tokenExpiryTimer: null,
     };
 
@@ -403,7 +357,7 @@ export class StreamingManager {
     }
 
     subscription.sessionToken = sessionToken;
-    subscription.expiresAtMs = getTokenExpiry(sessionToken);
+    subscription.expiresAtMs = getTokenExpiryMs(sessionToken);
 
     await this.ensureSocketOpen();
     await this.sendSubscribe(subscription);
