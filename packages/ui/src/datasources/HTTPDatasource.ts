@@ -3,10 +3,8 @@
  * @description HTTP datasource runtime with gateway-backed fetch and parser modes.
  */
 
-import {
-  getDatasourceSessionTokenExpiry,
-  mintDatasourceSessionToken,
-} from "./datasourceSessionToken.js";
+import { mintDatasourceSessionToken } from "./datasourceSessionToken.js";
+import { getTokenExpiryMs } from "../jwt.js";
 import { DatasourceRuntimeBase } from "./runtime/DatasourceRuntimeBase.js";
 import { getAuthToken, getDashboardId, getRuntimeShareToken } from "../runtime/runtimeContext.js";
 import { runtimeConfig } from "../runtime/config.js";
@@ -328,7 +326,7 @@ export class HTTPDatasource extends DatasourceRuntimeBase {
   }
 
   async ensureSessionToken() {
-    const expiresAtMs = getDatasourceSessionTokenExpiry(this.sessionToken);
+    const expiresAtMs = getTokenExpiryMs(this.sessionToken);
     const now = Date.now();
     if (this.sessionToken && expiresAtMs && expiresAtMs - now > 60_000) {
       return this.sessionToken;

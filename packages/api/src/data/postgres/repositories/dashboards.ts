@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import { nanoid } from "nanoid";
 import { getPostgresPool } from "../../../db/postgres/client.js";
 import {
@@ -8,25 +7,13 @@ import {
   type DashboardRecord,
   type DashboardRepository,
 } from "../../contracts.js";
+import { generateShareToken, toDate } from "../../../util.js";
 
 type Queryable = {
   query: <T extends Record<string, unknown> = Record<string, unknown>>(
     text: string,
     params?: readonly unknown[],
   ) => Promise<{ rows: T[]; rowCount: number | null }>;
-};
-
-const generateShareToken = () => crypto.randomBytes(24).toString("base64url");
-
-const toDate = (value: unknown, fallback = new Date()): Date => {
-  if (value instanceof Date && Number.isFinite(value.getTime())) {
-    return value;
-  }
-  const normalized = new Date(value as Date | string | number);
-  if (!Number.isFinite(normalized.getTime())) {
-    return fallback;
-  }
-  return normalized;
 };
 
 const toDatasourceArray = (value: unknown): DashboardDatasourceRecord[] => {

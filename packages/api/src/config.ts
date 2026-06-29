@@ -394,15 +394,6 @@ if (isNonDevRuntime && config.securityLimiterBackend === "memory") {
   );
 }
 
-if (
-  config.securityLimiterBackend !== "memory" &&
-  config.securityLimiterBackend !== config.dbBackend
-) {
-  throw new Error(
-    `SECURITY_LIMITER_BACKEND='${config.securityLimiterBackend}' is incompatible with DB_BACKEND='${config.dbBackend}'.`,
-  );
-}
-
 if (config.createAdmin) {
   if (!isValidEmail(config.adminEmail)) {
     warnAndThrow(`CREATE_ADMIN=true requires valid ADMIN_EMAIL. ${EMAIL_POLICY_MESSAGE}.`);

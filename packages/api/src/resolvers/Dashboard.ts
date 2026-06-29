@@ -21,7 +21,6 @@ import {
   ensureDashboardReadable,
   ensureDashboardShareManageable,
   ensureVisibilityTransitionAllowed,
-  generateShareToken,
   getDashboardOrNotFound,
   getDashboardVisibility,
   inputDatasources,
@@ -29,11 +28,11 @@ import {
   resolveCreateVisibility,
   resolveDashboardPermissions,
   sanitizeDashboardInput,
-  toComparableId,
   transformDashboardForContext,
   uniqueAclEntries,
   validateDashboardDatasources,
 } from "./dashboardHelpers.js";
+import { generateShareToken, toComparableId } from "../util.js";
 import { normalizeDashboardAccessLevel, normalizeDashboardVisibility } from "../policy.js";
 import { isValidEmail, normalizeEmail } from "../validators.js";
 

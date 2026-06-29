@@ -16,50 +16,6 @@ mutation MintDatasourceSessionToken($dashboardId: ID!, $datasourceId: ID!, $shar
 }
 `;
 
-const decodeBase64 = (value: string): string => {
-  const runtimeGlobal = globalThis as typeof globalThis & {
-    Buffer?: { from(value: string, encoding?: string): { toString(encoding?: string): string } };
-  };
-  if (typeof globalThis.atob === "function") {
-    return globalThis.atob(value);
-  }
-  if (typeof runtimeGlobal.Buffer !== "undefined") {
-    return runtimeGlobal.Buffer.from(value, "base64").toString("utf8");
-  }
-  return "";
-};
-
-const parseJwtPayload = (token: unknown): Record<string, unknown> | null => {
-  if (!token || typeof token !== "string") {
-    return null;
-  }
-
-  const payloadSegment = token.split(".")[1];
-  if (!payloadSegment) {
-    return null;
-  }
-
-  const normalizedBase64 = payloadSegment
-    .replace(/-/g, "+")
-    .replace(/_/g, "/")
-    .padEnd(Math.ceil(payloadSegment.length / 4) * 4, "=");
-
-  try {
-    return JSON.parse(decodeBase64(normalizedBase64));
-  } catch {
-    return null;
-  }
-};
-
-export const getDatasourceSessionTokenExpiry = (token: unknown): number | null => {
-  const payload = parseJwtPayload(token);
-  const exp = Number(payload?.exp);
-  if (!Number.isFinite(exp)) {
-    return null;
-  }
-  return exp * 1000;
-};
-
 /**
  * Mint a short-lived datasource runtime session token from the API.
  *

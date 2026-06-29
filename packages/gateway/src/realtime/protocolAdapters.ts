@@ -4,10 +4,35 @@
  */
 
 import { URL } from "url";
+import * as http from "http";
+import * as https from "https";
+import WebSocket from "ws";
 import type * as dns from "dns";
-import type * as http from "http";
-import type * as https from "https";
-import type WebSocket from "ws";
+import { createClientError } from "../errors.js";
+import {
+  createUpstreamRequestOptions,
+  normalizeRequestHeaders,
+  parseStreamPayload,
+} from "../gatewayHttp.js";
+import { ensureResolvedDestinationIsAllowed } from "../networkPolicy.js";
+import {
+  ALLOW_INSECURE_TLS,
+  REALTIME_CONNECT_TIMEOUT_MS,
+  REALTIME_MAX_MESSAGE_BYTES,
+  REALTIME_MQTT_ENABLED,
+  REALTIME_MQTT_MAX_MESSAGE_BYTES,
+  REALTIME_MQTT_MAX_QOS,
+  REALTIME_SSE_ENABLED,
+  REALTIME_SSE_IDLE_TIMEOUT_MS,
+  REALTIME_WS_ENABLED,
+  REALTIME_WS_IDLE_TIMEOUT_MS,
+  REALTIME_WS_PING_INTERVAL_MS,
+  STREAM_ERROR_CODES,
+} from "../runtimeConfig.js";
+
+const httpRequest = http.request;
+const httpsRequest = https.request;
+const websocketOpenState = WebSocket.OPEN;
 
 type StreamStatus = "connecting" | "connected" | "disconnected" | "error";
 type StreamIntent = {
@@ -23,16 +48,6 @@ type StreamIntent = {
   topicAllowlist?: string[];
 };
 type StreamAdapter = { stop: () => Promise<void> | void };
-type StreamErrorCodes = {
-  CONNECT_TIMEOUT: string;
-  CONNECT_REFUSED: string;
-  CONNECT_FAILED: string;
-  AUTH_FAILED: string;
-  IDLE_TIMEOUT: string;
-  MESSAGE_TOO_LARGE: string;
-  PROTOCOL_ERROR: string;
-  POLICY_BLOCKED: string;
-};
 type StreamCallbacks = {
   intent: StreamIntent;
   onData: (payload: unknown) => void;
@@ -61,53 +76,24 @@ type ParseRealtimeTargetUrl = (params: { rawTarget: string; protocol: string }) 
 
 type LookupFn = (hostname: string, options: dns.LookupAllOptions) => Promise<dns.LookupAddress[]>;
 
-type EnsureDestinationFn = (
-  hostname: string,
-  deps?: { lookup?: LookupFn },
-) => Promise<{ address: string; family: 4 | 6 }>;
-
+// Only genuine seams are injected: the per-instance MQTT pool closures, the
+// DNS lookup and WebSocket-client factories (overridden in tests), and
+// parseRealtimeTargetUrl (defined in index.ts, injected to avoid an import
+// cycle). All other dependencies are imported directly from their modules.
 type AdapterFactoryDeps<TPoolEntry extends MqttPoolEntryLike> = {
   parseRealtimeTargetUrl: ParseRealtimeTargetUrl;
-  ensureResolvedDestinationIsAllowed: EnsureDestinationFn;
   lookup: LookupFn;
-  REALTIME_SSE_IDLE_TIMEOUT_MS: number;
-  REALTIME_MAX_MESSAGE_BYTES: number;
-  STREAM_ERROR_CODES: StreamErrorCodes;
-  parseStreamPayload: (raw: string, parser?: string) => unknown;
-  REALTIME_CONNECT_TIMEOUT_MS: number;
-  createUpstreamRequestOptions: (params: {
-    target: URL;
-    port: number;
-    hostname: string;
-    resolvedDestination: { address: string; family: 4 | 6 };
-    bodyText: string;
-    headers?: Record<string, unknown> | undefined;
-    timeoutMs: number;
-  }) => http.RequestOptions;
-  httpRequest: typeof http.request;
-  httpsRequest: typeof https.request;
   wsClientFactory: (
     url: string,
     protocols?: string | string[],
     options?: ConstructorParameters<typeof WebSocket>[2],
   ) => WebSocket;
-  normalizeRequestHeaders: (headers?: Record<string, unknown>) => Record<string, string>;
-  REALTIME_WS_IDLE_TIMEOUT_MS: number;
-  REALTIME_WS_PING_INTERVAL_MS: number;
-  websocketOpenState?: number;
-  ALLOW_INSECURE_TLS: boolean;
-  REALTIME_MQTT_MAX_QOS: number;
-  REALTIME_MQTT_MAX_MESSAGE_BYTES: number;
-  createClientError: (statusCode: number, message: string, streamErrorCode?: string) => Error;
   acquireMqttPoolEntry: (params: {
     intent: StreamIntent;
     resolvedDestination: { address: string; family: 4 | 6 };
   }) => TPoolEntry;
   releaseMqttPoolEntry: (entry: TPoolEntry) => void;
   ensureMqttTopicPolicy: (params: { intent: StreamIntent }) => void;
-  REALTIME_SSE_ENABLED: boolean;
-  REALTIME_WS_ENABLED: boolean;
-  REALTIME_MQTT_ENABLED: boolean;
 };
 
 const toBufferPayload = (value: unknown): Buffer => {
@@ -139,31 +125,11 @@ export const createProtocolAdapterFactory = <TPoolEntry extends MqttPoolEntryLik
 ) => {
   const {
     parseRealtimeTargetUrl,
-    ensureResolvedDestinationIsAllowed,
     lookup,
-    REALTIME_SSE_IDLE_TIMEOUT_MS,
-    REALTIME_MAX_MESSAGE_BYTES,
-    STREAM_ERROR_CODES,
-    parseStreamPayload,
-    REALTIME_CONNECT_TIMEOUT_MS,
-    createUpstreamRequestOptions,
-    httpRequest,
-    httpsRequest,
     wsClientFactory,
-    normalizeRequestHeaders,
-    REALTIME_WS_IDLE_TIMEOUT_MS,
-    REALTIME_WS_PING_INTERVAL_MS,
-    websocketOpenState = 1,
-    ALLOW_INSECURE_TLS,
-    REALTIME_MQTT_MAX_QOS,
-    REALTIME_MQTT_MAX_MESSAGE_BYTES,
-    createClientError,
     acquireMqttPoolEntry,
     releaseMqttPoolEntry,
     ensureMqttTopicPolicy,
-    REALTIME_SSE_ENABLED,
-    REALTIME_WS_ENABLED,
-    REALTIME_MQTT_ENABLED,
   } = deps;
 
   const createSseAdapter = async ({ intent, onData, onStatus, onError }: StreamCallbacks) => {

@@ -4,7 +4,6 @@
  */
 
 import { createGraphQLError } from "graphql-yoga";
-import crypto from "node:crypto";
 import { dataStore } from "../data/index.js";
 import type { DashboardAclEntryRecord } from "../data/contracts.js";
 import { createAuthToken } from "../auth.js";
@@ -17,6 +16,7 @@ import {
   normalizeEmail,
 } from "../validators.js";
 import { generateOneTimeToken, hashOneTimeToken } from "../tokenSecurity.js";
+import { generateShareToken, toComparableId } from "../util.js";
 
 const dashboardRepository = dataStore.repositories.dashboards;
 const inviteTokenRepository = dataStore.repositories.inviteTokens;
@@ -51,18 +51,6 @@ export const INVITE_DEFAULT_EXPIRY_HOURS = 72;
 export const PASSWORD_RESET_DEFAULT_EXPIRY_HOURS = 2;
 export const PASSWORD_RESET_ADMIN_DEFAULT_EXPIRY_HOURS = 24;
 const MAX_TOKEN_EXPIRY_HOURS = 24 * 14;
-
-const toComparableId = (value: unknown): string | null => {
-  if (!value) {
-    return null;
-  }
-  if (typeof value?.toString === "function") {
-    return value.toString();
-  }
-  return String(value);
-};
-
-const generateShareToken = () => crypto.randomBytes(24).toString("base64url");
 
 export const clampExpiryHours = (inputHours: unknown, fallbackHours: number): number => {
   const parsed = Number(inputHours);
