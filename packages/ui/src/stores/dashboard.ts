@@ -209,8 +209,7 @@ export const useDashboardStore = defineStore("dashboard", {
         };
         const result = await updateDashboard({ id, dashboard: updateInput });
         const updated = getMutationData(result).updateDashboard as
-          | DashboardMutationPayload
-          | undefined;
+          DashboardMutationPayload | undefined;
         if (updated) {
           this.dashboard.visibility = updated.visibility || this.dashboard.visibility;
           this.dashboard.shareToken = updated.shareToken || null;
@@ -231,8 +230,7 @@ export const useDashboardStore = defineStore("dashboard", {
 
         const result = await createDashboard({ dashboard: createPayload });
         const created = getMutationData(result).createDashboard as
-          | DashboardMutationPayload
-          | undefined;
+          DashboardMutationPayload | undefined;
         if (!created || typeof created._id !== "string" || !created._id.trim()) {
           throw new Error("Dashboard create mutation did not return a dashboard id.");
         }

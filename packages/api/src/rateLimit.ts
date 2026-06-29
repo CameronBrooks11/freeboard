@@ -13,10 +13,7 @@ import { recordApiLimiterDecision } from "./runtimeMetrics.js";
 const WINDOW_MS = 60_000;
 
 export type RateLimitDecisionReason =
-  | "allowed"
-  | "limited"
-  | "backend_fail_open"
-  | "backend_fail_closed";
+  "allowed" | "limited" | "backend_fail_open" | "backend_fail_closed";
 
 export type RateLimitDecision = {
   allowed: boolean;

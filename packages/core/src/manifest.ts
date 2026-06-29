@@ -146,14 +146,12 @@ export const PLUGIN_MANIFEST: PluginManifestEntry[] = [
       { name: "keepaliveSeconds", dataType: "number", min: 5, max: 3600 },
     ],
   },
-  ...WIDGET_TYPE_NAMES.map(
-    (typeName): PluginManifestEntry => ({
-      kind: "widget",
-      typeName,
-      profiles: LITE_AND_SERVER,
-      fields: [],
-    }),
-  ),
+  ...WIDGET_TYPE_NAMES.map((typeName): PluginManifestEntry => ({
+    kind: "widget",
+    typeName,
+    profiles: LITE_AND_SERVER,
+    fields: [],
+  })),
 ];
 
 /** Look up a manifest entry by kind + type, or `undefined` if unknown. */
