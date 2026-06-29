@@ -20,7 +20,7 @@ A widget plugin must provide:
 Most widgets should extend `ReactiveWidget`:
 
 - `resolveInputs()` reads bindings from `snapshot` using `getBinding(path)`/`getTemplate(template)`.
-- `onInputsChanged(inputs)` updates DOM for the latest values.
+- `onInputsChanged(inputs, context)` updates DOM for the latest values (`context` is optional).
 - `onResize({ width, height })` adapts rendering to pane size.
 - `getPreferredRows()` returns expected minimum pane height impact.
 

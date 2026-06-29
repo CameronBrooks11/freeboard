@@ -29,9 +29,9 @@ window.addEventListener("message", (event) => {
 Core payload fields:
 
 - `type`: `"datasource:update"`
-- `datasource`: changed datasource id or title
-- `datasourceId`
-- `datasourceTitle`
+- `datasource`: changed datasource id (falls back to title only when the datasource has no id, which does not happen in normal use) — to match by the human-readable title, compare `datasourceTitle`
+- `datasourceId`: changed datasource id
+- `datasourceTitle`: changed datasource title
 - `value`: normalized datasource value
 - `snapshot`: full normalized snapshot across datasources
 - `raw`: original datasource payload

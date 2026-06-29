@@ -20,10 +20,10 @@ Datasource execution boundary service (HTTP fetch + realtime SSE/WebSocket/MQTT 
 ## Core Source Layout
 
 - `src/index.ts`: composition root, server wiring, realtime orchestration
-- `src/runtimeConfig.js`: env normalization and runtime limits
-- `src/networkPolicy.js`: URL parsing + destination checks
-- `src/gatewayApiClient.js`: API introspection/revocation client
-- `src/gatewayHttp.js`: HTTP datasource execution path
+- `src/runtimeConfig.ts`: env normalization and runtime limits
+- `src/networkPolicy.ts`: URL parsing + destination checks
+- `src/gatewayApiClient.ts`: API introspection/revocation client
+- `src/gatewayHttp.ts`: HTTP datasource execution path
 - `src/realtime/`: protocol adapters and MQTT client implementation
 
 ## Required Runtime Config

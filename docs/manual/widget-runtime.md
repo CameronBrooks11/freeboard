@@ -36,7 +36,7 @@ Typical instance methods:
 
 Optional:
 
-- `getPreferredRows(settings, snapshot)`
+- `getPreferredRows()`
 
 ## Snapshot and Binding Model
 
