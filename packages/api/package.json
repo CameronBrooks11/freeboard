@@ -24,7 +24,7 @@
     "dotenv": "^17.4.2",
     "graphql-yoga": "^5.10.3",
     "jsonwebtoken": "^9.0.2",
-    "nanoid": "^5.1.16",
+    "nanoid": "^6.0.0",
     "pg": "^8.22.0"
   }
 }
