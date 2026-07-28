@@ -20,11 +20,6 @@ updates:
         update-types:
           - "minor"
           - "patch"
-      npm-major:
-        patterns:
-          - "*"
-        update-types:
-          - "major"
 
   - package-ecosystem: "github-actions"
     directory: "/"
