@@ -24,7 +24,7 @@
     "graphql-tag": "^2.12.7",
     "monaco-editor": "0.55.1",
     "oh-vue-icons": "^1.0.0-rc3",
-    "pinia": "^3.0.4",
+    "pinia": "^4.0.2",
     "rpg-awesome": "^0.2.0",
     "vue": "^3.5.40",
     "vue-grid-layout-v3": "^3.1.1-rc.4",
