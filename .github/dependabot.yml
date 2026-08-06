@@ -13,6 +13,16 @@ updates:
     commit-message:
       prefix: "deps"
     open-pull-requests-limit: 8
+    ignore:
+      # monaco 0.56 dropped every CSS subpath export and rewrote `editor.api`
+      # to statically pull the standalone editor and its CSS. packages/ui
+      # imports the `esm/vs/...?worker` entries, none of which resolve under
+      # the new exports map. Held at 0.55.x -- see openscad-web#254 for the
+      # full analysis; revisit when monaco ships a CSS-free API entry.
+      - dependency-name: "monaco-editor"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-major"
     groups:
       npm-minor-patch:
         patterns:
