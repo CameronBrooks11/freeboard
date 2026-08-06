@@ -13,26 +13,26 @@
     "test:ci": "tsc -p ../core/tsconfig.build.json && tsx --test --test-concurrency=1"
   },
   "dependencies": {
-    "@apollo/client": "^4.2.7",
+    "@apollo/client": "^4.2.9",
     "@freeboard/core": "0.1.0",
     "@guolao/vue-monaco-editor": "^1.6.0",
-    "@unhead/vue": "^3.2.1",
+    "@unhead/vue": "^3.2.3",
     "@vue/apollo-composable": "^4.2.1",
-    "@vueuse/core": "^14.3.0",
+    "@vueuse/core": "^14.4.0",
     "graphql": "^16.14.2",
     "graphql-sse": "^2.5.3",
     "graphql-tag": "^2.12.7",
-    "monaco-editor": "0.55.1",
+    "monaco-editor": "0.56.0",
     "oh-vue-icons": "^1.0.0-rc3",
     "pinia": "^4.0.2",
     "rpg-awesome": "^0.2.0",
     "vue": "^3.5.40",
     "vue-grid-layout-v3": "^3.1.1-rc.4",
-    "vue-i18n": "^11.4.6",
+    "vue-i18n": "^11.4.8",
     "vue-router": "^5.2.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.8",
-    "vite": "^8.1.5"
+    "vite": "^8.2.0"
   }
 }
