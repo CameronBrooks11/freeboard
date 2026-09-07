@@ -294,6 +294,8 @@ jobs:
         run: npm run check:ui:i18n-parity
       - name: Validate UI i18n composition-mode lock
         run: npm run check:ui:i18n-composition-mode
+      - name: Validate UI manifest/fields parity
+        run: npm run check:ui:manifest-fields-parity
       - name: Validate TS source debt
         run: npm run check:ts:debt
       - name: Validate TS source artifacts

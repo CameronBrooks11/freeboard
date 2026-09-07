@@ -9,6 +9,7 @@
 - UI theme contrast guardrail: `npm run check:ui:theme-contrast`
 - UI i18n parity guardrail: `npm run check:ui:i18n-parity`
 - UI i18n composition-mode guardrail: `npm run check:ui:i18n-composition-mode`
+- Manifest/`fields()` parity guardrail: `npm run check:ui:manifest-fields-parity`
 - TS source debt guardrail: `npm run check:ts:debt`
 - TS source artifact guardrail: `npm run check:ts:source-artifacts`
 - Legacy datastore residue guardrail: `npm run check:repo:legacy-residue`
@@ -46,6 +47,7 @@ npm run check:ui:store-boundaries
 npm run check:ui:theme-contrast
 npm run check:ui:i18n-parity
 npm run check:ui:i18n-composition-mode
+npm run check:ui:manifest-fields-parity
 npm run check:repo:legacy-residue
 npm run check:ts:debt
 npm run check:ts:source-artifacts
