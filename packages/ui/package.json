@@ -18,7 +18,7 @@
     "@guolao/vue-monaco-editor": "^1.6.0",
     "@unhead/vue": "^3.4.1",
     "@vue/apollo-composable": "^4.2.1",
-    "@vueuse/core": "^14.4.0",
+    "@vueuse/core": "^15.0.0",
     "graphql": "^17.0.2",
     "graphql-sse": "^2.6.1",
     "graphql-tag": "^2.12.7",
