@@ -123,10 +123,13 @@ export const isWeakSharedSecret = (
 };
 
 /**
- * Returns true when a password is one of this repository's documented placeholders
- * or local-dev defaults. Unlike isWeakSharedSecret it applies no length or entropy
- * floor, so it only catches template values. An empty value returns false; callers
- * decide whether a missing password is acceptable.
+ * Returns true when a password equals a common default (`postgres`, `password`,
+ * `secret`, `default`, `changeme`, `freeboard`) or contains a template marker
+ * (`replace-with`, `example`, `local-only`, `changeme`, `localdev`). That covers
+ * every password this repository's templates and dev defaults ship. It applies no
+ * length or entropy floor, but a real password containing one of the markers is
+ * refused too. An empty value returns false; callers decide whether a missing
+ * password is acceptable.
  */
 export const isPlaceholderCredential = (value: unknown): boolean => {
   const normalized = normalizeString(value).toLowerCase();

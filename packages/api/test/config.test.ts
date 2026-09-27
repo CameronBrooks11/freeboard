@@ -271,6 +271,18 @@ test("config rejects the template Postgres password in non-development runtime",
   );
 });
 
+test("config decodes the Postgres password before checking it", async () => {
+  await withEnv(
+    productionEnv({ DATABASE_URL: "postgresql://postgres:postgr%65s@db.internal:5432/freeboard" }),
+    async () => {
+      await assert.rejects(
+        () => importConfigFresh(),
+        /placeholder or local-dev Postgres password in non-development runtime/,
+      );
+    },
+  );
+});
+
 test("config rejects the local-dev admin password in non-development runtime", async () => {
   await withEnv(
     productionEnv({
