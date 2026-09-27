@@ -6,7 +6,20 @@ The first formal public release will appear as the first official release entry 
 
 ## Unreleased
 
-_No changes yet._
+### Security
+
+- **Outside development, the API refuses template credentials.** If the Postgres
+  password in `DATABASE_URL` / `FREEBOARD_POSTGRES_URL`, or `ADMIN_PASSWORD` with
+  `CREATE_ADMIN=true`, is a shipped default or template value, the API now
+  refuses to start. That covers `postgres`, `LocalDevAdmin123!`, `ChangeMe123!` and
+  any `replace-with-…` placeholder. Development runtime is unchanged. Existing
+  deployments using one of these values must change it before upgrading; see
+  [Installation](docs/manual/installation.md) for changing a password on a
+  database or admin account that already exists.
+- **`docker-compose.postgres.yml` publishes Postgres on `127.0.0.1` by default.**
+  It used to publish on every interface, and Docker-published ports bypass host
+  firewalls such as `ufw`. The API reaches Postgres over the compose network.
+  Set `FREEBOARD_POSTGRES_BIND` to expose it elsewhere.
 
 ## 3.0.0 — 2026-06-27
 

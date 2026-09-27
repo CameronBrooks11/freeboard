@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import {
   isNonDevRuntimeEnv,
+  isPlaceholderCredential,
   isWeakCredentialEncryptionKey,
   isWeakSharedSecret,
   parseBase64Key,
@@ -148,6 +149,17 @@ const resolvePostgresUrl = (): string | null => {
     return freeboardUrl;
   }
   return null;
+};
+
+const postgresUrlPassword = (url: string | null): string => {
+  if (!url) {
+    return "";
+  }
+  try {
+    return decodeURIComponent(new URL(url).password);
+  } catch {
+    return "";
+  }
 };
 
 const normalizeSecurityLimiterBackend = (
@@ -394,9 +406,21 @@ if (isNonDevRuntime && config.securityLimiterBackend === "memory") {
   );
 }
 
+if (isNonDevRuntime && isPlaceholderCredential(postgresUrlPassword(config.postgresUrl))) {
+  throw new Error(
+    "DATABASE_URL/FREEBOARD_POSTGRES_URL uses a placeholder or local-dev Postgres password in non-development runtime. Set a real password.",
+  );
+}
+
 if (config.createAdmin) {
   if (!isValidEmail(config.adminEmail)) {
     warnAndThrow(`CREATE_ADMIN=true requires valid ADMIN_EMAIL. ${EMAIL_POLICY_MESSAGE}.`);
+  }
+
+  if (isNonDevRuntime && isPlaceholderCredential(config.adminPassword)) {
+    warnAndThrow(
+      "CREATE_ADMIN=true in non-development runtime requires an ADMIN_PASSWORD that is not a documented placeholder or local-dev default.",
+    );
   }
 
   if (!isStrongPassword(config.adminPassword)) {

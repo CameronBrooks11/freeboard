@@ -53,6 +53,32 @@ POSTGRES_DB=freeboard
 EGRESS_ALLOWED_HOSTS=api.open-meteo.com,api.coingecko.com
 ```
 
+"Outside development" means `NODE_ENV` is anything but `development` or `test`.
+`docker-compose.yml` sets `production` by default, while a bare `node` start with
+`NODE_ENV` unset counts as development and skips these checks.
+
+Outside development, the API refuses to start while the three secrets, the credential
+key or the password inside `FREEBOARD_POSTGRES_URL` still holds its placeholder. The
+URL's password is refused in two cases:
+
+- it is `postgres`, `password`, `secret`, `default`, `changeme` or `freeboard`;
+- it contains `replace-with`, `example`, `local-only`, `changeme` or `localdev`.
+
+A generated password will not hit these.
+
+The API never reads `POSTGRES_PASSWORD` itself, so the URL's password has to match it.
+The Postgres image applies `POSTGRES_PASSWORD` only when it first initialises an empty
+data volume. On a database that already exists, changing both values in `.env` leaves
+the role on its old password, so set the new one in the database first:
+
+```bash
+docker exec -it freeboard-postgres psql -U postgres -c "ALTER ROLE postgres PASSWORD 'new-password';"
+```
+
+`docker-compose.postgres.yml` publishes Postgres on `127.0.0.1` only. The API reaches
+it over the compose network, and Docker-published ports bypass host firewalls such as
+`ufw`. To expose it on another interface, set `FREEBOARD_POSTGRES_BIND` deliberately.
+
 Secret storage/rotation patterns and incident response are documented in:
 
 - [Secrets Operations Runbook](/manual/secrets-operations)
@@ -66,6 +92,15 @@ ADMIN_PASSWORD=ChangeMe123!
 ```
 
 After first successful login, set `CREATE_ADMIN=false`.
+
+Outside development, the API refuses an `ADMIN_PASSWORD` that matches the rule above,
+including the one shown here and the `.env.dev` default, so pick a real one before the
+first production start.
+
+`ADMIN_PASSWORD` is used only to create an admin when no user with `ADMIN_EMAIL`
+exists yet. Changing it later does not change that user's password. If an admin was ever created with a
+placeholder password, reset it through the password reset flow
+(`adminIssuePasswordReset`, then `resetPassword`).
 
 ## Local development
 

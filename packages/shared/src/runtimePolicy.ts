@@ -22,6 +22,12 @@ const WEAK_SECRET_PATTERNS = [
   /^freeboard-gateway-service-dev-token-local-only/i,
 ];
 
+// Passwords shipped in this repository's templates and local-dev defaults
+// (`.env.example`, `.env.dev`, docs/manual/installation.md).
+const PLACEHOLDER_CREDENTIAL_EXACT_VALUES = new Set([...WEAK_SECRET_EXACT_VALUES, "postgres"]);
+
+const PLACEHOLDER_CREDENTIAL_SUBSTRINGS = [...WEAK_SECRET_SUBSTRINGS, "changeme", "localdev"];
+
 const DETERMINISTIC_TEMPLATE_CREDENTIAL_KEYS = new Set([
   "mdeymzq1njc4owfiy2rlzjaxmjm0nty3odlhymnkzwy=",
 ]);
@@ -114,6 +120,27 @@ export const isWeakSharedSecret = (
   }
 
   return false;
+};
+
+/**
+ * Returns true when a password equals a common default (`postgres`, `password`,
+ * `secret`, `default`, `changeme`, `freeboard`) or contains a template marker
+ * (`replace-with`, `example`, `local-only`, `changeme`, `localdev`). That covers
+ * every password this repository's templates and dev defaults ship. It applies no
+ * length or entropy floor, but a real password containing one of the markers is
+ * refused too. An empty value returns false; callers decide whether a missing
+ * password is acceptable.
+ */
+export const isPlaceholderCredential = (value: unknown): boolean => {
+  const normalized = normalizeString(value).toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+
+  return (
+    PLACEHOLDER_CREDENTIAL_EXACT_VALUES.has(normalized) ||
+    PLACEHOLDER_CREDENTIAL_SUBSTRINGS.some((entry) => normalized.includes(entry))
+  );
 };
 
 export const parseBase64Key = (value: unknown, expectedLength: number): Buffer | null => {

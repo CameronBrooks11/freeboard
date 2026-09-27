@@ -1,6 +1,7 @@
 export { deriveClientIp, type DeriveClientIpOptions } from "./clientIp.js";
 export {
   isNonDevRuntimeEnv,
+  isPlaceholderCredential,
   isWeakCredentialEncryptionKey,
   isWeakSharedSecret,
   normalizeRuntimeEnv,

@@ -217,6 +217,103 @@ test("config accepts valid CREATE_ADMIN credentials and normalizes email", async
   );
 });
 
+const STRONG_DATABASE_URL = "postgresql://freeboard:vT9%23qL2%21mZ7wX4@db.internal:5432/freeboard";
+
+const productionEnv = (overrides) => ({
+  NODE_ENV: "production",
+  JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+  CREATE_ADMIN: "false",
+  DATABASE_URL: STRONG_DATABASE_URL,
+  SECURITY_LIMITER_BACKEND: "postgres",
+  JWT_GATEWAY_SECRET: "ThisIsALongEnoughGatewaySecretForTests123!",
+  GATEWAY_SERVICE_TOKEN: "ThisIsALongEnoughGatewayServiceTokenForTests123!",
+  CREDENTIAL_ENCRYPTION_KEY: TEST_CREDENTIAL_ENCRYPTION_KEY,
+  ...overrides,
+});
+
+test("config accepts a production runtime with real credentials", async () => {
+  await withEnv(
+    productionEnv({
+      CREATE_ADMIN: "true",
+      ADMIN_EMAIL: "admin@example.com",
+      ADMIN_PASSWORD: "vT9#qL2!mZ7w",
+    }),
+    async () => {
+      const { config } = await importConfigFresh();
+      assert.equal(config.postgresUrl, STRONG_DATABASE_URL);
+      assert.equal(config.createAdmin, true);
+    },
+  );
+});
+
+test("config rejects the local-dev Postgres password in non-development runtime", async () => {
+  await withEnv(productionEnv({ DATABASE_URL: TEST_DATABASE_URL }), async () => {
+    await assert.rejects(
+      () => importConfigFresh(),
+      /placeholder or local-dev Postgres password in non-development runtime/,
+    );
+  });
+});
+
+test("config rejects the template Postgres password in non-development runtime", async () => {
+  await withEnv(
+    productionEnv({
+      DATABASE_URL: undefined,
+      FREEBOARD_POSTGRES_URL:
+        "postgresql://postgres:replace-with-strong-password@postgres:5432/freeboard",
+    }),
+    async () => {
+      await assert.rejects(
+        () => importConfigFresh(),
+        /placeholder or local-dev Postgres password in non-development runtime/,
+      );
+    },
+  );
+});
+
+test("config decodes the Postgres password before checking it", async () => {
+  await withEnv(
+    productionEnv({ DATABASE_URL: "postgresql://postgres:postgr%65s@db.internal:5432/freeboard" }),
+    async () => {
+      await assert.rejects(
+        () => importConfigFresh(),
+        /placeholder or local-dev Postgres password in non-development runtime/,
+      );
+    },
+  );
+});
+
+test("config rejects the local-dev admin password in non-development runtime", async () => {
+  await withEnv(
+    productionEnv({
+      CREATE_ADMIN: "true",
+      ADMIN_EMAIL: "admin@example.com",
+      ADMIN_PASSWORD: "LocalDevAdmin123!",
+    }),
+    async () => {
+      await assert.rejects(() => importConfigFresh(), /not a documented placeholder/);
+    },
+  );
+});
+
+test("config keeps the local-dev credentials working in development runtime", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "development",
+      JWT_SECRET: "ThisIsALongEnoughJwtSecretForLocalTests123!",
+      CREATE_ADMIN: "true",
+      ADMIN_EMAIL: "admin@example.local",
+      ADMIN_PASSWORD: "LocalDevAdmin123!",
+      DATABASE_URL: TEST_DATABASE_URL,
+    },
+    async () => {
+      const { config } = await importConfigFresh();
+      assert.equal(config.postgresUrl, TEST_DATABASE_URL);
+      assert.equal(config.adminPassword, "LocalDevAdmin123!");
+    },
+  );
+});
+
 test("config rejects non-postgres DB_BACKEND values", async () => {
   await withEnv(
     {
