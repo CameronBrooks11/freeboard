@@ -53,6 +53,15 @@ POSTGRES_DB=freeboard
 EGRESS_ALLOWED_HOSTS=api.open-meteo.com,api.coingecko.com
 ```
 
+Outside development, the API refuses to start while the three secrets, the credential
+key or the password inside `FREEBOARD_POSTGRES_URL` still holds its placeholder. The
+URL's password is also refused when it is `postgres`, the `.env.dev` default. The API
+never reads `POSTGRES_PASSWORD` itself, so the URL's password has to match it.
+
+`docker-compose.postgres.yml` publishes Postgres on `127.0.0.1` only. The API reaches
+it over the compose network, and Docker-published ports bypass host firewalls such as
+`ufw`. To expose it on another interface, set `FREEBOARD_POSTGRES_BIND` deliberately.
+
 Secret storage/rotation patterns and incident response are documented in:
 
 - [Secrets Operations Runbook](/manual/secrets-operations)
@@ -66,6 +75,9 @@ ADMIN_PASSWORD=ChangeMe123!
 ```
 
 After first successful login, set `CREATE_ADMIN=false`.
+
+Outside development, the API refuses a placeholder `ADMIN_PASSWORD`, including the one
+above and the `.env.dev` default, so pick a real one before the first production start.
 
 ## Local development
 

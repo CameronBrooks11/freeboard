@@ -99,6 +99,7 @@ Core env values:
 - `FREEBOARD_POSTGRES_URL` (containerized API)
 - `PORT` (API/gateway workspace process port)
 - `FREEBOARD_POSTGRES_IMAGE` (Postgres image tag for dev compose)
+- `FREEBOARD_POSTGRES_BIND` / `FREEBOARD_POSTGRES_PORT` (host address and port `docker-compose.postgres.yml` publishes Postgres on; default `127.0.0.1:5432`)
 - `FREEBOARD_UI_IMAGE_TAG` / `FREEBOARD_API_IMAGE_TAG` / `FREEBOARD_GATEWAY_IMAGE_TAG` (runtime service image tag pinning)
 - `FREEBOARD_STATIC` (static UI build mode; only enable for static deploy builds)
 - `FREEBOARD_RUNTIME_ENV` (`production` for containerized runtime defaults)

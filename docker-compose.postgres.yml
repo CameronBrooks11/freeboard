@@ -5,8 +5,10 @@ services:
     container_name: freeboard-postgres
     init: true
     stop_grace_period: 10s
+    # Loopback by default: the API reaches Postgres over the compose network, and
+    # Docker-published ports bypass host firewalls such as ufw.
     ports:
-      - ${FREEBOARD_POSTGRES_PORT:-5432}:5432
+      - ${FREEBOARD_POSTGRES_BIND:-127.0.0.1}:${FREEBOARD_POSTGRES_PORT:-5432}:5432
     volumes:
       - freeboard-postgres-data:/var/lib/postgresql/data
     environment:

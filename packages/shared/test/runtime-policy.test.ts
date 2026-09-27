@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   isNonDevRuntimeEnv,
+  isPlaceholderCredential,
   isWeakCredentialEncryptionKey,
   isWeakSharedSecret,
   normalizeRuntimeEnv,
@@ -30,6 +31,21 @@ test("isWeakSharedSecret rejects short and deterministic local-dev patterns", ()
 
 test("isWeakSharedSecret accepts strong random-like secrets", () => {
   assert.equal(isWeakSharedSecret("C_7a1N#2vK!9pR@4zX$6mQ%8wL&3tY*0"), false);
+});
+
+test("isPlaceholderCredential rejects the passwords shipped in templates and dev defaults", () => {
+  assert.equal(isPlaceholderCredential("postgres"), true);
+  assert.equal(isPlaceholderCredential(" Postgres "), true);
+  assert.equal(isPlaceholderCredential("replace-with-strong-postgres-password"), true);
+  assert.equal(isPlaceholderCredential("LocalDevAdmin123!"), true);
+  assert.equal(isPlaceholderCredential("ChangeMe123!"), true);
+});
+
+test("isPlaceholderCredential accepts real passwords and leaves empty values to the caller", () => {
+  assert.equal(isPlaceholderCredential("vT9#qL2!mZ7w"), false);
+  assert.equal(isPlaceholderCredential("postgres-9f3kQ!x7"), false);
+  assert.equal(isPlaceholderCredential(""), false);
+  assert.equal(isPlaceholderCredential(undefined), false);
 });
 
 test("parseBase64Key returns null for invalid values and decodes fixed-length keys", () => {
