@@ -114,7 +114,7 @@
     "@playwright/test": "^1.63.0",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^26.5.1",
+    "@types/node": "^26.6.1",
     "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.70.0",
     "@typescript-eslint/parser": "^8.46.2",
@@ -125,7 +125,7 @@
     "eslint-plugin-vue": "^10.11.0",
     "globals": "^17.12.0",
     "monaco-editor": "0.55.1",
-    "prettier": "^3.9.6",
+    "prettier": "^3.9.8",
     "rimraf": "^6.0.1",
     "shx": "^0.4.0",
     "tsx": "^4.23.13",
@@ -136,7 +136,7 @@
     "vue-tsc": "^3.3.11"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.63.1"
+    "@rollup/rollup-linux-x64-gnu": "^4.63.3"
   },
   "overrides": {
     "vue": "3.5.31",
