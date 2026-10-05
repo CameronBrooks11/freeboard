@@ -16,11 +16,11 @@
     "@apollo/client": "^4.3.1",
     "@freeboard/core": "0.1.0",
     "@guolao/vue-monaco-editor": "^1.6.0",
-    "@unhead/vue": "^3.4.1",
+    "@unhead/vue": "^3.4.2",
     "@vue/apollo-composable": "^4.2.1",
     "@vueuse/core": "^14.4.0",
     "graphql": "^17.0.2",
-    "graphql-sse": "^2.6.1",
+    "graphql-sse": "^2.6.2",
     "graphql-tag": "^2.12.7",
     "monaco-editor": "0.55.1",
     "oh-vue-icons": "^1.0.0-rc3",
@@ -33,6 +33,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.9",
-    "vite": "^8.3.1"
+    "vite": "^8.3.2"
   }
 }
