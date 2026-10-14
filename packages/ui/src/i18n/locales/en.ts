@@ -159,6 +159,7 @@ export const en = {
     labelTopic: "Topic",
     labelQoS: "QoS",
     labelKeepaliveSeconds: "Keepalive (seconds)",
+    validationRange: "Must be between {min} and {max}.",
     labelDatasourceStaleAfterSeconds: "Mark stale after",
     labelSSE: "SSE",
     labelWebSocket: "WebSocket",

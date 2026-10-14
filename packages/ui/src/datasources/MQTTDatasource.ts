@@ -109,8 +109,10 @@ export class MQTTDatasource extends DatasourceRuntimeBase {
           {
             name: "keepaliveSeconds",
             label: "form.labelKeepaliveSeconds",
-            type: "number",
+            type: "integer",
             default: 60,
+            min: 5,
+            max: 3600,
           },
         ],
       },
