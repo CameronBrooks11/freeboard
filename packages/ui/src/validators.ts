@@ -45,3 +45,31 @@ export const validateNumber = (value: unknown): { error?: string } => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? {} : { error: "Must be a number." };
 };
+
+type RangeBounds = { min?: number | undefined; max?: number | undefined };
+
+/**
+ * Build a validator that rejects a value outside `min`..`max`, matching the
+ * server's manifest range rule: null and undefined pass, and anything else is
+ * read with `Number()`, so a blank input counts as 0. Non-numeric input is left
+ * to validateNumber / validateInteger, so it reports one error, not two.
+ *
+ * @param {Object} bounds - The `min` and/or `max` to enforce.
+ * @param {Function} formatError - Builds the error message from the bounds.
+ * @returns {Function} Validator returning an empty object or an error descriptor.
+ */
+export const createRangeValidator =
+  ({ min, max }: RangeBounds, formatError: (bounds: RangeBounds) => string) =>
+  (value: unknown): { error?: string } => {
+    if (value === null || value === undefined) {
+      return {};
+    }
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      return {};
+    }
+    if ((min !== undefined && parsed < min) || (max !== undefined && parsed > max)) {
+      return { error: formatError({ min, max }) };
+    }
+    return {};
+  };

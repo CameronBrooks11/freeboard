@@ -14,7 +14,12 @@ defineOptions({ name: "Form" });
 
 import { defineAsyncComponent, markRaw, ref, toRef, watch } from "vue";
 import InputFormElement from "./InputFormElement.vue";
-import { validateInteger, validateNumber, validateRequired } from "../validators";
+import {
+  createRangeValidator,
+  validateInteger,
+  validateNumber,
+  validateRequired,
+} from "../validators";
 import SwitchFormElement from "./SwitchFormElement.vue";
 import SelectFormElement from "./SelectFormElement.vue";
 import ArrayFormElement from "./ArrayFormElement.vue";
@@ -59,6 +64,8 @@ type FormField = {
   translated?: boolean;
   type?: string;
   required?: boolean;
+  min?: number;
+  max?: number;
   disabled?: boolean;
   options?: unknown;
   settings?: unknown;
@@ -273,6 +280,17 @@ const fieldToFormElement = (field: FormField): FormField => {
       validators.push(validateRequired as FieldValidator);
     }
     type = listFormElementRef;
+  }
+
+  if (
+    (field.type === "number" || field.type === "integer") &&
+    (field.min !== undefined || field.max !== undefined)
+  ) {
+    validators.push(
+      createRangeValidator(field, ({ min, max }) =>
+        t("form.validationRange", { min: min ?? "-∞", max: max ?? "∞" }),
+      ),
+    );
   }
 
   const normalizedField: FormField = {

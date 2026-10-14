@@ -80,6 +80,8 @@ Typical settings:
 - Broker profile holds broker endpoint/policy metadata and optional credential profile reference.
 - Parser modes: `json`, `text`.
 - QoS supported: `0` or `1`.
+- Keepalive: whole seconds from `5` to `3600` (default `60`). The editor rejects
+  a value outside that range, or a blank one, before the dashboard is saved.
 
 Typical settings:
 
