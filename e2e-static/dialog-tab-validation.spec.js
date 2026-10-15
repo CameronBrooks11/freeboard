@@ -104,7 +104,7 @@ test("widget OK from another tab shows the tab holding the error", async ({ page
   await expect(modal).toBeVisible();
 
   const bindingsIndex = await tabItems(modal).evaluateAll((items) =>
-    items.findIndex((item) => item.getAttribute("aria-label") === "Bindings"),
+    items.findIndex((item) => item.getAttribute("aria-label") === "bindings"),
   );
   expect(bindingsIndex).toBeGreaterThan(0);
   await tabItems(modal).nth(bindingsIndex).click();
