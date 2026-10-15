@@ -28,6 +28,10 @@ export const es = {
     ...en.arrayFormElement,
     buttonAdd: "Agregar",
   },
+  dashboard: {
+    ...en.dashboard,
+    saveRejected: "No se pudo guardar. El servidor rechazo el dashboard:\n{message}",
+  },
   dashboardControl: {
     ...en.dashboardControl,
     labelSettings: "Configuracion",

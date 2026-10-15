@@ -28,6 +28,10 @@ export const de = {
     ...en.arrayFormElement,
     buttonAdd: "Hinzufugen",
   },
+  dashboard: {
+    ...en.dashboard,
+    saveRejected: "Speichern fehlgeschlagen. Der Server hat das Dashboard abgelehnt:\n{message}",
+  },
   dashboardControl: {
     ...en.dashboardControl,
     labelSettings: "Einstellungen",

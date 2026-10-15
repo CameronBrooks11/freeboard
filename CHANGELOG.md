@@ -39,6 +39,13 @@ The first formal public release will appear as the first official release entry 
   on a tab other than the one showing, because the error rendered inside the
   hidden tab. OK now switches to the first tab that holds an error, and every
   tab's errors render, not only the first failing one's.
+- **A rejected dashboard save tells you why.** The save-conflict and lost-access
+  alerts never appeared, because `@vue/apollo-composable` hands the UI an
+  Apollo Client 3 error whose `graphQLErrors` is empty and whose GraphQL errors
+  sit inside its `networkError`. A stale-revision save now shows the conflict
+  alert, a "Dashboard not found" rejection shows the lost-access alert, and a
+  `BAD_USER_INPUT` rejection shows the server's message and any document
+  validation issues.
 
 ## 3.0.0 — 2026-06-27
 

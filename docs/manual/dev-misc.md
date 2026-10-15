@@ -13,6 +13,7 @@
 - TS source debt guardrail: `npm run check:ts:debt`
 - TS source artifact guardrail: `npm run check:ts:source-artifacts`
 - Legacy datastore residue guardrail: `npm run check:repo:legacy-residue`
+- Installed dependency tree guardrail: `npm run check:deps:tree`
 - UI bundle budget guardrail (warn-first): `npm run check:ui:bundle-budget`
 - UI lint only: `npm run lint:ui`
 - API lint only: `npm run lint:api`
@@ -52,6 +53,7 @@ npm run check:repo:legacy-residue
 npm run check:ts:debt
 npm run check:ts:source-artifacts
 npm run check:runtime-deps
+npm run check:deps:tree
 npm run test
 npm run build:verify
 npm run typecheck
@@ -75,6 +77,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 - If `Validate UI i18n parity` fails, align locale keys/placeholders to `packages/ui/src/i18n/locales/en.ts`.
 - If `Validate UI i18n composition-mode lock` fails, restore `legacy: false` and `globalInjection: true` in `packages/ui/src/i18n/index.ts`.
 - If `Validate TS source artifacts` fails, remove legacy JS source files from `packages/*/src`.
+- If `Validate installed dependency tree` fails, `npm ls --all` reported a problem in the installed tree (the `npm error` lines name it, e.g. `invalid: vue@3.5.31`). A common cause is a root `overrides` entry that no longer satisfies a range declared in a workspace `package.json` or a peer range: widen the override and regenerate `package-lock.json`.
 - If a job was expected but appears skipped, check `Classify changes` output in the `changes` job.
 - If Docker publish unexpectedly rebuilds all images, verify event type:
   - `workflow_dispatch` intentionally rebuilds all packages.
@@ -84,7 +87,7 @@ If your change is docs-only, run `npm run format:check` to verify Markdown/YAML 
 ## Security Guardrail Coverage in CI
 
 - Required branch gate remains `Required CI` from `.github/workflows/ci.yml`.
-- `lint` job enforces runtime eval bans through ESLint (`no-eval`, `no-new-func`, `no-implied-eval`), `npm run check:ts:debt`, and runtime dependency hygiene (`npm run check:runtime-deps`).
+- `lint` job enforces runtime eval bans through ESLint (`no-eval`, `no-new-func`, `no-implied-eval`), `npm run check:ts:debt`, runtime dependency hygiene (`npm run check:runtime-deps`), and a valid installed dependency tree (`npm run check:deps:tree`).
 - `test-shared` job validates shared runtime policy/client-IP utility behavior for `packages/shared` and shared-surface changes.
 - `test-api-smoke` job validates Postgres datastore repository behavior against a real Postgres service after schema is applied.
 - `test-ui` job runs behavior-based UI regression tests (including layout policy behavior checks).
