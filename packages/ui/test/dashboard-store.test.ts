@@ -220,7 +220,89 @@ test("dashboard store saveDashboard enforces publish policy on create", async ()
   assert.equal(receivedCreatePayload?.visibility, "PRIVATE");
   assert.equal(dashboardStore.isSaved, true);
   assert.equal(dashboardStore.dashboard._id, "dash-1");
+  assert.equal(dashboardStore.dashboard.visibility, "private");
   assert.equal(savedDashboardId, "dash-1");
+});
+
+// Saves a fresh, unsaved dashboard the way FreeboardControl builds the create
+// payload, against a server that answers with `serverVisibility` (the enum name).
+const createFreshDashboard = async ({ role, nonAdminCanPublish, serverVisibility, choose }) => {
+  const { useDashboardStore } = await import("../src/stores/dashboard.js");
+  const authStore = useAuthStore();
+  const dashboardStore = useDashboardStore();
+  authStore.login(encodeToken({ _id: "user-1", email: "u@example.com", role, active: true }));
+  authStore.setPublicAuthPolicy({ nonAdminCanPublish });
+  if (choose !== undefined) {
+    dashboardStore.dashboard.visibility = choose;
+  }
+
+  let receivedCreatePayload = null;
+  const createDashboard = async ({ dashboard }) => {
+    receivedCreatePayload = dashboard;
+    return {
+      data: {
+        createDashboard: {
+          _id: "dash-new",
+          visibility: serverVisibility,
+          shareToken: serverVisibility === "LINK" ? "token-new" : null,
+          shareTokenVersion: 0,
+          canEdit: true,
+          canManageSharing: true,
+        },
+      },
+    };
+  };
+  const updateDashboard = async () => {
+    throw new Error("updateDashboard should not be called for unsaved dashboards");
+  };
+
+  await dashboardStore.saveDashboard(
+    null,
+    {
+      document: dashboardStore.dashboard.toDocument(),
+      visibility: dashboardStore.dashboard.visibility,
+    },
+    createDashboard,
+    updateDashboard,
+  );
+  return { receivedCreatePayload, dashboardStore };
+};
+
+test("a new dashboard's create omits visibility and adopts the server's default", async () => {
+  // The admin default is LINK; the server applies it because none was sent.
+  const { receivedCreatePayload, dashboardStore } = await createFreshDashboard({
+    role: "editor",
+    nonAdminCanPublish: true,
+    serverVisibility: "LINK",
+  });
+
+  assert.equal("visibility" in receivedCreatePayload, false);
+  assert.equal(dashboardStore.dashboard.visibility, "link");
+  assert.equal(dashboardStore.dashboard.shareToken, "token-new");
+});
+
+test("a non-publisher's new dashboard omits visibility and shows the server's private fallback", async () => {
+  // The server downgrades an external default to private for a non-publisher.
+  const { receivedCreatePayload, dashboardStore } = await createFreshDashboard({
+    role: "editor",
+    nonAdminCanPublish: false,
+    serverVisibility: "PRIVATE",
+  });
+
+  assert.equal("visibility" in receivedCreatePayload, false);
+  assert.equal(dashboardStore.dashboard.visibility, "private");
+});
+
+test("a new dashboard's create sends an explicitly chosen visibility as the enum name", async () => {
+  const { receivedCreatePayload, dashboardStore } = await createFreshDashboard({
+    role: "editor",
+    nonAdminCanPublish: true,
+    serverVisibility: "PUBLIC",
+    choose: "public",
+  });
+
+  assert.equal(receivedCreatePayload.visibility, "PUBLIC");
+  assert.equal(dashboardStore.dashboard.visibility, "public");
 });
 
 test("dashboard store saveDashboard sends expectedDocumentRevision and applies the returned one", async () => {

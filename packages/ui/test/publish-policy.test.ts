@@ -31,10 +31,18 @@ test("normalizeCreateDashboardPayload forces private create for non-publishers",
   assert.deepEqual(payload, { title: "Ops", visibility: "PRIVATE" });
 });
 
-test("normalizeCreateDashboardPayload leaves an absent visibility absent for publishers", () => {
-  const payload = normalizeCreateDashboardPayload({
-    dashboard: { title: "Ops" },
-    canPublish: true,
-  });
-  assert.deepEqual(payload, { title: "Ops" });
-});
+// With no chosen visibility the create carries none, so the server applies the
+// admin default visibility and its publish check, for publishers and
+// non-publishers alike.
+for (const canPublish of [true, false]) {
+  for (const visibility of [undefined, null, ""]) {
+    test(`normalizeCreateDashboardPayload omits an unchosen visibility (${JSON.stringify(visibility) ?? "undefined"}, canPublish=${canPublish})`, () => {
+      const payload = normalizeCreateDashboardPayload({
+        dashboard: { title: "Ops", visibility },
+        canPublish,
+      });
+      assert.deepEqual(payload, { title: "Ops" });
+      assert.equal("visibility" in payload, false);
+    });
+  }
+}

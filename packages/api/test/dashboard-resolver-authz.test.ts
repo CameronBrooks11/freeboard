@@ -635,6 +635,83 @@ test("createDashboard falls back to private when default visibility is external 
   assert.equal(result.visibility, "private");
 });
 
+// A create with no visibility (what the UI sends when none was chosen) takes
+// the admin default visibility, subject to the publish check.
+const createWithoutVisibility = async ({ defaultVisibility, nonAdminCanPublish, role }) => {
+  stubPolicyValues({
+    "dashboard.visibility.default": defaultVisibility,
+    "auth.publish.nonAdminCanPublish": nonAdminCanPublish,
+  });
+  let persistedVisibility = null;
+  dashboardRepository.create = async (params) => {
+    persistedVisibility = params.visibility;
+    return buildDashboardDoc({
+      _id: "dash-created",
+      user: String(params.user),
+      visibility: params.visibility,
+      document: params.document,
+    });
+  };
+  const result = await DashboardResolvers.Mutation.createDashboard(
+    null,
+    { dashboard: { document: buildContent({ title: "Ops" }) } },
+    { user: { _id: "user-1", role } },
+  );
+  return { result, persistedVisibility };
+};
+
+for (const defaultVisibility of ["link", "public"]) {
+  test(`createDashboard without visibility applies a ${defaultVisibility} default for an editor allowed to publish`, async () => {
+    const { result, persistedVisibility } = await createWithoutVisibility({
+      defaultVisibility,
+      nonAdminCanPublish: true,
+      role: "editor",
+    });
+    assert.equal(persistedVisibility, defaultVisibility);
+    assert.equal(result.visibility, defaultVisibility);
+  });
+
+  test(`createDashboard without visibility applies a ${defaultVisibility} default for an admin when non-admins cannot publish`, async () => {
+    const { result, persistedVisibility } = await createWithoutVisibility({
+      defaultVisibility,
+      nonAdminCanPublish: false,
+      role: "admin",
+    });
+    assert.equal(persistedVisibility, defaultVisibility);
+    assert.equal(result.visibility, defaultVisibility);
+  });
+
+  test(`createDashboard without visibility falls back to private from a ${defaultVisibility} default for an editor who cannot publish`, async () => {
+    const { result, persistedVisibility } = await createWithoutVisibility({
+      defaultVisibility,
+      nonAdminCanPublish: false,
+      role: "editor",
+    });
+    assert.equal(persistedVisibility, "private");
+    assert.equal(result.visibility, "private");
+  });
+}
+
+test("createDashboard rejects an explicit link visibility from an editor who cannot publish", async () => {
+  stubPolicyValues({
+    "dashboard.visibility.default": "private",
+    "auth.publish.nonAdminCanPublish": false,
+  });
+  dashboardRepository.create = async () => {
+    throw new Error("create should not be reached");
+  };
+
+  await assert.rejects(
+    () =>
+      DashboardResolvers.Mutation.createDashboard(
+        null,
+        { dashboard: { document: buildContent({ title: "Ops" }), visibility: "link" } },
+        { user: { _id: "editor-1", role: "editor" } },
+      ),
+    /Only administrators can publish dashboards/,
+  );
+});
+
 test("createDashboard rejects trusted dashboard settings while execution mode is safe", async () => {
   stubPolicyValues({
     "app.execution.mode": "safe",
