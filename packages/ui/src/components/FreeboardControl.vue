@@ -15,6 +15,7 @@ import { useRouter } from "vue-router";
 import SavedDashboardsDialogBox from "./SavedDashboardsDialogBox.vue";
 import { openModal } from "../ui/modalHost.js";
 import { runtimeConfig } from "../runtime/config.js";
+import { classifyDashboardSaveError } from "../dashboardSaveError.js";
 
 const dashboardStore = useDashboardStore();
 const { dashboard, isSaved } = storeToRefs(dashboardStore);
@@ -65,42 +66,25 @@ const saveDashboard = async () => {
       await router.push(`/${savedDashboardId}`);
     }
   } catch (error) {
-    if (isDashboardConflictError(error)) {
+    const failure = classifyDashboardSaveError(error);
+    if (failure?.kind === "conflict") {
       // Optimistic-concurrency conflict: the document advanced elsewhere since
       // it was loaded. Surface it instead of silently overwriting their change.
       window.alert(t("dashboard.saveConflict"));
       return;
     }
-    if (isDashboardAccessError(error)) {
-      // A codeless server rejection — the access checks throw "Dashboard not
-      // found" (no code) when the dashboard is gone or the user lost access,
-      // and conflate the two for privacy. Coded errors (FORBIDDEN, BAD_USER_INPUT)
-      // are something else and rethrow.
+    if (failure?.kind === "badInput") {
+      window.alert(t("dashboard.saveRejected", { message: failure.message }));
+      return;
+    }
+    if (failure?.kind === "accessLost") {
+      // The access checks throw a codeless "Dashboard not found" when the
+      // dashboard is gone or the user lost access, conflating the two for privacy.
       window.alert(t("dashboard.saveAccessLost"));
       return;
     }
     throw error;
   }
-};
-
-const graphQLErrorsOf = (error: unknown): Array<{ extensions?: { code?: unknown } }> => {
-  const graphQLErrors = (error as { graphQLErrors?: Array<{ extensions?: { code?: unknown } }> })
-    ?.graphQLErrors;
-  return Array.isArray(graphQLErrors) ? graphQLErrors : [];
-};
-
-/** True when a save failed because the server rejected a stale document revision. */
-const isDashboardConflictError = (error: unknown): boolean =>
-  graphQLErrorsOf(error).some((entry) => entry?.extensions?.code === "CONFLICT");
-
-/**
- * True when the save was rejected by the access checks, which throw a codeless
- * "Dashboard not found" (deleted or access lost). Coded errors (FORBIDDEN,
- * BAD_USER_INPUT, CONFLICT) are handled elsewhere or rethrown.
- */
-const isDashboardAccessError = (error: unknown): boolean => {
-  const errors = graphQLErrorsOf(error);
-  return errors.length > 0 && errors.every((entry) => !entry?.extensions?.code);
 };
 
 const openSavedDashboards = () => {

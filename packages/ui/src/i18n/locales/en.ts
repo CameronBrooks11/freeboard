@@ -51,6 +51,7 @@ export const en = {
       "This dashboard was changed elsewhere since you opened it. Reload to get the latest version before saving again.",
     saveAccessLost:
       "Couldn't save. You may no longer have edit access, or the dashboard was changed or removed. Reload to check.",
+    saveRejected: "Couldn't save. The server rejected the dashboard:\n{message}",
   },
 
   dashboardControl: {

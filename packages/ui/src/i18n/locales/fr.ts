@@ -28,6 +28,10 @@ export const fr = {
     ...en.arrayFormElement,
     buttonAdd: "Ajouter",
   },
+  dashboard: {
+    ...en.dashboard,
+    saveRejected: "Enregistrement impossible. Le serveur a refuse le tableau de bord :\n{message}",
+  },
   dashboardControl: {
     ...en.dashboardControl,
     labelSettings: "Parametres",
