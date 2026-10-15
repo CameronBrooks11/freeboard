@@ -17,7 +17,7 @@ import { MAX_REQUEST_BODY_BYTES, enforceRequestBodyLimit } from "./security/requ
 import { URL } from "url";
 
 import schema from "./gql.js";
-import { setContext } from "./context.js";
+import { setContext, useRejectFailedAuthentication } from "./context.js";
 import { config } from "./config.js";
 import { applyPendingMigrations } from "./db/postgres/migrate.js";
 import {
@@ -104,7 +104,7 @@ const yoga = createYoga({
   landingPage: false,
   schema,
   context: setContext,
-  plugins: [useGraphQLSSE(), useOperationLimits()],
+  plugins: [useGraphQLSSE(), useOperationLimits(), useRejectFailedAuthentication()],
 });
 
 const INTERNAL_GATEWAY_INTROSPECTION_PATH = "/internal/gateway/datasource-introspect";

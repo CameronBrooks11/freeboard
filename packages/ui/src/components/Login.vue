@@ -240,6 +240,7 @@ watch([isBusy, actionMode], updateFields, { immediate: true });
 const resetMessages = () => {
   loginError.value = "";
   infoMessageKey.value = "";
+  authStore.sessionExpired = false;
 };
 
 const switchMode = (nextMode: LoginActionMode) => {
@@ -415,6 +416,9 @@ const reportBug = async () => {
       <Form ref="form" :fields="fields" :settings="formSettings" />
       <p v-if="helperTextKey" class="login__hint">{{ $t(helperTextKey) }}</p>
       <p v-if="infoMessageKey" class="login__info">{{ $t(infoMessageKey) }}</p>
+      <p v-else-if="authStore.sessionExpired" class="login__info" role="status">
+        {{ $t("login.sessionExpired") }}
+      </p>
       <p v-if="loginError" class="login__error">{{ loginError }}</p>
 
       <div class="login__actions">

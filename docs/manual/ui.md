@@ -39,6 +39,8 @@ Core stack:
 
 1. UI authenticates and stores token in session storage.
    - Session token is persisted in `sessionStorage` (legacy localStorage entries are migrated).
+   - A stored token whose `exp` has passed is dropped on page load, so the first requests go out without it.
+   - When any query, mutation or subscription result carries `UNAUTHENTICATED`, the UI ends the session, redirects to the login page and shows a "session expired" notice there.
 2. Dashboard data is fetched from GraphQL.
 3. Datasources emit updates:
    - GraphQL dashboard subscriptions use SSE.
