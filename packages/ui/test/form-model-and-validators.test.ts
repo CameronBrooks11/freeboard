@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { MQTTDatasource } from "../src/datasources/MQTTDatasource.js";
-import { resolveFieldModelValue } from "../src/formModel.js";
+import { findFirstInvalidSection, resolveFieldModelValue } from "../src/formModel.js";
 import { createRangeValidator, validateInteger, validateRequired } from "../src/validators.js";
 
 test("resolveFieldModelValue preserves explicit false model value", () => {
@@ -139,4 +139,32 @@ test("MQTT keepaliveSeconds form field enforces the server's 5-3600 whole-second
   for (const value of [60, "60", "5", "3600"]) {
     assert.equal(accepts(value), true, `accepts ${JSON.stringify(value)}`);
   }
+});
+
+test("findFirstInvalidSection names the first failing section in tab order and validates all", () => {
+  const calls: string[] = [];
+  const form = (name: string, failing: boolean) => ({
+    hasErrors: () => {
+      calls.push(name);
+      return failing ? { [name]: ["This is required."] } : null;
+    },
+  });
+  const sections = [{ name: "general" }, { name: "http" }, { name: "headers" }];
+
+  const invalid = findFirstInvalidSection(sections, {
+    general: form("general", false),
+    http: form("http", true),
+    headers: form("headers", true),
+  });
+
+  assert.equal(invalid, "http");
+  assert.deepEqual(calls, ["general", "http", "headers"]);
+});
+
+test("findFirstInvalidSection returns null when every section passes or has no form", () => {
+  const sections = [{ name: "general" }, { name: "static" }];
+  assert.equal(
+    findFirstInvalidSection(sections, { general: { hasErrors: () => null }, static: null }),
+    null,
+  );
 });

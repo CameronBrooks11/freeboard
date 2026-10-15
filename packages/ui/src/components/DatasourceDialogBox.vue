@@ -22,6 +22,7 @@ import router from "../router";
 import type { Router } from "vue-router";
 import type { DatasourcePlugin, UnknownRecord } from "../types/runtime.js";
 import { shouldShowBrokerProfileQuickCreate } from "../uiLayoutPolicy";
+import { findFirstInvalidSection } from "../formModel";
 
 type FormComponentRef = {
   hasErrors: () => boolean;
@@ -66,7 +67,7 @@ const datasourceDialogHeader = header || "";
 // Reference to the DialogBox component
 const dialog = ref<{ closeModal?: () => void } | null>(null);
 // Reference to the TabNavigator component
-const tabNavigator = ref<unknown>(null);
+const tabNavigator = ref<{ selectTab: (name: string) => void } | null>(null);
 
 // Store refs to child Form components for validation
 const components = ref<Record<string, FormComponentRef | null>>({});
@@ -205,13 +206,10 @@ const openAdminBrokerProfiles = () => {
  * Confirm dialog: validate fields, assemble new config, invoke onOk, close modal.
  */
 const onDialogBoxOk = () => {
-  // Prevent saving if any field component reports errors
-  if (
-    fields.value.some((f) => {
-      const name = typeof f.name === "string" ? f.name : "";
-      return components.value[name]?.hasErrors?.();
-    })
-  ) {
+  // Prevent saving if any field component reports errors, and show the first failing tab
+  const invalidSection = findFirstInvalidSection(fields.value, components.value);
+  if (invalidSection) {
+    tabNavigator.value?.selectTab(invalidSection);
     return;
   }
   const s: Record<string, unknown> = {};
