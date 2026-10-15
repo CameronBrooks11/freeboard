@@ -42,6 +42,17 @@ The first formal public release will appear as the first official release entry 
   `BAD_USER_INPUT` rejection shows the server's message and any document
   validation issues.
 
+### Changed
+
+- **The admin default dashboard visibility now applies to dashboards created in
+  the UI.** Saving a new dashboard used to send `private` explicitly, so the
+  Default Dashboard Visibility policy only reached API clients that omitted
+  `visibility`. The UI now sends no visibility unless one was chosen, and the
+  server applies the default and its publish check. With a `link` or `public`
+  default, a new dashboard is shared as soon as it is first saved; a non-admin
+  who may not publish still gets `private`. See
+  [Usage](docs/manual/usage.md#default-dashboard-visibility).
+
 ## 3.0.0 — 2026-06-27
 
 First formal public release. The version reflects the lineage carried in the

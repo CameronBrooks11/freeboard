@@ -124,6 +124,20 @@ test("loadDocument hydrates content but leaves the dashboard unsaved (no envelop
   assert.deepEqual(dashboard.acl, []);
 });
 
+test("an unsaved dashboard has no visibility until the server assigns one", () => {
+  // Null means "not chosen": the create omits it and the server applies the
+  // admin default visibility.
+  assert.equal(new Dashboard().visibility, null);
+
+  const dashboard = new Dashboard();
+  dashboard.deserialize({ ...serverRecord(), visibility: "link" });
+  assert.equal(dashboard.visibility, "link");
+
+  // Importing a portable document over it starts a new unsaved dashboard.
+  dashboard.loadDocument(migrateDashboardDocument(legacyExport()));
+  assert.equal(dashboard.visibility, null);
+});
+
 test("pane.id is real runtime state, preserved across the load round-trip", () => {
   const record = serverRecord();
   // A document whose pane carries the canonical id (layout.i mirrors it).

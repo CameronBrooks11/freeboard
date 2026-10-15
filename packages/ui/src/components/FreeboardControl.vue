@@ -49,8 +49,9 @@ const saveDashboard = async () => {
   // envelope state changed via its own mutation (setDashboardVisibility). Sending
   // a stale local visibility alongside the document would let a save silently
   // revert a concurrent visibility change (it isn't covered by the
-  // document-revision guard). Creating a new dashboard still carries the initial
-  // visibility (there's no concurrent change to clobber).
+  // document-revision guard). Creating a new dashboard carries a visibility only
+  // when one was chosen; an unchosen (null) one is dropped from the create so the
+  // server applies the admin default visibility.
   const payload = wasSaved
     ? { document: dashboard.value.toDocument() }
     : { document: dashboard.value.toDocument(), visibility: dashboard.value.visibility };
