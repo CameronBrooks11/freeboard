@@ -272,8 +272,14 @@ const applyResult = (
 // ({ dashboard } / { dashboardByShareToken }), so do not access `.data`.
 watch(resultById, (value) => applyResult(value));
 watch(resultByShareToken, (value) => applyResult(value));
-// React to subscription updates
-onSubResult(({ data }) => applyResult(data, { fromSubscription: true }));
+// React to subscription updates. Apollo Client 4 delivers a stream or GraphQL
+// error as a result with no `data`; only the server's terminal
+// `{ dashboard: null }` means access ended, so skip data-less results.
+onSubResult(({ data }) => {
+  if (data) {
+    applyResult(data, { fromSubscription: true });
+  }
+});
 
 // Reload to pull the latest server state (discarding local edits) when the user
 // acts on the remote-change banner.

@@ -21,6 +21,16 @@ The first formal public release will appear as the first official release entry 
   firewalls such as `ufw`. The API reaches Postgres over the compose network.
   Set `FREEBOARD_POSTGRES_BIND` to expose it elsewhere.
 
+### Fixed
+
+- **Live dashboard updates connect again.** Since the move to Apollo Client 4,
+  the dashboard subscription sent an extra `operationType` request field, which
+  the API rejects with HTTP 400, so live updates never arrived. A failed
+  subscription also showed the "Your edit access to this dashboard was changed"
+  banner within a minute of opening a saved dashboard, turned editing off, and
+  reset any open dialog. A subscription error no longer reads as lost access;
+  only the server's own end-of-access signal does.
+
 ## 3.0.0 — 2026-06-27
 
 First formal public release. The version reflects the lineage carried in the
