@@ -1,7 +1,24 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildFallbackSharePath, isDashboardShareable } from "../src/sharePolicy.js";
+import {
+  buildFallbackSharePath,
+  isDashboardShareable,
+  normalizeDashboardVisibility,
+  visibilityToEnum,
+} from "../src/sharePolicy.js";
+
+test("a visibility read from the API goes back out as the same enum name", () => {
+  // Inbound: the API's DashboardVisibility enum name becomes the UI's value.
+  // Outbound: setDashboardVisibility must still receive the enum name.
+  for (const wire of ["PRIVATE", "LINK", "PUBLIC"]) {
+    const held = normalizeDashboardVisibility(wire);
+    assert.equal(held, wire.toLowerCase());
+    assert.equal(visibilityToEnum(held), wire);
+  }
+  assert.equal(normalizeDashboardVisibility("SECRET"), null);
+  assert.equal(normalizeDashboardVisibility(null), null);
+});
 
 test("isDashboardShareable requires a saved dashboard id", () => {
   assert.equal(isDashboardShareable({ isSaved: false, dashboardId: "dash-1" }), false);

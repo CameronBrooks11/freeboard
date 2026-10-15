@@ -3,10 +3,32 @@
  * @description Pure helpers for share dialog state and fallback link generation.
  */
 
-const normalizeVisibility = (visibility: unknown): string =>
-  String(visibility || "private")
+const DASHBOARD_VISIBILITIES = new Set(["private", "link", "public"]);
+
+/**
+ * Map a visibility read from the API, which sends the `DashboardVisibility`
+ * enum name (`PRIVATE`/`LINK`/`PUBLIC`), to the lowercase value the UI holds
+ * and selects. Anything else is null, so a caller keeps its own fallback.
+ *
+ * @param {unknown} visibility
+ * @returns {string|null}
+ */
+export const normalizeDashboardVisibility = (visibility: unknown): string | null => {
+  const normalized = String(visibility ?? "")
     .trim()
     .toLowerCase();
+  return DASHBOARD_VISIBILITIES.has(normalized) ? normalized : null;
+};
+
+/**
+ * Convert the UI's lowercase visibility to the API's `DashboardVisibility`
+ * enum name for a mutation argument.
+ *
+ * @param {string|null|undefined} visibility
+ * @returns {string}
+ */
+export const visibilityToEnum = (visibility: string | null | undefined): string =>
+  String(visibility || "private").toUpperCase();
 
 /**
  * Determine whether dashboard sharing is allowed for the current state.
@@ -42,7 +64,7 @@ export const buildFallbackSharePath = ({
   dashboardId: string | null | undefined;
   shareToken: string | null | undefined;
 }): string => {
-  const normalizedVisibility = normalizeVisibility(visibility);
+  const normalizedVisibility = normalizeDashboardVisibility(visibility);
   const normalizedDashboardId = String(dashboardId || "").trim();
   const normalizedShareToken = String(shareToken || "").trim();
 
