@@ -60,6 +60,12 @@ The first formal public release will appear as the first official release entry 
   place and shows the "changed elsewhere" banner, and saving them is refused
   as a conflict instead of overwriting the newer revision. A clean editor
   still takes live updates, and opening another dashboard still loads it.
+- **A widget without an optional number setting can be edited again.** A
+  widget whose saved settings leave out an optional whole-number field, such as
+  a text widget with no precision (imported, embedded, or written through the
+  API), failed validation with "Must be a whole number." on the empty field, so
+  OK in the widget dialog did nothing. An absent value now passes; a fraction
+  is still rejected.
 
 ## 3.0.0 — 2026-06-27
 

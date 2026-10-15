@@ -26,12 +26,16 @@ export const validateRequired = (value: unknown): { error?: string } => {
 };
 
 /**
- * Validate that a value is an integer.
+ * Validate that a value is an integer. An absent value (null or undefined)
+ * passes: a field left unset is validateRequired's concern, not this one's.
  *
  * @param {*} value - The input value to check.
  * @returns {Object} Empty object if valid integer, otherwise an error descriptor.
  */
 export const validateInteger = (value: unknown): { error?: string } => {
+  if (value === null || value === undefined) {
+    return {};
+  }
   return Number(value) % 1 === 0 ? {} : { error: "Must be a whole number." };
 };
 

@@ -96,6 +96,23 @@ test("createRangeValidator lets absent values and non-numbers through to other v
   assert.deepEqual(validate("abc"), {});
 });
 
+test("validateInteger passes an absent value and still rejects a fraction", () => {
+  // An optional integer setting missing from a saved widget (e.g. a text
+  // widget's precision) reaches the form as undefined and must not block OK.
+  for (const value of [undefined, null, "", "2", 2]) {
+    assert.deepEqual(validateInteger(value), {}, `accepts ${JSON.stringify(value)}`);
+  }
+  for (const value of ["2.5", 2.5, "abc"]) {
+    assert.deepEqual(
+      validateInteger(value),
+      { error: "Must be a whole number." },
+      `rejects ${JSON.stringify(value)}`,
+    );
+  }
+  // A required integer field is still caught by validateRequired.
+  assert.deepEqual(validateRequired(undefined), { error: "This is required." });
+});
+
 test("MQTT keepaliveSeconds form field enforces the server's 5-3600 whole-second range", () => {
   const sections = MQTTDatasource.fields(
     { settings: {} },
