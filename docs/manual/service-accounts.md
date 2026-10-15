@@ -32,6 +32,8 @@ Use bearer authentication:
 Authorization: Bearer fsa_<tokenId>.<secret>
 ```
 
+An unknown, revoked or expired token gets an `UNAUTHENTICATED` GraphQL error on every operation; the request does not continue as anonymous. See [API](/manual/api) for the response shape.
+
 ## Operational Guidance
 
 - Use one account per integration boundary (not one shared global token).

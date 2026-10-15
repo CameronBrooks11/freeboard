@@ -447,6 +447,7 @@ export const en = {
     resetRequested:
       "If the account exists and is active, a password reset request has been recorded.",
     resetCompleted: "Password reset complete. You can now sign in.",
+    sessionExpired: "Your session has expired. Log in again to continue.",
     accountDeactivated: "Your account is deactivated. Contact an administrator.",
     resetTokenHelp: "Provide your reset token and a new strong password.",
   },
