@@ -217,7 +217,7 @@ test("dashboard store saveDashboard enforces publish policy on create", async ()
     updateDashboard,
   );
 
-  assert.equal(receivedCreatePayload?.visibility, "private");
+  assert.equal(receivedCreatePayload?.visibility, "PRIVATE");
   assert.equal(dashboardStore.isSaved, true);
   assert.equal(dashboardStore.dashboard._id, "dash-1");
   assert.equal(savedDashboardId, "dash-1");

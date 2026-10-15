@@ -21,6 +21,13 @@ The first formal public release will appear as the first official release entry 
   firewalls such as `ufw`. The API reaches Postgres over the compose network.
   Set `FREEBOARD_POSTGRES_BIND` to expose it elsewhere.
 
+### Fixed
+
+- **Saving a new dashboard from the UI works again.** The create request sent
+  the dashboard's visibility in lowercase (`private`), which the API's
+  `DashboardVisibility` enum rejects with HTTP 400, so Save Freeboard on a new
+  dashboard failed with no message. It now sends the enum name (`PRIVATE`).
+
 ## 3.0.0 — 2026-06-27
 
 First formal public release. The version reflects the lineage carried in the
