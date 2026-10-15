@@ -28,3 +28,26 @@ export const resolveFieldModelValue = (
   const settingValue = hasExplicitSetting ? settings[fieldName] : undefined;
   return currentModelValue ?? settingValue ?? field?.default;
 };
+
+/**
+ * Validate every form section and return the name of the first one with errors.
+ *
+ * Every section's `hasErrors()` runs, so each form renders its own errors even
+ * when an earlier section has already failed.
+ *
+ * @param {Array<Object>} sections - Sections in tab order, each with a `name`.
+ * @param {Object} forms - Form components keyed by section name.
+ * @returns {string|null} Name of the first section with errors, or null.
+ */
+export const findFirstInvalidSection = (
+  sections: Array<{ name: string }>,
+  forms: Record<string, { hasErrors?: () => unknown } | null | undefined>,
+): string | null => {
+  let firstInvalid: string | null = null;
+  sections.forEach(({ name }) => {
+    if (forms[name]?.hasErrors?.() && firstInvalid === null) {
+      firstInvalid = name;
+    }
+  });
+  return firstInvalid;
+};

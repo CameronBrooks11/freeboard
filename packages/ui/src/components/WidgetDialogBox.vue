@@ -19,6 +19,7 @@ import { storeToRefs } from "pinia";
 import TabNavigator from "./TabNavigator.vue";
 import TypeSelect from "./TypeSelect.vue";
 import type { UnknownRecord, WidgetPlugin } from "../types/runtime.js";
+import { findFirstInvalidSection } from "../formModel";
 
 type FormComponentRef = {
   hasErrors: () => boolean;
@@ -137,12 +138,15 @@ const widgetPluginsOptions = computed(() =>
 );
 
 const dialog = ref<{ closeModal?: () => void } | null>(null);
+const tabNavigator = ref<{ selectTab: (name: string) => void } | null>(null);
 
 /**
  * Handle OK: validate all fields, assemble new widget config, invoke onOk, then close modal.
  */
 const onDialogBoxOk = () => {
-  if (fields.value.some((f) => components.value[f.name]?.hasErrors?.())) {
+  const invalidSection = findFirstInvalidSection(fields.value, components.value);
+  if (invalidSection) {
+    tabNavigator.value?.selectTab(invalidSection);
     return;
   }
   const s: Record<string, unknown> = {};
@@ -177,7 +181,7 @@ const onDialogBoxOk = () => {
       <TypeSelect v-model="typeRef" :options="widgetPluginsOptions" />
     </template>
     <!-- Dynamic form tabs for general and type-specific settings -->
-    <TabNavigator :fields="fields" v-if="typeRef">
+    <TabNavigator :fields="fields" v-if="typeRef" ref="tabNavigator">
       <template v-for="field in fields" :key="field.name" #[field.name]>
         <Form
           :ref="(el) => storeComponentRef(field.name, el)"

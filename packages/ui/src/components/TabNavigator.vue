@@ -24,6 +24,18 @@ onMounted(() => {
   // Initialize to first tab on mount
   index.value = 0;
 });
+
+/**
+ * Show the tab with the given name; an unknown name leaves the current tab showing.
+ */
+const selectTab = (name: string) => {
+  const i = fields.findIndex((field) => field.name === name);
+  if (i >= 0) {
+    index.value = i;
+  }
+};
+
+defineExpose({ selectTab });
 </script>
 
 <template>
