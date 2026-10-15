@@ -39,6 +39,12 @@ The first formal public release will appear as the first official release entry 
   once with the previous route's empty variables and was cancelled a moment
   later, which browser tools list as a failed request. It now starts once, with
   the dashboard's `id`.
+- **Reopening a dashboard in the same page load keeps it open.** Going back to
+  `/` and opening the same dashboard again, or switching from one dashboard to
+  another, sent the user to `/` while the read was still in flight, because
+  the pending read was taken for "not found". The redirect now waits for the
+  server's answer. A dashboard or share link the server does not return also
+  sends the user to `/` when loaded directly, which it did not before.
 
 ## 3.0.0 — 2026-06-27
 
