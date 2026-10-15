@@ -34,6 +34,13 @@ The first formal public release will appear as the first official release entry 
   the dashboard's visibility in lowercase (`private`), which the API's
   `DashboardVisibility` enum rejects with HTTP 400, so Save Freeboard on a new
   dashboard failed with no message. It now sends the enum name (`PRIVATE`).
+- **A rejected dashboard save tells you why.** The save-conflict and lost-access
+  alerts never appeared, because `@vue/apollo-composable` hands the UI an
+  Apollo Client 3 error whose `graphQLErrors` is empty and whose GraphQL errors
+  sit inside its `networkError`. A stale-revision save now shows the conflict
+  alert, a "Dashboard not found" rejection shows the lost-access alert, and a
+  `BAD_USER_INPUT` rejection shows the server's message and any document
+  validation issues.
 
 ## 3.0.0 — 2026-06-27
 
