@@ -184,6 +184,30 @@ test("smoke flow covers login, datasource render, share view, and policy save", 
   await expect(page.getByText("Policy updated.")).toBeVisible();
 });
 
+test("saving a new dashboard from the toolbar creates it and opens its page", async ({ page }) => {
+  await loginViaUi(page);
+  await page.goto("/");
+
+  // The other tests create dashboards over raw GraphQL; this one goes through
+  // the UI's own create payload.
+  const createResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/graphql") &&
+      (response.request().postData() || "").includes('"operationName":"DashboardCreate"'),
+  );
+  await page.getByRole("button", { name: "Save Freeboard" }).click();
+
+  const response = await createResponse;
+  const body = await response.json();
+  expect(response.status()).toBe(200);
+  expect(body.errors).toBeUndefined();
+  const dashboardId = body.data?.createDashboard?._id;
+  expect(dashboardId).toBeTruthy();
+  expect(body.data.createDashboard.visibility).toBe("PRIVATE");
+  await expect(page).toHaveURL(new RegExp(`/${dashboardId}$`));
+  await expect(page.getByRole("button", { name: "Update Freeboard" })).toBeVisible();
+});
+
 test("small-layout dashboard renders stacked pane flow in authenticated and shared views", async ({
   page,
   browser,

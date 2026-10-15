@@ -30,6 +30,10 @@ The first formal public release will appear as the first official release entry 
   banner within a minute of opening a saved dashboard, turned editing off, and
   reset any open dialog. A subscription error no longer reads as lost access;
   only the server's own end-of-access signal does.
+- **Saving a new dashboard from the UI works again.** The create request sent
+  the dashboard's visibility in lowercase (`private`), which the API's
+  `DashboardVisibility` enum rejects with HTTP 400, so Save Freeboard on a new
+  dashboard failed with no message. It now sends the enum name (`PRIVATE`).
 
 ## 3.0.0 — 2026-06-27
 
