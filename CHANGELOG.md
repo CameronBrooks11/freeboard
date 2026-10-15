@@ -34,6 +34,11 @@ The first formal public release will appear as the first official release entry 
   the dashboard's visibility in lowercase (`private`), which the API's
   `DashboardVisibility` enum rejects with HTTP 400, so Save Freeboard on a new
   dashboard failed with no message. It now sends the enum name (`PRIVATE`).
+- **A blocked OK shows the tab with the error.** In the datasource, widget and
+  dashboard settings dialogs, OK did nothing visible when the failing field was
+  on a tab other than the one showing, because the error rendered inside the
+  hidden tab. OK now switches to the first tab that holds an error, and every
+  tab's errors render, not only the first failing one's.
 
 ## 3.0.0 — 2026-06-27
 
