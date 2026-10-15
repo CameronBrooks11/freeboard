@@ -76,17 +76,41 @@ test("a BAD_USER_INPUT save carries the server's message and validation issues",
     },
   ]);
   assert.deepEqual(classifyDashboardSaveError(error), {
-    kind: "badInput",
+    kind: "rejected",
     message:
       "Dashboard document failed validation\nmust be <= 3600 (/datasources/0/settings/keepaliveSeconds)",
   });
 });
 
-test("other coded rejections and non-GraphQL errors are left to rethrow", async () => {
-  const forbidden = await rejectedSave([
-    { message: "Trusted widget capabilities", extensions: { code: "FORBIDDEN" } },
+test("a FORBIDDEN save carries the server's message", async () => {
+  const error = await rejectedSave([
+    {
+      message: "Trusted dashboard settings require execution mode 'trusted'",
+      extensions: { code: "FORBIDDEN" },
+    },
   ]);
-  assert.equal(classifyDashboardSaveError(forbidden), null);
+  assert.deepEqual(classifyDashboardSaveError(error), {
+    kind: "rejected",
+    message: "Trusted dashboard settings require execution mode 'trusted'",
+  });
+});
+
+test("a conflict outranks a FORBIDDEN in the same rejection", async () => {
+  const error = await rejectedSave([
+    { message: "Only administrators can publish dashboards", extensions: { code: "FORBIDDEN" } },
+    { message: "Dashboard was changed", extensions: { code: "CONFLICT" } },
+  ]);
+  assert.deepEqual(classifyDashboardSaveError(error), { kind: "conflict" });
+});
+
+test("other coded rejections and non-GraphQL errors are left to rethrow", async () => {
+  const unauthenticated = await rejectedSave([
+    {
+      message: "You must be authenticated to perform this action",
+      extensions: { code: "UNAUTHENTICATED" },
+    },
+  ]);
+  assert.equal(classifyDashboardSaveError(unauthenticated), null);
   assert.equal(
     classifyDashboardSaveError(new Error("You do not have permission to edit this dashboard.")),
     null,

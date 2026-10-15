@@ -7,7 +7,7 @@ type SaveGraphQLError = {
 
 /** How a rejected dashboard save should be reported; null means rethrow. */
 export type DashboardSaveFailure =
-  { kind: "conflict" } | { kind: "accessLost" } | { kind: "badInput"; message: string } | null;
+  { kind: "conflict" } | { kind: "accessLost" } | { kind: "rejected"; message: string } | null;
 
 /**
  * The GraphQL errors behind a rejected save. `@vue/apollo-composable` 4 bundles
@@ -33,11 +33,14 @@ export const graphQLErrorsOf = (error: unknown): readonly SaveGraphQLError[] => 
 
 const codeOf = (entry: SaveGraphQLError | undefined): unknown => entry?.extensions?.code;
 
+/** Codes whose message explains the rejection to the user. */
+const REJECTION_CODES = new Set<unknown>(["BAD_USER_INPUT", "FORBIDDEN"]);
+
 /**
- * The server's explanation of a BAD_USER_INPUT rejection: each error message,
- * followed by any document validation issues as `message (path)`.
+ * The server's explanation of a rejection: each error message, followed by
+ * any document validation issues as `message (path)`.
  */
-const badInputMessageOf = (entries: readonly SaveGraphQLError[]): string => {
+const rejectionMessageOf = (entries: readonly SaveGraphQLError[]): string => {
   const lines: string[] = [];
   for (const entry of entries) {
     if (typeof entry.message === "string" && entry.message) {
@@ -64,10 +67,12 @@ const badInputMessageOf = (entries: readonly SaveGraphQLError[]): string => {
 /**
  * Classify a rejected dashboard save:
  * - CONFLICT: the document advanced elsewhere since it was loaded.
- * - BAD_USER_INPUT: the server rejected the input; carries its explanation.
+ * - BAD_USER_INPUT or FORBIDDEN: the server rejected the input or a setting
+ *   the user may not save; carries its explanation.
  * - Only codeless errors: the access checks throw a codeless "Dashboard not
  *   found" when the dashboard is gone or access was lost (conflated for privacy).
- * Anything else (other codes, network or client errors) returns null.
+ * Anything else (UNAUTHENTICATED, other codes, network or client errors)
+ * returns null.
  */
 export const classifyDashboardSaveError = (error: unknown): DashboardSaveFailure => {
   const errors = graphQLErrorsOf(error);
@@ -77,9 +82,9 @@ export const classifyDashboardSaveError = (error: unknown): DashboardSaveFailure
   if (errors.some((entry) => codeOf(entry) === "CONFLICT")) {
     return { kind: "conflict" };
   }
-  const badInput = errors.filter((entry) => codeOf(entry) === "BAD_USER_INPUT");
-  if (badInput.length > 0) {
-    return { kind: "badInput", message: badInputMessageOf(badInput) };
+  const rejected = errors.filter((entry) => REJECTION_CODES.has(codeOf(entry)));
+  if (rejected.length > 0) {
+    return { kind: "rejected", message: rejectionMessageOf(rejected) };
   }
   if (errors.every((entry) => !codeOf(entry))) {
     return { kind: "accessLost" };
