@@ -63,6 +63,12 @@ The first formal public release will appear as the first official release entry 
   alert, a "Dashboard not found" rejection shows the lost-access alert, and a
   `BAD_USER_INPUT` rejection shows the server's message and any document
   validation issues.
+- **A save the server refuses with `FORBIDDEN` tells you why.** Saving trusted
+  settings or widgets outside `trusted` execution mode, adding a credential or
+  broker profile you may not use, publishing without permission, or creating a
+  dashboard without the editor role showed no alert and left an unhandled
+  promise rejection. These now show the same "Couldn't save" alert with the
+  server's message.
 - **An expired session sends you to log in again.** The API used to treat a
   request with an expired, invalid or revoked bearer token as anonymous, so a
   user whose session had ended got `Dashboard not found` on their own private

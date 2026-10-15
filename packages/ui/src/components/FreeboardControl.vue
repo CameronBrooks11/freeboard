@@ -74,7 +74,7 @@ const saveDashboard = async () => {
       window.alert(t("dashboard.saveConflict"));
       return;
     }
-    if (failure?.kind === "badInput") {
+    if (failure?.kind === "rejected") {
       window.alert(t("dashboard.saveRejected", { message: failure.message }));
       return;
     }
