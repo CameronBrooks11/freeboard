@@ -29,7 +29,12 @@ const doc = {
           title: "W",
           type: "text",
           enabled: true,
-          settings: { headerText: "TabWidgetHeader", valuePath: "datasources.tabds.value" },
+          // Precision is set so the only failing field is the one each test clears.
+          settings: {
+            headerText: "TabWidgetHeader",
+            precision: 2,
+            valuePath: "datasources.tabds.value",
+          },
         },
       ],
     },
