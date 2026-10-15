@@ -3,6 +3,7 @@ import { Dashboard, normalizeDashboardTheme } from "../models/Dashboard.js";
 import type { ValidationResult } from "@freeboard/core";
 import { disposeDashboardAssets } from "../dashboardAssets.js";
 import { normalizeCreateDashboardPayload } from "../auth/publishPolicy.js";
+import { normalizeDashboardVisibility } from "../sharePolicy.js";
 import { useAuthStore } from "./auth.js";
 import { runtimeConfig } from "../runtime/config.js";
 import { parseEmbedDocumentMessage } from "../runtime/embed.js";
@@ -211,7 +212,8 @@ export const useDashboardStore = defineStore("dashboard", {
         const updated = getMutationData(result).updateDashboard as
           DashboardMutationPayload | undefined;
         if (updated) {
-          this.dashboard.visibility = updated.visibility || this.dashboard.visibility;
+          this.dashboard.visibility =
+            normalizeDashboardVisibility(updated.visibility) ?? this.dashboard.visibility;
           this.dashboard.shareToken = updated.shareToken || null;
           this.dashboard.shareTokenVersion = Number.isFinite(Number(updated.shareTokenVersion))
             ? Math.max(0, Math.floor(Number(updated.shareTokenVersion)))
@@ -240,9 +242,8 @@ export const useDashboardStore = defineStore("dashboard", {
         nextDashboardId = created._id;
         // The server may have applied the admin default visibility; the
         // response carries the enum name, the model holds the lowercase value.
-        this.dashboard.visibility = created.visibility
-          ? String(created.visibility).toLowerCase()
-          : this.dashboard.visibility;
+        this.dashboard.visibility =
+          normalizeDashboardVisibility(created.visibility) ?? this.dashboard.visibility;
         this.dashboard.shareToken = created.shareToken || null;
         this.dashboard.shareTokenVersion = Number.isFinite(Number(created.shareTokenVersion))
           ? Math.max(0, Math.floor(Number(created.shareTokenVersion)))

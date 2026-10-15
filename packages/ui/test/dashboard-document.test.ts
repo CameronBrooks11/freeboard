@@ -138,6 +138,25 @@ test("an unsaved dashboard has no visibility until the server assigns one", () =
   assert.equal(dashboard.visibility, null);
 });
 
+test("a server record's visibility enum name loads as the lowercase value", () => {
+  // The API sends the DashboardVisibility enum name; the Share dialog selects
+  // and compares lowercase values.
+  for (const [wire, expected] of [
+    ["PRIVATE", "private"],
+    ["LINK", "link"],
+    ["PUBLIC", "public"],
+  ]) {
+    const dashboard = new Dashboard();
+    dashboard.deserialize({ ...serverRecord(), visibility: wire });
+    assert.equal(dashboard.visibility, expected);
+  }
+
+  // A record without a recognised visibility reads as private.
+  const dashboard = new Dashboard();
+  dashboard.deserialize({ ...serverRecord(), visibility: "SECRET" });
+  assert.equal(dashboard.visibility, "private");
+});
+
 test("pane.id is real runtime state, preserved across the load round-trip", () => {
   const record = serverRecord();
   // A document whose pane carries the canonical id (layout.i mirrors it).
