@@ -19,6 +19,7 @@ import createSettings from "../settings";
 import { usePreferredColorScheme } from "@vueuse/core";
 import { normalizeDashboardTheme } from "../models/Dashboard.js";
 import { DASHBOARD_THEME_CATALOG, type DashboardThemeCatalogEntry } from "../ui/themeCatalog.js";
+import { findFirstInvalidSection } from "../formModel";
 import {
   UI_LOCALE_AUTO,
   getUiLocaleSelection,
@@ -139,13 +140,17 @@ const resolvedAutoUiLocaleLabel = computed(() => {
 
 // Reference to the DialogBox for closing the modal programmatically
 const dialog = ref<{ closeModal?: () => void } | null>(null);
+// Reference to the TabNavigator for showing the tab that failed validation
+const tabNavigator = ref<{ selectTab: (name: string) => void } | null>(null);
 
 /**
  * Handle OK: validate all tabs, assemble general and settings objects, invoke onOk, then close modal.
  */
 const onDialogBoxOk = () => {
-  // Prevent save if any field component reports errors
-  if (fields.value.some((f) => components.value[f.name]?.hasErrors?.())) {
+  // Prevent save if any field component reports errors, and show the first failing tab
+  const invalidSection = findFirstInvalidSection(fields.value, components.value);
+  if (invalidSection) {
+    tabNavigator.value?.selectTab(invalidSection);
     return;
   }
   const s: Record<string, unknown> = {};
@@ -175,7 +180,7 @@ const onDialogBoxOk = () => {
     @ok="onDialogBoxOk"
   >
     <!-- Tabbed sections for each settings category -->
-    <TabNavigator :fields="fields">
+    <TabNavigator :fields="fields" ref="tabNavigator">
       <template v-for="field in fields" :key="field.name" #[field.name]>
         <Form
           :ref="(el) => storeComponentRef(field.name, el)"
