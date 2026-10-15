@@ -23,6 +23,13 @@ The first formal public release will appear as the first official release entry 
 
 ### Fixed
 
+- **Live dashboard updates connect again.** Since the move to Apollo Client 4,
+  the dashboard subscription sent an extra `operationType` request field, which
+  the API rejects with HTTP 400, so live updates never arrived. A failed
+  subscription also showed the "Your edit access to this dashboard was changed"
+  banner within a minute of opening a saved dashboard, turned editing off, and
+  reset any open dialog. A subscription error no longer reads as lost access;
+  only the server's own end-of-access signal does.
 - **Saving a new dashboard from the UI works again.** The create request sent
   the dashboard's visibility in lowercase (`private`), which the API's
   `DashboardVisibility` enum rejects with HTTP 400, so Save Freeboard on a new
