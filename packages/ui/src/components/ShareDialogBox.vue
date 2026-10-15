@@ -137,7 +137,7 @@ const applyDashboardMutationPayload = (payload: ShareMutationPayload) => {
   if (!applied) {
     return;
   }
-  visibilityDraft.value = dashboard.value.visibility;
+  visibilityDraft.value = dashboard.value.visibility || "private";
   dashboardStore.syncEditingPermissions();
 };
 

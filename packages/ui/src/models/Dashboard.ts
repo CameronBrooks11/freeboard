@@ -129,8 +129,11 @@ export class Dashboard {
   _id: string | null = null;
   /** @type {string} Dashboard title. */
   title = "Dashboard";
-  /** @type {string} Visibility status. */
-  visibility = "private";
+  /**
+   * @type {string|null} Visibility status. Null until the server assigns one or
+   * the user chooses one: a create without a visibility gets the admin default.
+   */
+  visibility: string | null = null;
   /** @type {string|null} Opaque share token for link access. */
   shareToken: string | null = null;
   /** @type {number} Monotonic share token version for public/link revoke semantics. */
@@ -269,7 +272,7 @@ export class Dashboard {
     // loader until it is saved to a server.
     this.version = null;
     this._id = null;
-    this.visibility = "private";
+    this.visibility = null;
     this.shareToken = null;
     this.shareTokenVersion = 0;
     this.documentRevision = 1;

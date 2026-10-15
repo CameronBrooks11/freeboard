@@ -34,6 +34,28 @@ In private -> external (`link/public`) transitions, share tokens are rotated.
 - Admins can always publish.
 - If publishing is disabled for editors, create/save paths force private visibility.
 
+## Default dashboard visibility
+
+The **Default Dashboard Visibility** policy (Admin Console → Auth Policy; until
+it is saved there, the `DASHBOARD_DEFAULT_VISIBILITY` API setting) sets the
+visibility of every new dashboard whose creator did not choose one:
+
+- Dashboards created in the UI. Save on a new dashboard sends no visibility, so
+  the default applies. This includes a dashboard imported from a file and then
+  saved.
+- Dashboards created through the API (`createDashboard`) without a `visibility`
+  field. A create that names a visibility keeps it.
+
+With a `link` or `public` default, a new dashboard is shared the moment it is
+first saved: a `link` dashboard is reachable by anyone holding its share URL,
+and a `public` one through its public route. The Share dialog shows the
+visibility the dashboard got; change it there.
+
+The publish rule still applies. For a non-admin creator when
+`nonAdminCanPublish=false`, a `link` or `public` default falls back to `private`
+and the create succeeds. An explicit `link` or `public` visibility from that
+creator through the API is rejected with `FORBIDDEN`.
+
 ## Runtime execution modes
 
 - `safe` (default): trusted script/resource capabilities are blocked.
