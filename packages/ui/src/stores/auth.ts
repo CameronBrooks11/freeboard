@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { setRuntimeExecutionMode } from "../executionPolicy.js";
-import { parseJwtPayload } from "../jwt.js";
+import { getTokenExpiryMs, parseJwtPayload } from "../jwt.js";
 
 type PublicAuthPolicy = {
   registrationMode: "disabled" | "invite" | "open";
@@ -31,6 +31,8 @@ type AuthStoreState = {
   currentUser: AuthUser | null;
   publicAuthPolicy: PublicAuthPolicy;
   runtimeShareToken: string | null;
+  /** The last session ended because its token expired or was rejected. */
+  sessionExpired: boolean;
 };
 
 const getSessionStorage = () => {
@@ -113,6 +115,7 @@ export const useAuthStore = defineStore("auth", {
     currentUser: null as AuthUser | null,
     publicAuthPolicy: { ...DEFAULT_PUBLIC_AUTH_POLICY } as PublicAuthPolicy,
     runtimeShareToken: null as string | null,
+    sessionExpired: false,
   }),
 
   actions: {
@@ -243,6 +246,7 @@ export const useAuthStore = defineStore("auth", {
     },
 
     login(token: string) {
+      this.sessionExpired = false;
       this.token = String(token || "");
       this.hydrateFromToken();
       this.saveSession();
@@ -252,7 +256,33 @@ export const useAuthStore = defineStore("auth", {
       this.token = null;
       this.currentUser = null;
       this.runtimeShareToken = null;
+      this.sessionExpired = false;
       this.saveSession();
+    },
+
+    /**
+     * End the session because the API rejected its token (or it expired). The
+     * login view shows a "session expired" notice when there was a session.
+     */
+    expireSession() {
+      const hadSession = Boolean(this.token);
+      this.logout();
+      this.sessionExpired = hadSession;
+    },
+
+    /**
+     * Drop a stored token whose `exp` has passed, so the first requests after a
+     * page load go out anonymous instead of being rejected by the API.
+     *
+     * @returns {boolean} true when a token was dropped
+     */
+    dropExpiredToken() {
+      const expiresAtMs = getTokenExpiryMs(this.token);
+      if (expiresAtMs === null || expiresAtMs > Date.now()) {
+        return false;
+      }
+      this.expireSession();
+      return true;
     },
   },
 });

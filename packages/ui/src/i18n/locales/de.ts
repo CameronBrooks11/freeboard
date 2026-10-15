@@ -124,6 +124,7 @@ export const de = {
     buttonUseResetToken: "Reset-Token verwenden",
     buttonBackToLogin: "Zuruck zur Anmeldung",
     buttonReportBug: "Fehler melden",
+    sessionExpired: "Ihre Sitzung ist abgelaufen. Melden Sie sich erneut an, um fortzufahren.",
   },
   issueReport: {
     ...en.issueReport,

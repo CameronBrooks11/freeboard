@@ -1,3 +1,6 @@
+import { onError } from "@apollo/client/link/error";
+import { CombinedGraphQLErrors } from "@apollo/client/errors";
+
 /**
  * Auth-related GraphQL error codes that should trigger session reset.
  * @type {Set<string>}
@@ -43,3 +46,33 @@ export const shouldForceLogoutOnGraphQLErrors = (graphQLErrors: readonly unknown
   }
   return graphQLErrors.some(isAuthGraphQLError);
 };
+
+/**
+ * Build the headers for a GraphQL request, with the bearer token when there is one.
+ *
+ * @param {string|null} token
+ * @returns {Record<string, string>}
+ */
+export const buildGraphQLRequestHeaders = (token: string | null): Record<string, string> => {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  headers["Content-Type"] = "application/json";
+  return headers;
+};
+
+/**
+ * Apollo Link that calls `onAuthFailure` when a result carries an auth error. It
+ * sits in front of both the HTTP and the SSE link, so a subscription rejected for
+ * an expired session ends the session the same way a query does.
+ *
+ * @param {() => void} onAuthFailure
+ */
+export const createAuthErrorLink = (onAuthFailure: () => void) =>
+  onError(({ error }) => {
+    const graphQLErrors = CombinedGraphQLErrors.is(error) ? error.errors : undefined;
+    if (shouldForceLogoutOnGraphQLErrors(graphQLErrors)) {
+      onAuthFailure();
+    }
+  });

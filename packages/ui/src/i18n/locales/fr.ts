@@ -128,6 +128,7 @@ export const fr = {
     buttonUseResetToken: "Utiliser un jeton de reinitialisation",
     buttonBackToLogin: "Retour a la connexion",
     buttonReportBug: "Signaler un bug",
+    sessionExpired: "Votre session a expire. Reconnectez-vous pour continuer.",
   },
   issueReport: {
     ...en.issueReport,

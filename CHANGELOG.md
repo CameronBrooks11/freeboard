@@ -46,6 +46,18 @@ The first formal public release will appear as the first official release entry 
   alert, a "Dashboard not found" rejection shows the lost-access alert, and a
   `BAD_USER_INPUT` rejection shows the server's message and any document
   validation issues.
+- **An expired session sends you to log in again.** The API used to treat a
+  request with an expired, invalid or revoked bearer token as anonymous, so a
+  user whose session had ended got `Dashboard not found` on their own private
+  dashboard instead of a prompt to log in. The API now answers every operation
+  in such a request with an `UNAUTHENTICATED` error (HTTP 200, on queries,
+  mutations and SSE subscriptions alike), and the UI ends the session and shows
+  a "session expired" notice on the login page. A stored token that expired
+  before the page loaded is dropped, so the first requests go out anonymous.
+  Requests with no `Authorization` header are still anonymous, so public
+  dashboards stay readable without login. API clients that send a stale token
+  and expect anonymous access must drop the header. See
+  [API](docs/manual/api.md).
 
 ## 3.0.0 — 2026-06-27
 
