@@ -14,14 +14,14 @@ import Board from "./Board.vue";
 import { useAuthStore } from "../stores/auth.js";
 import { useDashboardStore } from "../stores/dashboard.js";
 import { useProfileCatalogStore } from "../stores/profileCatalog.js";
-import { useQuery, useSubscription } from "@vue/apollo-composable";
+import { useQuery } from "@vue/apollo-composable";
 import {
   DASHBOARD_READ_QUERY,
   DASHBOARD_READ_BY_SHARE_TOKEN_QUERY,
-  DASHBOARD_UPDATE_SUBSCRIPTION,
   DASHBOARD_USABLE_PROFILES_QUERY,
   PUBLIC_AUTH_POLICY_QUERY,
 } from "../gql.js";
+import { useDashboardSubscription } from "../dashboardSubscription.js";
 import router from "../router";
 import { runtimeConfig } from "../runtime/config.js";
 import { isEmbedOriginAllowed } from "../runtime/embed.js";
@@ -81,11 +81,7 @@ const {
 /**
  * Subscribe to dashboard updates (SSE). Also reactive to the current `id`.
  */
-const { onResult: onSubResult } = useSubscription(
-  DASHBOARD_UPDATE_SUBSCRIPTION,
-  () => ({ id: routeId.value }),
-  { context: { apiName: "stream" }, enabled: queryEnabledById },
-);
+const { onResult: onSubResult } = useDashboardSubscription(routeId, queryEnabledById);
 
 const { result: publicPolicyResult } = useQuery(
   PUBLIC_AUTH_POLICY_QUERY,
