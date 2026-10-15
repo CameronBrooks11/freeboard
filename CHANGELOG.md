@@ -39,6 +39,12 @@ The first formal public release will appear as the first official release entry 
   on a tab other than the one showing, because the error rendered inside the
   hidden tab. OK now switches to the first tab that holds an error, and every
   tab's errors render, not only the first failing one's.
+- **The Share dialog shows a saved dashboard's visibility.** The UI kept the
+  API's `DashboardVisibility` enum name (`PRIVATE`, `LINK`, `PUBLIC`) as read
+  from a loaded dashboard, a save, or a visibility or share-link change, so
+  the visibility selector, which offers the lowercase values, was blank. The
+  UI now reads the enum name as the lowercase value, and still sends the enum
+  name to the API.
 - **Opening a dashboard no longer sends a subscription request without an
   `id`.** On navigation to a dashboard, the live-update subscription started
   once with the previous route's empty variables and was cancelled a moment
