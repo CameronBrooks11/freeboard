@@ -39,6 +39,11 @@ The first formal public release will appear as the first official release entry 
   on a tab other than the one showing, because the error rendered inside the
   hidden tab. OK now switches to the first tab that holds an error, and every
   tab's errors render, not only the first failing one's.
+- **Opening a dashboard no longer sends a subscription request without an
+  `id`.** On navigation to a dashboard, the live-update subscription started
+  once with the previous route's empty variables and was cancelled a moment
+  later, which browser tools list as a failed request. It now starts once, with
+  the dashboard's `id`.
 - **A rejected dashboard save tells you why.** The save-conflict and lost-access
   alerts never appeared, because `@vue/apollo-composable` hands the UI an
   Apollo Client 3 error whose `graphQLErrors` is empty and whose GraphQL errors
