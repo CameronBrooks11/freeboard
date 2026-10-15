@@ -302,6 +302,8 @@ jobs:
         run: npm run check:ts:source-artifacts
       - name: Validate runtime dependency hygiene
         run: npm run check:runtime-deps
+      - name: Validate installed dependency tree
+        run: npm run check:deps:tree
 
   test-api:
     name: Test API
