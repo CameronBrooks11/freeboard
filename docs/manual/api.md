@@ -33,6 +33,16 @@ The Freeboard API is a GraphQL server built on `graphql-yoga` with repository-dr
   - `clientIp` (for auth throttling/audit context)
   - `user` (if a valid JWT `Authorization: Bearer <token>` header is present)
   - `serviceAccount` (if a valid service account bearer token `fsa_<id>.<secret>` is present)
+  - `authenticationError` (if a bearer token is present but does not authenticate)
+
+Anonymous and authenticated requests:
+
+- A request with no `Authorization` header is anonymous. It can read what anonymous users may read, such as public dashboards.
+- A request whose bearer token does not authenticate is rejected, not downgraded to anonymous. That covers an expired or malformed JWT, a JWT whose `sessionVersion` no longer matches, a JWT for a user that no longer exists or is inactive, and an unknown, revoked or expired service account token. Every operation in the request returns `{"data": null, "errors": [{"extensions": {"code": "UNAUTHENTICATED"}}]}` before any resolver runs (the `useRejectFailedAuthentication` plugin).
+  - Queries and mutations on `/graphql`: HTTP 200 with that JSON body.
+  - Subscriptions over SSE (`/graphql` and `/graphql/stream` with `Accept: text/event-stream`): HTTP 200, one `next` event with that body, then `complete`.
+- A client that receives `UNAUTHENTICATED` should drop its token and log in again. Login itself must be sent without the stale token.
+- If the user lookup behind a valid JWT fails (for example, the database is unreachable), the request continues as anonymous rather than ending the session.
 
 `clientIp` derivation:
 
