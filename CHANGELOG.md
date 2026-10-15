@@ -52,6 +52,14 @@ The first formal public release will appear as the first official release entry 
   alert, a "Dashboard not found" rejection shows the lost-access alert, and a
   `BAD_USER_INPUT` rejection shows the server's message and any document
   validation issues.
+- **A live update no longer replaces unsaved dashboard edits.** A save in
+  another tab reached the editor twice: on the subscription, which kept the
+  edits, and on the dashboard read query, refreshed from the cache the
+  subscription result wrote to, which loaded the remote copy over them with no
+  banner. Any remote copy of the open dashboard now leaves unsaved edits in
+  place and shows the "changed elsewhere" banner, and saving them is refused
+  as a conflict instead of overwriting the newer revision. A clean editor
+  still takes live updates, and opening another dashboard still loads it.
 
 ## 3.0.0 — 2026-06-27
 
