@@ -21,6 +21,7 @@ import {
   DASHBOARD_USABLE_PROFILES_QUERY,
   PUBLIC_AUTH_POLICY_QUERY,
 } from "../gql.js";
+import { useDashboardRead } from "../dashboardRead.js";
 import { useDashboardSubscription } from "../dashboardSubscription.js";
 import router from "../router";
 import { runtimeConfig } from "../runtime/config.js";
@@ -61,22 +62,20 @@ const queryEnabledByShareToken = computed(() => !!routeShareToken.value);
  * re-runs when the route `id` changes.
  */
 const {
-  result: resultById,
   loading: loadingById,
   error: errorById,
-} = useQuery(DASHBOARD_READ_QUERY, () => ({ id: routeId.value }), {
-  enabled: queryEnabledById,
-  fetchPolicy: "network-only",
-});
+  onResponse: onResponseById,
+} = useDashboardRead(DASHBOARD_READ_QUERY, () => ({ id: routeId.value }), queryEnabledById);
 
 const {
-  result: resultByShareToken,
   loading: loadingByShareToken,
   error: errorByShareToken,
-} = useQuery(DASHBOARD_READ_BY_SHARE_TOKEN_QUERY, () => ({ shareToken: routeShareToken.value }), {
-  enabled: queryEnabledByShareToken,
-  fetchPolicy: "network-only",
-});
+  onResponse: onResponseByShareToken,
+} = useDashboardRead(
+  DASHBOARD_READ_BY_SHARE_TOKEN_QUERY,
+  () => ({ shareToken: routeShareToken.value }),
+  queryEnabledByShareToken,
+);
 
 /**
  * Subscribe to dashboard updates (SSE). Also reactive to the current `id`.
@@ -263,11 +262,11 @@ const applyResult = (
   }
 };
 
-// React to initial query results.
-// `useQuery().result` already contains the GraphQL data object shape
+// React to initial query responses.
+// A response already contains the GraphQL data object shape
 // ({ dashboard } / { dashboardByShareToken }), so do not access `.data`.
-watch(resultById, (value) => applyResult(value));
-watch(resultByShareToken, (value) => applyResult(value));
+onResponseById((value) => applyResult(value));
+onResponseByShareToken((value) => applyResult(value));
 // React to subscription updates. Apollo Client 4 delivers a stream or GraphQL
 // error as a result with no `data`; only the server's terminal
 // `{ dashboard: null }` means access ended, so skip data-less results.
