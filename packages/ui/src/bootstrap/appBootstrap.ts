@@ -12,6 +12,7 @@ export const bootstrapApp = ({ pinia }: { pinia: Pinia }) => {
 
   authStore.loadSession();
   authStore.hydrateFromToken();
+  authStore.dropExpiredToken();
   authStore.setPublicAuthPolicy(authStore.publicAuthPolicy);
 
   pluginRegistryStore.registerCorePlugins();
