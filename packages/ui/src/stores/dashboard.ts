@@ -238,7 +238,11 @@ export const useDashboardStore = defineStore("dashboard", {
         this.isSaved = true;
         this.dashboard._id = created._id;
         nextDashboardId = created._id;
-        this.dashboard.visibility = created.visibility || this.dashboard.visibility;
+        // The server may have applied the admin default visibility; the
+        // response carries the enum name, the model holds the lowercase value.
+        this.dashboard.visibility = created.visibility
+          ? String(created.visibility).toLowerCase()
+          : this.dashboard.visibility;
         this.dashboard.shareToken = created.shareToken || null;
         this.dashboard.shareTokenVersion = Number.isFinite(Number(created.shareTokenVersion))
           ? Math.max(0, Math.floor(Number(created.shareTokenVersion)))

@@ -31,7 +31,7 @@ type DashboardLike = {
   datasources: Datasource[];
   _id: string | null;
   title: string;
-  visibility: string;
+  visibility: string | null;
   image: string | null;
   columns: number;
   width: string;
