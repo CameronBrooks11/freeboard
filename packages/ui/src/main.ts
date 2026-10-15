@@ -6,8 +6,6 @@
 import { createApp, watch } from "vue";
 import { DefaultApolloClient } from "@vue/apollo-composable";
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from "@apollo/client/core";
-import { onError } from "@apollo/client/link/error";
-import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import App from "./App.vue";
 import { OhVueIcon, addIcons } from "oh-vue-icons";
 import {
@@ -48,7 +46,7 @@ import { bootstrapApp } from "./bootstrap/appBootstrap.js";
 import { SSELink } from "./sse.js";
 import { createHead } from "@unhead/vue/client";
 import { i18n } from "./i18n/index.js";
-import { shouldForceLogoutOnGraphQLErrors } from "./apolloAuthError.js";
+import { buildGraphQLRequestHeaders, createAuthErrorLink } from "./apolloAuthError.js";
 import { subscribeToSystemThemeChanges } from "./ui/themeRuntime.js";
 import { a11yButton } from "./directives/a11yButton.js";
 
@@ -99,27 +97,17 @@ const cache = new InMemoryCache();
  *
  * @returns {Object<string, string>} HTTP headers object.
  */
-const getHeaders = (): Record<string, string> => {
-  const headers: Record<string, string> = {};
-  if (authStore.token) {
-    headers["Authorization"] = `Bearer ${authStore.token}`;
-  }
-  headers["Content-Type"] = "application/json";
-  return headers;
-};
+const getHeaders = (): Record<string, string> => buildGraphQLRequestHeaders(authStore.token);
 
 /**
- * Apollo Link to handle GraphQL auth errors: logs out user and redirects to login page.
+ * Apollo Link to handle GraphQL auth errors: ends the session and redirects to login page.
  */
-const errorLink = onError(({ error }) => {
-  const graphQLErrors = CombinedGraphQLErrors.is(error) ? error.errors : undefined;
-  if (shouldForceLogoutOnGraphQLErrors(graphQLErrors)) {
-    authStore.logout();
-    profileCatalogStore.clearCredentialProfiles();
-    profileCatalogStore.clearBrokerProfiles();
-    dashboardStore.syncEditingPermissions();
-    routerTyped.push("/login");
-  }
+const errorLink = createAuthErrorLink(() => {
+  authStore.expireSession();
+  profileCatalogStore.clearCredentialProfiles();
+  profileCatalogStore.clearBrokerProfiles();
+  dashboardStore.syncEditingPermissions();
+  routerTyped.push("/login");
 });
 
 /**

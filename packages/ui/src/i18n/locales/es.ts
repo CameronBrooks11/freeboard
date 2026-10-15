@@ -124,6 +124,7 @@ export const es = {
     buttonUseResetToken: "Usar token de restablecimiento",
     buttonBackToLogin: "Volver al inicio de sesion",
     buttonReportBug: "Reportar error",
+    sessionExpired: "Su sesion ha caducado. Inicie sesion de nuevo para continuar.",
   },
   issueReport: {
     ...en.issueReport,
