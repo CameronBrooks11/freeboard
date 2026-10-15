@@ -64,6 +64,14 @@ The first formal public release will appear as the first official release entry 
   dashboards stay readable without login. API clients that send a stale token
   and expect anonymous access must drop the header. See
   [API](docs/manual/api.md).
+- **A live update no longer replaces unsaved dashboard edits.** A save in
+  another tab reached the editor twice: on the subscription, which kept the
+  edits, and on the dashboard read query, refreshed from the cache the
+  subscription result wrote to, which loaded the remote copy over them with no
+  banner. Any remote copy of the open dashboard now leaves unsaved edits in
+  place and shows the "changed elsewhere" banner, and saving them is refused
+  as a conflict instead of overwriting the newer revision. A clean editor
+  still takes live updates, and opening another dashboard still loads it.
 
 ## 3.0.0 — 2026-06-27
 
