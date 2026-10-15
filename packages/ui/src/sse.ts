@@ -37,10 +37,15 @@ export class SSELink extends ApolloLink {
    */
   request(operation: Operation): Observable<FetchResult> {
     return new Observable<FetchResult>((sink) => {
-      const { operationName, ...rest } = operation;
+      // Send only the GraphQL-over-HTTP request parameters: the API rejects any
+      // other body field with HTTP 400, and Apollo Client 4's Operation also
+      // carries `operationType`.
+      const { operationName, variables, extensions } = operation;
       const query = print(operation.query);
       const params =
-        operationName !== undefined ? { ...rest, query, operationName } : { ...rest, query };
+        operationName !== undefined
+          ? { query, variables, extensions, operationName }
+          : { query, variables, extensions };
       return this.client.subscribe(params, {
         next: (
           value: ExecutionResult<Record<string, unknown> | undefined, Record<string, unknown>>,
