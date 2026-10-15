@@ -11,7 +11,7 @@ import { storeToRefs } from "pinia";
 import DialogBox from "./DialogBox.vue";
 import { useDashboardStore } from "../stores/dashboard.js";
 import router from "../router";
-import { buildFallbackSharePath } from "../sharePolicy";
+import { buildFallbackSharePath, visibilityToEnum } from "../sharePolicy";
 import {
   applyShareMutationPayloadToDashboard,
   getCollaboratorInputError,
@@ -126,7 +126,6 @@ const setGraphQLError = (error: unknown, fallbackKey: string) => {
     normalized?.graphQLErrors?.[0]?.message || normalized?.message || t(fallbackKey);
 };
 
-const visibilityToEnum = (visibility: string) => String(visibility || "private").toUpperCase();
 const accessLevelToEnum = (accessLevel: string) => String(accessLevel || "viewer").toUpperCase();
 
 const applyDashboardMutationPayload = (payload: ShareMutationPayload) => {

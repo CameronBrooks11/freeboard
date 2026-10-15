@@ -3,7 +3,7 @@
  * @description Pure helpers for ShareDialog permission gating and payload application.
  */
 
-import { isDashboardShareable } from "./sharePolicy.js";
+import { isDashboardShareable, normalizeDashboardVisibility } from "./sharePolicy.js";
 type ShareableDashboard = {
   _id?: string | null;
   visibility?: string | null;
@@ -117,7 +117,8 @@ export const applyShareMutationPayloadToDashboard = ({
   }
 
   if (payload.visibility !== undefined) {
-    dashboard.visibility = String(payload.visibility || dashboard.visibility || "");
+    dashboard.visibility =
+      normalizeDashboardVisibility(payload.visibility) ?? dashboard.visibility ?? null;
   }
   if (payload.shareToken !== undefined) {
     dashboard.shareToken = payload.shareToken ? String(payload.shareToken) : null;

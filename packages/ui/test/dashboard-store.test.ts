@@ -350,6 +350,43 @@ test("dashboard store saveDashboard sends expectedDocumentRevision and applies t
   assert.equal(dashboardStore.dashboard.documentRevision, 4);
 });
 
+test("dashboard store saveDashboard reads the update response's visibility enum name as lowercase", async () => {
+  const { useDashboardStore } = await import("../src/stores/dashboard.js");
+
+  const authStore = useAuthStore();
+  const dashboardStore = useDashboardStore();
+  authStore.login(
+    encodeToken({ _id: "owner-1", email: "owner@example.com", role: "editor", active: true }),
+  );
+
+  dashboardStore.isSaved = true;
+  dashboardStore.dashboard._id = "dash-1";
+  dashboardStore.dashboard.canEdit = true;
+  dashboardStore.dashboard.visibility = "private";
+
+  const createDashboard = async () => {
+    throw new Error("createDashboard should not be called for a saved dashboard");
+  };
+  const updateDashboard = async () => ({
+    data: {
+      updateDashboard: {
+        _id: "dash-1",
+        visibility: "LINK",
+        shareToken: "token-1",
+        shareTokenVersion: 1,
+        documentRevision: 2,
+        canEdit: true,
+        canManageSharing: true,
+      },
+    },
+  });
+
+  await dashboardStore.saveDashboard("dash-1", { document: {} }, createDashboard, updateDashboard);
+
+  assert.equal(dashboardStore.dashboard.visibility, "link");
+  assert.equal(dashboardStore.dashboard.shareToken, "token-1");
+});
+
 test("dashboard store hasUnsavedChanges tracks edits since the last load/save", async () => {
   const { useDashboardStore } = await import("../src/stores/dashboard.js");
   const dashboardStore = useDashboardStore();

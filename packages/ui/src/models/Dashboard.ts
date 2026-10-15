@@ -18,6 +18,7 @@ import { DASHBOARD_DOCUMENT_SCHEMA_VERSION } from "@freeboard/core";
 import { generateModelId } from "./id.js";
 import { resolveDashboardIsOwner } from "./ownership.js";
 import { runtimeConfig } from "../runtime/config.js";
+import { normalizeDashboardVisibility } from "../sharePolicy.js";
 import type { UnknownRecord, WidgetRuntimeContext } from "../types/runtime.js";
 import type { Widget } from "./Widget.js";
 
@@ -325,7 +326,7 @@ export class Dashboard {
     // document's generator. The model's version field is unused on save.
     this.version = null;
     this._id = typeof object._id === "string" ? object._id : null;
-    this.visibility = typeof object.visibility === "string" ? object.visibility : "private";
+    this.visibility = normalizeDashboardVisibility(object.visibility) ?? "private";
     this.shareToken = typeof object.shareToken === "string" ? object.shareToken : null;
     this.shareTokenVersion = Number.isFinite(Number(object.shareTokenVersion))
       ? Math.max(0, Math.floor(Number(object.shareTokenVersion)))

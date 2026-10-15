@@ -112,6 +112,28 @@ test("applyShareMutationPayloadToDashboard updates visibility/token/permissions"
   });
 });
 
+test("applyShareMutationPayloadToDashboard reads the visibility enum name as lowercase", () => {
+  // setDashboardVisibility and rotateDashboardShareToken answer with the
+  // DashboardVisibility enum name.
+  for (const [wire, expected] of [
+    ["PRIVATE", "private"],
+    ["LINK", "link"],
+    ["PUBLIC", "public"],
+  ]) {
+    const dashboard = { visibility: "private", shareToken: null };
+    applyShareMutationPayloadToDashboard({
+      dashboard,
+      payload: { visibility: wire, shareToken: "token-2" },
+    });
+    assert.equal(dashboard.visibility, expected);
+  }
+
+  // An unrecognised value leaves the current visibility in place.
+  const dashboard = { visibility: "link" };
+  applyShareMutationPayloadToDashboard({ dashboard, payload: { visibility: "SECRET" } });
+  assert.equal(dashboard.visibility, "link");
+});
+
 test("applyShareMutationPayloadToDashboard no-ops when payload or dashboard missing", () => {
   assert.equal(
     applyShareMutationPayloadToDashboard({
