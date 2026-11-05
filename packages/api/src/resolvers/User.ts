@@ -3,7 +3,7 @@
  * GraphQL resolver definitions for user queries and mutations.
  */
 
-import { createGraphQLError } from "graphql-yoga";
+import { GraphQLError } from "graphql";
 import type { IResolvers } from "@graphql-tools/utils";
 import bcrypt from "bcryptjs";
 import { dataStore } from "../data/index.js";
@@ -108,7 +108,7 @@ const resolvers: IResolvers = {
      */
     registerUser: async (parent, { email, password }) => {
       if (!email || !password) {
-        throw createGraphQLError("Data provided is not valid");
+        throw new GraphQLError("Data provided is not valid");
       }
 
       const authPolicy = await getAuthPolicyState();
@@ -125,7 +125,7 @@ const resolvers: IResolvers = {
         email: normalizedEmail,
       });
       if (isAnEmailAlreadyRegistered) {
-        throw createGraphQLError("Data provided is not valid");
+        throw new GraphQLError("Data provided is not valid");
       }
 
       const user = await userRepository.create({
@@ -135,7 +135,7 @@ const resolvers: IResolvers = {
         active: true,
       });
       if (!user) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw new GraphQLError("User not found or login not allowed");
       }
 
       await recordAuditEvent({
@@ -163,20 +163,20 @@ const resolvers: IResolvers = {
      */
     acceptInvite: async (parent, { token, password }) => {
       if (!token || !password) {
-        throw createGraphQLError("Data provided is not valid");
+        throw new GraphQLError("Data provided is not valid");
       }
       ensurePasswordIsStrong(password);
 
       const invite = await findActiveInviteByToken(token);
       if (!invite) {
-        throw createGraphQLError("Invite token is invalid or expired", {
+        throw new GraphQLError("Invite token is invalid or expired", {
           extensions: { code: "FORBIDDEN" },
         });
       }
 
       const existingUser = await userRepository.findByEmail({ email: String(invite.email || "") });
       if (existingUser) {
-        throw createGraphQLError("Invite token is invalid or expired", {
+        throw new GraphQLError("Invite token is invalid or expired", {
           extensions: { code: "FORBIDDEN" },
         });
       }
@@ -191,7 +191,7 @@ const resolvers: IResolvers = {
         active: true,
       });
       if (!user) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw new GraphQLError("User not found or login not allowed");
       }
 
       await inviteTokenRepository.markAcceptedById({
@@ -227,7 +227,7 @@ const resolvers: IResolvers = {
      */
     authUser: async (parent, { email, password }, context) => {
       if (!email || !password) {
-        throw createGraphQLError("Invalid credentials");
+        throw new GraphQLError("Invalid credentials");
       }
 
       const normalizedEmail = normalizeEmail(email);
@@ -236,7 +236,7 @@ const resolvers: IResolvers = {
       if (throttleState.blocked) {
         recordAuthFailureMetric();
         if (throttleState.unavailable) {
-          throw createGraphQLError("Login is temporarily unavailable. Try again shortly.", {
+          throw new GraphQLError("Login is temporarily unavailable. Try again shortly.", {
             extensions: { code: "SERVICE_UNAVAILABLE" },
           });
         }
@@ -252,7 +252,7 @@ const resolvers: IResolvers = {
             retryAfterSeconds,
           },
         });
-        throw createGraphQLError(
+        throw new GraphQLError(
           `Too many login attempts. Try again in ${retryAfterSeconds} seconds.`,
           {
             extensions: { code: "TOO_MANY_REQUESTS" },
@@ -299,20 +299,20 @@ const resolvers: IResolvers = {
       if (!user) {
         const failureState = await registerFailure();
         if (failureState.limiterUnavailable) {
-          throw createGraphQLError("Login is temporarily unavailable. Try again shortly.", {
+          throw new GraphQLError("Login is temporarily unavailable. Try again shortly.", {
             extensions: { code: "SERVICE_UNAVAILABLE" },
           });
         }
-        throw createGraphQLError("Invalid credentials");
+        throw new GraphQLError("Invalid credentials");
       }
       if (!user.active) {
         const failureState = await registerFailure();
         if (failureState.limiterUnavailable) {
-          throw createGraphQLError("Login is temporarily unavailable. Try again shortly.", {
+          throw new GraphQLError("Login is temporarily unavailable. Try again shortly.", {
             extensions: { code: "SERVICE_UNAVAILABLE" },
           });
         }
-        throw createGraphQLError("Your account is deactivated. Contact an administrator.", {
+        throw new GraphQLError("Your account is deactivated. Contact an administrator.", {
           extensions: { code: "FORBIDDEN" },
         });
       }
@@ -321,11 +321,11 @@ const resolvers: IResolvers = {
       if (!isCorrectPassword) {
         const failureState = await registerFailure();
         if (failureState.limiterUnavailable) {
-          throw createGraphQLError("Login is temporarily unavailable. Try again shortly.", {
+          throw new GraphQLError("Login is temporarily unavailable. Try again shortly.", {
             extensions: { code: "SERVICE_UNAVAILABLE" },
           });
         }
-        throw createGraphQLError("Invalid credentials");
+        throw new GraphQLError("Invalid credentials");
       }
 
       await clearLoginThrottle(throttleKey);
@@ -387,7 +387,7 @@ const resolvers: IResolvers = {
      */
     resetPassword: async (parent, { token, password }) => {
       if (!token || !password) {
-        throw createGraphQLError("Data provided is not valid");
+        throw new GraphQLError("Data provided is not valid");
       }
       ensurePasswordIsStrong(password);
 
@@ -399,7 +399,7 @@ const resolvers: IResolvers = {
       });
 
       if (!reset) {
-        throw createGraphQLError("Password reset token is invalid or expired", {
+        throw new GraphQLError("Password reset token is invalid or expired", {
           extensions: { code: "FORBIDDEN" },
         });
       }
@@ -408,7 +408,7 @@ const resolvers: IResolvers = {
         userId: String(reset.userId || ""),
       });
       if (!user) {
-        throw createGraphQLError("Password reset token is invalid or expired", {
+        throw new GraphQLError("Password reset token is invalid or expired", {
           extensions: { code: "FORBIDDEN" },
         });
       }
@@ -418,7 +418,7 @@ const resolvers: IResolvers = {
         password,
       });
       if (!updatedUser) {
-        throw createGraphQLError("Password reset token is invalid or expired", {
+        throw new GraphQLError("Password reset token is invalid or expired", {
           extensions: { code: "FORBIDDEN" },
         });
       }
@@ -453,7 +453,7 @@ const resolvers: IResolvers = {
       ensureThatUserIsLogged(context);
       const user = await getUser(context);
       if (!user) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw new GraphQLError("User not found or login not allowed");
       }
 
       if (user.role === "admin") {
@@ -472,7 +472,7 @@ const resolvers: IResolvers = {
         userId: String(user._id || ""),
       });
       if (!deletedUser) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw new GraphQLError("User not found or login not allowed");
       }
 
       await recordAuditEvent({
@@ -510,7 +510,7 @@ const resolvers: IResolvers = {
 
       const existingUser = await userRepository.findByEmail({ email: normalizedEmail });
       if (existingUser) {
-        throw createGraphQLError("Data provided is not valid");
+        throw new GraphQLError("Data provided is not valid");
       }
 
       const registeredUsersCount = await userRepository.countAll();
@@ -523,7 +523,7 @@ const resolvers: IResolvers = {
         active: Boolean(active),
       });
       if (!created) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw new GraphQLError("User not found or login not allowed");
       }
 
       await recordAuditEvent({
@@ -616,7 +616,7 @@ const resolvers: IResolvers = {
 
       const user = await userRepository.findById({ userId: String(_id || "") });
       if (!user) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw new GraphQLError("User not found or login not allowed");
       }
 
       const update: { role?: string; active?: boolean } = {};
@@ -635,7 +635,7 @@ const resolvers: IResolvers = {
       const shouldRevokeSessions = roleChanged || activeChanged;
 
       if (String(_id) === String(context.user._id) && update.role && update.role !== "admin") {
-        throw createGraphQLError("Administrators cannot demote themselves", {
+        throw new GraphQLError("Administrators cannot demote themselves", {
           extensions: { code: "FORBIDDEN" },
         });
       }
@@ -653,7 +653,7 @@ const resolvers: IResolvers = {
         incrementSessionVersion: shouldRevokeSessions,
       });
       if (!updatedUser) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw new GraphQLError("User not found or login not allowed");
       }
 
       await recordAuditEvent({
@@ -683,17 +683,17 @@ const resolvers: IResolvers = {
       ensureThatUserIsAdministrator(context);
 
       if (String(_id) === String(context.user._id)) {
-        throw createGraphQLError("Administrators cannot delete their own account", {
+        throw new GraphQLError("Administrators cannot delete their own account", {
           extensions: { code: "FORBIDDEN" },
         });
       }
 
       const user = await userRepository.findById({ userId: String(_id || "") });
       if (!user) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw new GraphQLError("User not found or login not allowed");
       }
       if (user.active) {
-        throw createGraphQLError("Deactivate the user account before permanent deletion", {
+        throw new GraphQLError("Deactivate the user account before permanent deletion", {
           extensions: { code: "FORBIDDEN" },
         });
       }
@@ -710,7 +710,7 @@ const resolvers: IResolvers = {
 
       const deletedUser = await userRepository.deleteById({ userId: String(_id || "") });
       if (!deletedUser) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw new GraphQLError("User not found or login not allowed");
       }
 
       await recordAuditEvent({
@@ -743,7 +743,7 @@ const resolvers: IResolvers = {
 
       const user = await userRepository.findActiveById({ userId: String(_id || "") });
       if (!user) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw new GraphQLError("User not found or login not allowed");
       }
 
       const payload = await issuePasswordResetToken({

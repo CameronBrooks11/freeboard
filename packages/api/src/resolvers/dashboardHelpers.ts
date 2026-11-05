@@ -3,7 +3,7 @@
  * Shared dashboard resolver helper logic for policy, ACL, and datasource validation.
  */
 
-import { createGraphQLError } from "graphql-yoga";
+import { GraphQLError } from "graphql";
 import {
   collectDatasourceManifestIssues,
   validateDashboardDocument,
@@ -206,7 +206,7 @@ export const ensureDashboardPayloadAllowedByExecutionMode = async ({
     trustedDashboardSettingsSignature(inputContent.settings) !==
       trustedDashboardSettingsSignature(existingContent.settings)
   ) {
-    throw createGraphQLError("Trusted dashboard settings require execution mode 'trusted'", {
+    throw new GraphQLError("Trusted dashboard settings require execution mode 'trusted'", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -217,7 +217,7 @@ export const ensureDashboardPayloadAllowedByExecutionMode = async ({
       JSON.stringify(inputTrustedWidgetSignatures) !==
       JSON.stringify(existingTrustedWidgetSignatures)
     ) {
-      throw createGraphQLError("Trusted widget capabilities require execution mode 'trusted'", {
+      throw new GraphQLError("Trusted widget capabilities require execution mode 'trusted'", {
         extensions: { code: "FORBIDDEN" },
       });
     }
@@ -257,7 +257,7 @@ const toValidationErrorExtensions = (result: ValidationResult) =>
 export const assertValidDashboardDocument = (candidate: unknown): UnknownRecord => {
   const result = validateDashboardDocument(candidate);
   if (!result.valid || !result.document) {
-    throw createGraphQLError("Dashboard document failed validation", {
+    throw new GraphQLError("Dashboard document failed validation", {
       extensions: { code: "BAD_USER_INPUT", validationErrors: toValidationErrorExtensions(result) },
     });
   }
@@ -265,7 +265,7 @@ export const assertValidDashboardDocument = (candidate: unknown): UnknownRecord 
 };
 
 const createBadInputError = (message: string) =>
-  createGraphQLError(message, {
+  new GraphQLError(message, {
     extensions: { code: "BAD_USER_INPUT" },
   });
 
@@ -437,7 +437,7 @@ export const assertCredentialAuthorAuthorized = async ({
     isNonPublicProfileId: (profileId) => publicById.get(profileId) !== true,
   });
   if (issue) {
-    throw createGraphQLError(issue, { extensions: { code: "FORBIDDEN" } });
+    throw new GraphQLError(issue, { extensions: { code: "FORBIDDEN" } });
   }
 };
 
@@ -512,7 +512,7 @@ export const getDashboardOrNotFound = async (_id: unknown): Promise<DashboardRec
     dashboardId: String(_id || "").trim(),
   });
   if (!dashboard) {
-    throw createGraphQLError("Dashboard not found");
+    throw new GraphQLError("Dashboard not found");
   }
   return dashboard;
 };
@@ -524,7 +524,7 @@ export const ensureDashboardReadable = (
 ): DashboardPermissions => {
   const permissions = resolveDashboardPermissions(dashboard, context, options);
   if (!permissions.canRead) {
-    throw createGraphQLError("Dashboard not found");
+    throw new GraphQLError("Dashboard not found");
   }
   return permissions;
 };
@@ -535,7 +535,7 @@ export const ensureDashboardEditable = (
 ): DashboardPermissions => {
   const permissions = resolveDashboardPermissions(dashboard, context);
   if (!permissions.canEdit) {
-    throw createGraphQLError("Dashboard not found");
+    throw new GraphQLError("Dashboard not found");
   }
   return permissions;
 };
@@ -546,7 +546,7 @@ export const ensureDashboardShareManageable = (
 ): DashboardPermissions => {
   const permissions = resolveDashboardPermissions(dashboard, context);
   if (!permissions.canManageSharing) {
-    throw createGraphQLError("Dashboard not found");
+    throw new GraphQLError("Dashboard not found");
   }
   return permissions;
 };
@@ -557,7 +557,7 @@ export const ensureDashboardOwnershipTransferAllowed = (
 ): DashboardPermissions => {
   const permissions = resolveDashboardPermissions(dashboard, context);
   if (!(permissions.isOwner || context.user?.role === "admin")) {
-    throw createGraphQLError("Dashboard not found");
+    throw new GraphQLError("Dashboard not found");
   }
   return permissions;
 };
@@ -568,7 +568,7 @@ export const ensureDashboardDeletable = (
 ): DashboardPermissions => {
   const permissions = resolveDashboardPermissions(dashboard, context);
   if (!permissions.canDelete) {
-    throw createGraphQLError("Dashboard not found");
+    throw new GraphQLError("Dashboard not found");
   }
   return permissions;
 };
@@ -596,7 +596,7 @@ export const ensureVisibilityTransitionAllowed = async ({
 
   const authPolicy = await getAuthPolicyState();
   if (!authPolicy.nonAdminCanPublish) {
-    throw createGraphQLError("Only administrators can publish dashboards", {
+    throw new GraphQLError("Only administrators can publish dashboards", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -619,7 +619,7 @@ export const resolveCreateVisibility = async (
     !authPolicy.nonAdminCanPublish
   ) {
     if (hasVisibility) {
-      throw createGraphQLError("Only administrators can publish dashboards", {
+      throw new GraphQLError("Only administrators can publish dashboards", {
         extensions: { code: "FORBIDDEN" },
       });
     }

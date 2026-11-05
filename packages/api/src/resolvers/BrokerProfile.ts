@@ -4,7 +4,7 @@
  */
 
 import { URL } from "url";
-import { createGraphQLError } from "graphql-yoga";
+import { GraphQLError } from "graphql";
 import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatUserHasRole, ensureThatUserIsAdministrator } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
@@ -20,7 +20,7 @@ const normalizeProtocol = (value: unknown): string => {
     .trim()
     .toLowerCase();
   if (!BROKER_PROFILE_PROTOCOLS.includes(normalized)) {
-    throw createGraphQLError("Invalid broker profile protocol", {
+    throw new GraphQLError("Invalid broker profile protocol", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
@@ -34,7 +34,7 @@ const normalizeDescription = (value: unknown): string => String(value || "").tri
 const normalizeBrokerUrl = (value: unknown, protocol: string): string => {
   const raw = String(value || "").trim();
   if (!raw) {
-    throw createGraphQLError("Broker URL is required", {
+    throw new GraphQLError("Broker URL is required", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
@@ -43,19 +43,19 @@ const normalizeBrokerUrl = (value: unknown, protocol: string): string => {
   try {
     parsed = new URL(raw);
   } catch {
-    throw createGraphQLError("Broker URL is invalid", {
+    throw new GraphQLError("Broker URL is invalid", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
 
   if (!parsed.hostname) {
-    throw createGraphQLError("Broker URL hostname is required", {
+    throw new GraphQLError("Broker URL hostname is required", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
 
   if (protocol === "mqtt" && !MQTT_ALLOWED_URL_PROTOCOLS.has(parsed.protocol)) {
-    throw createGraphQLError("MQTT broker URL must use mqtt:// or mqtts://", {
+    throw new GraphQLError("MQTT broker URL must use mqtt:// or mqtts://", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
@@ -104,12 +104,12 @@ const ensureMqttCredentialProfile = async (
     profileId: credentialProfileId,
   });
   if (!credentialProfile) {
-    throw createGraphQLError("Credential profile not found", {
+    throw new GraphQLError("Credential profile not found", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
   if (String(credentialProfile.type || "").toLowerCase() !== "basic") {
-    throw createGraphQLError("MQTT broker credentials must use a basic credential profile", {
+    throw new GraphQLError("MQTT broker credentials must use a basic credential profile", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
@@ -142,7 +142,7 @@ const toDuplicateNameGraphQLError = (error: unknown) => {
         })
       : null;
   if (Number(typedError?.code) === 11000 && typedError?.keyPattern?.name) {
-    return createGraphQLError("Broker profile name must be unique", {
+    return new GraphQLError("Broker profile name must be unique", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
@@ -151,7 +151,7 @@ const toDuplicateNameGraphQLError = (error: unknown) => {
     (String(typedError?.constraint || "").includes("broker_profiles_name") ||
       String(typedError?.detail || "").includes("(name)="))
   ) {
-    return createGraphQLError("Broker profile name must be unique", {
+    return new GraphQLError("Broker profile name must be unique", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
@@ -182,7 +182,7 @@ const resolvers: IResolvers = {
       const protocol = normalizeProtocol(input?.protocol);
       const name = normalizeName(input?.name);
       if (!name) {
-        throw createGraphQLError("Broker profile name is required", {
+        throw new GraphQLError("Broker profile name is required", {
           extensions: { code: "BAD_USER_INPUT" },
         });
       }
@@ -232,14 +232,14 @@ const resolvers: IResolvers = {
 
       const existing = await brokerProfileRepository.findById({ profileId: _id });
       if (!existing) {
-        throw createGraphQLError("Broker profile not found");
+        throw new GraphQLError("Broker profile not found");
       }
 
       const protocol =
         input?.protocol === undefined ? existing.protocol : normalizeProtocol(input.protocol);
       const name = input?.name === undefined ? existing.name : normalizeName(input.name);
       if (!name) {
-        throw createGraphQLError("Broker profile name is required", {
+        throw new GraphQLError("Broker profile name is required", {
           extensions: { code: "BAD_USER_INPUT" },
         });
       }
@@ -289,7 +289,7 @@ const resolvers: IResolvers = {
       }
 
       if (!updated) {
-        throw createGraphQLError("Broker profile not found");
+        throw new GraphQLError("Broker profile not found");
       }
 
       await recordAuditEvent({
@@ -311,7 +311,7 @@ const resolvers: IResolvers = {
 
       const deleted = await brokerProfileRepository.deleteById({ profileId: _id });
       if (!deleted) {
-        throw createGraphQLError("Broker profile not found");
+        throw new GraphQLError("Broker profile not found");
       }
 
       await recordAuditEvent({
