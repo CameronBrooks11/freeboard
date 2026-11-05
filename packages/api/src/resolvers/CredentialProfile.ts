@@ -3,7 +3,7 @@
  * GraphQL resolver implementations for credential profile management.
  */
 
-import { createGraphQLError } from "graphql-yoga";
+import { GraphQLError } from "graphql";
 import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatUserHasRole, ensureThatUserIsAdministrator } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
@@ -23,7 +23,7 @@ const normalizeProfileType = (value: unknown): string => {
     .trim()
     .toLowerCase();
   if (!CREDENTIAL_PROFILE_TYPES.includes(normalized)) {
-    throw createGraphQLError("Invalid credential profile type", {
+    throw new GraphQLError("Invalid credential profile type", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
@@ -59,7 +59,7 @@ const validateProfilePayload = ({
 
   if (type === "bearer") {
     if (!String(secret?.token || "").trim()) {
-      throw createGraphQLError("Bearer credential profile requires secret.token", {
+      throw new GraphQLError("Bearer credential profile requires secret.token", {
         extensions: { code: "BAD_USER_INPUT" },
       });
     }
@@ -68,12 +68,12 @@ const validateProfilePayload = ({
 
   if (type === "basic") {
     if (!String(secret?.username || "")) {
-      throw createGraphQLError("Basic credential profile requires secret.username", {
+      throw new GraphQLError("Basic credential profile requires secret.username", {
         extensions: { code: "BAD_USER_INPUT" },
       });
     }
     if (!String(secret?.password || "")) {
-      throw createGraphQLError("Basic credential profile requires secret.password", {
+      throw new GraphQLError("Basic credential profile requires secret.password", {
         extensions: { code: "BAD_USER_INPUT" },
       });
     }
@@ -82,12 +82,12 @@ const validateProfilePayload = ({
 
   if (type === "header") {
     if (!String(metadata?.headerName || "").trim()) {
-      throw createGraphQLError("Header credential profile requires metadata.headerName", {
+      throw new GraphQLError("Header credential profile requires metadata.headerName", {
         extensions: { code: "BAD_USER_INPUT" },
       });
     }
     if (!String(secret?.headerValue || "")) {
-      throw createGraphQLError("Header credential profile requires secret.headerValue", {
+      throw new GraphQLError("Header credential profile requires secret.headerValue", {
         extensions: { code: "BAD_USER_INPUT" },
       });
     }
@@ -127,7 +127,7 @@ const toDuplicateNameGraphQLError = (error: unknown) => {
         })
       : null;
   if (Number(typedError?.code) === 11000 && typedError?.keyPattern?.name) {
-    return createGraphQLError("Credential profile name must be unique", {
+    return new GraphQLError("Credential profile name must be unique", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
@@ -136,7 +136,7 @@ const toDuplicateNameGraphQLError = (error: unknown) => {
     (String(typedError?.constraint || "").includes("credential_profiles_name") ||
       String(typedError?.detail || "").includes("(name)="))
   ) {
-    return createGraphQLError("Credential profile name must be unique", {
+    return new GraphQLError("Credential profile name must be unique", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
@@ -211,7 +211,7 @@ const resolvers: IResolvers = {
 
       const existing = await credentialProfileRepository.findById({ profileId: _id });
       if (!existing) {
-        throw createGraphQLError("Credential profile not found");
+        throw new GraphQLError("Credential profile not found");
       }
 
       const nextType = input?.type === undefined ? existing.type : normalizeProfileType(input.type);
@@ -275,7 +275,7 @@ const resolvers: IResolvers = {
       });
 
       if (!updated) {
-        throw createGraphQLError("Credential profile not found");
+        throw new GraphQLError("Credential profile not found");
       }
 
       return toCredentialProfileResponse(updated);
@@ -288,7 +288,7 @@ const resolvers: IResolvers = {
         profileId: _id,
       });
       if (!deleted) {
-        throw createGraphQLError("Credential profile not found");
+        throw new GraphQLError("Credential profile not found");
       }
 
       await recordAuditEvent({

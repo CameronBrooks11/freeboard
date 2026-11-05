@@ -3,7 +3,7 @@
  * Admin service-account lifecycle + operational telemetry resolvers.
  */
 
-import { createGraphQLError } from "graphql-yoga";
+import { GraphQLError } from "graphql";
 import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatPrincipalHasServiceScope, ensureThatUserIsAdministrator } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
@@ -91,13 +91,13 @@ const ensureServiceAccountInputValid = ({
 }) => {
   const normalizedName = String(name || "").trim();
   if (!normalizedName || normalizedName.length < 3) {
-    throw createGraphQLError("Service account name must be at least 3 characters", {
+    throw new GraphQLError("Service account name must be at least 3 characters", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
   const normalizedScopes = toScopeValues(scopes);
   if (!normalizedScopes.length) {
-    throw createGraphQLError("At least one service account scope is required", {
+    throw new GraphQLError("At least one service account scope is required", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
@@ -172,11 +172,11 @@ const resolvers: IResolvers = {
       ensureThatUserIsAdministrator(context);
       const normalizedAccountId = toComparableId(serviceAccountId);
       if (!normalizedAccountId) {
-        throw createGraphQLError("Service account not found");
+        throw new GraphQLError("Service account not found");
       }
       const account = await serviceAccountRepository.findById({ accountId: normalizedAccountId });
       if (!account) {
-        throw createGraphQLError("Service account not found");
+        throw new GraphQLError("Service account not found");
       }
       const tokens =
         await serviceAccountTokenRepository.listByServiceAccountIdSortedByCreatedAtDesc({
@@ -243,7 +243,7 @@ const resolvers: IResolvers = {
       ensureThatUserIsAdministrator(context);
       const existing = await serviceAccountRepository.findById({ accountId: _id });
       if (!existing) {
-        throw createGraphQLError("Service account not found");
+        throw new GraphQLError("Service account not found");
       }
 
       const updatePayload: {
@@ -255,7 +255,7 @@ const resolvers: IResolvers = {
       if (Object.prototype.hasOwnProperty.call(input || {}, "name")) {
         const name = String(input.name || "").trim();
         if (!name || name.length < 3) {
-          throw createGraphQLError("Service account name must be at least 3 characters", {
+          throw new GraphQLError("Service account name must be at least 3 characters", {
             extensions: { code: "BAD_USER_INPUT" },
           });
         }
@@ -270,7 +270,7 @@ const resolvers: IResolvers = {
       if (Object.prototype.hasOwnProperty.call(input || {}, "scopes")) {
         const scopes = toScopeValues(input.scopes);
         if (!scopes.length) {
-          throw createGraphQLError("At least one service account scope is required", {
+          throw new GraphQLError("At least one service account scope is required", {
             extensions: { code: "BAD_USER_INPUT" },
           });
         }
@@ -282,7 +282,7 @@ const resolvers: IResolvers = {
         patch: updatePayload,
       });
       if (!updated) {
-        throw createGraphQLError("Service account not found");
+        throw new GraphQLError("Service account not found");
       }
 
       await recordAuditEvent({
@@ -302,7 +302,7 @@ const resolvers: IResolvers = {
       ensureThatUserIsAdministrator(context);
       const deleted = await serviceAccountRepository.deleteById({ accountId: _id });
       if (!deleted) {
-        throw createGraphQLError("Service account not found");
+        throw new GraphQLError("Service account not found");
       }
       await serviceAccountTokenRepository.revokeActiveByServiceAccountId({
         serviceAccountId: deleted._id,
@@ -331,7 +331,7 @@ const resolvers: IResolvers = {
         actorUserId: toComparableId(context.user?._id),
       });
       if (!issued) {
-        throw createGraphQLError("Service account not found");
+        throw new GraphQLError("Service account not found");
       }
       await recordAuditEvent({
         actorUserId: context.user?._id || null,
@@ -354,7 +354,7 @@ const resolvers: IResolvers = {
       ensureThatUserIsAdministrator(context);
       const existing = await serviceAccountTokenRepository.findById({ tokenId: _id });
       if (!existing) {
-        throw createGraphQLError("Service account token not found");
+        throw new GraphQLError("Service account token not found");
       }
 
       await serviceAccountTokenRepository.revokeById({
@@ -370,7 +370,7 @@ const resolvers: IResolvers = {
         actorUserId: toComparableId(context.user?._id),
       });
       if (!issued) {
-        throw createGraphQLError("Service account not found");
+        throw new GraphQLError("Service account not found");
       }
       await recordAuditEvent({
         actorUserId: context.user?._id || null,

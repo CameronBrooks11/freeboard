@@ -3,7 +3,7 @@
  * GraphQL resolver for datasource runtime session token minting.
  */
 
-import { createGraphQLError } from "graphql-yoga";
+import { GraphQLError } from "graphql";
 import type { IResolvers } from "@graphql-tools/utils";
 import type { ApiContext } from "../context.js";
 import { recordAuditEvent } from "../audit.js";
@@ -33,11 +33,11 @@ const toGraphQLError = (
         : typedError.statusCode === 503
           ? "SERVICE_UNAVAILABLE"
           : "FORBIDDEN";
-    return createGraphQLError(typedError.message || fallbackMessage, {
+    return new GraphQLError(typedError.message || fallbackMessage, {
       extensions: { code },
     });
   }
-  return createGraphQLError(typedError?.message || fallbackMessage);
+  return new GraphQLError(typedError?.message || fallbackMessage);
 };
 
 const enforceMintRateLimit = async ({
@@ -183,7 +183,7 @@ const resolvers: IResolvers = {
         dashboardId: String(dashboardId || "").trim(),
       });
       if (!dashboard) {
-        throw createGraphQLError("Dashboard not found");
+        throw new GraphQLError("Dashboard not found");
       }
 
       try {

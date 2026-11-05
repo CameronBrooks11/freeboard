@@ -3,7 +3,7 @@
  * GraphQL resolver implementations for auth/registration policy controls.
  */
 
-import { createGraphQLError } from "graphql-yoga";
+import { GraphQLError } from "graphql";
 import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatUserIsAdministrator } from "../auth.js";
 import { config } from "../config.js";
@@ -65,7 +65,7 @@ const resolvers: IResolvers = {
       ensureThatUserIsAdministrator(context);
 
       if (config.policyEditLock) {
-        throw createGraphQLError("Auth policy is locked by environment configuration", {
+        throw new GraphQLError("Auth policy is locked by environment configuration", {
           extensions: { code: "FORBIDDEN" },
         });
       }

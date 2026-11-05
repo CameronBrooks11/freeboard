@@ -3,7 +3,8 @@
  * GraphQL resolver implementations for dashboard visibility, sharing, and ACL flows.
  */
 
-import { createGraphQLError, createPubSub } from "graphql-yoga";
+import { GraphQLError } from "graphql";
+import { createPubSub } from "graphql-yoga";
 import type { IResolvers } from "@graphql-tools/utils";
 import { ensureThatUserHasRole, ensureThatUserIsLogged } from "../auth.js";
 import { recordAuditEvent } from "../audit.js";
@@ -67,7 +68,7 @@ const readRequiredExpectedDocumentRevision = (input: unknown): number => {
       ? (input as Record<string, unknown>).expectedDocumentRevision
       : undefined;
   if (typeof raw !== "number" || !Number.isInteger(raw) || raw < 1) {
-    throw createGraphQLError(
+    throw new GraphQLError(
       "expectedDocumentRevision (a positive integer) is required when updating the document.",
       { extensions: { code: "BAD_USER_INPUT" } },
     );
@@ -88,7 +89,7 @@ const updateDashboardOrConflict = async (params: {
     return await dashboardRepository.updateById(params);
   } catch (error) {
     if (error instanceof DashboardRevisionConflictError) {
-      throw createGraphQLError(
+      throw new GraphQLError(
         "Dashboard was changed since you loaded it. Reload to get the latest version.",
         { extensions: { code: "CONFLICT", currentRevision: error.currentRevision } },
       );
@@ -118,14 +119,14 @@ const resolvers: IResolvers = {
     dashboardByShareToken: async (parent, { shareToken }, context) => {
       const normalizedToken = String(shareToken || "").trim();
       if (!normalizedToken) {
-        throw createGraphQLError("Dashboard not found");
+        throw new GraphQLError("Dashboard not found");
       }
 
       const dashboard = await dashboardRepository.findByShareToken({
         shareToken: normalizedToken,
       });
       if (!dashboard) {
-        throw createGraphQLError("Dashboard not found");
+        throw new GraphQLError("Dashboard not found");
       }
 
       const permissions = ensureDashboardReadable(dashboard, context, {
@@ -189,7 +190,7 @@ const resolvers: IResolvers = {
         user: context.user._id,
       });
       if (!createdDashboard) {
-        throw createGraphQLError("Dashboard not found");
+        throw new GraphQLError("Dashboard not found");
       }
 
       await recordAuditEvent({
@@ -219,7 +220,7 @@ const resolvers: IResolvers = {
         Object.prototype.hasOwnProperty.call(sanitizedInput, "document") &&
         Object.prototype.hasOwnProperty.call(sanitizedInput, "visibility")
       ) {
-        throw createGraphQLError(
+        throw new GraphQLError(
           "Change visibility with setDashboardVisibility, not in a document update.",
           { extensions: { code: "BAD_USER_INPUT" } },
         );
@@ -282,7 +283,7 @@ const resolvers: IResolvers = {
           : undefined,
       });
       if (!updated) {
-        throw createGraphQLError("Dashboard not found");
+        throw new GraphQLError("Dashboard not found");
       }
 
       if (nextShareTokenVersion !== null) {
@@ -315,7 +316,7 @@ const resolvers: IResolvers = {
         dashboardId: String(_id || "").trim(),
       });
       if (!deleted) {
-        throw createGraphQLError("Dashboard not found");
+        throw new GraphQLError("Dashboard not found");
       }
 
       await recordAuditEvent({
@@ -369,7 +370,7 @@ const resolvers: IResolvers = {
         },
       });
       if (!updated) {
-        throw createGraphQLError("Dashboard not found");
+        throw new GraphQLError("Dashboard not found");
       }
 
       if (nextShareTokenVersion !== null) {
@@ -410,7 +411,7 @@ const resolvers: IResolvers = {
         },
       });
       if (!updated) {
-        throw createGraphQLError("Dashboard not found");
+        throw new GraphQLError("Dashboard not found");
       }
 
       await recordShareTokenRevocation({
@@ -439,20 +440,20 @@ const resolvers: IResolvers = {
 
       const normalizedEmail = normalizeEmail(email);
       if (!isValidEmail(normalizedEmail)) {
-        throw createGraphQLError("The email is not valid");
+        throw new GraphQLError("The email is not valid");
       }
       const userByEmail = await userRepository.findByEmail({
         email: normalizedEmail,
       });
       const user = userByEmail?.active ? userByEmail : null;
       if (!user) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw new GraphQLError("User not found or login not allowed");
       }
 
       const ownerUserId = toComparableId(existing.user);
       const targetUserId = toComparableId(user._id);
       if (ownerUserId === targetUserId) {
-        throw createGraphQLError("Owner access is managed through ownership only", {
+        throw new GraphQLError("Owner access is managed through ownership only", {
           extensions: { code: "FORBIDDEN" },
         });
       }
@@ -470,7 +471,7 @@ const resolvers: IResolvers = {
         },
       });
       if (!updated) {
-        throw createGraphQLError("Dashboard not found");
+        throw new GraphQLError("Dashboard not found");
       }
 
       await recordAuditEvent({
@@ -498,7 +499,7 @@ const resolvers: IResolvers = {
       const ownerUserId = toComparableId(existing.user);
       const targetUserId = toComparableId(userId);
       if (ownerUserId === targetUserId) {
-        throw createGraphQLError("Owner access cannot be revoked from ACL", {
+        throw new GraphQLError("Owner access cannot be revoked from ACL", {
           extensions: { code: "FORBIDDEN" },
         });
       }
@@ -513,7 +514,7 @@ const resolvers: IResolvers = {
         userId: String(targetUserId || ""),
       });
       if (!updated) {
-        throw createGraphQLError("Dashboard not found");
+        throw new GraphQLError("Dashboard not found");
       }
 
       if (wasPresent) {
@@ -541,7 +542,7 @@ const resolvers: IResolvers = {
         userId: String(newOwnerUserId || "").trim(),
       });
       if (!nextOwner) {
-        throw createGraphQLError("User not found or login not allowed");
+        throw new GraphQLError("User not found or login not allowed");
       }
 
       const currentOwnerUserId = toComparableId(existing.user);
@@ -572,7 +573,7 @@ const resolvers: IResolvers = {
         },
       });
       if (!updated) {
-        throw createGraphQLError("Dashboard not found");
+        throw new GraphQLError("Dashboard not found");
       }
 
       await recordAuditEvent({
@@ -601,11 +602,11 @@ const resolvers: IResolvers = {
         const dashboardId = String(args._id || "").trim();
         const dashboard = await dashboardRepository.findById({ dashboardId });
         if (!dashboard) {
-          throw createGraphQLError("Dashboard not found");
+          throw new GraphQLError("Dashboard not found");
         }
 
         if (!resolveDashboardPermissions(dashboard, context).canRead) {
-          throw createGraphQLError("Dashboard not found");
+          throw new GraphQLError("Dashboard not found");
         }
 
         // Re-fetch, re-authorize, and re-project on EVERY event against this

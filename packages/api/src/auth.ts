@@ -3,7 +3,7 @@
  * Authentication and authorization utilities for Freeboard GraphQL API.
  */
 
-import { createGraphQLError } from "graphql-yoga";
+import { GraphQLError } from "graphql";
 import { config } from "./config.js";
 import jwt from "jsonwebtoken";
 import type { StringValue } from "ms";
@@ -32,7 +32,7 @@ const ensureJwtPayloadObject = (decoded: string | jwt.JwtPayload): jwt.JwtPayloa
   if (decoded && typeof decoded === "object") {
     return decoded;
   }
-  throw createGraphQLError("Authentication token payload is invalid", {
+  throw new GraphQLError("Authentication token payload is invalid", {
     extensions: { code: "UNAUTHENTICATED" },
   });
 };
@@ -50,7 +50,7 @@ export const ensureLimitOfUsersIsNotReached = (numberOfCurrentlyUsersRegistered:
   }
 
   if (numberOfCurrentlyUsersRegistered >= usersLimit) {
-    throw createGraphQLError(
+    throw new GraphQLError(
       "The maximum number of users allowed has been reached. You must contact the administrator of the service in order to register",
     );
   }
@@ -66,7 +66,7 @@ export const ensureThatUserIsLogged: (
   context: ApiContext,
 ) => asserts context is ApiContext & { user: UserPrincipal } = (context) => {
   if (!context.user) {
-    throw createGraphQLError("You must be logged in to perform this action", {
+    throw new GraphQLError("You must be logged in to perform this action", {
       extensions: { code: "UNAUTHENTICATED" },
     });
   }
@@ -81,7 +81,7 @@ export const ensureThatUserIsLogged: (
 export const ensureThatUserIsAdministrator = (context: ApiContext): void => {
   ensureThatUserIsLogged(context);
   if (context.user.role !== "admin") {
-    throw createGraphQLError("You must be an administrator to perform this action", {
+    throw new GraphQLError("You must be an administrator to perform this action", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -96,7 +96,7 @@ export const ensureThatUserIsAdministrator = (context: ApiContext): void => {
 export const ensureThatUserHasRole = (context: ApiContext, allowedRoles: string[] = []): void => {
   ensureThatUserIsLogged(context);
   if (!allowedRoles.includes(context.user.role)) {
-    throw createGraphQLError("You do not have access to perform this action", {
+    throw new GraphQLError("You do not have access to perform this action", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -118,7 +118,7 @@ export const ensureThatPrincipalHasServiceScope = (
 
   const principal = context.serviceAccount as ServiceAccountPrincipal | undefined;
   if (!principal) {
-    throw createGraphQLError("You must be authenticated to perform this action", {
+    throw new GraphQLError("You must be authenticated to perform this action", {
       extensions: { code: "UNAUTHENTICATED" },
     });
   }
@@ -140,7 +140,7 @@ export const ensureThatPrincipalHasServiceScope = (
     ),
   );
   if (!hasScope) {
-    throw createGraphQLError("Service account scope does not allow this action", {
+    throw new GraphQLError("Service account scope does not allow this action", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -160,11 +160,11 @@ export const getUser = async (context: ApiContext) => {
 
   const _id = context.user._id || null;
   if (!_id) {
-    throw createGraphQLError("You must be logged in to perform this action");
+    throw new GraphQLError("You must be logged in to perform this action");
   }
   const user = await userRepository.findById({ userId: String(_id) });
   if (!user) {
-    throw createGraphQLError("You must be logged in to perform this action");
+    throw new GraphQLError("You must be logged in to perform this action");
   }
 
   return user;
