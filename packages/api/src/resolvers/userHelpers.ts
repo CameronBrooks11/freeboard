@@ -3,7 +3,7 @@
  * Shared user resolver helper logic for auth, invites, resets, and offboarding.
  */
 
-import { createGraphQLError } from "graphql-yoga";
+import { GraphQLError } from "graphql";
 import { dataStore } from "../data/index.js";
 import type { DashboardAclEntryRecord } from "../data/contracts.js";
 import { createAuthToken } from "../auth.js";
@@ -75,12 +75,12 @@ export const ensureSelfRegistrationAllowed = (registrationMode: unknown): void =
   }
 
   if (registrationMode === "invite") {
-    throw createGraphQLError("Invitation is required to create an account", {
+    throw new GraphQLError("Invitation is required to create an account", {
       extensions: { code: "FORBIDDEN" },
     });
   }
 
-  throw createGraphQLError("Self-registration is disabled", {
+  throw new GraphQLError("Self-registration is disabled", {
     extensions: { code: "FORBIDDEN" },
   });
 };
@@ -90,7 +90,7 @@ export const ensureAtLeastOneActiveAdminWillRemain = async (excludedUserId: unkn
     excludedUserId: String(excludedUserId || "").trim(),
   });
   if (remainingAdmins === 0) {
-    throw createGraphQLError("At least one active administrator must remain", {
+    throw new GraphQLError("At least one active administrator must remain", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -132,7 +132,7 @@ export const reconcileDashboardAccessForRemovedUser = async ({
   );
 
   if (ownedDashboards.length > 0 && !normalizedReplacementOwnerUserId) {
-    throw createGraphQLError(
+    throw new GraphQLError(
       "Cannot remove user while owning dashboards without an active administrator recovery owner",
       {
         extensions: { code: "FORBIDDEN" },
@@ -249,13 +249,13 @@ export const toInviteView = (invite: InviteLike) => ({
 
 export const ensurePasswordIsStrong = (password: unknown): void => {
   if (!isStrongPassword(password)) {
-    throw createGraphQLError(`The password is not secure enough. ${credentialPolicy.password}.`);
+    throw new GraphQLError(`The password is not secure enough. ${credentialPolicy.password}.`);
   }
 };
 
 export const ensureEmailIsValid = (email: unknown): void => {
   if (!isValidEmail(email)) {
-    throw createGraphQLError(`The email is not valid. ${credentialPolicy.email}.`);
+    throw new GraphQLError(`The email is not valid. ${credentialPolicy.email}.`);
   }
 };
 
@@ -302,7 +302,7 @@ export const issueInviteToken = async ({
 
   const existingUser = await userRepository.findByEmail({ email: normalizedEmail });
   if (existingUser) {
-    throw createGraphQLError("Data provided is not valid");
+    throw new GraphQLError("Data provided is not valid");
   }
 
   const now = new Date();

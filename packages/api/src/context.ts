@@ -3,9 +3,9 @@
  * Creates the GraphQL execution context with PubSub and authenticated principal state.
  */
 
-import { createGraphQLError, createPubSub } from "graphql-yoga";
+import { GraphQLError } from "graphql";
+import { createPubSub } from "graphql-yoga";
 import type { Plugin } from "graphql-yoga";
-import type { GraphQLError } from "graphql";
 import type { IncomingMessage } from "http";
 import { validateAuthToken, type AuthTokenClaims } from "./auth.js";
 import { authenticateServiceAccountToken } from "./serviceAccountAuth.js";
@@ -50,7 +50,7 @@ export type ApiContext = {
  */
 const rejectPresentedToken = (context: ApiContext): ApiContext => {
   recordAuthFailureMetric();
-  context.authenticationError = createGraphQLError(
+  context.authenticationError = new GraphQLError(
     "Your session has expired or is no longer valid. Log in again.",
     { extensions: { code: "UNAUTHENTICATED" } },
   );
