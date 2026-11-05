@@ -4,7 +4,7 @@ This project prioritizes maintainability, security, and predictable operations o
 
 ## Development Baseline
 
-- Node.js `24.13.1` and npm `11.10.0` (see `.nvmrc` and `package.json` engines).
+- Node.js `24.22.1` and npm `11.19.1` (see `.nvmrc` and `packageManager` in `package.json`).
 - Install deps: `npm install`
 - Run quality gate locally before opening a PR:
 

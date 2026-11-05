@@ -6,9 +6,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  MAINLINE_NODE_IMAGE: node:24.13.1-alpine
+  MAINLINE_NODE_IMAGE: node:24.22.1-alpine
   LEGACY_ARMV7_NODE_IMAGE: node:22.22.0-alpine3.23
-  NPM_VERSION: 11.10.0
+  NPM_VERSION: 11.19.1
 
 # Intentionally no cancel-in-progress concurrency for publish builds:
 # rapid sequential pushes can otherwise skip changed-image publishes.

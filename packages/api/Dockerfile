@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
-ARG NODE_IMAGE=node:24.13.1-alpine
-ARG NPM_VERSION=11.10.0
+ARG NODE_IMAGE=node:24.22.1-alpine
+ARG NPM_VERSION=11.19.1
 
 FROM ${NODE_IMAGE} AS build
 WORKDIR /app
