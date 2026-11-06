@@ -139,6 +139,11 @@ kiosk_boot_config_lines:
   - gpu_mem_512=128
   - gpu_mem_1024=196
   - dtoverlay=vc4-kms-v3d
+# Whatever kiosk_boot_config_lines adds to config.txt goes between these
+# markers, and rollback removes exactly that block.
+kiosk_boot_config_marker_label: freeboard-kiosk boot tuning
+kiosk_boot_config_marker_begin: "# BEGIN {{ kiosk_boot_config_marker_label }}"
+kiosk_boot_config_marker_end: "# END {{ kiosk_boot_config_marker_label }}"
 kiosk_boot_remove_config_regexes:
   - "^dtoverlay=vc4-fkms-v3d$"
 kiosk_boot_cmdline_required_tokens:

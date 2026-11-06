@@ -28,8 +28,6 @@
           backup: "{{ kiosk_xwrapper_config_dest }}{{ kiosk_config_backup_suffix }}"
         - path: "{{ kiosk_xorg_config_dest }}"
           backup: "{{ kiosk_xorg_config_dest }}{{ kiosk_config_backup_suffix }}"
-        - path: "{{ kiosk_boot_config_path }}"
-          backup: "{{ kiosk_boot_config_path }}{{ kiosk_boot_backup_suffix }}"
         - path: "{{ kiosk_boot_cmdline_path }}"
           backup: "{{ kiosk_boot_cmdline_path }}{{ kiosk_boot_backup_suffix }}"
       loop_control:
@@ -47,3 +45,11 @@
     - name: Reload systemd daemon after rollback
       ansible.builtin.systemd:
         daemon_reload: true
+
+    # config.txt is not restored from its backup, which discarded every change
+    # made after the first provision. Last, because it can refuse: the rest of
+    # the rollback has run by then. See the task file.
+    - name: Roll back boot config settings
+      ansible.builtin.include_role:
+        name: kiosk_boot_tuning
+        tasks_from: rollback_config_txt.yml

@@ -25,24 +25,8 @@
     force: false
   loop: "{{ kiosk_boot_tuning_file_stats.results }}"
 
-- name: Ensure required boot config lines
-  ansible.builtin.lineinfile:
-    path: "{{ kiosk_boot_config_path }}"
-    regexp: "^{{ (item.split('=')[0] | regex_escape) }}="
-    line: "{{ item }}"
-    state: present
-    insertafter: EOF
-    owner: root
-    group: root
-    mode: "0644"
-  loop: "{{ kiosk_boot_config_lines }}"
-
-- name: Remove deprecated boot config lines
-  ansible.builtin.lineinfile:
-    path: "{{ kiosk_boot_config_path }}"
-    regexp: "{{ item }}"
-    state: absent
-  loop: "{{ kiosk_boot_remove_config_regexes }}"
+- name: Apply boot config settings
+  ansible.builtin.include_tasks: config_txt.yml
 
 - name: Install splashscreen packages
   ansible.builtin.apt:
