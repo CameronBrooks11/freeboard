@@ -278,6 +278,8 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      - name: Validate Node/npm pins
+        run: npm run check:toolchain
       - name: Install
         run: npm ci
       - name: Lint

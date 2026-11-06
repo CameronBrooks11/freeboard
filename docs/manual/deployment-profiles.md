@@ -114,7 +114,7 @@ Container image architecture contract:
 Architecture verification command:
 
 ```bash
-docker buildx imagetools inspect node:24.13.1-alpine
+docker buildx imagetools inspect node:24.22.1-alpine
 ```
 
 Reference links:

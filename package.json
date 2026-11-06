@@ -6,7 +6,7 @@
     "node": ">=24.13.1 <25",
     "npm": ">=11.10.0 <12"
   },
-  "packageManager": "npm@11.10.0",
+  "packageManager": "npm@11.19.1",
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:services": "npm run build:shared && npm run build:core && concurrently --kill-others --names \"ui,api,gateway\" --prefix \"[{name}]\" \"npm run dev:ui\" \"npm run dev:raw --workspace=packages/api\" \"npm run dev:raw --workspace=packages/gateway\"",
@@ -64,6 +64,7 @@
     "check:ts:debt": "node scripts/check-ts-source-debt.mjs",
     "check:ts:source-artifacts": "node scripts/check-ts-source-artifacts.mjs",
     "check:runtime-deps": "node scripts/check-runtime-dependencies.mjs",
+    "check:toolchain": "node scripts/check-toolchain-pins.mjs",
     "check:deps:tree": "npm ls --all",
     "check:repo:legacy-residue": "node scripts/check-repo-legacy-residue.mjs",
     "check:db:ready": "node scripts/check-db-ready.mjs",
