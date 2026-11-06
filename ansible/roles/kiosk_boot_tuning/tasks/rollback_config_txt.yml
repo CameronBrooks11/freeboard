@@ -1,0 +1,47 @@
+---
+# Undo config_txt.yml by removing its marked block, and nothing else.
+#
+# Rollback used to copy the first-provision backup over config.txt, which threw
+# away every change made since -- by a later run with different vars, by an
+# operator, or by another tool -- and reported success (#338).
+#
+# A host provisioned before the block existed has the role's settings as
+# unmarked lines, and possibly the [pi5] overlay the old task overwrote. Which
+# lines are whose cannot be told apart from here, so rollback says so and names
+# the pre-provision copy rather than guessing.
+
+- name: Stat boot config and its pre-provision backup
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ kiosk_boot_config_path }}"
+    - "{{ kiosk_boot_config_path }}{{ kiosk_boot_backup_suffix }}"
+  register: kiosk_boot_tuning_rollback_stats
+
+- name: Read boot config for rollback
+  ansible.builtin.slurp:
+    src: "{{ kiosk_boot_config_path }}"
+  register: kiosk_boot_tuning_rollback_raw
+  when: kiosk_boot_tuning_rollback_stats.results[0].stat.exists
+
+- name: Remove the managed boot config block
+  ansible.builtin.blockinfile:
+    path: "{{ kiosk_boot_config_path }}"
+    marker: "# {mark} {{ kiosk_boot_config_marker_label }}"
+    state: absent
+  when: kiosk_boot_tuning_rollback_stats.results[0].stat.exists
+
+# Failing is the point: the play used to report success having overwritten the
+# file. rollback.yml runs this last, so the rest of the rollback has happened.
+- name: Refuse to guess at a boot config provisioned without the managed block
+  ansible.builtin.fail:
+    msg: >-
+      {{ kiosk_boot_config_path }} has no '{{ kiosk_boot_config_marker_begin }}'
+      block, but {{ kiosk_boot_config_path }}{{ kiosk_boot_backup_suffix }}
+      exists, so it was provisioned by an earlier freeboard that edited lines in
+      place. Rollback cannot tell those lines from later changes and has left the
+      file as it is. Compare it with the backup and edit it by hand.
+  when:
+    - kiosk_boot_tuning_rollback_stats.results[0].stat.exists
+    - kiosk_boot_tuning_rollback_stats.results[1].stat.exists
+    - kiosk_boot_config_marker_begin not in (kiosk_boot_tuning_rollback_raw.content | b64decode).splitlines()

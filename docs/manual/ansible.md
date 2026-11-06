@@ -160,7 +160,10 @@ Local checks:
 ansible-lint ansible/playbook.yml ansible/rollback.yml
 ansible-playbook -i localhost, ansible/playbook.yml --syntax-check -e "freeboard_target_group=all kiosk_player_url=http://localhost:8080/s/demo"
 ansible-playbook -i localhost, ansible/rollback.yml --syntax-check -e "freeboard_target_group=all"
+ansible/tests/boot_config/run.sh
 ```
+
+`run.sh` runs the boot tuning role's `config.txt` provisioning and rollback against copies of a stock Raspberry Pi OS `config.txt` in a temporary directory. It needs only `ansible-playbook`, no root, and touches nothing outside that directory.
 
 CI check workflow: `.github/workflows/ansible-quality.yml`
 
@@ -194,6 +197,10 @@ ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i localhost, -c local ansib
 ```
 
 This stops the kiosk service, restores managed backups where present, removes managed service/env files, and reloads systemd.
+
+`config.txt` is the exception: it is not restored from its backup. `kiosk_boot_tuning` writes its settings in one block between `# BEGIN freeboard-kiosk boot tuning` and `# END freeboard-kiosk boot tuning`, and rollback removes that block and nothing else, so changes made to the file since provisioning survive. A setting already in effect for every board is not repeated in the block; the block opens with `[all]`, so a board filter earlier in the file does not capture it.
+
+A `config.txt` provisioned by an earlier freeboard has the role's settings as unmarked lines. Rollback cannot tell those from later changes, so it leaves the file alone and fails with a message naming the pre-provision copy (`config.txt.freeboard-kiosk.bak`) to compare against by hand. It does this last, after the rest of the rollback has run.
 
 ## Post-apply verification
 

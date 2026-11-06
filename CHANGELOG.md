@@ -23,6 +23,16 @@ The first formal public release will appear as the first official release entry 
 
 ### Fixed
 
+- **Boot tuning no longer overwrites the Raspberry Pi 5 overlay, and rollback no
+  longer discards later `config.txt` changes.** Provisioning matched
+  `dtoverlay=vc4-kms-v3d` by its key alone, so it replaced the last overlay in the
+  file. On stock Raspberry Pi OS that is `dtoverlay=nospi10` under `[pi5]`.
+  Rollback copied the first-provision backup over `config.txt`, discarding every
+  change made since, and reported success. The role now writes its settings in one
+  marked block under `[all]`, and leaves out any that are already in effect for
+  every board. Rollback removes only that block. A `config.txt` provisioned by an
+  earlier freeboard has no block, so rollback leaves it unchanged and fails with
+  the path of the backup to compare against.
 - **Live dashboard updates connect again.** Since the move to Apollo Client 4,
   the dashboard subscription sent an extra `operationType` request field, which
   the API rejects with HTTP 400, so live updates never arrived. A failed

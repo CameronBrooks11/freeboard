@@ -1,0 +1,22 @@
+---
+# Runs the role's config.txt rollback, and only that, against the file named by
+# kiosk_boot_config_path. For run.sh; never point it at a real boot partition.
+- name: Roll back kiosk boot config settings in a test file
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../../vars.yml
+
+  tasks:
+    # vars.yml defaults the path to the real boot partition.
+    - name: Refuse to run against a real boot partition
+      ansible.builtin.assert:
+        that:
+          - not kiosk_boot_config_path.startswith('/boot')
+        fail_msg: "Pass -e kiosk_boot_config_path=<a test copy>; got {{ kiosk_boot_config_path }}"
+
+    - name: Roll back boot config settings
+      ansible.builtin.include_role:
+        name: kiosk_boot_tuning
+        tasks_from: rollback_config_txt.yml

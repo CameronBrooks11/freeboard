@@ -44,3 +44,6 @@ jobs:
             -e "freeboard_target_group=all kiosk_player_url=http://localhost:8080/s/demo"
           ansible-playbook -i localhost, ansible/rollback.yml --syntax-check \
             -e "freeboard_target_group=all"
+
+      - name: Boot config behaviour tests
+        run: ansible/tests/boot_config/run.sh

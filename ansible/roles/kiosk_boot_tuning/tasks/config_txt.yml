@@ -1,0 +1,64 @@
+---
+# config.txt is shared with the image and with whoever administers the host,
+# so the role adds its settings in one marked block and edits nothing else.
+#
+# It used to run lineinfile with regexp "^<key>=" per setting. For a key that
+# may appear many times, such as dtoverlay, that matched every overlay line and
+# replaced the last one, which on stock Raspberry Pi OS sits under a board
+# filter like [pi5]. See #338.
+#
+# The block opens with [all], so its settings apply to every board wherever the
+# file's last filter left off. A setting already present verbatim where it
+# applies to every board -- before the first filter, or under [all] -- is left
+# out, so the stock global dtoverlay=vc4-kms-v3d is not loaded a second time.
+# Any other setting goes in the block, which sits at the end of the file: for a
+# key set to a different value earlier, the block's value is the later one.
+#
+# Rollback removes the block and nothing else (rollback_config_txt.yml).
+
+- name: Read boot config
+  ansible.builtin.slurp:
+    src: "{{ kiosk_boot_config_path }}"
+  register: kiosk_boot_tuning_config_raw
+
+- name: Find boot config lines that apply to every board
+  ansible.builtin.set_fact:
+    kiosk_boot_tuning_config_global_json: >-
+      {%- set ns = namespace(all=true, block=false, lines=[]) -%}
+      {%- for raw in (kiosk_boot_tuning_config_raw.content | b64decode).splitlines() -%}
+      {%- set line = raw | trim -%}
+      {%- if line == kiosk_boot_config_marker_begin -%}
+      {%- set ns.block = true -%}
+      {%- elif line == kiosk_boot_config_marker_end -%}
+      {%- set ns.block = false -%}
+      {%- elif not ns.block -%}
+      {%- if line.startswith('[') -%}
+      {%- set ns.all = line == '[all]' -%}
+      {%- elif ns.all -%}
+      {%- set ns.lines = ns.lines + [line] -%}
+      {%- endif -%}
+      {%- endif -%}
+      {%- endfor -%}
+      {{ ns.lines | to_json }}
+
+- name: Choose the boot config lines the managed block carries
+  ansible.builtin.set_fact:
+    kiosk_boot_tuning_config_block_lines: >-
+      {{ kiosk_boot_config_lines
+         | reject('in', kiosk_boot_tuning_config_global_json | from_json)
+         | list }}
+
+- name: Ensure the managed boot config block
+  ansible.builtin.blockinfile:
+    path: "{{ kiosk_boot_config_path }}"
+    marker: "# {mark} {{ kiosk_boot_config_marker_label }}"
+    block: "{{ (['[all]'] + kiosk_boot_tuning_config_block_lines) | join('\n') }}"
+    insertafter: EOF
+    state: "{{ (kiosk_boot_tuning_config_block_lines | length > 0) | ternary('present', 'absent') }}"
+
+- name: Remove deprecated boot config lines
+  ansible.builtin.lineinfile:
+    path: "{{ kiosk_boot_config_path }}"
+    regexp: "{{ item }}"
+    state: absent
+  loop: "{{ kiosk_boot_remove_config_regexes }}"
