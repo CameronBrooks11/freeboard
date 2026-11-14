@@ -5,7 +5,7 @@ labels:
   - translation
   - help wanted
   - i18n
-  - docs
+  - documentation
 body:
   - type: dropdown
     id: locale
