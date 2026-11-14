@@ -13,21 +13,14 @@ Current baseline:
 How to help:
 
 1. Pick a locale: `fr`, `es`, or `de`.
-2. Open or comment on the locale's translation review issue (links below).
+2. Comment on the locale's translation review issue (links below).
 3. Submit fixes in a focused PR (single locale preferred).
 
 ## Locale Review Issues
 
-Maintainer action required:
-
-1. Create one issue per locale using `.github/ISSUE_TEMPLATE/translation-review.yml`.
-2. Add labels: `translation`, `help wanted`, `i18n`, `docs`, and `lang:<locale>`.
-
-Issue links (fill after creation):
-
-1. French (`fr`): `TODO`
-2. Spanish (`es`): `TODO`
-3. German (`de`): `TODO`
+1. French (`fr`): [#346](https://github.com/CameronBrooks11/freeboard/issues/346)
+2. Spanish (`es`): [#347](https://github.com/CameronBrooks11/freeboard/issues/347)
+3. German (`de`): [#348](https://github.com/CameronBrooks11/freeboard/issues/348)
 
 ## UI Translation Review Scope
 
@@ -108,7 +101,7 @@ For each locale (`fr`, `es`, `de`) we mark translation status as verified only w
 
 1. `translation`
 2. `i18n`
-3. `docs`
+3. `documentation`
 4. `help wanted`
 5. `lang:fr`
 6. `lang:es`
