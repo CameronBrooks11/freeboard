@@ -20,7 +20,7 @@
     "@vue/apollo-composable": "^4.2.1",
     "@vueuse/core": "^15.0.0",
     "graphql": "^17.1.0",
-    "graphql-sse": "^2.6.3",
+    "graphql-sse": "^2.6.4",
     "graphql-tag": "^2.12.7",
     "monaco-editor": "0.55.1",
     "oh-vue-icons": "^1.0.0-rc3",
@@ -28,8 +28,8 @@
     "rpg-awesome": "^0.2.0",
     "vue": "^3.5.45",
     "vue-grid-layout-v3": "^3.1.1-rc.4",
-    "vue-i18n": "^11.4.19",
-    "vue-router": "^5.5.0"
+    "vue-i18n": "^11.4.23",
+    "vue-router": "^5.5.1"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.11",
